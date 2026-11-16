@@ -208,3 +208,27 @@ def unnest_tables(text):
         if end is None:
             return text
         text = text[:outer.start()] + text[outer.end():end.start()] + text[end.end():]
+
+
+def wrap_envs_to_plain(text):
+    """wraptable/wrapfigure (with their width arguments) -> table/figure."""
+    text = re.sub(r"\\begin\{(wraptable|wrapfigure)\}(\{[^}]*\}|\[[^\]]*\])*", lambda m: "\\begin{" + ("table" if m.group(1) == "wraptable" else "figure") + "}", text)
+    text = re.sub(r"\\end\{(wraptable|wrapfigure)\}", lambda m: "\\end{" + ("table" if m.group(1) == "wraptable" else "figure") + "}", text)
+    return text
+
+
+def strip_float_layout(text):
+    """minipage / parbox / SCfigure wrappers around float contents."""
+    text = re.sub(r"\\(?:begin|end)\{minipage\}(?:\[[^\]]*\])?(?:\s*\{[^{}]*\})?", "", text)
+    text = re.sub(r"\\parbox\s*(?:\[[^\]]*\])*\s*\{[^{}]*\}\s*(?=\{)", "", text)  # \\parbox{w}{...} -> {...}
+    text = re.sub(r"\\(begin|end)\{SC(figure|table)\}(?:\s*\[[^\]]*\])*", r"\\\1{\2}", text)
+    return text
+
+
+def starred_floats_to_plain(text):
+    """table* / figure* -> table / figure."""
+    return re.sub(r"\\(begin|end)\{(table|figure)\*\}", r"\\\1{\2}", text)
+
+
+def captionof_to_caption(text):
+    return re.sub(r"\\captionof\{(table|figure)\}", r"\\caption", text)

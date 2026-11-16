@@ -5,6 +5,7 @@ import re
 
 from tex2md.preprocess.algorithms import _brace_args
 from tex2md.util.tex import balanced_end
+from tex2md.util.tex import group, unwrap
 
 def escape_citation_ampersands(text):
     """Author-year labels such as "(Wang & Cho, 2019)" inside a tabular add a phantom column."""
@@ -111,3 +112,57 @@ def simplify_multicolumn_specs(text):
         pos = e2
     out.append(text[pos:])
     return "".join(out)
+
+
+def strip_layout_wrappers(text):
+    """center/size environments and \\fontsize carry no content (only adjustbox takes an argument)."""
+    # only adjustbox takes an argument: "\begin{center}{\fontsize..." must keep its brace
+    text = re.sub(r"\\begin\{adjustbox\}(\{[^}]*\})?|\\begin\{(center|small|footnotesize|scriptsize|tiny)\}", "", text)
+    text = re.sub(r"\\fontsize\s*\{[^}]*\}\s*\{[^}]*\}(\s*\\selectfont)?", "", text)
+    text = re.sub(r"\\end\{(adjustbox|center|small|footnotesize|scriptsize|tiny)\}", "", text)
+    return text
+
+
+def plain_tabular_envs(text):
+    """tabularx/tabulary/tabular* take a width before the column spec; NiceTabular does not."""
+    text = re.sub(r"\\begin\{(tabularx|tabulary|tabular\*)\}\s*\{(?:[^{}]|\{[^{}]*\})*\}", r"\\begin{tabular}", text)
+    text = re.sub(r"\\begin\{NiceTabular\*?\}", r"\\begin{tabular}", text)
+    text = re.sub(r"\\end\{(NiceTabular\*?|tabularx|tabulary|tabular\*)\}", r"\\end{tabular}", text)
+    return text
+
+
+def drop_empty_math_cells(text):
+    """An empty "$$" cell opens a display equation in pandoc and swallows the whole tabular."""
+    text = re.sub(r"(&[ \t]*)\$\$[ \t]*(?=&|\\\\)", r"\1", text)
+    text = re.sub(r"\\CodeBefore\b.*?\\Body\b", "", text, flags=re.S)
+    return text
+
+
+def centered_column_types(text):
+    """siunitx S columns, X columns and user column types (\\newcolumntype) -> c."""
+    def colspec(m):
+        spec = re.sub(r"S(\[[^\]]*\])?", "c", m.group(1))
+        out, i = [], 0
+        while i < len(spec):  # user-defined column types (\newcolumntype) -> c
+            ch = spec[i]
+            if ch == "{":
+                g, i = group(spec, i)
+                out.append("{" + g + "}")
+                continue
+            out.append(ch if (ch in "lcrpmb|@!<>*" or not ch.isalpha()) else "c")
+            i += 1
+        spec = "".join(out)
+        return "\\begin{tabular}{" + spec + "}"
+    return re.sub(r"\\begin\{tabular\}\s*(?:\[[^\]]*\])?\s*\{((?:[^{}]|\{[^{}]*\})*)\}", colspec, text)
+
+
+def unwrap_cell_macros(text):
+    """\\resizebox, \\makecell, \\multirow, ...: keep their content, drop the layout."""
+    def oneline(body):
+        return re.sub(r"\\\\(\[[^\]]*\])?", " ", body)
+    for cmd, n in (("resizebox", 2), ("scalebox", 1), ("adjustbox", 1), ("makebox", 0), ("num", 0)):
+        text = unwrap(text, cmd, n)
+    for cmd in ("makecell", "shortstack", "thead"):
+        text = unwrap(text, cmd, 0, oneline)
+    text = unwrap(text, "multirow", 2, oneline)
+    return text

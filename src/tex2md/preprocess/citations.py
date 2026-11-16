@@ -159,3 +159,11 @@ PREAMBLE = r"""
 \newcommand{\doi}[1]{doi:#1}
 \newcommand{\eprint}[1]{#1}
 """
+
+
+def inject_bibliography(text, bib, stats):
+    """Replace citations by their labels and append the bibliography as a plain list."""
+    text = resolve_cites(text, bib, stats)
+    text = re.sub(r"\\bibliography\{[^}]*\}|\\printbibliography(\[[^\]]*\])?", lambda _: "", text)
+    text = re.sub(r"\\begin\{thebibliography\}.*?\\end\{thebibliography\}", "", text, flags=re.S)
+    return text.replace("\\end{document}", bibliography_tex(bib) + "\\end{document}")

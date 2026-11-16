@@ -109,3 +109,36 @@ def local_style_macros(text, bdir):
                 else:
                     pos = m.end()
     return "\n".join(out)
+
+
+def drop_fragile_macro_defs(text):
+    """Macros that typeset with TeX primitives pandoc cannot expand (\\texttt via \\ttfamily,
+    algorithm commands, colour boxes)."""
+    if re.search(r"\\renewcommand\s*\{\\texttt\}[^{]*\{[^}]*\\ttfamily", text):
+        text = drop_macro_defs(text, "texttt")
+    text = drop_macro_defs(text, "[a-zA-Z]+", cmd=r"alg(?:re)?newcommand")
+    boxes = set()
+    for m in re.finditer(r"\\(?:newcommand|DeclareRobustCommand)\*?\s*\{?\\([a-zA-Z]+)\}?\s*(?:\[\d\])?\s*(?:\[[^\]]*\])?\s*(?=\{)", text):
+        end = balanced_end(text, m.end())
+        if end > 0 and "\\colorbox" in text[m.end():end]:
+            boxes.add(m.group(1))
+    for name in boxes:
+        text = drop_macro_defs(text, name, "\u25a0", cmd=r"(?:(?:re)?newcommand|DeclareRobustCommand)")
+    return text
+
+
+def drop_primitive_spacing(text):
+    """Primitive spacing with length registers (\\vskip\\bigskipamount) confuses pandoc."""
+    return re.sub(r"\\[vh]skip\s*-?\s*(?:\\[a-zA-Z@]+|[0-9.]+\s*[a-z]{2})(?:\s*(?:plus|minus)\s*-?[0-9.]*\s*(?:\\[a-zA-Z@]+|[a-z]{2}))*", "", text)
+
+
+def drop_digit_operators(text):
+    """Operator names TeX tolerates but pandoc rejects (\\expm1)."""
+    return re.sub(r"\\DeclareMathOperator\*?\s*\{\\[a-zA-Z]+[0-9][^}]*\}\s*\{[^}]*\}", "", text)
+
+
+def drop_size_redefs(text):
+    """Redefined font sizes send pandoc's macro expansion into a loop."""
+    text = re.sub(r"\\(?:re)?newcommand\*?\s*\{?\\" + SIZES + r"\}?\s*(\[[^\]]*\])?\s*\{(?:[^{}]|\{[^{}]*\})*\}", "", text)
+    text = re.sub(r"\\def\s*\\" + SIZES + r"\b\s*\{(?:[^{}]|\{[^{}]*\})*\}", "", text)
+    return text

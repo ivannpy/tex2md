@@ -1,159 +1,112 @@
-"""The ordered LaTeX preprocessing pipeline that feeds pandoc."""
+"""The ordered LaTeX preprocessing pipeline that feeds pandoc.
+
+``RULES`` is the single place that fixes the order. Rules are plain ``text -> text`` functions
+(wrapped with ``_pure``) or take the ``Context`` (labels, bibliography, counters) when they need it.
+The order matters, so every rule says why it sits where it does; run one rule alone with
+``apply_rule(name, text)`` when debugging.
+"""
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
+from dataclasses import dataclass, field
 
 from tex2md.preprocess.algorithms import rewrite_algorithm_captions, rewrite_algorithmic
-from tex2md.preprocess.citations import PREAMBLE, bibliography_tex, resolve_cites
-from tex2md.preprocess.floats import flatten_subfloats, retype_floats, split_captioned_blocks, tables_without_tabular, unnest_tables, wrap_loose_captions
-from tex2md.preprocess.macros import SIZES, drop_macro_defs, fix_stray_macro_braces
+from tex2md.preprocess.boxes import tcolorbox_to_quote
+from tex2md.preprocess.citations import PREAMBLE, inject_bibliography
+from tex2md.preprocess.floats import (
+    captionof_to_caption, flatten_subfloats, retype_floats, split_captioned_blocks,
+    starred_floats_to_plain, strip_float_layout, tables_without_tabular, unnest_tables,
+    wrap_envs_to_plain, wrap_loose_captions)
+from tex2md.preprocess.macros import (
+    drop_digit_operators, drop_fragile_macro_defs, drop_primitive_spacing, drop_size_redefs,
+    fix_stray_macro_braces)
 from tex2md.preprocess.references import expand_wrappers, resolve_refs
-from tex2md.preprocess.tables import normalize_tabulars, simplify_multicolumn_specs
-from tex2md.util.tex import balanced_end, group, skip_ws, unwrap
+from tex2md.preprocess.structure import (
+    drop_title_hacks, expand_abbreviations, label_options, mark_appendix, strip_comment_lines)
+from tex2md.preprocess.tables import (
+    centered_column_types, drop_empty_math_cells, normalize_tabulars, plain_tabular_envs,
+    simplify_multicolumn_specs, strip_layout_wrappers, unwrap_cell_macros)
+
+
+@dataclass
+class Context:
+    """What the rules that resolve references need besides the text."""
+    labels: dict
+    bib: list | None
+    stats: dict = field(default_factory=lambda: {"unresolved_refs": 0, "unresolved_cites": 0})
+
+
+Rule = Callable[[str, Context], str]
+
+
+def _pure(fn: Callable[[str], str]) -> Rule:
+    return lambda text, ctx: fn(text)
+
+
+def _bold_math(text: str) -> str:
+    return re.sub(r"\\bm\b", r"\\boldsymbol", text)
+
+
+def _bibliography(text: str, ctx: Context) -> str:
+    return inject_bibliography(text, ctx.bib, ctx.stats) if ctx.bib else text
+
+
+RULES: list[tuple[str, Rule]] = [
+    # --- document structure
+    ("mark-appendix", _pure(mark_appendix)),
+    ("expand-abbreviations", _pure(expand_abbreviations)),
+    ("fix-stray-macro-braces", _pure(fix_stray_macro_braces)),
+    # --- floats: normalise so pandoc keeps every caption (order: wrap -> retype -> split -> flatten)
+    ("wrap-envs-to-plain", _pure(wrap_envs_to_plain)),
+    ("tables-without-tabular", _pure(tables_without_tabular)),
+    ("retype-floats", _pure(retype_floats)),
+    ("wrap-loose-captions", _pure(wrap_loose_captions)),
+    ("split-captioned-blocks", _pure(split_captioned_blocks)),
+    ("strip-float-layout", _pure(strip_float_layout)),
+    ("flatten-subfloats", _pure(flatten_subfloats)),
+    ("unnest-tables", _pure(unnest_tables)),
+    # --- macros and preamble pandoc cannot expand
+    ("strip-comment-lines", _pure(strip_comment_lines)),
+    ("drop-title-hacks", _pure(drop_title_hacks)),
+    ("drop-fragile-macro-defs", _pure(drop_fragile_macro_defs)),
+    ("drop-primitive-spacing", _pure(drop_primitive_spacing)),
+    ("drop-digit-operators", _pure(drop_digit_operators)),
+    ("drop-size-redefs", _pure(drop_size_redefs)),
+    ("label-options", _pure(label_options)),
+    ("simplify-multicolumn-specs", _pure(simplify_multicolumn_specs)),
+    ("tcolorbox-to-quote", _pure(tcolorbox_to_quote)),
+    # --- references and citations (need the .aux / .bbl numbers)
+    ("expand-ref-wrappers", _pure(expand_wrappers)),
+    ("resolve-refs", lambda text, ctx: resolve_refs(text, ctx.labels, ctx.stats)),
+    ("bibliography", _bibliography),
+    # --- environments pandoc does not know -> plain counterparts
+    ("wrap-envs-to-plain-again", _pure(wrap_envs_to_plain)),
+    ("starred-floats-to-plain", _pure(starred_floats_to_plain)),
+    ("strip-layout-wrappers", _pure(strip_layout_wrappers)),
+    ("plain-tabular-envs", _pure(plain_tabular_envs)),
+    ("normalize-tabulars", _pure(normalize_tabulars)),
+    ("rewrite-algorithmic", _pure(rewrite_algorithmic)),
+    ("rewrite-algorithm-captions", lambda text, ctx: rewrite_algorithm_captions(text, ctx.labels)),
+    ("drop-empty-math-cells", _pure(drop_empty_math_cells)),
+    ("centered-column-types", _pure(centered_column_types)),
+    ("unwrap-cell-macros", _pure(unwrap_cell_macros)),
+    ("captionof-to-caption", _pure(captionof_to_caption)),
+    ("bold-math", _pure(_bold_math)),
+    ("add-preamble", lambda text, ctx: PREAMBLE + text),
+]
+
+_BY_NAME = dict(RULES)
+
+
+def apply_rule(name: str, text: str, ctx: Context | None = None) -> str:
+    """Run a single rule by name (tests and debugging)."""
+    return _BY_NAME[name](text, ctx or Context(labels={}, bib=None))
+
 
 def preprocess(text, labels, bib, stats):
-    body_at = text.find("\\begin{document}")
-    m = re.compile(r"\\appendix(?![a-zA-Z@])").search(text, max(body_at, 0))
-    if m:
-        text = text[:m.start()] + "\n\nTEX2MDAPPENDIXMARKER\n\n" + text[m.end():]
-    text = re.sub(r"\\(?:DeclareRobustCommand|def|(?:re)?newcommand)\*?\s*\{?\\onedot\}?", r"\\def\\tex2mdunused", text)
-    text = re.sub(r"\\onedot(?![a-zA-Z])\s*\.?", ".", text)
-    # cvpr.sty-style abbreviations (\eg, \ie, ...) live in the style file, which pandoc
-    # never sees, so it drops them; expand the ones the document does not define itself
-    for name, lit in (("eg", "e.g."), ("Eg", "E.g."), ("ie", "i.e."), ("Ie", "I.e."), ("cf", "cf."),
-                      ("Cf", "Cf."), ("etc", "etc."), ("vs", "vs."), ("wrt", "w.r.t."),
-                      ("etal", "et al.")):
-        if not re.search(r"\\(?:def|(?:re)?newcommand|DeclareRobustCommand)\*?\s*\{?\\" + name + r"(?![a-zA-Z@])", text):
-            text = re.sub(r"\\" + name + r"(?![a-zA-Z@])(?:\s*\{\})?[ \t]*", lit + " ", text)
-    text = fix_stray_macro_braces(text)
-    text = re.sub(r"\\begin\{(wraptable|wrapfigure)\}(\{[^}]*\}|\[[^\]]*\])*", lambda m: "\\begin{" + ("table" if m.group(1) == "wraptable" else "figure") + "}", text)
-    text = re.sub(r"\\end\{(wraptable|wrapfigure)\}", lambda m: "\\end{" + ("table" if m.group(1) == "wraptable" else "figure") + "}", text)
-    text = tables_without_tabular(text)
-    text = retype_floats(text)
-    text = wrap_loose_captions(text)
-    text = split_captioned_blocks(text)
-    text = re.sub(r"\\(?:begin|end)\{minipage\}(?:\[[^\]]*\])?(?:\s*\{[^{}]*\})?", "", text)
-    text = re.sub(r"\\parbox\s*(?:\[[^\]]*\])*\s*\{[^{}]*\}\s*(?=\{)", "", text)  # \\parbox{w}{...} -> {...}
-    text = re.sub(r"\\(begin|end)\{SC(figure|table)\}(?:\s*\[[^\]]*\])*", r"\\\1{\2}", text)
-    text = flatten_subfloats(text)
-    text = unnest_tables(text)
-    # comment-only lines can sit inside optional arguments (\includegraphics[..., %\n ...]) and trip pandoc
-    text = re.sub(r"(?m)^[ \t]*%.*\n", "", text)
-    # preamble \makeatletter blocks that redefine \maketitle (TeX internals like \@topnum) break pandoc
-    pre_end = text.find("\\begin{document}")
-    if pre_end > 0:
-        pre = re.sub(r"\\makeatletter(?:(?!\\makeatother).)*?\\@maketitle(?:(?!\\makeatother).)*?\\makeatother",
-                     "", text[:pre_end], flags=re.S)
-        text = pre + text[pre_end:]
-    # macros that typeset with TeX primitives pandoc cannot expand
-    if re.search(r"\\renewcommand\s*\{\\texttt\}[^{]*\{[^}]*\\ttfamily", text):
-        text = drop_macro_defs(text, "texttt")
-    text = drop_macro_defs(text, "[a-zA-Z]+", cmd=r"alg(?:re)?newcommand")
-    boxes = set()
-    for m in re.finditer(r"\\(?:newcommand|DeclareRobustCommand)\*?\s*\{?\\([a-zA-Z]+)\}?\s*(?:\[\d\])?\s*(?:\[[^\]]*\])?\s*(?=\{)", text):
-        end = balanced_end(text, m.end())
-        if end > 0 and "\\colorbox" in text[m.end():end]:
-            boxes.add(m.group(1))
-    for name in boxes:
-        text = drop_macro_defs(text, name, "\u25a0", cmd=r"(?:(?:re)?newcommand|DeclareRobustCommand)")
-    # primitive spacing with length registers (\vskip\bigskipamount) confuses pandoc
-    text = re.sub(r"\\[vh]skip\s*-?\s*(?:\\[a-zA-Z@]+|[0-9.]+\s*[a-z]{2})(?:\s*(?:plus|minus)\s*-?[0-9.]*\s*(?:\\[a-zA-Z@]+|[a-z]{2}))*", "", text)
-    # operator names TeX tolerates but pandoc rejects (\expm1)
-    text = re.sub(r"\\DeclareMathOperator\*?\s*\{\\[a-zA-Z]+[0-9][^}]*\}\s*\{[^}]*\}", "", text)
-    # redefined font sizes send pandoc's macro expansion into a loop
-    text = re.sub(r"\\(?:re)?newcommand\*?\s*\{?\\" + SIZES + r"\}?\s*(\[[^\]]*\])?\s*\{(?:[^{}]|\{[^{}]*\})*\}", "", text)
-    text = re.sub(r"\\def\s*\\" + SIZES + r"\b\s*\{(?:[^{}]|\{[^{}]*\})*\}", "", text)
-    text = re.sub(r"\\label\s*\[[^\]]*\]\s*\{", r"\\label{", text)  # cleveref \label[type]{...}
-    text = simplify_multicolumn_specs(text)
-    # tcolorbox definitions (\newtcolorbox{name}[n][default]{...#1...}) break pandoc. Code listings
-    # become verbatim; ordinary boxes become a quote with the title (if any) in bold.
-    for m in reversed(list(re.finditer(r"\\(newtcblisting|newtcolorbox|DeclareTColorBox|NewTColorBox|NewTCBListing)\s*\{([^}]*)\}", text))):
-        i = m.end()
-        specs = []
-        while True:
-            i = skip_ws(text, i)
-            if i < len(text) and text[i] in "[{":
-                g, i = group(text, i, text[i], "]" if text[i] == "[" else "}")
-                specs.append(g)
-            else:
-                break
-        name = re.escape(m.group(2))
-        is_listing = "listing" in m.group(1).lower()
-        text = text[:m.start()] + text[i:]
-        if is_listing:
-            text = re.sub(r"\\begin\{" + name + r"\}(\[[^\]]*\]|\{[^}]*\})*", r"\\begin{verbatim}", text)
-            text = re.sub(r"\\end\{" + name + r"\}", r"\\end{verbatim}", text)
-            continue
-        nargs = int(specs[0]) if specs and specs[0].isdigit() else 0
-        def box(mm, nargs=nargs):
-            j, titles = mm.end(), []
-            for k in range(nargs):
-                j2 = skip_ws(mm.string, j)
-                if j2 < len(mm.string) and mm.string[j2] == "[":
-                    _, j = group(mm.string, j2, "[", "]")
-                elif j2 < len(mm.string) and mm.string[j2] == "{":
-                    g, j = group(mm.string, j2, "{", "}")
-                    titles.append(g)
-                else:
-                    break
-            return "\\begin{quote}" + ("\\textbf{" + titles[0] + "}\n\n" if titles and titles[0].strip() else ""), j
-        out, pos = [], 0
-        for mm in re.finditer(r"\\begin\{" + name + r"\}", text):
-            if mm.start() < pos:
-                continue
-            rep, j = box(mm)
-            out.append(text[pos:mm.start()] + rep)
-            pos = j
-        out.append(text[pos:])
-        text = "".join(out)
-        text = re.sub(r"\\end\{" + name + r"\}", r"\\end{quote}", text)
-    text = expand_wrappers(text)
-    text = resolve_refs(text, labels, stats)
-    if bib:
-        text = resolve_cites(text, bib, stats)
-        text = re.sub(r"\\bibliography\{[^}]*\}|\\printbibliography(\[[^\]]*\])?", lambda _: "", text)
-        text = re.sub(r"\\begin\{thebibliography\}.*?\\end\{thebibliography\}", "", text, flags=re.S)
-        text = text.replace("\\end{document}", bibliography_tex(bib) + "\\end{document}")
-    # environments pandoc does not know: treat as their plain counterparts
-    text = re.sub(r"\\begin\{(wraptable|wrapfigure)\}(\{[^}]*\}|\[[^\]]*\])*", lambda m: "\\begin{" + ("table" if m.group(1) == "wraptable" else "figure") + "}", text)
-    text = re.sub(r"\\(begin|end)\{(table|figure)\*\}", r"\\\1{\2}", text)
-    text = re.sub(r"\\end\{(wraptable|wrapfigure)\}", lambda m: "\\end{" + ("table" if m.group(1) == "wraptable" else "figure") + "}", text)
-    # only adjustbox takes an argument: "\begin{center}{\fontsize..." must keep its brace
-    text = re.sub(r"\\begin\{adjustbox\}(\{[^}]*\})?|\\begin\{(center|small|footnotesize|scriptsize|tiny)\}", "", text)
-    text = re.sub(r"\\fontsize\s*\{[^}]*\}\s*\{[^}]*\}(\s*\\selectfont)?", "", text)
-    text = re.sub(r"\\end\{(adjustbox|center|small|footnotesize|scriptsize|tiny)\}", "", text)
-    # tabularx/tabulary/tabular* take a width before the column spec; NiceTabular does not
-    text = re.sub(r"\\begin\{(tabularx|tabulary|tabular\*)\}\s*\{(?:[^{}]|\{[^{}]*\})*\}", r"\\begin{tabular}", text)
-    text = re.sub(r"\\begin\{NiceTabular\*?\}", r"\\begin{tabular}", text)
-    text = re.sub(r"\\end\{(NiceTabular\*?|tabularx|tabulary|tabular\*)\}", r"\\end{tabular}", text)
-    text = normalize_tabulars(text)
-    text = rewrite_algorithmic(text)
-    text = rewrite_algorithm_captions(text, labels)
-    # an empty "$$" cell opens a display equation in pandoc and swallows the whole tabular
-    text = re.sub(r"(&[ \t]*)\$\$[ \t]*(?=&|\\\\)", r"\1", text)
-    text = re.sub(r"\\CodeBefore\b.*?\\Body\b", "", text, flags=re.S)
-    # siunitx S columns and X columns -> centered columns
-    def colspec(m):
-        spec = re.sub(r"S(\[[^\]]*\])?", "c", m.group(1))
-        out, i = [], 0
-        while i < len(spec):  # user-defined column types (\newcolumntype) -> c
-            ch = spec[i]
-            if ch == "{":
-                g, i = group(spec, i)
-                out.append("{" + g + "}")
-                continue
-            out.append(ch if (ch in "lcrpmb|@!<>*" or not ch.isalpha()) else "c")
-            i += 1
-        spec = "".join(out)
-        return "\\begin{tabular}{" + spec + "}"
-    text = re.sub(r"\\begin\{tabular\}\s*(?:\[[^\]]*\])?\s*\{((?:[^{}]|\{[^{}]*\})*)\}", colspec, text)
-    def oneline(body):
-        return re.sub(r"\\\\(\[[^\]]*\])?", " ", body)
-    for cmd, n in (("resizebox", 2), ("scalebox", 1), ("adjustbox", 1), ("makebox", 0), ("num", 0)):
-        text = unwrap(text, cmd, n)
-    for cmd in ("makecell", "shortstack", "thead"):
-        text = unwrap(text, cmd, 0, oneline)
-    text = unwrap(text, "multirow", 2, oneline)
-    text = re.sub(r"\\captionof\{(table|figure)\}", r"\\caption", text)
-    text = re.sub(r"\\bm\b", r"\\boldsymbol", text)
-    return PREAMBLE + text
+    """Run every rule in order. ``stats`` is filled in place (unresolved refs and cites)."""
+    ctx = Context(labels=labels, bib=bib, stats=stats)
+    for _name, rule in RULES:
+        text = rule(text, ctx)
+    return text
