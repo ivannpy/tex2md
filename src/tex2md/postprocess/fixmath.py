@@ -3,8 +3,7 @@ from __future__ import annotations
 
 import re
 
-from tex2md.postprocess.markdown import (
-    cap_heading_levels, fix_text_math, isolate_display_math, normalize_math_macros)
+from tex2md.postprocess.markdown import cap_heading_levels, fix_text_math, isolate_display_math, normalize_math_macros
 
 
 def fix_body(body: str) -> str:

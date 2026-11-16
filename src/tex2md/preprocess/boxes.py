@@ -29,7 +29,7 @@ def tcolorbox_to_quote(text: str) -> str:
 
         def box(mm, nargs=nargs):
             j, titles = mm.end(), []
-            for k in range(nargs):
+            for _k in range(nargs):
                 j2 = skip_ws(mm.string, j)
                 if j2 < len(mm.string) and mm.string[j2] == "[":
                     _, j = group(mm.string, j2, "[", "]")

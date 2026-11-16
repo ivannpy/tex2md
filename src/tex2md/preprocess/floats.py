@@ -5,6 +5,7 @@ import re
 
 from tex2md.util.tex import balanced_end
 
+
 def tables_without_tabular(text):
     """A \\begin{table} holding only an image (or text) and a caption is dropped by pandoc:
     turn it into a figure and mark the caption so the filter still calls it "Tabla"."""
@@ -33,7 +34,7 @@ def tables_without_tabular(text):
             if ce > 0:
                 cap = body[cm.end() + 1:ce - 1]
                 out.append(text[pos:m.start()] + "\\begin{figure}\\caption{TEX2MDTABLE " + cap + "}\\end{figure}\n"
-                           + "\\begin{table%s}" % m.group(1) + body[:cm.start()] + body[ce:] + text[endm.start():endm.end()])
+                           + f"\\begin{{table{m.group(1)}}}" + body[:cm.start()] + body[ce:] + text[endm.start():endm.end()])
             else:
                 out.append(text[pos:endm.end()])
         else:
@@ -58,7 +59,7 @@ def retype_floats(text):
         kinds = re.findall(r"\\captionof\s*\{(table|figure)\}", body)
         if len(kinds) == 1 and kinds[0] != m.group(1) and not re.search(r"\\begin\{(?:table|figure)", body):
             k = kinds[0]
-            out.append(text[pos:m.start()] + "\\begin{%s}%s\\end{%s}" % (k, body, k))
+            out.append(text[pos:m.start()] + f"\\begin{{{k}}}{body}\\end{{{k}}}")
         else:
             out.append(text[pos:endm.end()])
         pos = endm.end()
@@ -85,9 +86,9 @@ def wrap_loose_captions(text):
         skip = re.compile(r"(?:\s|\\label\{[^}]*\}|\\vspace\*?\{[^}]*\}|\\centering|\\small|\\footnotesize|%[^\n]*|" + wrap.pattern + r")*").match(text, e)
         nm = tb.match(text, skip.end())
         if nm:  # the table follows its caption
-            en = text.find("\\end{%s}" % nm.group(2), nm.end())
+            en = text.find(f"\\end{{{nm.group(2)}}}", nm.end())
             if en > 0:
-                stop = en + len("\\end{%s}" % nm.group(2))
+                stop = en + len(f"\\end{{{nm.group(2)}}}")
                 closers = [w.group(0) for w in wrap.finditer(text, e, skip.end())]
                 for w in reversed(closers):
                     c = re.compile(r"\s*(?:\\end\{adjustbox\}|\})" if w.startswith("\\begin") is False else r"\s*\\end\{adjustbox\}").match(text, stop)
@@ -96,11 +97,11 @@ def wrap_loose_captions(text):
         else:   # the table precedes its caption
             pm = re.search(r"\\end\{(tabular[x*]?|longtable|tabulary)\}\s*$", text[:m.start()])
             if pm:
-                bg = text.rfind("\\begin{%s}" % pm.group(1), 0, pm.start())
+                bg = text.rfind(f"\\begin{{{pm.group(1)}}}", 0, pm.start())
                 if bg >= 0:
                     start = bg
         inner = text[start:m.start()] + "\\caption" + text[m.end():e] + text[e:stop]
-        rep = "\\begin{%s}%s\\end{%s}" % (m.group(1), inner, m.group(1))
+        rep = f"\\begin{{{m.group(1)}}}{inner}\\end{{{m.group(1)}}}"
         text = text[:start] + rep + text[stop:]
         pos = start + len(rep)
 
@@ -145,11 +146,12 @@ def split_captioned_blocks(text):
         rest = re.sub(r"-?[0-9.]+\s*(?:in|pt|cm|mm|em|ex|bp)\b|\\[;,:! ]|[\s{}\[\]~]", "", rest)
         clean = len(rest) < 4 and not re.search(r"\\begin\{(?:table|figure)", body)
         if len(capt) >= 2 and len(capt) == len(blocks) and clean:
-            tag = m.group(1) + m.group(2)
-            def kind_of(b):
+            env_kind = m.group(1)
+
+            def kind_of(b, default=env_kind):
                 k = re.search(r"\\captionof\s*\{(table|figure)\}", b)
-                return k.group(1) if k else m.group(1)
-            out.append("".join("\\begin{%s}%s\\end{%s}\n" % (kind_of(b), b, kind_of(b)) for b in capt))
+                return k.group(1) if k else default
+            out.append("".join(f"\\begin{{{kind_of(b)}}}{b}\\end{{{kind_of(b)}}}\n" for b in capt))
         else:
             out.append(text[m.start():endm.end()])
         pos = endm.end()

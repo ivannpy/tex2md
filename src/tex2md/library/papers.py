@@ -5,6 +5,7 @@ import datetime
 import json
 import os
 import re
+from pathlib import Path
 
 from tex2md.config import MN_ROOT
 from tex2md.sources.arxiv import arxiv_meta
@@ -56,7 +57,7 @@ def build_frontmatter(meta, mn, source, version=None):
 
 
 def cmd_frontmatter(a):
-    text = open(a.file, encoding="utf-8").read()
+    text = Path(a.file).read_text(encoding="utf-8")
     fm, _ = split_frontmatter(text)
     if fm is not None:
         raise SystemExit(f"{a.file} already has front matter")
@@ -66,12 +67,12 @@ def cmd_frontmatter(a):
     tmp = a.file + ".tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
         fh.write(new)
-    assert open(tmp, encoding="utf-8").read().endswith(text)
+    assert Path(tmp).read_text(encoding="utf-8").endswith(text)
     os.replace(tmp, a.file)
 
 
 def cmd_add_mn(a):
-    text = open(a.file, encoding="utf-8").read()
+    text = Path(a.file).read_text(encoding="utf-8")
     fm, body = split_frontmatter(text)
     if fm is None:
         raise SystemExit(f"{a.file} has no front matter")
@@ -98,7 +99,7 @@ def cmd_check(a):
     for f in sorted(os.listdir(a.dir)):
         if not f.endswith(".md") or f in ("INDEX.md", "CLAUDE.md", "README.md"):
             continue
-        fm, _ = split_frontmatter(open(os.path.join(a.dir, f), encoding="utf-8").read())
+        fm, _ = split_frontmatter(Path(os.path.join(a.dir, f)).read_text(encoding="utf-8"))
         if fm is None:
             print(f"NO FRONT MATTER  {f}")
             bad += 1
@@ -119,7 +120,7 @@ def cmd_index(a):
     for f in sorted(os.listdir(a.dir)):
         if not f.endswith(".md") or f in ("INDEX.md", "CLAUDE.md", "README.md"):
             continue
-        fm, _ = split_frontmatter(open(os.path.join(a.dir, f), encoding="utf-8").read())
+        fm, _ = split_frontmatter(Path(os.path.join(a.dir, f)).read_text(encoding="utf-8"))
         if fm is None:
             continue
         rows.append((f, parse_frontmatter(fm)))

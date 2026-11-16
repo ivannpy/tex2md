@@ -17,8 +17,7 @@ from tex2md.build.aux import parse_aux, parse_floats
 from tex2md.build.latex import find_main
 from tex2md.config import CACHE, FILTER
 from tex2md.library.frontmatter import frontmatter
-from tex2md.postprocess.markdown import (
-    cap_heading_levels, fix_text_math, isolate_display_math, normalize_math_macros)
+from tex2md.postprocess.markdown import cap_heading_levels, fix_text_math, isolate_display_math, normalize_math_macros
 from tex2md.preprocess.citations import parse_bbl
 from tex2md.preprocess.macros import local_style_macros
 from tex2md.preprocess.pipeline import preprocess

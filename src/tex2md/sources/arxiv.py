@@ -13,6 +13,7 @@ import xml.etree.ElementTree as ET
 from tex2md.config import ATOM, CACHE
 from tex2md.util.io import http_get
 
+
 def arxiv_meta(aid):
     """arXiv API metadata, cached in cache/meta/<id>.json (the API is rate limited)."""
     path = os.path.join(CACHE, "meta", aid.replace("/", "_") + ".json")

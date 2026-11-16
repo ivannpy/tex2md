@@ -140,7 +140,7 @@ def rewrite_algorithm_captions(text, labels):
     for m in re.finditer(r"\\begin\{algorithm\*?\}(\[[^\]]*\])?(.*?)\\end\{algorithm\*?\}", text, re.S):
         body = m.group(2)
         cm = re.search(r"\\caption\*?(?:\[[^\]]*\])?(?=\{)", body)
-        count += 1
+        count += 1  # noqa: SIM113 (counts matches, not loop turns)
         if cm:
             e = balanced_end(body, cm.end())
             if e > 0:

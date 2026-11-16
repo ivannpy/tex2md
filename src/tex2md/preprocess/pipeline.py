@@ -15,18 +15,41 @@ from tex2md.preprocess.algorithms import rewrite_algorithm_captions, rewrite_alg
 from tex2md.preprocess.boxes import tcolorbox_to_quote
 from tex2md.preprocess.citations import PREAMBLE, inject_bibliography
 from tex2md.preprocess.floats import (
-    captionof_to_caption, flatten_subfloats, retype_floats, split_captioned_blocks,
-    starred_floats_to_plain, strip_float_layout, tables_without_tabular, unnest_tables,
-    wrap_envs_to_plain, wrap_loose_captions)
+    captionof_to_caption,
+    flatten_subfloats,
+    retype_floats,
+    split_captioned_blocks,
+    starred_floats_to_plain,
+    strip_float_layout,
+    tables_without_tabular,
+    unnest_tables,
+    wrap_envs_to_plain,
+    wrap_loose_captions,
+)
 from tex2md.preprocess.macros import (
-    drop_digit_operators, drop_fragile_macro_defs, drop_primitive_spacing, drop_size_redefs,
-    fix_stray_macro_braces)
+    drop_digit_operators,
+    drop_fragile_macro_defs,
+    drop_primitive_spacing,
+    drop_size_redefs,
+    fix_stray_macro_braces,
+)
 from tex2md.preprocess.references import expand_wrappers, resolve_refs
 from tex2md.preprocess.structure import (
-    drop_title_hacks, expand_abbreviations, label_options, mark_appendix, strip_comment_lines)
+    drop_title_hacks,
+    expand_abbreviations,
+    label_options,
+    mark_appendix,
+    strip_comment_lines,
+)
 from tex2md.preprocess.tables import (
-    centered_column_types, drop_empty_math_cells, normalize_tabulars, plain_tabular_envs,
-    simplify_multicolumn_specs, strip_layout_wrappers, unwrap_cell_macros)
+    centered_column_types,
+    drop_empty_math_cells,
+    normalize_tabulars,
+    plain_tabular_envs,
+    simplify_multicolumn_specs,
+    strip_layout_wrappers,
+    unwrap_cell_macros,
+)
 
 
 @dataclass

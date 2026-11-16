@@ -5,6 +5,7 @@ import re
 
 from tex2md.util.tex import group, skip_ws, unwrap
 
+
 def parse_bbl(t):
     """natbib/plain .bbl text -> ordered list of entries. None for biblatex."""
     if "\\entry{" in t and "\\bibitem" not in t:

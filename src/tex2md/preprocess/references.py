@@ -6,6 +6,7 @@ import re
 from tex2md.build.aux import fmt_num, ref_name
 from tex2md.util.tex import group
 
+
 def resolve_refs(text, labels, stats):
     def one(cmd, keys):
         out = []

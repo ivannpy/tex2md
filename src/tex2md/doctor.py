@@ -38,7 +38,7 @@ def run_doctor() -> int:
             problems += 1
             print(f"  MISSING  {name:<9} {why}\n           -> {hint}")
     print("Data directories")
-    for label, path, need in (("cache", CACHE, False), ("models", MODELS, False), ("marker env", MARKER, False)):
+    for label, path, _need in (("cache", CACHE, False), ("models", MODELS, False), ("marker env", MARKER, False)):
         state = "ok      " if os.path.isdir(path) else "absent  "
         print(f"  {state} {label:<10} {path}")
     if not os.path.exists(os.path.join(MARKER, "pyproject.toml")):

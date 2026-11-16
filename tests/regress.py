@@ -17,6 +17,7 @@ import subprocess
 import sys
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -37,13 +38,13 @@ def normalise(text: str) -> str:
 
 def check(path: str, outdir: str):
     name = os.path.basename(path)
-    base = open(path).read()
+    base = Path(path).read_text()
     out = os.path.join(outdir, name)
     env = dict(os.environ, PYTHONPATH=os.path.join(ROOT, "src"))
     p = subprocess.run(command_for(base, out), capture_output=True, text=True, env=env, cwd=outdir)
     if p.returncode != 0 or not os.path.exists(out):
         return name, "FAILED", (p.stderr or p.stdout)[-400:]
-    new = open(out).read()
+    new = Path(out).read_text()
     # the front matter of the baseline keeps the original paths verbatim; compare the body and the stable keys
     nb, nn = normalise(base), normalise(new)
     if nb.split("---\n", 2)[2] == nn.split("---\n", 2)[2]:

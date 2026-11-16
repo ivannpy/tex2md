@@ -1,11 +1,12 @@
 """tabular environments: column specs and cell clean-up."""
 from __future__ import annotations
 
+import contextlib
 import re
 
 from tex2md.preprocess.algorithms import _brace_args
-from tex2md.util.tex import balanced_end
-from tex2md.util.tex import group, unwrap
+from tex2md.util.tex import balanced_end, group, unwrap
+
 
 def escape_citation_ampersands(text):
     """Author-year labels such as "(Wang & Cho, 2019)" inside a tabular add a phantom column."""
@@ -28,10 +29,8 @@ def simple_colspec(spec):
             e2 = balanced_end(spec, e) if 0 < e < len(spec) and spec[e] == "{" else -1
             if e < 0 or e2 < 0:
                 break
-            try:
+            with contextlib.suppress(ValueError):
                 out.append(simple_colspec(spec[e + 1:e2 - 1]) * int(spec[i + 2:e - 1]))
-            except ValueError:
-                pass
             i = e2
         elif c in "pmb" and spec[i + 1:i + 2] == "{":
             e = balanced_end(spec, i + 1)

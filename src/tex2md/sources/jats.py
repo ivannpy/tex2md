@@ -5,6 +5,7 @@ import os
 import re
 import subprocess
 import tempfile
+from pathlib import Path
 
 from tex2md.config import FILTER, UNWRAP_FILTER
 from tex2md.util.io import http_get
@@ -14,7 +15,7 @@ MD_FORMAT = ("markdown-raw_attribute-header_attributes-fenced_divs-bracketed_spa
 
 
 def jats_body(src):
-    raw = http_get(src).decode("utf-8") if re.match(r"https?://", src) else open(src, encoding="utf-8").read()
+    raw = http_get(src).decode("utf-8") if re.match(r"https?://", src) else Path(src).read_text(encoding="utf-8")
     m = re.search(r"<article\b.*</article>", raw, re.S)
     if not m:
         raise SystemExit("no <article> element in " + src)

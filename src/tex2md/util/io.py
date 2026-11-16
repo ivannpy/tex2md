@@ -8,6 +8,7 @@ import urllib.request
 
 from tex2md.config import UA
 
+
 def http_get(url, tries=4):
     for i in range(tries):
         try:

@@ -5,6 +5,7 @@ import os
 import re
 import subprocess
 import tempfile
+from pathlib import Path
 
 from tex2md.config import MARKER, MODELS
 
@@ -21,7 +22,7 @@ def marker_body(pdf, mode):
         mds = [os.path.join(dp, f) for dp, _, fns in os.walk(tmp) for f in fns if f.endswith(".md")]
         if p.returncode != 0 or not mds:
             raise SystemExit("marker failed: " + p.stderr[-800:])
-        body = open(mds[0], encoding="utf-8").read()
+        body = Path(mds[0]).read_text(encoding="utf-8")
     # marker leaves empty image links when image extraction is off
     body = re.sub(r"!\[[^\]]*\]\([^)]*\)\n?", "", body)
     body = re.sub(r"<span id=\"page-\d+-\d+\"></span>", "", body)

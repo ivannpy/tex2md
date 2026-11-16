@@ -29,7 +29,7 @@ def drop_macro_defs(text, pattern, replace_uses=None, cmd=r"(?:re)?newcommand"):
         pos = m.start()
     if replace_uses is not None:
         for name, (n, opt) in dropped.items():
-            use = r"\\" + name + r"(?![a-zA-Z@])" + (r"(?:\[[^\]]*\])?" if opt else "") + r"(?:\s*\{[^{}]*\}){0,%d}" % (n - 1 if opt else n)
+            use = r"\\" + name + r"(?![a-zA-Z@])" + (r"(?:\[[^\]]*\])?" if opt else "") + r"(?:\s*\{[^{}]*\}){0,%d}" % (n - 1 if opt else n)  # noqa: UP031
             text = re.sub(use, replace_uses, text)
     return text
 
