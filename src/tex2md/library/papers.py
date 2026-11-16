@@ -6,6 +6,7 @@ import json
 import os
 import re
 
+from tex2md.config import MN_ROOT
 from tex2md.sources.arxiv import arxiv_meta
 from tex2md.util.io import yaml_str
 

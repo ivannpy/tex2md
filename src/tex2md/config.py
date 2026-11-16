@@ -6,6 +6,7 @@ environment variables:
     TEX2MD_CACHE    downloads, builds and arXiv metadata   (default ~/.cache/tex2md)
     TEX2MD_MODELS   marker model weights                   (default ~/.local/share/tex2md/models)
     TEX2MD_MARKER   isolated uv project that runs marker   (default <repo>/marker)
+    TEX2MD_MN_ROOT  MarginNote Documents folder (iCloud)   (default the standard iCloud path)
 """
 from __future__ import annotations
 
@@ -29,3 +30,4 @@ CACHE = _path("TEX2MD_CACHE", "~/.cache/tex2md")
 MODELS = _path("TEX2MD_MODELS", "~/.local/share/tex2md/models")
 # <repo>/src/tex2md/config.py -> <repo>/marker
 MARKER = _path("TEX2MD_MARKER", os.path.join(os.path.dirname(os.path.dirname(PACKAGE_DIR)), "marker"))
+MN_ROOT = _path("TEX2MD_MN_ROOT", "~/Library/Mobile Documents/iCloud~QReader~MarginStudy~easy/Documents")
