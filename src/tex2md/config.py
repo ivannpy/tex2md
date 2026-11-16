@@ -18,7 +18,7 @@ ATOM = {"a": "http://www.w3.org/2005/Atom", "arxiv": "http://arxiv.org/schemas/a
 
 PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
 FILTERS_DIR = os.path.join(PACKAGE_DIR, "filters")
-FILTER = os.path.join(FILTERS_DIR, "filter.lua")
+FILTER = os.path.join(FILTERS_DIR, "tex2md.lua")
 UNWRAP_FILTER = os.path.join(FILTERS_DIR, "unwrap.lua")
 
 
