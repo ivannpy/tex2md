@@ -9,7 +9,8 @@ function M.has_aux(kind)
 end
 
 -- Number of the next .aux entry of `kind` whose text starts like `caption_text`; nil if none.
-function M.aux_number(kind, caption_text)
+-- `label_num` is the number the float's own \\label gives (or nil): it outranks the looser substring match.
+function M.aux_number(kind, caption_text, label_num)
   local full = text.norm_text(caption_text)
   local key = full:sub(1, 40)
   local list, probe = {}, key:sub(1, 12)
@@ -25,6 +26,12 @@ function M.aux_number(kind, caption_text)
   local pick
   for i = ptr, #list do
     if probe ~= "" and list[i].text:sub(1, #probe) == probe then pick = i; break end
+  end
+  -- the caption may start with a macro the .aux expanded (\\method~outperforms... -> "UDLM outperforms...")
+  if not pick and probe ~= "" and not label_num then
+    for i = ptr, #list do
+      if list[i].text:find(probe, 1, true) then pick = i; break end
+    end
   end
   -- caption text that cannot be compared (all math/macros): trust the order
   if not pick and probe == "" and ptr <= #list then pick = ptr end

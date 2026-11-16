@@ -168,3 +168,13 @@ def inject_bibliography(text, bib, stats):
     text = re.sub(r"\\bibliography\{[^}]*\}|\\printbibliography(\[[^\]]*\])?", lambda _: "", text)
     text = re.sub(r"\\begin\{thebibliography\}.*?\\end\{thebibliography\}", "", text, flags=re.S)
     return text.replace("\\end{document}", bibliography_tex(bib) + "\\end{document}")
+
+
+def simplify_citeproc(text):
+    r"""``\citeproc{key}{label}`` inside tables (pandoc's own LaTeX output) -> ``[@key]``.
+
+    Its definition (``\begingroup\def\citeproctext...\endgroup``) breaks pandoc's table parser when the
+    macro appears inside a cell; outside tables it expands fine and is left alone."""
+    def cells(m):
+        return re.sub(r"\\citeproc\s*\{([^{}]*)\}\s*\{(?:[^{}]|\{[^{}]*\})*\}", r"[@\1]", m.group(0))
+    return re.sub(r"\\begin\{(longtable|tabular[x*]?)\}.*?\\end\{\1\}", cells, text, flags=re.S)

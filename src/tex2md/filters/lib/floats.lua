@@ -7,6 +7,8 @@ local labels = require("labels")
 local captions = require("captions")
 local M = {}
 
+local DEFERRED = "tex2md-deferred-table"
+
 local function has_caption(c)
   return #(c.long or {}) > 0
 end
@@ -55,22 +57,32 @@ function M.Figure(fig)
   end
 
   local captioned = has_caption(fig.caption)
-  local word, kind = "Figura", "figure"
-  -- a table without tabular was turned into a figure by the preprocessor and marked
-  local marked = captioned and pandoc.utils.stringify(fig.caption.long):sub(1, 11) == "TEX2MDTABLE"
-  if marked then word, kind = "Tabla", "table"; num = nil end
+  -- A table without tabular was turned into a figure by the preprocessor and its caption marked.
+  -- Tables are numbered in the Table pass (document order among the tables), so hand it over.
+  if captioned and pandoc.utils.stringify(fig.caption.long):sub(1, 11) == "TEX2MDTABLE" then
+    local cap = text.strip_label_spans(text.caption_inlines(fig.caption))
+    return pandoc.Div({ pandoc.Para(cap) }, pandoc.Attr("", { DEFERRED }))
+  end
   if captioned then
-    num = captions.aux_number(kind, (pandoc.utils.stringify(fig.caption.long):gsub("^TEX2MDTABLE", ""))) or num
+    num = captions.aux_number("figure", pandoc.utils.stringify(fig.caption.long), num) or num
   else
     num = nil  -- a panel without its own caption carries its parent's label: no number
   end
-  num = resolve_number("fig_count", kind, num, captioned)
+  num = resolve_number("fig_count", "figure", num, captioned)
   local cap = text.strip_label_spans(text.caption_inlines(fig.caption))
-  if marked then
-    cap:remove(1)
-    if cap[1] and cap[1].t == "Space" then cap:remove(1) end
-  end
-  return pandoc.Para(lead_line(word, num, cap))
+  return pandoc.Para(lead_line("Figura", num, cap))
+end
+
+-- Table pass: a marked caption that the Figure pass deferred (see above).
+function M.DeferredTable(d)
+  if not d.classes:includes(DEFERRED) then return nil end
+  local cap = d.content[1].content
+  local num = captions.aux_number("table", (pandoc.utils.stringify(cap):gsub("^TEX2MDTABLE", "")))
+  cap:remove(1)  -- the marker
+  if cap[1] and cap[1].t == "Space" then cap:remove(1) end
+  -- a table turned into a figure still counts with the figures when there is no .aux data
+  num = resolve_number("fig_count", "table", num, true)
+  return pandoc.Para(lead_line("Tabla", num, cap))
 end
 
 function M.Table(t)
@@ -89,7 +101,7 @@ function M.Table(t)
     if fnum then
       num, word = fnum, "Figura"
     else
-      num = captions.aux_number("table", pandoc.utils.stringify(t.caption.long)) or num
+      num = captions.aux_number("table", pandoc.utils.stringify(t.caption.long), num) or num
     end
   else
     num = nil

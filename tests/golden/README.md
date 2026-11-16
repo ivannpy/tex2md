@@ -17,6 +17,11 @@ have broken conversions before:
 | gong2024diffullama | text-only tables with `tcolorbox` |
 | zhang2024lingualift | table holding only an image |
 | sahoo2024mdlm | general reference (equations, appendix, tables) |
+| zeng2025diffusionvl | `\captionof{figure}` inside `\twocolumn[{...}]` |
+| wu2023ardiffusion | figure with one `\caption` and one `\captionof{table}` in sibling minipages |
+| hoogeboom2021 | figure nested inside a minipage of another figure, with `subfigure`s |
+| cheng2025sdar | text-only tables numbered in document order next to normal ones |
+| lambert2025reinforcemen | pandoc-written `longtable` with `\citeproc`, repeated headers and `\endlastfoot` |
 
 The test replays the conversion from the local cache (`~/.cache/tex2md`), so it needs no network once
 the sources were downloaded. Run `make regress`. After an intended change, regenerate the files with

@@ -1,4 +1,4 @@
-from tex2md.preprocess.citations import first_authors, parse_bbl, resolve_cites
+from tex2md.preprocess.citations import first_authors, parse_bbl, resolve_cites, simplify_citeproc
 
 BBL_NUMERIC = r"""
 \begin{thebibliography}{2}
@@ -58,3 +58,13 @@ def test_unknown_key_is_counted():
     stats = {"unresolved_refs": 0, "unresolved_cites": 0}
     resolve_cites(r"\cite{missing}", parse_bbl(BBL_NUMERIC), stats)
     assert stats["unresolved_cites"] == 1
+
+
+def test_citeproc_inside_a_table_cell_becomes_a_plain_marker():
+    src = r"\begin{longtable}{ll}Kimi \citeproc{ref-team2025kimi}{Team 2025} & x \\\end{longtable}"
+    assert simplify_citeproc(src) == r"\begin{longtable}{ll}Kimi [@ref-team2025kimi] & x \\\end{longtable}"
+
+
+def test_citeproc_in_running_text_is_left_alone():
+    src = r"as shown \citeproc{ref-a}{Foo 2020} here"
+    assert simplify_citeproc(src) == src

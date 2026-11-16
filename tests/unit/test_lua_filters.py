@@ -92,3 +92,26 @@ def test_appendix_marker_switches_to_letters(tmp_path):
 def test_display_equation_label_becomes_tag(tmp_path):
     md = convert(tmp_path, r"\begin{equation}x=1\label{eq:a}\end{equation}", labels={"eq:a": {"num": "3", "type": "equation"}})
     assert r"\tag{3}" in md and r"\label" not in md
+
+
+def test_tables_are_numbered_in_document_order_even_when_one_is_a_marked_figure(tmp_path):
+    body = (FIG % "TEX2MDTABLE Strict words" + TAB % "Plain results" + TAB % "Last results")
+    md = convert(tmp_path, body, floats=[fl("table", "1", "Strict words"), fl("table", "2", "Plain results"),
+                                         fl("table", "3", "Last results")])
+    assert captions(md) == ["Tabla 1", "Tabla 2", "Tabla 3"]
+
+
+def test_caption_starting_with_a_macro_matches_by_substring(tmp_path):
+    # \method{} is expanded in the .aux ("udlm outperforms ...") but dropped by pandoc
+    body = TAB % "outperforms other uniform diffusion on text8" + TAB % "outperforms other uniform diffusion on LM1B"
+    md = convert(tmp_path, body, floats=[fl("table", "2", "udlm outperforms other uniform diffusion on text8"),
+                                         fl("table", "3", "udlm outperforms other uniform diffusion on LM1B")])
+    assert captions(md) == ["Tabla 2", "Tabla 3"]
+
+
+def test_a_valid_label_beats_the_loose_substring_match(tmp_path):
+    # the .aux text of figure 7 is corrupted; figure 9 happens to contain the same words
+    body = r"\begin{figure}\includegraphics{a.png}\caption{Validation loss improves}\label{fig:g}\end{figure}"
+    md = convert(tmp_path, body, labels={"fig:g": {"num": "7", "type": "figure"}},
+                 floats=[fl("figure", "7", "9106plus15minus4"), fl("figure", "9", "Pareto frontier of validation loss improves")])
+    assert captions(md) == ["Figura 7"]

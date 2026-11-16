@@ -24,6 +24,6 @@ return {
     end },
   { Para = headers.Para, Header = headers.Header },
   { Figure = floats.Figure },
-  { Table = floats.Table, Math = equations.Math, Image = document.Image },
+  { Table = floats.Table, Div = floats.DeferredTable, Math = equations.Math, Image = document.Image },
   { Pandoc = document.Pandoc },
 }

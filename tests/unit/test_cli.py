@@ -30,7 +30,7 @@ body
 def test_every_documented_command_exists():
     parser = build_parser()
     choices = next(a for a in parser._actions if a.dest == "command").choices
-    assert set(choices) == {"arxiv", "jats", "pdf", "index", "check", "frontmatter", "add-mn", "fixmath", "doctor"}
+    assert set(choices) == {"arxiv", "jats", "pdf", "index", "check", "frontmatter", "add-mn", "audit", "fixmath", "doctor"}
 
 
 def test_version_flag(capsys):

@@ -165,3 +165,27 @@ def unwrap_cell_macros(text):
         text = unwrap(text, cmd, 0, oneline)
     text = unwrap(text, "multirow", 2, oneline)
     return text
+
+
+def simplify_longtable_specs(text):
+    r"""``\begin{longtable}[]{@{} >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{.1}} ...}``
+    (what pandoc itself writes) -> plain l/c/r columns, which pandoc reads back as a table.
+
+    Also drops the page-break machinery: the header repeated for the following pages
+    (``\endfirsthead ... \endhead``) and ``\endfoot``/``\endlastfoot``, which swallow the digits that follow."""
+    text = re.sub(r"\\endfirsthead\b.*?\\endhead\b", "", text, flags=re.S)
+    text = re.sub(r"\\end(?:last)?foot\b|\\endhead\b|\\endfirsthead\b", "", text)
+    head = re.compile(r"\\begin\{longtable\*?\}(?:\[[^\]]*\])?(?=\s*\{)")
+    pos = 0
+    while True:
+        m = head.search(text, pos)
+        if not m:
+            return text
+        start = m.end() + len(text[m.end():]) - len(text[m.end():].lstrip())
+        e = balanced_end(text, start)
+        if e < 0:
+            pos = m.end()
+            continue
+        new = "\\begin{longtable}{" + simple_colspec(text[start + 1:e - 1]) + "}"
+        text = text[:m.start()] + new + text[e:]
+        pos = m.start() + len(new)

@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import re
 
+from tex2md.util.tex import balanced_end
+
 
 def mark_appendix(text: str) -> str:
     """\\appendix becomes a marker paragraph; the pandoc filter then numbers sections A, B, ..."""
@@ -45,3 +47,46 @@ def drop_title_hacks(text: str) -> str:
 def label_options(text: str) -> str:
     """cleveref \\label[type]{...} -> \\label{...}."""
     return re.sub(r"\\label\s*\[[^\]]*\]\s*\{", r"\\label{", text)
+
+
+def unwrap_twocolumn(text: str) -> str:
+    r"""``\twocolumn[{ ... }]`` (a full-width teaser above the columns) -> its content.
+
+    pandoc drops the argument of the unknown ``\twocolumn``, and with it the teaser's caption.
+    """
+    pos = 0
+    opener = re.compile(r"\\twocolumn\s*\[\s*")
+    while True:
+        m = opener.search(text, pos)
+        if not m:
+            return text
+        i = m.end()
+        if i < len(text) and text[i] == "{":
+            end = balanced_end(text, i)
+            inner, after = text[i + 1:end - 1], end
+        else:
+            end = text.find("]", i)
+            if end < 0:
+                return text
+            inner, after = text[i:end], end
+        close = re.compile(r"\s*\]").match(text, after)
+        # ICML-style \twocolumn[...] holds the title and authors: only a teaser with a float or caption matters
+        if not close or not re.search(r"\\captionof|\\begin\{(?:figure|table)|\\includegraphics", inner):
+            pos = m.end()
+            continue
+        text = text[:m.start()] + inner + text[close.end():]
+        pos = m.start() + len(inner)
+
+
+_MATH_OR_QUAD = re.compile(
+    r"(?P<math>\$\$.*?\$\$|\$[^$\n]*\$|\\\[.*?\\\]|\\\(.*?\\\)"
+    r"|\\begin\{(?P<env>(?:equation|align|alignat|flalign|gather|multline|eqnarray|displaymath|math)\*?)\}.*?\\end\{(?P=env)\})"
+    r"|\\q?quad(?![a-zA-Z])[ \t]*(?=\d)",
+    re.S,
+)
+
+
+def quad_before_digits(text: str) -> str:
+    r"""``\quad 16 steps`` (text mode) -> ``~16 steps``: pandoc reads the digits as a length argument and
+    drops them. Math regions are left alone, where ``\quad`` is meaningful."""
+    return _MATH_OR_QUAD.sub(lambda m: m.group(0) if m.group("math") else "~", text)

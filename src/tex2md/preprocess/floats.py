@@ -57,9 +57,35 @@ def retype_floats(text):
             return "".join(out)
         body = text[m.end():endm.start()]
         kinds = re.findall(r"\\captionof\s*\{(table|figure)\}", body)
-        if len(kinds) == 1 and kinds[0] != m.group(1) and not re.search(r"\\begin\{(?:table|figure)", body):
+        only_caption = len(re.findall(r"\\caption", body)) == 1  # the \\captionof is its only caption
+        if len(kinds) == 1 and only_caption and kinds[0] != m.group(1) and not re.search(r"\\begin\{(?:table|figure)", body):
             k = kinds[0]
             out.append(text[pos:m.start()] + f"\\begin{{{k}}}{body}\\end{{{k}}}")
+        else:
+            out.append(text[pos:endm.end()])
+        pos = endm.end()
+
+
+def dissolve_multi_caption_floats(text):
+    r"""A float holding several ``\captionof`` (a table and a figure sharing one ``wrapfigure``): drop
+    the float itself so each caption becomes a loose one that ``wrap_loose_captions`` can pair with
+    its own content. Floats made of minipage/parbox blocks are left to ``split_captioned_blocks``."""
+    envre = re.compile(r"\\begin\{(table|figure)(\*?)\}(\[[^\]]*\])?")
+    out, pos = [], 0
+    while True:
+        m = envre.search(text, pos)
+        if not m:
+            out.append(text[pos:])
+            return "".join(out)
+        endm = re.compile(r"\\end\{" + m.group(1) + re.escape(m.group(2)) + r"\}").search(text, m.end())
+        if not endm:
+            out.append(text[pos:])
+            return "".join(out)
+        body = text[m.end():endm.start()]
+        n_of = len(re.findall(r"\\captionof\s*\{", body))
+        nested = re.search(r"\\begin\{(?:table|figure|minipage)|\\parbox", body)
+        if n_of >= 2 and not nested:
+            out.append(text[pos:m.start()] + body)
         else:
             out.append(text[pos:endm.end()])
         pos = endm.end()
@@ -83,7 +109,7 @@ def wrap_loose_captions(text):
         start, stop = m.start(), e
         tb = re.compile(r"\s*(\\begin\{(tabular[x*]?|longtable|tabulary)\})")
         wrap = re.compile(r"\\begin\{adjustbox\}(?:\{[^{}]*\})?|\\(?:resizebox|scalebox)\s*\{[^{}]*\}\s*(?:\{[^{}]*\})?\s*\{")
-        skip = re.compile(r"(?:\s|\\label\{[^}]*\}|\\vspace\*?\{[^}]*\}|\\centering|\\small|\\footnotesize|%[^\n]*|" + wrap.pattern + r")*").match(text, e)
+        skip = re.compile(r"(?:\s|\\label\{[^}]*\}|\\vspace\*?\{[^}]*\}|\\centering|\\small|\\footnotesize|\\scriptsize|\\tiny|\\normalsize|\\setlength\s*\{[^{}]*\}\s*\{[^{}]*\}|\\captionsetup\s*\{[^{}]*\}|%[^\n]*|" + wrap.pattern + r")*").match(text, e)
         nm = tb.match(text, skip.end())
         if nm:  # the table follows its caption
             en = text.find(f"\\end{{{nm.group(2)}}}", nm.end())
@@ -185,9 +211,11 @@ def flatten_subfloats(text):
         pos = m.start() + len(body)
 
 
-def unnest_tables(text):
-    """\\begin{table} wrapping minipages that hold their own \\begin{table}: drop the outer one."""
-    tok = re.compile(r"\\(begin|end)\{table\*?\}(?:\[[^\]]*\])?")
+def unnest_tables(text, env="table"):
+    """\\begin{table} wrapping minipages that hold their own \\begin{table}: drop the outer one.
+
+    ``env`` is "table" or "figure" (a figure whose minipages hold figures of their own)."""
+    tok = re.compile(r"\\(begin|end)\{" + env + r"\*?\}(?:\[[^\]]*\])?")
     while True:
         stack, hit = [], None
         for m in tok.finditer(text):
@@ -210,6 +238,11 @@ def unnest_tables(text):
         if end is None:
             return text
         text = text[:outer.start()] + text[outer.end():end.start()] + text[end.end():]
+
+
+def unnest_floats(text):
+    """Drop the outer float when it only wraps floats of the same kind (tables and figures)."""
+    return unnest_tables(unnest_tables(text, "table"), "figure")
 
 
 def wrap_envs_to_plain(text):

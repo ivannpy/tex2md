@@ -2,10 +2,12 @@
 import re
 
 from tex2md.preprocess.floats import (
+    dissolve_multi_caption_floats,
     flatten_subfloats,
     retype_floats,
     split_captioned_blocks,
     tables_without_tabular,
+    unnest_floats,
     unnest_tables,
     wrap_envs_to_plain,
     wrap_loose_captions,
@@ -101,3 +103,34 @@ def test_unnest_tables_drops_the_outer_table():
 
 def test_wrap_envs_to_plain():
     assert wrap_envs_to_plain(r"\begin{wrapfigure}{r}{0.4\textwidth}x\end{wrapfigure}") == r"\begin{figure}x\end{figure}"
+
+
+def test_retype_keeps_a_figure_that_has_its_own_caption_next_to_a_captionof_table():
+    src = (r"\begin{figure}\begin{minipage}{.5\textwidth}\caption{F}\end{minipage}"
+           r"\begin{minipage}{.5\textwidth}\captionof{table}{T}\begin{tabular}{c}1\end{tabular}\end{minipage}\end{figure}")
+    assert retype_floats(src) == src
+    out = split_captioned_blocks(src)
+    assert count(out, "figure") == 1 and count(out, "table") == 1
+
+
+def test_dissolve_float_with_a_table_and_a_figure_caption():
+    src = (r"\begin{figure}\captionof{table}{T}\label{t}\begin{tabular}{c}1\end{tabular}"
+           r"\includegraphics{a}\captionof{figure}{F}\end{figure}")
+    out = wrap_loose_captions(dissolve_multi_caption_floats(src))
+    assert count(out, "table") == 1 and count(out, "figure") == 1
+    assert out.index(r"\begin{table}") < out.index(r"\begin{tabular}") < out.index(r"\end{table}")
+
+
+def test_dissolve_leaves_single_caption_floats_and_minipage_blocks():
+    one = r"\begin{figure}\captionof{table}{T}\begin{tabular}{c}1\end{tabular}\end{figure}"
+    assert dissolve_multi_caption_floats(one) == one
+    blocks = (r"\begin{figure}\begin{minipage}{.5\textwidth}\captionof{table}{T}\end{minipage}"
+              r"\begin{minipage}{.5\textwidth}\captionof{figure}{F}\end{minipage}\end{figure}")
+    assert dissolve_multi_caption_floats(blocks) == blocks
+
+
+def test_unnest_floats_also_unwraps_nested_figures():
+    src = (r"\begin{figure}\begin{minipage}{.5\textwidth}\begin{figure}[H]\caption{A}\end{figure}\end{minipage}"
+           r"\begin{minipage}{.5\textwidth}\begin{figure}[H]\caption{B}\end{figure}\end{minipage}\end{figure}")
+    out = unnest_floats(src)
+    assert count(out, "figure") == 2 and r"\caption{A}" in out and r"\caption{B}" in out

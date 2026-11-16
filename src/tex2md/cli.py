@@ -7,6 +7,7 @@
     add-mn       add a MarginNote document to a .md front matter
     check        list .md whose MarginNote PDF no longer exists
     index        rebuild INDEX.md of a library directory
+    audit        compare figures/tables of each .md with the compiled PDF
     fixmath      re-run the math clean-up on converted .md
     doctor       verify the external tools and data directories
 """
@@ -19,7 +20,7 @@ import re
 import sys
 
 from tex2md import __version__
-from tex2md.library import papers
+from tex2md.library import audit, papers
 
 
 def _mn(values):
@@ -117,6 +118,9 @@ def build_parser():
     p.add_argument("file")
     p.add_argument("entry", metavar="BOOKMD5::PATH")
     p.set_defaults(fn=papers.cmd_add_mn)
+    p = sub.add_parser("audit", help="compare figures/tables of each .md with the compiled PDF")
+    p.add_argument("dir")
+    p.set_defaults(fn=audit.cmd_audit)
     p = sub.add_parser("fixmath", help="re-run the math clean-up on converted .md")
     p.add_argument("files", nargs="+")
     p.set_defaults(fn=cmd_fixmath)

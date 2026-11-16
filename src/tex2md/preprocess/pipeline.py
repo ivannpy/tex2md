@@ -13,16 +13,17 @@ from dataclasses import dataclass, field
 
 from tex2md.preprocess.algorithms import rewrite_algorithm_captions, rewrite_algorithmic
 from tex2md.preprocess.boxes import tcolorbox_to_quote
-from tex2md.preprocess.citations import PREAMBLE, inject_bibliography
+from tex2md.preprocess.citations import PREAMBLE, inject_bibliography, simplify_citeproc
 from tex2md.preprocess.floats import (
     captionof_to_caption,
+    dissolve_multi_caption_floats,
     flatten_subfloats,
     retype_floats,
     split_captioned_blocks,
     starred_floats_to_plain,
     strip_float_layout,
     tables_without_tabular,
-    unnest_tables,
+    unnest_floats,
     wrap_envs_to_plain,
     wrap_loose_captions,
 )
@@ -39,13 +40,16 @@ from tex2md.preprocess.structure import (
     expand_abbreviations,
     label_options,
     mark_appendix,
+    quad_before_digits,
     strip_comment_lines,
+    unwrap_twocolumn,
 )
 from tex2md.preprocess.tables import (
     centered_column_types,
     drop_empty_math_cells,
     normalize_tabulars,
     plain_tabular_envs,
+    simplify_longtable_specs,
     simplify_multicolumn_specs,
     strip_layout_wrappers,
     unwrap_cell_macros,
@@ -79,16 +83,19 @@ RULES: list[tuple[str, Rule]] = [
     # --- document structure
     ("mark-appendix", _pure(mark_appendix)),
     ("expand-abbreviations", _pure(expand_abbreviations)),
+    ("quad-before-digits", _pure(quad_before_digits)),
     ("fix-stray-macro-braces", _pure(fix_stray_macro_braces)),
+    ("unwrap-twocolumn", _pure(unwrap_twocolumn)),  # before the float rules: it holds the teaser figure
     # --- floats: normalise so pandoc keeps every caption (order: wrap -> retype -> split -> flatten)
     ("wrap-envs-to-plain", _pure(wrap_envs_to_plain)),
     ("tables-without-tabular", _pure(tables_without_tabular)),
     ("retype-floats", _pure(retype_floats)),
+    ("dissolve-multi-caption-floats", _pure(dissolve_multi_caption_floats)),
     ("wrap-loose-captions", _pure(wrap_loose_captions)),
     ("split-captioned-blocks", _pure(split_captioned_blocks)),
     ("strip-float-layout", _pure(strip_float_layout)),
     ("flatten-subfloats", _pure(flatten_subfloats)),
-    ("unnest-tables", _pure(unnest_tables)),
+    ("unnest-floats", _pure(unnest_floats)),
     # --- macros and preamble pandoc cannot expand
     ("strip-comment-lines", _pure(strip_comment_lines)),
     ("drop-title-hacks", _pure(drop_title_hacks)),
@@ -100,6 +107,7 @@ RULES: list[tuple[str, Rule]] = [
     ("simplify-multicolumn-specs", _pure(simplify_multicolumn_specs)),
     ("tcolorbox-to-quote", _pure(tcolorbox_to_quote)),
     # --- references and citations (need the .aux / .bbl numbers)
+    ("simplify-citeproc", _pure(simplify_citeproc)),
     ("expand-ref-wrappers", _pure(expand_wrappers)),
     ("resolve-refs", lambda text, ctx: resolve_refs(text, ctx.labels, ctx.stats)),
     ("bibliography", _bibliography),
@@ -109,6 +117,7 @@ RULES: list[tuple[str, Rule]] = [
     ("strip-layout-wrappers", _pure(strip_layout_wrappers)),
     ("plain-tabular-envs", _pure(plain_tabular_envs)),
     ("normalize-tabulars", _pure(normalize_tabulars)),
+    ("simplify-longtable-specs", _pure(simplify_longtable_specs)),
     ("rewrite-algorithmic", _pure(rewrite_algorithmic)),
     ("rewrite-algorithm-captions", lambda text, ctx: rewrite_algorithm_captions(text, ctx.labels)),
     ("drop-empty-math-cells", _pure(drop_empty_math_cells)),

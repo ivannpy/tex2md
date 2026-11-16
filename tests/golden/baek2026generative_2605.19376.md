@@ -458,7 +458,21 @@ We evaluate GRAM against deterministic recursive baselines on tasks designed to 
 
 ## 4.3 Exploring GRAM as an Unconditional Generator
 
+**Tabla 2.** **Unconditional generation results on binarized MNIST.** We report IS ($\uparrow$) and FID ($\downarrow$). For iterative models, a step corresponds to a supervision step for TRM and GRAM, and a denoising step for D3PM. FID is calculated using real samples with original pixel values (0–255).
+
+| Method            | IS ($\uparrow$) | FID ($\downarrow$) |
+|:------------------|:---------------:|:------------------:|
+| VAE               |      1.70       |       86.28        |
+| D3PM (1000 steps) |      1.86       |       74.03        |
+| TRM (16 steps)    |      1.00       |       303.29       |
+| **GRAM (Ours)**   |                 |                    |
+|  16 steps         |      1.89       |       77.79        |
+|  64 steps         |      1.95       |       75.39        |
+|  256 steps        |    **2.04**     |     **73.34**      |
+
 **Figura 5.** **Unconditional Sudoku generation.** Validity (%) of generated Sudoku puzzles. GRAM achieves higher validity than D3PM with substantially fewer parameters and steps.
+
+<span id="fig:sudoku_generation_plot" data-label="fig:sudoku_generation_plot"></span>
 
 **Setup.** To test GRAM’s unconditional generative capability, we evaluate it on Sudoku generation from empty boards, measured by the fraction of valid boards, and on binarized MNIST generation, measured by IS (Salimans et al., 2016) and FID (Heusel et al., 2017). GRAM replaces the input with an empty conditioning signal and samples from its learned prior. We compare with D3PM (Austin et al., 2021) on both tasks, and additionally with VAE (Kingma and Welling, 2013) and TRM on MNIST. All models have roughly matched parameter counts; on Sudoku generation task, we also evaluate a D3PM about five times larger to test whether its performance is capacity-limited. Further details are in Appendix B.2.
 
