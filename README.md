@@ -17,10 +17,11 @@ Además mantiene la biblioteca: `frontmatter`, `add-mn`, `check`, `index`, `fixm
 - Herramientas externas: **pandoc** (≥ 3), **TeX** con `latexmk`, `pdflatex` y `latexpand`, y **uv** (solo para `pdf`).
 - `tex2md doctor` comprueba todo y dice cómo instalar lo que falte.
 
-## Instalación
+## Uso sin instalar
+
+No hace falta instalar nada: los scripts `tex2md.py`, `papers.py` y `doc2md.py` de la raíz ejecutan el CLI directamente. `make install` (opcional) deja un comando global `tex2md` con `uv tool install --editable .`; se quita con `uv tool uninstall tex2md`.
 
 ```sh
-make install        # uv tool install --editable .  → deja el comando `tex2md` en el PATH
 make dev            # entorno de desarrollo (.venv con pytest, ruff, mypy)
 tex2md doctor
 ```
