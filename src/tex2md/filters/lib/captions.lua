@@ -23,20 +23,34 @@ function M.aux_number(kind, caption_text, label_num)
     if not (nxt and probe ~= "" and nxt.text:sub(1, #probe) == probe) then return last.num end
   end
   local ptr = S.fptr[kind]
+  local used = S.used[kind]
+  -- candidates: the entries from the pointer on, then (the .aux is in placement order) the earlier unused ones
+  local order = {}
+  for i = ptr, #list do order[#order + 1] = i end
+  for i = 1, math.min(ptr - 1, #list) do order[#order + 1] = i end
+  local function find(test)
+    for _, i in ipairs(order) do
+      if not used[i] and test(list[i]) then return i end
+    end
+  end
+  -- longest agreeing prefix first: short probes confuse captions that begin alike ("Unconditional ...")
   local pick
-  for i = ptr, #list do
-    if probe ~= "" and list[i].text:sub(1, #probe) == probe then pick = i; break end
+  for _, n in ipairs({ 40, 24, 12 }) do
+    local p = key:sub(1, n)
+    if p ~= "" and #p >= math.min(n, #key) then
+      pick = find(function(f) return f.text:sub(1, #p) == p end)
+      if pick then break end
+    end
   end
   -- the caption may start with a macro the .aux expanded (\\method~outperforms... -> "UDLM outperforms...")
   if not pick and probe ~= "" and not label_num then
-    for i = ptr, #list do
-      if list[i].text:find(probe, 1, true) then pick = i; break end
-    end
+    pick = find(function(f) return f.text:find(probe, 1, true) ~= nil end)
   end
   -- caption text that cannot be compared (all math/macros): trust the order
-  if not pick and probe == "" and ptr <= #list then pick = ptr end
+  if not pick and probe == "" then pick = find(function() return true end) end
   if not pick then return nil end
-  S.fptr[kind] = pick + 1
+  used[pick] = true
+  if pick >= ptr then S.fptr[kind] = pick + 1 end
   S.flast[kind] = { full = full, num = list[pick].num, idx = pick }
   return list[pick].num
 end

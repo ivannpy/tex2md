@@ -52,6 +52,7 @@ In this section, we introduce Generative Recursive reAsoning Models (GRAM), an i
 
 $$\begin{align}
     e_x = f_{\mathrm{enc}}(x;\theta),
+\tag{1}
 \end{align}$$
 
 which is reused throughout the entire recursive computation. Starting from a fixed initial latent state $z_0$, the model evolves the latent state through learned stochastic transitions. The recursive computation is organized into two nested levels: inner and outer loops.
@@ -84,6 +85,7 @@ where $z_t^{(n)}$ denotes the latent state at the $t$-th transition of the $n$-t
 $$\begin{align}
     \epsilon_t &\sim p_\theta(\epsilon_t \mid u_t) := \mathcal{N}\!\left(\mu_\theta(u_t),\, \sigma_\theta^2(u_t) I\right), \tag{4} \\
     z_t &= u_t + \epsilon_t.
+\tag{5}
 \end{align}$$
 
 We refer to $\epsilon_t$ as the **learnable stochastic guidance**. The mean $\mu_\theta(u_t)$ encodes a state-dependent direction in which the trajectory is steered, while the variance $\sigma_\theta^2(u_t)$ controls the amount of exploration. This design allows GRAM to capture uncertainty, prevent convergence to local minima, and support robust exploration of the solution space without discarding the deterministic refinement of $u_t$.
@@ -118,6 +120,7 @@ GRAM is trained to model the conditional distribution $p_\theta(y \mid x)$, wher
 
 $$\begin{equation}
     p_{\theta}(y \mid x) = \int p_{\theta}(y \mid \tau, x)\, p_{\theta}(\tau \mid x)\, d\tau\,,
+\tag{10}
 \end{equation}$$
 
 where $x$ denotes the input problem and $y$ denotes the corresponding ground-truth output.
@@ -134,6 +137,7 @@ q_{\phi}(\tau \mid x,y)
 \,\|\, 
 p_{\theta}(\tau \mid x)
 \right).
+\tag{11}
 \end{align}$$
 
 During training, latent trajectories are sampled from the variational posterior $q_{\phi}(\cdot \mid x,y)$, which has access to both the input problem $x$ and the target output $y$. At inference time, where $y$ is unavailable, trajectories are instead generated from the learned prior $p_{\theta}(\cdot \mid x)$.
@@ -148,6 +152,7 @@ $$\begin{equation}
     q_{\phi}(\tau \mid x,y)
     =
     p(z_0)\prod_{t=1}^{T_{\mathrm{Total}}} q_{\phi}(z_t \mid z_{t-1}, x,y)\,.
+\tag{12}
 \end{equation}$$
 
 Here, $z_0$ is a fixed initial state shared by the prior and posterior. Both transitions are implemented by adding reparameterized Gaussian noise $\epsilon_t$ after a deterministic update $u_t$. The prior and the posterior differ only in the noise head applied on top of $u_t$, and the two heads have identical architecture but separate weights. The prior head parameterizes $p_\theta(\epsilon_t \mid u_t)$ as in Eq. (8); the posterior head parameterizes $q_\phi(\epsilon_t \mid u_t, y) = \mathcal{N}\big(\mu_\phi(u_t, y),\, \sigma^2_\phi(u_t, y) I\big)$. Implementation details of both heads are given in Appendix B.1.
@@ -191,6 +196,7 @@ $$\begin{align}
         \,\|\,
         p_{\theta}(\epsilon_T^{(n)} \mid u_T^{(n)})
     \big)\,,
+\tag{14}
 \end{align}$$
 
 where $z_T^{(n)}$ is the terminal state of the current supervision step $n$, and gradients are stopped through preceding states. Thus, $\mathcal{L}_{\mathrm{GRAM}}$ should be viewed as a truncated surrogate objective, a biased but memory-efficient approximation to the exact ELBO. Further analysis of this approximation and the training hyperparameters are provided in Appendix A.2 and B.2, respectively. We additionally train an auxiliary halting head alongside the main objective, described in Appendix A.3.
@@ -235,226 +241,21 @@ We evaluate GRAM against deterministic recursive baselines on tasks designed to 
 
 **Tabla 1.** **Evaluation on N-Queens and Graph Coloring benchmarks.** Rec. and Gen. indicate whether the model uses recursive computation and generative sampling, respectively. Values are mean $\pm$ standard deviation over runs, with accuracy and coverage in percent. $N$ is the number of samples for accuracy and conflicts.
 
-<table id="tab:csp">
-<thead>
-<tr>
-<th style="text-align: left;"></th>
-<th style="text-align: center;"></th>
-<th style="text-align: center;"></th>
-<th style="text-align: center;"></th>
-<th style="text-align: center;"></th>
-<th colspan="4" style="text-align: center;"><strong>N-Queens</strong></th>
-<th colspan="4" style="text-align: center;"><strong>Graph Coloring</strong></th>
-<th style="text-align: center;"></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: left;"><span>6-9</span> (lr)<span>10-13</span></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"></td>
-<td colspan="2" style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>8</mn><mo>×</mo><mn>8</mn></mrow><annotation encoding="application/x-tex">8 \times 8</annotation></semantics></math></td>
-<td colspan="2" style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>10</mn><mo>×</mo><mn>10</mn></mrow><annotation encoding="application/x-tex">10 \times 10</annotation></semantics></math></td>
-<td colspan="2" style="text-align: center;">8-vertex</td>
-<td colspan="2" style="text-align: center;">10-vertex</td>
-<td style="text-align: center;"></td>
-</tr>
-<tr>
-<td style="text-align: left;"><span>6-7</span> (lr)<span>8-9</span> (lr)<span>10-11</span> (lr)<span>12-13</span> Method</td>
-<td style="text-align: center;">Rec.</td>
-<td style="text-align: center;">Gen.</td>
-<td style="text-align: center;"># Params</td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math></td>
-<td style="text-align: center;">Acc.</td>
-<td style="text-align: center;">Cov@20</td>
-<td style="text-align: center;">Acc.</td>
-<td style="text-align: center;">Cov@20</td>
-<td style="text-align: center;">Conflict<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>↓</mo><annotation encoding="application/x-tex">\downarrow</annotation></semantics></math></td>
-<td style="text-align: center;">Cov@20</td>
-<td style="text-align: center;">Conflict<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>↓</mo><annotation encoding="application/x-tex">\downarrow</annotation></semantics></math></td>
-<td style="text-align: center;">Cov@20</td>
-<td style="text-align: center;"></td>
-</tr>
-<tr>
-<td style="text-align: left;">Direct Pred (8 layers)</td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">27M</td>
-<td style="text-align: center;">–</td>
-<td style="text-align: center;">40.4<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>1.1</mn></mrow><annotation encoding="application/x-tex">\pm 1.1</annotation></semantics></math></span></td>
-<td style="text-align: center;">13.7<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>1.1</mn></mrow><annotation encoding="application/x-tex">\pm 1.1</annotation></semantics></math></span></td>
-<td style="text-align: center;">13.6<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.5</mn></mrow><annotation encoding="application/x-tex">\pm 0.5</annotation></semantics></math></span></td>
-<td style="text-align: center;">1.6<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.2</mn></mrow><annotation encoding="application/x-tex">\pm 0.2</annotation></semantics></math></span></td>
-<td style="text-align: center;">179.3<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>4.0</mn></mrow><annotation encoding="application/x-tex">\pm 4.0</annotation></semantics></math></span></td>
-<td style="text-align: center;">19.9<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.2</mn></mrow><annotation encoding="application/x-tex">\pm 0.2</annotation></semantics></math></span></td>
-<td style="text-align: center;">198.7<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>5.0</mn></mrow><annotation encoding="application/x-tex">\pm 5.0</annotation></semantics></math></span></td>
-<td style="text-align: center;">6.7<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.1</mn></mrow><annotation encoding="application/x-tex">\pm 0.1</annotation></semantics></math></span></td>
-<td style="text-align: center;"></td>
-</tr>
-<tr>
-<td style="text-align: left;">Direct Pred (32 layers)</td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">100M</td>
-<td style="text-align: center;">–</td>
-<td style="text-align: center;">40.2<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>1.3</mn></mrow><annotation encoding="application/x-tex">\pm 1.3</annotation></semantics></math></span></td>
-<td style="text-align: center;">13.6<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>1.1</mn></mrow><annotation encoding="application/x-tex">\pm 1.1</annotation></semantics></math></span></td>
-<td style="text-align: center;">13.1<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.4</mn></mrow><annotation encoding="application/x-tex">\pm 0.4</annotation></semantics></math></span></td>
-<td style="text-align: center;">1.6<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.2</mn></mrow><annotation encoding="application/x-tex">\pm 0.2</annotation></semantics></math></span></td>
-<td style="text-align: center;">174.0<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>18.0</mn></mrow><annotation encoding="application/x-tex">\pm 18.0</annotation></semantics></math></span></td>
-<td style="text-align: center;">19.1<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>1.7</mn></mrow><annotation encoding="application/x-tex">\pm 1.7</annotation></semantics></math></span></td>
-<td style="text-align: center;">227.7<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>34.5</mn></mrow><annotation encoding="application/x-tex">\pm 34.5</annotation></semantics></math></span></td>
-<td style="text-align: center;">6.5<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>1.9</mn></mrow><annotation encoding="application/x-tex">\pm 1.9</annotation></semantics></math></span></td>
-<td style="text-align: center;"></td>
-</tr>
-<tr>
-<td style="text-align: left;">Looped TF</td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">7M</td>
-<td style="text-align: center;">–</td>
-<td style="text-align: center;">68.1<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>7.4</mn></mrow><annotation encoding="application/x-tex">\pm 7.4</annotation></semantics></math></span></td>
-<td style="text-align: center;">23.6<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>1.9</mn></mrow><annotation encoding="application/x-tex">\pm 1.9</annotation></semantics></math></span></td>
-<td style="text-align: center;">50.0<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>7.6</mn></mrow><annotation encoding="application/x-tex">\pm 7.6</annotation></semantics></math></span></td>
-<td style="text-align: center;">6.2<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>3.2</mn></mrow><annotation encoding="application/x-tex">\pm 3.2</annotation></semantics></math></span></td>
-<td style="text-align: center;">136.0<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>16.1</mn></mrow><annotation encoding="application/x-tex">\pm 16.1</annotation></semantics></math></span></td>
-<td style="text-align: center;">20.5<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>1.5</mn></mrow><annotation encoding="application/x-tex">\pm 1.5</annotation></semantics></math></span></td>
-<td style="text-align: center;">157.3<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>9.0</mn></mrow><annotation encoding="application/x-tex">\pm 9.0</annotation></semantics></math></span></td>
-<td style="text-align: center;">7.2<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.7</mn></mrow><annotation encoding="application/x-tex">\pm 0.7</annotation></semantics></math></span></td>
-<td style="text-align: center;"></td>
-</tr>
-<tr>
-<td style="text-align: left;">HRM</td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">27M</td>
-<td style="text-align: center;">–</td>
-<td style="text-align: center;">78.7<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>2.9</mn></mrow><annotation encoding="application/x-tex">\pm 2.9</annotation></semantics></math></span></td>
-<td style="text-align: center;">26.7<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>1.3</mn></mrow><annotation encoding="application/x-tex">\pm 1.3</annotation></semantics></math></span></td>
-<td style="text-align: center;">37.8<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.7</mn></mrow><annotation encoding="application/x-tex">\pm 0.7</annotation></semantics></math></span></td>
-<td style="text-align: center;">4.7<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.1</mn></mrow><annotation encoding="application/x-tex">\pm 0.1</annotation></semantics></math></span></td>
-<td style="text-align: center;">109.7<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>1.5</mn></mrow><annotation encoding="application/x-tex">\pm 1.5</annotation></semantics></math></span></td>
-<td style="text-align: center;">21.8<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.3</mn></mrow><annotation encoding="application/x-tex">\pm 0.3</annotation></semantics></math></span></td>
-<td style="text-align: center;">164.3<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>21.6</mn></mrow><annotation encoding="application/x-tex">\pm 21.6</annotation></semantics></math></span></td>
-<td style="text-align: center;">8.9<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>1.7</mn></mrow><annotation encoding="application/x-tex">\pm 1.7</annotation></semantics></math></span></td>
-<td style="text-align: center;"></td>
-</tr>
-<tr>
-<td style="text-align: left;">TRM</td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">7M</td>
-<td style="text-align: center;">–</td>
-<td style="text-align: center;">66.8<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>5.6</mn></mrow><annotation encoding="application/x-tex">\pm 5.6</annotation></semantics></math></span></td>
-<td style="text-align: center;">22.6<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.8</mn></mrow><annotation encoding="application/x-tex">\pm 0.8</annotation></semantics></math></span></td>
-<td style="text-align: center;">17.5<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>11.2</mn></mrow><annotation encoding="application/x-tex">\pm 11.2</annotation></semantics></math></span></td>
-<td style="text-align: center;">2.0<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>1.3</mn></mrow><annotation encoding="application/x-tex">\pm 1.3</annotation></semantics></math></span></td>
-<td style="text-align: center;">109.3<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>3.1</mn></mrow><annotation encoding="application/x-tex">\pm 3.1</annotation></semantics></math></span></td>
-<td style="text-align: center;">22.3<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.6</mn></mrow><annotation encoding="application/x-tex">\pm 0.6</annotation></semantics></math></span></td>
-<td style="text-align: center;">170.7<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>17.9</mn></mrow><annotation encoding="application/x-tex">\pm 17.9</annotation></semantics></math></span></td>
-<td style="text-align: center;">6.8<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.3</mn></mrow><annotation encoding="application/x-tex">\pm 0.3</annotation></semantics></math></span></td>
-<td style="text-align: center;"></td>
-</tr>
-<tr>
-<td style="text-align: left;">AR</td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">10.6M</td>
-<td style="text-align: center;">1</td>
-<td style="text-align: center;">96.3<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>1.0</mn></mrow><annotation encoding="application/x-tex">\pm 1.0</annotation></semantics></math></span></td>
-<td style="text-align: center;">–</td>
-<td style="text-align: center;"><strong>90.0</strong><span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>2.2</mn></mrow><annotation encoding="application/x-tex">\pm 2.2</annotation></semantics></math></span></td>
-<td style="text-align: center;">–</td>
-<td style="text-align: center;">37.3<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>6.1</mn></mrow><annotation encoding="application/x-tex">\pm 6.1</annotation></semantics></math></span></td>
-<td style="text-align: center;">–</td>
-<td style="text-align: center;">101.7<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>4.0</mn></mrow><annotation encoding="application/x-tex">\pm 4.0</annotation></semantics></math></span></td>
-<td style="text-align: center;">–</td>
-<td style="text-align: center;"></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">20</td>
-<td style="text-align: center;">98.3<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.7</mn></mrow><annotation encoding="application/x-tex">\pm 0.7</annotation></semantics></math></span></td>
-<td style="text-align: center;">84.8<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.8</mn></mrow><annotation encoding="application/x-tex">\pm 0.8</annotation></semantics></math></span></td>
-<td style="text-align: center;">95.1<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>1.5</mn></mrow><annotation encoding="application/x-tex">\pm 1.5</annotation></semantics></math></span></td>
-<td style="text-align: center;">53.2<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.8</mn></mrow><annotation encoding="application/x-tex">\pm 0.8</annotation></semantics></math></span></td>
-<td style="text-align: center;">19.0<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>11.3</mn></mrow><annotation encoding="application/x-tex">\pm 11.3</annotation></semantics></math></span></td>
-<td style="text-align: center;">83.0<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.7</mn></mrow><annotation encoding="application/x-tex">\pm 0.7</annotation></semantics></math></span></td>
-<td style="text-align: center;">61.3<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>8.3</mn></mrow><annotation encoding="application/x-tex">\pm 8.3</annotation></semantics></math></span></td>
-<td style="text-align: center;">40.0<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.3</mn></mrow><annotation encoding="application/x-tex">\pm 0.3</annotation></semantics></math></span></td>
-<td style="text-align: center;"></td>
-</tr>
-<tr>
-<td style="text-align: left;">MDLM</td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">12.6M</td>
-<td style="text-align: center;">1</td>
-<td style="text-align: center;">96.1<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>1.5</mn></mrow><annotation encoding="application/x-tex">\pm 1.5</annotation></semantics></math></span></td>
-<td style="text-align: center;">–</td>
-<td style="text-align: center;">74.3<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>6.6</mn></mrow><annotation encoding="application/x-tex">\pm 6.6</annotation></semantics></math></span></td>
-<td style="text-align: center;">–</td>
-<td style="text-align: center;">16.3<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>2.5</mn></mrow><annotation encoding="application/x-tex">\pm 2.5</annotation></semantics></math></span></td>
-<td style="text-align: center;">–</td>
-<td style="text-align: center;">57.3<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>4.7</mn></mrow><annotation encoding="application/x-tex">\pm 4.7</annotation></semantics></math></span></td>
-<td style="text-align: center;">–</td>
-<td style="text-align: center;"></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">20</td>
-<td style="text-align: center;"><strong>100.0</strong><span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.0</mn></mrow><annotation encoding="application/x-tex">\pm 0.0</annotation></semantics></math></span></td>
-<td style="text-align: center;">87.2<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.6</mn></mrow><annotation encoding="application/x-tex">\pm 0.6</annotation></semantics></math></span></td>
-<td style="text-align: center;">98.6<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.8</mn></mrow><annotation encoding="application/x-tex">\pm 0.8</annotation></semantics></math></span></td>
-<td style="text-align: center;">47.4<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>2.2</mn></mrow><annotation encoding="application/x-tex">\pm 2.2</annotation></semantics></math></span></td>
-<td style="text-align: center;"><strong>2.7</strong><span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.6</mn></mrow><annotation encoding="application/x-tex">\pm 0.6</annotation></semantics></math></span></td>
-<td style="text-align: center;">84.5<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>4.0</mn></mrow><annotation encoding="application/x-tex">\pm 4.0</annotation></semantics></math></span></td>
-<td style="text-align: center;">12.0<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>7.0</mn></mrow><annotation encoding="application/x-tex">\pm 7.0</annotation></semantics></math></span></td>
-<td style="text-align: center;">48.2<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>1.4</mn></mrow><annotation encoding="application/x-tex">\pm 1.4</annotation></semantics></math></span></td>
-<td style="text-align: center;"></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>GRAM (Ours)</strong></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">10M</td>
-<td style="text-align: center;">1</td>
-<td style="text-align: center;"><strong>99.5</strong><span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.3</mn></mrow><annotation encoding="application/x-tex">\pm 0.3</annotation></semantics></math></span></td>
-<td style="text-align: center;">–</td>
-<td style="text-align: center;">89.7<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>2.7</mn></mrow><annotation encoding="application/x-tex">\pm 2.7</annotation></semantics></math></span></td>
-<td style="text-align: center;">–</td>
-<td style="text-align: center;"><strong>8.3</strong><span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>2.5</mn></mrow><annotation encoding="application/x-tex">\pm 2.5</annotation></semantics></math></span></td>
-<td style="text-align: center;">–</td>
-<td style="text-align: center;"><strong>31.3</strong><span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>15.0</mn></mrow><annotation encoding="application/x-tex">\pm 15.0</annotation></semantics></math></span></td>
-<td style="text-align: center;">–</td>
-<td style="text-align: center;"></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">20</td>
-<td style="text-align: center;"><strong>100.0</strong><span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.0</mn></mrow><annotation encoding="application/x-tex">\pm 0.0</annotation></semantics></math></span></td>
-<td style="text-align: center;"><strong>89.7</strong><span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>1.7</mn></mrow><annotation encoding="application/x-tex">\pm 1.7</annotation></semantics></math></span></td>
-<td style="text-align: center;"><strong>100.0</strong><span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.0</mn></mrow><annotation encoding="application/x-tex">\pm 0.0</annotation></semantics></math></span></td>
-<td style="text-align: center;"><strong>57.5</strong><span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>3.4</mn></mrow><annotation encoding="application/x-tex">\pm 3.4</annotation></semantics></math></span></td>
-<td style="text-align: center;"><strong>2.7</strong><span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>2.1</mn></mrow><annotation encoding="application/x-tex">\pm 2.1</annotation></semantics></math></span></td>
-<td style="text-align: center;"><strong>85.8</strong><span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.5</mn></mrow><annotation encoding="application/x-tex">\pm 0.5</annotation></semantics></math></span></td>
-<td style="text-align: center;"><strong>3.3</strong><span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>1.5</mn></mrow><annotation encoding="application/x-tex">\pm 1.5</annotation></semantics></math></span></td>
-<td style="text-align: center;"><strong>51.3</strong><span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>2.8</mn></mrow><annotation encoding="application/x-tex">\pm 2.8</annotation></semantics></math></span></td>
-<td style="text-align: center;"></td>
-</tr>
-</tbody>
-</table>
+|  |  |  |  |  | **N-Queens** |  |  |  | **Graph Coloring** |  |  |  |  |
+|:---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| 6-9 (lr)10-13 |  |  |  |  | $8 \times 8$ |  | $10 \times 10$ |  | 8-vertex |  | 10-vertex |  |  |
+| 6-7 (lr)8-9 (lr)10-11 (lr)12-13 Method | Rec. | Gen. | \# Params | $N$ | Acc. | Cov@20 | Acc. | Cov@20 | Conflict$\downarrow$ | Cov@20 | Conflict$\downarrow$ | Cov@20 |  |
+| Direct Pred (8 layers) |  |  | 27M | – | 40.4$\pm 1.1$ | 13.7$\pm 1.1$ | 13.6$\pm 0.5$ | 1.6$\pm 0.2$ | 179.3$\pm 4.0$ | 19.9$\pm 0.2$ | 198.7$\pm 5.0$ | 6.7$\pm 0.1$ |  |
+| Direct Pred (32 layers) |  |  | 100M | – | 40.2$\pm 1.3$ | 13.6$\pm 1.1$ | 13.1$\pm 0.4$ | 1.6$\pm 0.2$ | 174.0$\pm 18.0$ | 19.1$\pm 1.7$ | 227.7$\pm 34.5$ | 6.5$\pm 1.9$ |  |
+| Looped TF |  |  | 7M | – | 68.1$\pm 7.4$ | 23.6$\pm 1.9$ | 50.0$\pm 7.6$ | 6.2$\pm 3.2$ | 136.0$\pm 16.1$ | 20.5$\pm 1.5$ | 157.3$\pm 9.0$ | 7.2$\pm 0.7$ |  |
+| HRM |  |  | 27M | – | 78.7$\pm 2.9$ | 26.7$\pm 1.3$ | 37.8$\pm 0.7$ | 4.7$\pm 0.1$ | 109.7$\pm 1.5$ | 21.8$\pm 0.3$ | 164.3$\pm 21.6$ | 8.9$\pm 1.7$ |  |
+| TRM |  |  | 7M | – | 66.8$\pm 5.6$ | 22.6$\pm 0.8$ | 17.5$\pm 11.2$ | 2.0$\pm 1.3$ | 109.3$\pm 3.1$ | 22.3$\pm 0.6$ | 170.7$\pm 17.9$ | 6.8$\pm 0.3$ |  |
+| AR |  |  | 10.6M | 1 | 96.3$\pm 1.0$ | – | **90.0**$\pm 2.2$ | – | 37.3$\pm 6.1$ | – | 101.7$\pm 4.0$ | – |  |
+|  |  |  |  | 20 | 98.3$\pm 0.7$ | 84.8$\pm 0.8$ | 95.1$\pm 1.5$ | 53.2$\pm 0.8$ | 19.0$\pm 11.3$ | 83.0$\pm 0.7$ | 61.3$\pm 8.3$ | 40.0$\pm 0.3$ |  |
+| MDLM |  |  | 12.6M | 1 | 96.1$\pm 1.5$ | – | 74.3$\pm 6.6$ | – | 16.3$\pm 2.5$ | – | 57.3$\pm 4.7$ | – |  |
+|  |  |  |  | 20 | **100.0**$\pm 0.0$ | 87.2$\pm 0.6$ | 98.6$\pm 0.8$ | 47.4$\pm 2.2$ | **2.7**$\pm 0.6$ | 84.5$\pm 4.0$ | 12.0$\pm 7.0$ | 48.2$\pm 1.4$ |  |
+| **GRAM (Ours)** |  |  | 10M | 1 | **99.5**$\pm 0.3$ | – | 89.7$\pm 2.7$ | – | **8.3**$\pm 2.5$ | – | **31.3**$\pm 15.0$ | – |  |
+|  |  |  |  | 20 | **100.0**$\pm 0.0$ | **89.7**$\pm 1.7$ | **100.0**$\pm 0.0$ | **57.5**$\pm 3.4$ | **2.7**$\pm 2.1$ | **85.8**$\pm 0.5$ | **3.3**$\pm 1.5$ | **51.3**$\pm 2.8$ |  |
 
 ## 4.3 Exploring GRAM as an Unconditional Generator
 
@@ -472,8 +273,6 @@ We evaluate GRAM against deterministic recursive baselines on tasks designed to 
 
 **Figura 5.** **Unconditional Sudoku generation.** Validity (%) of generated Sudoku puzzles. GRAM achieves higher validity than D3PM with substantially fewer parameters and steps.
 
-<span id="fig:sudoku_generation_plot" data-label="fig:sudoku_generation_plot"></span>
-
 **Setup.** To test GRAM’s unconditional generative capability, we evaluate it on Sudoku generation from empty boards, measured by the fraction of valid boards, and on binarized MNIST generation, measured by IS (Salimans et al., 2016) and FID (Heusel et al., 2017). GRAM replaces the input with an empty conditioning signal and samples from its learned prior. We compare with D3PM (Austin et al., 2021) on both tasks, and additionally with VAE (Kingma and Welling, 2013) and TRM on MNIST. All models have roughly matched parameter counts; on Sudoku generation task, we also evaluate a D3PM about five times larger to test whether its performance is capacity-limited. Further details are in Appendix B.2.
 
 **Probabilistic Recursion Generalizes to Unconditional Generation.** Unconditional generation tests the formulation directly. With no input, the entire output must come from the latent trajectory. Deterministic recursion therefore follows the same trajectory for every sample and collapses to a single output, with TRM producing a near-constant output on binarized MNIST. GRAM instead samples diverse digits from its prior, outperforming VAE with 16 steps and surpassing D3PM on both IS and FID with 256 steps, still far fewer than D3PM’s 1,000 steps (Table 2). The gap widens on structured generation, where GRAM produces 99.05% valid Sudoku boards, all distinct among 100K samples, whereas D3PM reaches at most 79.18% even at five times GRAM’s size (Figure 5). Figure 7 contrasts the generation trajectories of GRAM and D3PM, suggesting that refining a complete candidate suits hard-constraint generation better than filling cells progressively.
@@ -488,67 +287,18 @@ We ablate GRAM’s model structure and stochastic mechanism on Sudoku-Extreme an
 
 *(a) Architecture Ablation.*
 
-<span id="tab:ablation_arch" data-label="tab:ablation_arch"></span>
-
 **Tabla 3.** **Ablation study on Sudoku-Extreme and N-Queens ($8\times8$).** Means and sample standard deviations over three seeds. (a) compares architectural variants built from the Looped TF baseline (DS = deep supervision, HR = hierarchical recursion, SG = stochastic guidance). (b) ablates the stochasticity and guidance mechanisms.
 
-<table id="tab:ablation_mech">
-<thead>
-<tr>
-<th style="text-align: left;"></th>
-<th colspan="2" style="text-align: center;"><strong>Sudoku</strong></th>
-<th colspan="2" style="text-align: center;"><strong>N-Queens</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: left;"><span>2-3</span> (lr)<span>4-5</span> <strong>Model variant</strong></td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math>=1</td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math>=20</td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math>=1</td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math>=20</td>
-</tr>
-<tr>
-<td style="text-align: left;">Base (Looped TF)</td>
-<td style="text-align: center;">61.7<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>0.9</mn></mrow></msub><annotation encoding="application/x-tex">_{\color{gray}\pm0.9}</annotation></semantics></math></td>
-<td style="text-align: center;">61.7<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>0.9</mn></mrow></msub><annotation encoding="application/x-tex">_{\color{gray}\pm0.9}</annotation></semantics></math></td>
-<td style="text-align: center;">68.1<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>7.4</mn></mrow></msub><annotation encoding="application/x-tex">_{\color{gray}\pm7.4}</annotation></semantics></math></td>
-<td style="text-align: center;">68.1<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>7.4</mn></mrow></msub><annotation encoding="application/x-tex">_{\color{gray}\pm7.4}</annotation></semantics></math></td>
-</tr>
-<tr>
-<td style="text-align: left;">+ DS + HR (=TRM)</td>
-<td style="text-align: center;">83.6<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>1.3</mn></mrow></msub><annotation encoding="application/x-tex">_{\color{gray}\pm1.3}</annotation></semantics></math></td>
-<td style="text-align: center;">83.6<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>1.3</mn></mrow></msub><annotation encoding="application/x-tex">_{\color{gray}\pm1.3}</annotation></semantics></math></td>
-<td style="text-align: center;">66.8<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>5.6</mn></mrow></msub><annotation encoding="application/x-tex">_{\color{gray}\pm5.6}</annotation></semantics></math></td>
-<td style="text-align: center;">66.8<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>5.6</mn></mrow></msub><annotation encoding="application/x-tex">_{\color{gray}\pm5.6}</annotation></semantics></math></td>
-</tr>
-<tr>
-<td style="text-align: left;">+ SG</td>
-<td style="text-align: center;">65.1<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>0.5</mn></mrow></msub><annotation encoding="application/x-tex">_{\color{gray}\pm0.5}</annotation></semantics></math></td>
-<td style="text-align: center;">74.0<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>0.6</mn></mrow></msub><annotation encoding="application/x-tex">_{\color{gray}\pm0.6}</annotation></semantics></math></td>
-<td style="text-align: center;">87.0<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>7.5</mn></mrow></msub><annotation encoding="application/x-tex">_{\color{gray}\pm7.5}</annotation></semantics></math></td>
-<td style="text-align: center;">87.3<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>7.8</mn></mrow></msub><annotation encoding="application/x-tex">_{\color{gray}\pm7.8}</annotation></semantics></math></td>
-</tr>
-<tr>
-<td style="text-align: left;">+ DS + SG</td>
-<td style="text-align: center;">76.9<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>2.6</mn></mrow></msub><annotation encoding="application/x-tex">_{\color{gray}\pm2.6}</annotation></semantics></math></td>
-<td style="text-align: center;">78.8<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>1.5</mn></mrow></msub><annotation encoding="application/x-tex">_{\color{gray}\pm1.5}</annotation></semantics></math></td>
-<td style="text-align: center;">82.6<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>10.7</mn></mrow></msub><annotation encoding="application/x-tex">_{\color{gray}\pm10.7}</annotation></semantics></math></td>
-<td style="text-align: center;">83.2<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>10.2</mn></mrow></msub><annotation encoding="application/x-tex">_{\color{gray}\pm10.2}</annotation></semantics></math></td>
-</tr>
-<tr>
-<td style="text-align: left;"><span><strong>+ DS + HR + SG</strong> <strong>(=GRAM)</strong></span></td>
-<td style="text-align: center;">86.6<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>2.2</mn></mrow></msub><annotation encoding="application/x-tex">_{\color{gray}\pm2.2}</annotation></semantics></math></td>
-<td style="text-align: center;"><strong>96.1</strong><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>0.9</mn></mrow></msub><annotation encoding="application/x-tex">_{\color{gray}\pm0.9}</annotation></semantics></math></td>
-<td style="text-align: center;">99.5<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>0.3</mn></mrow></msub><annotation encoding="application/x-tex">_{\color{gray}\pm0.3}</annotation></semantics></math></td>
-<td style="text-align: center;"><strong>100.0</strong><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>0.0</mn></mrow></msub><annotation encoding="application/x-tex">_{\color{gray}\pm0.0}</annotation></semantics></math></td>
-</tr>
-</tbody>
-</table>
+|  | **Sudoku** |  | **N-Queens** |  |
+|:---|:--:|:--:|:--:|:--:|
+| 2-3 (lr)4-5 **Model variant** | $N$=1 | $N$=20 | $N$=1 | $N$=20 |
+| Base (Looped TF) | 61.7$_{\color{gray}\pm0.9}$ | 61.7$_{\color{gray}\pm0.9}$ | 68.1$_{\color{gray}\pm7.4}$ | 68.1$_{\color{gray}\pm7.4}$ |
+| \+ DS + HR (=TRM) | 83.6$_{\color{gray}\pm1.3}$ | 83.6$_{\color{gray}\pm1.3}$ | 66.8$_{\color{gray}\pm5.6}$ | 66.8$_{\color{gray}\pm5.6}$ |
+| \+ SG | 65.1$_{\color{gray}\pm0.5}$ | 74.0$_{\color{gray}\pm0.6}$ | 87.0$_{\color{gray}\pm7.5}$ | 87.3$_{\color{gray}\pm7.8}$ |
+| \+ DS + SG | 76.9$_{\color{gray}\pm2.6}$ | 78.8$_{\color{gray}\pm1.5}$ | 82.6$_{\color{gray}\pm10.7}$ | 83.2$_{\color{gray}\pm10.2}$ |
+| **+ DS + HR + SG** **(=GRAM)** | 86.6$_{\color{gray}\pm2.2}$ | **96.1**$_{\color{gray}\pm0.9}$ | 99.5$_{\color{gray}\pm0.3}$ | **100.0**$_{\color{gray}\pm0.0}$ |
 
 *(b) Mechanism Ablation ($N$=20).*
-
-<span id="tab:ablation_mech" data-label="tab:ablation_mech"></span>
 
 **Tabla 3.** **Ablation study on Sudoku-Extreme and N-Queens ($8\times8$).** Means and sample standard deviations over three seeds. (a) compares architectural variants built from the Looped TF baseline (DS = deep supervision, HR = hierarchical recursion, SG = stochastic guidance). (b) ablates the stochasticity and guidance mechanisms.
 
@@ -590,19 +340,13 @@ GRAM studies probabilistic recursive reasoning for structured reasoning and gene
 
 Algorithm 1 and Algorithm 2 summarize training and inference. Both invoke the same latent transition, differing only in the distribution from which the stochastic guidance $\epsilon$ is drawn: the target-conditioned posterior $q_\phi$ during training, and the prior $p_\theta$ at inference, where $y$ is unavailable.
 
-<div class="algorithm">
-
 **Algoritmo 1.** GRAM training
-
-<span id="alg:training" data-label="alg:training"></span>
-
-<div class="algorithmic">
 
 **Require:** input $x$, target $y$;
 
 **Require:** supervision steps $N_{\mathrm{sup}}$, transition steps $T$, refinement steps $K$; KL weight $\beta$; halt head $q_\psi$;
 
-**procedure** <span class="smallcaps">Transition</span>($z,\ e_x,\ \pi$)
+**procedure** Transition($z,\ e_x,\ \pi$)
 
  *// $\pi$: posterior $q_\phi$ in training, prior $p_\theta$ at inference*
 
@@ -658,21 +402,11 @@ $e_x \gets f_{\mathrm{enc}}(x)$;$z \gets z_0$
 
 **end for**
 
-</div>
-
-</div>
-
-<div class="algorithm">
-
 **Algoritmo 2.** GRAM inference with parallel trajectory sampling
-
-<span id="alg:inference" data-label="alg:inference"></span>
-
-<div class="algorithmic">
 
 **Require:** input $x$;
 
-**Require:** trajectories $N$, supervision steps $N_{\mathrm{sup}}$, transition steps $T$; <span class="smallcaps">Transition</span> as in Algorithm 1
+**Require:** trajectories $N$, supervision steps $N_{\mathrm{sup}}$, transition steps $T$; Transition as in Algorithm 1
 
 *// Width: $N$ trajectories drawn from the prior, computed in parallel*
 
@@ -701,10 +435,6 @@ $e_x \gets f_{\mathrm{enc}}(x)$
 *// Select final prediction among $N$ candidates*
 
 **return** $\mathop{\mathrm{arg\,max}}_{y} \sum_{i=1}^{N} \mathbf{1}[\hat{y}^{(i)} = y]$ *// majority voting*
-
-</div>
-
-</div>
 
 ## A.2 Empirical Validation of the Surrogate Objective
 
@@ -743,6 +473,7 @@ $$\begin{align}
         +
         \big(q^{\mathrm{continue}}_n - \hat{q}^{\mathrm{continue}}_n\big)^2
     \Big].
+\tag{15}
 \end{align}$$
 
 This auxiliary loss is added to the main training objective.
@@ -757,6 +488,7 @@ The LPRM is a value head $v_\psi(z_t)$ trained to predict the expected accuracy 
 
 $$\begin{align}
 \mathcal{L}_{\mathrm{LPRM}} = \sum_{t=1}^{T} \left(v_\psi(z_t) - r\right)^2,
+\tag{16}
 \end{align}$$
 
 where $r \in \{0, 1\}$ denotes the accuracy of the final prediction for a given trajectory. At inference, best-of-$N$ selection returns $\hat{y}^{(n^*)}$ with $n^* = \mathop{\mathrm{arg\,max}}_n v_\psi(z_T^{(n)})$, in place of the majority-voted prediction.
@@ -769,71 +501,20 @@ GRAM consists of three components: Encoder, Recursive Core, and Decoder.
 
 **Tabla 4.** Architecture components.
 
-<table id="tab:arch_components">
-<thead>
-<tr>
-<th style="text-align: left;"><strong>Component</strong></th>
-<th style="text-align: left;"><strong>Module</strong></th>
-<th style="text-align: left;"><strong>Description</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td colspan="3" style="text-align: left;"><em>Encoder</em></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Token Embedding</td>
-<td style="text-align: left;">vocab <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>→</mo><mi>D</mi></mrow><annotation encoding="application/x-tex">\rightarrow D</annotation></semantics></math></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Puzzle Embedding</td>
-<td style="text-align: left;">16 tokens</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Position Encoding</td>
-<td style="text-align: left;">RoPE</td>
-</tr>
-<tr>
-<td colspan="3" style="text-align: left;"><em>Recursive Core</em></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>f</mi><mi>L</mi></msub><annotation encoding="application/x-tex">f_L</annotation></semantics></math>, <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>f</mi><mi>H</mi></msub><annotation encoding="application/x-tex">f_H</annotation></semantics></math></td>
-<td style="text-align: left;">[Attn. + SwiGLU] <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>×</mi><annotation encoding="application/x-tex">\times</annotation></semantics></math> 2 blocks</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Iterations</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math> low-level, <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>T</mi><annotation encoding="application/x-tex">T</annotation></semantics></math> high-level steps</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Prior head <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>μ</mi><mi>θ</mi></msub><mo>,</mo><msub><mi>σ</mi><mi>θ</mi></msub></mrow><annotation encoding="application/x-tex">\mu_\theta, \sigma_\theta</annotation></semantics></math></td>
-<td style="text-align: left;">SwiGLU MLP, input <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>u</mi><mi>t</mi></msub><annotation encoding="application/x-tex">u_t</annotation></semantics></math></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Posterior head <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>μ</mi><mi>ϕ</mi></msub><mo>,</mo><msub><mi>σ</mi><mi>ϕ</mi></msub></mrow><annotation encoding="application/x-tex">\mu_\phi, \sigma_\phi</annotation></semantics></math></td>
-<td style="text-align: left;">SwiGLU MLP, input <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mspace width="0.167em"></mspace><msub><mi>u</mi><mi>t</mi></msub><mspace width="0.167em"></mspace><mo>;</mo><mspace width="0.167em"></mspace><mrow><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi></mrow><mo stretchy="false" form="prefix">(</mo><mi>y</mi><mo stretchy="false" form="postfix">)</mo><mspace width="0.167em"></mspace><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[\,u_t \,;\, \mathrm{repr}(y)\,]</annotation></semantics></math></td>
-</tr>
-<tr>
-<td colspan="3" style="text-align: left;"><em>Decoder</em></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">LM Head</td>
-<td style="text-align: left;">SwiGLU MLP(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>D</mi><mo>→</mo></mrow><annotation encoding="application/x-tex">D \rightarrow</annotation></semantics></math> vocab)</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Q Head</td>
-<td style="text-align: left;">Linear(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>D</mi><mo>→</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">D \rightarrow 2</annotation></semantics></math>) for halt</td>
-</tr>
-</tbody>
-</table>
+| **Component** | **Module** | **Description** |
+|:---|:---|:---|
+| *Encoder* |  |  |
+|  | Token Embedding | vocab $\rightarrow D$ |
+|  | Puzzle Embedding | 16 tokens |
+|  | Position Encoding | RoPE |
+| *Recursive Core* |  |  |
+|  | $f_L$, $f_H$ | \[Attn. + SwiGLU\] $\times$ 2 blocks |
+|  | Iterations | $K$ low-level, $T$ high-level steps |
+|  | Prior head $\mu_\theta, \sigma_\theta$ | SwiGLU MLP, input $u_t$ |
+|  | Posterior head $\mu_\phi, \sigma_\phi$ | SwiGLU MLP, input $[\,u_t \,;\, \mathrm{repr}(y)\,]$ |
+| *Decoder* |  |  |
+|  | LM Head | SwiGLU MLP($D \rightarrow$ vocab) |
+|  | Q Head | Linear($D \rightarrow 2$) for halt |
 
 **Encoder.** Input tokens are mapped to embeddings via a token embedding layer and combined with positional encodings (RoPE) (Su et al., 2024). The embeddings are scaled by $\sqrt{D}$ and prepended with 16 puzzle embedding tokens (Wang et al., 2025), produced from a learned embedding indexed by a puzzle identifier. On ARC-AGI (Chollet, 2019; Chollet et al., 2025), each puzzle has its own identifier, so these tokens distinguish tasks. On all other tasks, a single identifier is shared across examples, and they instead act as CLS-like register tokens. These tokens are carried through the recursion, so the latent states $h$ and $l$ span these positions as well as the input tokens.
 
@@ -975,14 +656,14 @@ All tested large reasoning models (LRMs), including Deepseek-R1 (671B), score 0%
 
 | **Method** | **#Params** | **Sudoku** | **ARC-1** | **ARC-2** |
 |:---|:--:|:--:|:--:|:--:|
-| *<span style="color: gray">Large Reasoning Models</span>* |  |  |  |  |
+| *Large Reasoning Models* |  |  |  |  |
 | Deepseek-R1 | 671B | 0.0 | 15.8 | 1.3 |
 | Claude 3.7 16k | N/A | 0.0 | 28.6 | 0.7 |
 | o3-mini-high | N/A | 0.0 | 34.5 | 3.0 |
 | GPT 5.2 (low) | N/A | – | 55.7 | 9.7 |
 | Grok-4-thinking | 1.7T | – | 66.7 | 16.0 |
 | Gemini 3 Pro | N/A | – | **75.0** | **31.1** |
-| *<span style="color: gray">Recursive Models</span>* |  |  |  |  |
+| *Recursive Models* |  |  |  |  |
 | Direct Pred | 27M | 0.0 | 21.0 | 0.0 |
 | Looped TF | 7M | 61.7$\pm 0.9$ | \- | \- |
 | HRM | 27M | 56.8$\pm 1.2$ | 40.3 | 5.0 |
@@ -1110,73 +791,16 @@ Table 3b in the main text reports the stochasticity and guidance ablation at $N
 
 **Tabla 14.** **Stochasticity and guidance ablation at $N$=1 and $N$=20** on Sudoku-Extreme and N-Queens ($8\times8$). Values are means over 3 seeds with standard deviations.
 
-<table id="tab:ablation_mech_full">
-<thead>
-<tr>
-<th style="text-align: left;"></th>
-<th colspan="2" style="text-align: center;"><strong>Sudoku</strong></th>
-<th colspan="2" style="text-align: center;"><strong>N-Queens</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: left;"><span>2-3</span> (lr)<span>4-5</span> <strong>Model variant</strong></td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math>=1</td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math>=20</td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math>=1</td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math>=20</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>GRAM (ours)</strong></td>
-<td style="text-align: center;">86.6<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>2.2</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm2.2}</annotation></semantics></math></td>
-<td style="text-align: center;"><strong>96.1</strong><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>0.9</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm0.9}</annotation></semantics></math></td>
-<td style="text-align: center;">99.5<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>0.3</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm0.3}</annotation></semantics></math></td>
-<td style="text-align: center;"><strong>100.0</strong><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>0.0</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm0.0}</annotation></semantics></math></td>
-</tr>
-<tr>
-<td style="text-align: left;">w/o stochastic guidance</td>
-<td style="text-align: center;">83.6<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>1.3</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm1.3}</annotation></semantics></math></td>
-<td style="text-align: center;">83.6<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>1.3</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm1.3}</annotation></semantics></math></td>
-<td style="text-align: center;">66.8<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>5.6</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm5.6}</annotation></semantics></math></td>
-<td style="text-align: center;">66.8<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>5.6</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm5.6}</annotation></semantics></math></td>
-</tr>
-<tr>
-<td style="text-align: left;">stochasticity only</td>
-<td style="text-align: center;">86.6<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>1.4</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm1.4}</annotation></semantics></math></td>
-<td style="text-align: center;">96.0<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>1.1</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm1.1}</annotation></semantics></math></td>
-<td style="text-align: center;">60.2<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>15.1</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm15.1}</annotation></semantics></math></td>
-<td style="text-align: center;">62.1<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>14.9</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm14.9}</annotation></semantics></math></td>
-</tr>
-<tr>
-<td style="text-align: left;">guide only</td>
-<td style="text-align: center;">0.0<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>0.0</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm0.0}</annotation></semantics></math></td>
-<td style="text-align: center;">0.0<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>0.0</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm0.0}</annotation></semantics></math></td>
-<td style="text-align: center;">0.0<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>0.0</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm0.0}</annotation></semantics></math></td>
-<td style="text-align: center;">0.0<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>0.0</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm0.0}</annotation></semantics></math></td>
-</tr>
-<tr>
-<td style="text-align: left;">w/ direct prediction</td>
-<td style="text-align: center;">44.1<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>5.2</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm5.2}</annotation></semantics></math></td>
-<td style="text-align: center;">70.7<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>7.6</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm7.6}</annotation></semantics></math></td>
-<td style="text-align: center;">97.5<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>3.5</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm3.5}</annotation></semantics></math></td>
-<td style="text-align: center;">98.8<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>2.2</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm2.2}</annotation></semantics></math></td>
-</tr>
-<tr>
-<td style="text-align: left;">TRM w/ stochastic decoder</td>
-<td style="text-align: center;">79.7<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>1.9</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm1.9}</annotation></semantics></math></td>
-<td style="text-align: center;">79.7<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>1.9</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm1.9}</annotation></semantics></math></td>
-<td style="text-align: center;">56.8<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>5.7</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm5.7}</annotation></semantics></math></td>
-<td style="text-align: center;">65.9<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>4.7</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm4.7}</annotation></semantics></math></td>
-</tr>
-<tr>
-<td style="text-align: left;">TRM w/ random init.</td>
-<td style="text-align: center;">79.9<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>1.2</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm1.2}</annotation></semantics></math></td>
-<td style="text-align: center;">91.2<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>0.9</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm0.9}</annotation></semantics></math></td>
-<td style="text-align: center;">71.1<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>8.5</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm8.5}</annotation></semantics></math></td>
-<td style="text-align: center;">71.4<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi></mi><mrow><mi>±</mi><mn>8.5</mn></mrow></msub><annotation encoding="application/x-tex">_{\pm8.5}</annotation></semantics></math></td>
-</tr>
-</tbody>
-</table>
+|  | **Sudoku** |  | **N-Queens** |  |
+|:---|:--:|:--:|:--:|:--:|
+| 2-3 (lr)4-5 **Model variant** | $N$=1 | $N$=20 | $N$=1 | $N$=20 |
+| **GRAM (ours)** | 86.6$_{\pm2.2}$ | **96.1**$_{\pm0.9}$ | 99.5$_{\pm0.3}$ | **100.0**$_{\pm0.0}$ |
+| w/o stochastic guidance | 83.6$_{\pm1.3}$ | 83.6$_{\pm1.3}$ | 66.8$_{\pm5.6}$ | 66.8$_{\pm5.6}$ |
+| stochasticity only | 86.6$_{\pm1.4}$ | 96.0$_{\pm1.1}$ | 60.2$_{\pm15.1}$ | 62.1$_{\pm14.9}$ |
+| guide only | 0.0$_{\pm0.0}$ | 0.0$_{\pm0.0}$ | 0.0$_{\pm0.0}$ | 0.0$_{\pm0.0}$ |
+| w/ direct prediction | 44.1$_{\pm5.2}$ | 70.7$_{\pm7.6}$ | 97.5$_{\pm3.5}$ | 98.8$_{\pm2.2}$ |
+| TRM w/ stochastic decoder | 79.7$_{\pm1.9}$ | 79.7$_{\pm1.9}$ | 56.8$_{\pm5.7}$ | 65.9$_{\pm4.7}$ |
+| TRM w/ random init. | 79.9$_{\pm1.2}$ | 91.2$_{\pm0.9}$ | 71.1$_{\pm8.5}$ | 71.4$_{\pm8.5}$ |
 
 ## D.8 Placement of the Stochastic Transition
 
@@ -1203,44 +827,11 @@ We investigate whether GRAM can be further improved with outcome-level feedback 
 
 **Tabla 16.** **Reinforcement learning fine-tuning on N-Queens.** We report single-sample accuracy ($N{=}1$), majority-vote accuracy with 20 samples ($N{=}20$), and coverage with 20 samples. Values are means $\pm$ sample standard deviations over 3 seeds.
 
-<table id="tab:nqueens_rl">
-<thead>
-<tr>
-<th style="text-align: left;"></th>
-<th colspan="3" style="text-align: center;"><strong>N-Queens</strong> (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>8</mn><mo>×</mo><mn>8</mn></mrow><annotation encoding="application/x-tex">8\times8</annotation></semantics></math>)</th>
-<th colspan="3" style="text-align: center;"><strong>N-Queens</strong> (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>10</mn><mo>×</mo><mn>10</mn></mrow><annotation encoding="application/x-tex">10\times10</annotation></semantics></math>)</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: left;"><span>2-4</span> (lr)<span>5-7</span> <strong>Method</strong></td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">N{=}1</annotation></semantics></math></td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mo>=</mo><mn>20</mn></mrow><annotation encoding="application/x-tex">N{=}20</annotation></semantics></math></td>
-<td style="text-align: center;">Coverage</td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">N{=}1</annotation></semantics></math></td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mo>=</mo><mn>20</mn></mrow><annotation encoding="application/x-tex">N{=}20</annotation></semantics></math></td>
-<td style="text-align: center;">Coverage</td>
-</tr>
-<tr>
-<td style="text-align: left;">GRAM (Ours)</td>
-<td style="text-align: center;">99.5<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.3</mn></mrow><annotation encoding="application/x-tex">\pm 0.3</annotation></semantics></math></span></td>
-<td style="text-align: center;">100.0<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.0</mn></mrow><annotation encoding="application/x-tex">\pm 0.0</annotation></semantics></math></span></td>
-<td style="text-align: center;">89.7<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>1.7</mn></mrow><annotation encoding="application/x-tex">\pm 1.7</annotation></semantics></math></span></td>
-<td style="text-align: center;">89.7<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>2.7</mn></mrow><annotation encoding="application/x-tex">\pm 2.7</annotation></semantics></math></span></td>
-<td style="text-align: center;">100.0<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.0</mn></mrow><annotation encoding="application/x-tex">\pm 0.0</annotation></semantics></math></span></td>
-<td style="text-align: center;">57.5<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>3.4</mn></mrow><annotation encoding="application/x-tex">\pm 3.4</annotation></semantics></math></span></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>GRAM-RL</strong></td>
-<td style="text-align: center;"><strong>99.9</strong><span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.2</mn></mrow><annotation encoding="application/x-tex">\pm 0.2</annotation></semantics></math></span></td>
-<td style="text-align: center;">100.0<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.0</mn></mrow><annotation encoding="application/x-tex">\pm 0.0</annotation></semantics></math></span></td>
-<td style="text-align: center;"><strong>90.7</strong><span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.5</mn></mrow><annotation encoding="application/x-tex">\pm 0.5</annotation></semantics></math></span></td>
-<td style="text-align: center;"><strong>99.1</strong><span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.3</mn></mrow><annotation encoding="application/x-tex">\pm 0.3</annotation></semantics></math></span></td>
-<td style="text-align: center;">100.0<span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.0</mn></mrow><annotation encoding="application/x-tex">\pm 0.0</annotation></semantics></math></span></td>
-<td style="text-align: center;"><strong>61.8</strong><span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>0.2</mn></mrow><annotation encoding="application/x-tex">\pm 0.2</annotation></semantics></math></span></td>
-</tr>
-</tbody>
-</table>
+|  | **N-Queens** ($8\times8$) |  |  | **N-Queens** ($10\times10$) |  |  |
+|:---|:--:|:--:|:--:|:--:|:--:|:--:|
+| 2-4 (lr)5-7 **Method** | $N{=}1$ | $N{=}20$ | Coverage | $N{=}1$ | $N{=}20$ | Coverage |
+| GRAM (Ours) | 99.5$\pm 0.3$ | 100.0$\pm 0.0$ | 89.7$\pm 1.7$ | 89.7$\pm 2.7$ | 100.0$\pm 0.0$ | 57.5$\pm 3.4$ |
+| **GRAM-RL** | **99.9**$\pm 0.2$ | 100.0$\pm 0.0$ | **90.7**$\pm 0.5$ | **99.1**$\pm 0.3$ | 100.0$\pm 0.0$ | **61.8**$\pm 0.2$ |
 
 ## D.10 Visualizing Latent Recursion Process
 

@@ -149,6 +149,30 @@ We emphasize that our objective Eq. (6) requires no adversarial training, no su
 
 ## 4.3 NCSN inference via annealed Langevin dynamics
 
+**Algoritmo 1.** Annealed Langevin dynamics.
+
+**Require:** $\{\sigma_i\}_{i=1}^L, \epsilon, T$.
+
+Initialize $\tilde{\mathbf{x}}_0$
+
+**for** $i \gets 1$ to $L$ **do**
+
+ $\alpha_i \gets \epsilon \cdot \sigma_i^2/\sigma_L^2$ *// $\alpha_i$ is the step size.*
+
+ **for** $t \gets 1$ to $T$ **do**
+
+ Draw $\mathbf{z}_t \sim \mathcal{N}(0, I)$
+
+ $\tilde{\mathbf{x}}_{t} \gets \tilde{\mathbf{x}}_{t-1} + \dfrac{\alpha_i}{2} \mathbf{s}_{\boldsymbol{\theta}}(\tilde{\mathbf{x}}_{t-1}, \sigma_i) + \sqrt{\alpha_i}~ \mathbf{z}_t$
+
+ **end for**
+
+ $\tilde{\mathbf{x}}_0 \gets \tilde{\mathbf{x}}_T$
+
+**end for**
+
+**return** $\tilde{\mathbf{x}}_T$
+
 **Figura.**
 
 After the NCSN $\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma)$ is trained, we propose a sampling approach—annealed Langevin dynamics (Alg. 1)—to produced samples, inspired by simulated annealing \[30\] and annealed importance sampling \[37\]. As shown in Alg. 1, we start annealed Langevin dynamics by initializing the samples from some fixed prior distribution, *e.g*., uniform noise. Then, we run Langevin dynamics to sample from $q_{\sigma_1}(\mathbf{x})$ with step size $\alpha_1$. Next, we run Langevin dynamics to sample from $q_{\sigma_2}(\mathbf{x})$, starting from the final samples of the previous simulation and using a reduced step size $\alpha_2$. We continue in this fashion, using the final samples of Langevin dynamics for $q_{\sigma_{i-1}}(\mathbf{x})$ as the initial samples of Langevin dynamic for $q_{\sigma_i}(\mathbf{x})$, and tuning down the step size $\alpha_i$ gradually with $\alpha_i = \epsilon \cdot \sigma_i^2 / \sigma_L^2$. Finally, we run Langevin dynamics to sample from $q_{\sigma_L}(\mathbf{x})$, which is close to $p_\text{data}(\mathbf{x})$ when $\sigma_L \approx 0$.
@@ -169,78 +193,21 @@ We use MNIST, CelebA \[34\], and CIFAR-10 \[31\] datasets in our experiments. 
 
 **Tabla 1.** Inception and FID scores for CIFAR-10
 
-<table id="tab:score">
-<thead>
-<tr>
-<th style="text-align: left;">Model</th>
-<th style="text-align: center;">Inception</th>
-<th style="text-align: center;">FID</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td colspan="3" style="text-align: left;"><strong>CIFAR-10 Unconditional</strong></td>
-</tr>
-<tr>
-<td style="text-align: left;">PixelCNN [59]</td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn>4.60</mn><annotation encoding="application/x-tex">4.60</annotation></semantics></math></td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn>65.93</mn><annotation encoding="application/x-tex">65.93</annotation></semantics></math></td>
-</tr>
-<tr>
-<td style="text-align: left;">PixelIQN [42]</td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn>5.29</mn><annotation encoding="application/x-tex">5.29</annotation></semantics></math></td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn>49.46</mn><annotation encoding="application/x-tex">49.46</annotation></semantics></math></td>
-</tr>
-<tr>
-<td style="text-align: left;">EBM [12]</td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn>6.02</mn><annotation encoding="application/x-tex">6.02</annotation></semantics></math></td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn>40.58</mn><annotation encoding="application/x-tex">40.58</annotation></semantics></math></td>
-</tr>
-<tr>
-<td style="text-align: left;">WGAN-GP [18]</td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>7.86</mn><mo>±</mo><mn>.07</mn></mrow><annotation encoding="application/x-tex">7.86 \pm .07</annotation></semantics></math></td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn>36.4</mn><annotation encoding="application/x-tex">36.4</annotation></semantics></math></td>
-</tr>
-<tr>
-<td style="text-align: left;">MoLM [45]</td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>7.90</mn><mo>±</mo><mn>.10</mn></mrow><annotation encoding="application/x-tex">7.90\pm .10</annotation></semantics></math></td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn mathvariant="bold">𝟏𝟖.𝟗</mn><annotation encoding="application/x-tex">\mathbf{18.9}</annotation></semantics></math></td>
-</tr>
-<tr>
-<td style="text-align: left;">SNGAN [36]</td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>8.22</mn><mo>±</mo><mn>.05</mn></mrow><annotation encoding="application/x-tex">8.22\pm .05</annotation></semantics></math></td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn>21.7</mn><annotation encoding="application/x-tex">21.7</annotation></semantics></math></td>
-</tr>
-<tr>
-<td style="text-align: left;">ProgressiveGAN [25]</td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>8.80</mn><mo>±</mo><mn>.05</mn></mrow><annotation encoding="application/x-tex">8.80\pm .05</annotation></semantics></math></td>
-<td style="text-align: center;">-</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>NCSN (Ours)</strong></td>
-<td style="text-align: center;"><span><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn mathvariant="bold">𝟖.𝟖𝟕</mn><mo>±</mo><mn>.12</mn></mrow><annotation encoding="application/x-tex">\mathbf{8.87} \pm .12</annotation></semantics></math></span></td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn>25.32</mn><annotation encoding="application/x-tex">25.32</annotation></semantics></math></td>
-</tr>
-<tr>
-<td colspan="3" style="text-align: left;"><strong>CIFAR-10 Conditional</strong></td>
-</tr>
-<tr>
-<td style="text-align: left;">EBM [12]</td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn>8.30</mn><annotation encoding="application/x-tex">8.30</annotation></semantics></math></td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn>37.9</mn><annotation encoding="application/x-tex">37.9</annotation></semantics></math></td>
-</tr>
-<tr>
-<td style="text-align: left;">SNGAN [36]</td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>8.60</mn><mo>±</mo><mn>.08</mn></mrow><annotation encoding="application/x-tex">8.60 \pm .08</annotation></semantics></math></td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn>25.5</mn><annotation encoding="application/x-tex">25.5</annotation></semantics></math></td>
-</tr>
-<tr>
-<td style="text-align: left;">BigGAN [6]</td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn mathvariant="bold">𝟗.𝟐𝟐</mn><annotation encoding="application/x-tex">\mathbf{9.22}</annotation></semantics></math></td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn mathvariant="bold">𝟏𝟒.𝟕𝟑</mn><annotation encoding="application/x-tex">\mathbf{14.73}</annotation></semantics></math></td>
-</tr>
-</tbody>
-</table>
+| Model                      |        Inception        |       FID        |
+|:---------------------------|:-----------------------:|:----------------:|
+| **CIFAR-10 Unconditional** |                         |                  |
+| PixelCNN \[59\]            |         $4.60$          |     $65.93$      |
+| PixelIQN \[42\]            |         $5.29$          |     $49.46$      |
+| EBM \[12\]                 |         $6.02$          |     $40.58$      |
+| WGAN-GP \[18\]             |     $7.86 \pm .07$      |      $36.4$      |
+| MoLM \[45\]                |      $7.90\pm .10$      | $\mathbf{18.9}$  |
+| SNGAN \[36\]               |      $8.22\pm .05$      |      $21.7$      |
+| ProgressiveGAN \[25\]      |      $8.80\pm .05$      |        \-        |
+| **NCSN (Ours)**            | $\mathbf{8.87} \pm .12$ |     $25.32$      |
+| **CIFAR-10 Conditional**   |                         |                  |
+| EBM \[12\]                 |         $8.30$          |      $37.9$      |
+| SNGAN \[36\]               |     $8.60 \pm .08$      |      $25.5$      |
+| BigGAN \[6\]               |     $\mathbf{9.22}$     | $\mathbf{14.73}$ |
 
 **Figura 4.** Intermediate samples of annealed Langevin dynamics.
 
@@ -332,13 +299,7 @@ The models on MNIST were run with one Titan XP GPU, while the models on CelebA a
 
 We use the following Alg. 2 for image inpainting.
 
-<div class="algorithm">
-
 **Algoritmo 2.** Inpainting with annealed Langevin dynamics.
-
-<span id="alg:inpaint" data-label="alg:inpaint"></span>
-
-<div class="algorithmic">
 
 **Require:** $\{\sigma_i\}_{i=1}^L, \epsilon, T$ *// $\epsilon$ is smallest step size; $T$ is the number of iteration for each noise level.*
 
@@ -369,10 +330,6 @@ Initialize $\tilde{\mathbf{x}}_0$
 **end for**
 
 **return** $\tilde{\mathbf{x}}_T$
-
-</div>
-
-</div>
 
 The hyperparameters are the same as those of the annealed Langevin dynamics used for image generation.
 

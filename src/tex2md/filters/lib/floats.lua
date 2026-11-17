@@ -34,11 +34,34 @@ local function lead_line(word, num, cap)
   return lead
 end
 
+-- A table with no text of its own (an image grid laid out with tabular).
+local function has_text(block)
+  local no_images = block:walk({ Image = function() return {} end })
+  return #pandoc.utils.stringify(no_images):gsub("%s", "") > 0
+end
+
+-- Text a figure carries besides its images (a prompt in a code box, a quote, a list): worth keeping.
+local function substantive(blocks)
+  for _, b in ipairs(blocks) do
+    if b.t == "CodeBlock" then
+      return true
+    elseif b.t == "Para" or b.t == "Plain" or b.t == "BlockQuote" or b.t == "BulletList"
+        or b.t == "OrderedList" or b.t == "DefinitionList" then
+      -- (tables never count: a grid of images with labels is layout; real tables took the wrapped path above)
+      local no_images = b:walk({ Image = function() return {} end })
+      if #pandoc.utils.stringify(no_images):gsub("%s", "") >= 40 then return true end
+    elseif b.t == "Div" and substantive(b.content) then
+      return true
+    end
+  end
+  return false
+end
+
 function M.Figure(fig)
   S.stats.figures = S.stats.figures + 1
   local num = labels.float_number(fig.identifier, "figure")
   local tables = {}
-  fig.content:walk({ Table = function(t) tables[#tables + 1] = t end })
+  fig.content:walk({ Table = function(t) if has_text(t) then tables[#tables + 1] = t end end })
   local lab = fig.identifier ~= "" and S.labels[fig.identifier] or nil
   -- an image grid laid out with tabular is still a figure when its label says so
   if #tables > 0 and not (lab and lab.type == "figure") then
@@ -70,7 +93,14 @@ function M.Figure(fig)
   end
   num = resolve_number("fig_count", "figure", num, captioned)
   local cap = text.strip_label_spans(text.caption_inlines(fig.caption))
-  return pandoc.Para(lead_line("Figura", num, cap))
+  local line = pandoc.Para(lead_line("Figura", num, cap))
+  if substantive(fig.content) then
+    local out = pandoc.Blocks({})
+    out:extend(fig.content)
+    out:insert(line)
+    return out
+  end
+  return line
 end
 
 -- Table pass: a marked caption that the Figure pass deferred (see above).

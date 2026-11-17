@@ -115,3 +115,42 @@ def test_a_valid_label_beats_the_loose_substring_match(tmp_path):
     md = convert(tmp_path, body, labels={"fig:g": {"num": "7", "type": "figure"}},
                  floats=[fl("figure", "7", "9106plus15minus4"), fl("figure", "9", "Pareto frontier of validation loss improves")])
     assert captions(md) == ["Figura 7"]
+
+
+def test_spans_and_divs_are_unwrapped(tmp_path):
+    md = convert(tmp_path, r"\section{A \textsc{Small} Title}\label{s}" "\n\n" r"\begin{minipage}{3cm}Inside the box.\end{minipage}")
+    assert "<span" not in md and "<div" not in md and "Small" in md and "Inside the box." in md
+
+
+def test_tables_with_spans_become_pipe_tables_with_plain_math(tmp_path):
+    body = (r"\begin{table}\caption{T}\begin{tabular}{lcc}\toprule"
+            r"Method & \multicolumn{2}{c}{Score $\uparrow$} \\ \midrule A & 1 & 2 \\ B & 3 & 4 \\ \bottomrule\end{tabular}\end{table}")
+    md = convert(tmp_path, body)
+    assert "<table" not in md and "<math" not in md
+    assert r"$\uparrow$" in md and "| A " in md
+
+
+def test_multi_paragraph_cells_and_two_header_rows_still_give_a_pipe_table(tmp_path):
+    body = (r"\begin{table}\caption{T}\begin{tabular}{ll}\toprule \textbf{Model} & \textbf{Score} \\ "
+            r"\textbf{(a)} & \textbf{(b)} \\ \midrule two\par lines & 1 \\ \bottomrule\end{tabular}\end{table}")
+    md = convert(tmp_path, body)
+    assert "<table" not in md and "<td" not in md and "| **Model** " in md
+
+
+def test_a_figure_that_holds_a_text_box_keeps_the_text_and_its_caption(tmp_path):
+    body = (r"\begin{figure}\begin{lstlisting}" "\nGiven an API, evaluate it and assign a score from 0 to 10.\n"
+            r"\end{lstlisting}\caption{Evaluation prompt.}\end{figure}")
+    md = convert(tmp_path, body)
+    assert "Given an API, evaluate it" in md and "**Figura 1.** Evaluation prompt." in md
+
+
+def test_a_figure_with_only_images_is_still_just_its_caption(tmp_path):
+    md = convert(tmp_path, r"\begin{figure}\includegraphics{a.png}\caption{Only a picture.}\end{figure}")
+    assert md.strip() == "**Figura 1.** Only a picture."
+
+
+def test_a_figure_that_is_a_grid_of_images_stays_a_caption(tmp_path):
+    body = (r"\begin{figure}\begin{tabular}{cc}\includegraphics{a.png}&\includegraphics{b.png}\\"
+            r"\includegraphics{c.png}&\includegraphics{d.png}\end{tabular}\caption{Four panels.}\end{figure}")
+    md = convert(tmp_path, body)
+    assert md.strip() == "**Figura 1.** Four panels."

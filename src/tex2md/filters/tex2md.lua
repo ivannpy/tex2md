@@ -15,6 +15,7 @@ local headers = require("headers")
 local floats = require("floats")
 local equations = require("equations")
 local document = require("document")
+local cleanup = require("cleanup")
 
 return {
   { Meta = function(meta)
@@ -25,5 +26,7 @@ return {
   { Para = headers.Para, Header = headers.Header },
   { Figure = floats.Figure },
   { Table = floats.Table, Div = floats.DeferredTable, Math = equations.Math, Image = document.Image },
+  { Table = cleanup.Table },
+  { Div = cleanup.Div, Span = cleanup.Span, SmallCaps = cleanup.SmallCaps },
   { Pandoc = document.Pandoc },
 }

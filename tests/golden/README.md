@@ -21,6 +21,11 @@ have broken conversions before:
 | wu2023ardiffusion | figure with one `\caption` and one `\captionof{table}` in sibling minipages |
 | hoogeboom2021 | figure nested inside a minipage of another figure, with `subfigure`s |
 | cheng2025sdar | text-only tables numbered in document order next to normal ones |
+| li2025situ | `algorithm2e` algorithm (`\KwIn`, `\For{..}{..}`, `\;`) whose body used to be lost |
+| liu2023prefix | every numbered equation gets its `\tag{N}` (labels added before compiling) |
+| liu2022flow | delimited-argument macros (`\def\bb#1\ee{..}`) around equations |
+| zhou2024difflm | figures that hold a prompt in a code box: text kept, not just the caption |
+| schiff2025guidance | macro names set with `\text` (`\method` -> UDLM) and tables with spans |
 | lambert2025reinforcemen | pandoc-written `longtable` with `\citeproc`, repeated headers and `\endlastfoot` |
 
 The test replays the conversion from the local cache (`~/.cache/tex2md`), so it needs no network once

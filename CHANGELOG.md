@@ -22,6 +22,19 @@
 - Library: 8 papers gained captions (baek2026, cheng2025, hoogeboom2021, lambert2025, schiff2025, wu2023, zeng2025,
   wang2025 recovered `1)`-style numbers); the rest of the 124 outputs are byte-identical.
 
+## Verification pass over random samples (18 papers read against their PDFs)
+- Output is now plain Markdown: `Div`/`Span`/small caps are unwrapped, tables with colspan/rowspan or several header
+  rows become pipe tables (math as `$...$`), and no MathML/`<span>`/`<div>` remains (14 tables that hold code
+  blocks stay HTML, with their formulas turned back into TeX).
+- Lost text recovered: macros whose body used `\text` (method names such as UDLM, Nemotron-Labs-Diffusion), prompts
+  and algorithms inside `figure` environments, `algorithm2e` algorithm bodies, proofs written with delimited macros.
+- Every numbered equation now carries its real `\tag{N}` (73 papers had equations without number); unresolved
+  `(??)` references dropped from 90 to 12.
+- Local `.sty` macros are expanded transitively; `\DeclarePairedDelimiter`, `\citeproc` citations, counter hacks
+  (`\addtocounter`), `%` comments and back-to-back formulas inside math are handled.
+- Float numbering tolerates a `.aux` that lists floats in placement order; longest-prefix caption matching.
+- New tools: `tex2md audit DIR`; the golden set has 23 papers.
+
 ## Before the refactor (single `tex2md.py`)
 - Float numbering from the `.aux` caption lines; recovery of captions lost in `subtable`, `minipage`,
   `parbox`, `captionof`, `SCfigure`, image-only tables and text-only tables.

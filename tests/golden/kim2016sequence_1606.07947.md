@@ -48,7 +48,7 @@ $$\begin{equation*}
 
 where $\mathcal{T}$ is the set of all possible sequences. NMT models parameterize $p(\mathbf{t}\,|\,\mathbf{s})$ with an *encoder* neural network which reads the source sentence and a *decoder* neural network which produces a distribution over the target sentence (one word at a time) given the source. We employ the attentional architecture from Luong et al. \[33\], which achieved state-of-the-art results on English $\rightarrow$ German translation.[^3]
 
-**Figura 1.** Overview of the different knowledge distillation approaches. In word-level knowledge distillation (left) cross-entropy is minimized between the student/teacher distributions (yellow) for each word in the actual target sequence (<span class="sans-serif">ECD</span>), as well as between the student distribution and the degenerate data distribution, which has all of its probabilitiy mass on one word (black). In sequence-level knowledge distillation (center) the student network is trained on the output from beam search of the teacher network that had the highest score (<span class="sans-serif">ACF</span>). In sequence-level interpolation (right) the student is trained on the output from beam search of the teacher network that had the highest $sim$ with the target sequence (<span class="sans-serif">ECE</span>).
+**Figura 1.** Overview of the different knowledge distillation approaches. In word-level knowledge distillation (left) cross-entropy is minimized between the student/teacher distributions (yellow) for each word in the actual target sequence (ECD), as well as between the student distribution and the degenerate data distribution, which has all of its probabilitiy mass on one word (black). In sequence-level knowledge distillation (center) the student network is trained on the output from beam search of the teacher network that had the highest score (ACF). In sequence-level interpolation (right) the student is trained on the output from beam search of the teacher network that had the highest $sim$ with the target sequence (ECE).
 
 ## 2.2 Knowledge Distillation
 
@@ -183,7 +183,7 @@ $$\begin{equation*}
 
 In this setting, due to the noise assumption, $\mathcal{D}$ now has significant probability mass around a neighborhood of $\mathbf{y}$ (not just at $\mathbf{y}$), and therefore the $\mathop{\mathrm{argmax}}$ of the mixture distribution is likely something other than $\mathbf{y}$ (the observed sequence) or $\hat{\mathbf{y}}$ (the output from beam search). We can see that $\tilde{\mathbf{y}}$ is a natural approximation to the $\mathop{\mathrm{argmax}}$ of this mixture distribution between $\mathcal{D}$ and $q(\mathbf{t}\,|\,\mathbf{s})$ for some $\alpha$. We illustrate this framework in Figure 1 (right) and visualize the distribution over a real example in Figure 2.
 
-**Figura 2.** Visualization of sequence-level interpolation on an example German $\rightarrow$ English sentence: <span class="sans-serif">Bis 15 Tage vor Anreise sind Zimmer-Annullationen kostenlos</span>. We run beam search, plot the final hidden state of the hypotheses using t-SNE and show the corresponding (smoothed) probabilities with contours. In the above example, the sentence that is at the top of the beam after beam search (green) is quite far away from gold (red), so we train the model on a sentence that is on the beam but had the highest $sim$ (e.g. BLEU) to gold (purple).
+**Figura 2.** Visualization of sequence-level interpolation on an example German $\rightarrow$ English sentence: Bis 15 Tage vor Anreise sind Zimmer-Annullationen kostenlos. We run beam search, plot the final hidden state of the hypotheses using t-SNE and show the corresponding (smoothed) probabilities with contours. In the above example, the sentence that is at the top of the beam after beam search (green) is quite far away from gold (red), so we train the model on a sentence that is on the beam but had the highest $sim$ (e.g. BLEU) to gold (purple).
 
 # 4 Experimental Setup
 
@@ -208,8 +208,6 @@ Student is trained on the sequence on the teacher’s beam that had the highest 
 The above methods are complementary and can be combined with each other. For example, we can train on teacher-generated data but still include a word-level cross-entropy term between the teacher/student (Seq-KD $+$ Word-KD in Table 1), or fine-tune towards Seq-Inter data starting from the baseline model trained on original data (Baseline $+$ Seq-Inter in Table 1).[^9]
 
 # 5 Results and Discussion
-
-<span id="de" data-label="de"></span>
 
 **Tabla 1.** Results on English-German (newstest2014) and Thai-English (2012/2013) test sets. BLEU$_{K=1}$: BLEU score with beam size $K=1$ (i.e. greedy decoding); $\Delta_{K=1}$: BLEU gain over the baseline model without any knowledge distillation with greedy decoding; BLEU$_{K=5}$: BLEU score with beam size $K=5$; $\Delta_{K=5}$: BLEU gain over the baseline model without any knowledge distillation with beam size $K = 5$; PPL: perplexity on the test set; $p(\mathbf{t}= \hat{\mathbf{y}})$: Probability of output sequence from greedy decoding (averaged over the test set). Params: number of parameters in the model. Best results (as measured by improvement over the baseline) within each category are highlighted in bold.
 
@@ -256,8 +254,6 @@ Finally, although past work has shown that models with lower perplexity generall
 
 ## 5.1 Decoding Speed
 
-<span id="speed" data-label="speed"></span>
-
 **Tabla 2.** Number of source words translated per second across GPU (GeForce GTX Titan X), CPU, and smartphone (Samsung Galaxy 6) for the various English $\rightarrow$ German models. We were unable to open the $4 \times 1000$ model on the smartphone.
 
 | Model Size          |      GPU |     CPU | Android |
@@ -274,8 +270,6 @@ Finally, although past work has shown that models with lower perplexity generall
 Run-time complexity for beam search grows linearly with beam size. Therefore, the fact that sequence-level knowledge distillation allows for greedy decoding is significant, with practical implications for running NMT systems across various devices. To test the speed gains, we run the teacher/student models on GPU, CPU, and smartphone, and check the average number of source words translated per second (Table 2). We use a GeForce GTX Titan X for GPU and a Samsung Galaxy 6 smartphone. We find that we can run the student model $10$ times faster with greedy decoding than the teacher model with beam search on GPU ($1051.3$ vs $101.9$ words/sec), with similar performance.
 
 ## 5.2 Weight Pruning
-
-<span id="prune" data-label="prune"></span>
 
 **Tabla 3.** Performance of student models with varying $\%$ of the weights pruned. Top two rows are models without any pruning. Params: number of parameters in the model; Prune $\%$: Percentage of weights pruned based on their absolute values; BLEU: BLEU score with beam search decoding ($K = 5$) after retraining the pruned model; Ratio: Ratio of the number of parameters versus the original teacher model (which has $221$m parameters).
 

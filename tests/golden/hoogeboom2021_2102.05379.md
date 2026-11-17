@@ -24,6 +24,10 @@ Generative flows and diffusion models have been predominantly trained on ordinal
 
 # 1 Introduction
 
+*(a) Argmax Flow: Composition of a flow $p({\boldsymbol{v}})$ and argmax transformation which gives the model $P({\boldsymbol{x}})$. The flow maps from a base distribution $p({\boldsymbol{z}})$ using a bijection $g$.*
+
+*(b) Multinomial Diffusion: Each step $p({\boldsymbol{x}}_{t-1} | {\boldsymbol{x}}_{t})$ denoises the signal starting from a uniform categorical base distribution which gives the model $p({\boldsymbol{x}}_0)$.*
+
 **Figura 1.** Overview of generative models.
 
 Many sources of high-dimensional data are categorical, for example language and image segmentation. Although natural images have been studied to a large extent with generative flows and diffusion models, categorical data has not had the same extensive treatment. Currently they are primarily modelled by autoregressive models, which are expensive to sample from (Cooijmans et al., 2017; Dai et al., 2019).
@@ -40,8 +44,6 @@ Other attractive generative models are diffusion models (Sohl-Dickstein et al., 
 |  |  | $\mathcal{S}({\boldsymbol{x}}) = \{{\boldsymbol{v}}| {\boldsymbol{x}}= \lfloor {\boldsymbol{v}}\rfloor \}$ | e.g. images, audio |
 | Argmax | ${\boldsymbol{x}}= \mathop{\mathrm{arg\,max}}{\boldsymbol{v}}$ | ${\boldsymbol{v}}\sim q({\boldsymbol{v}}|{\boldsymbol{x}})$ with support | Categorical Data |
 |  |  | $\mathcal{S}({\boldsymbol{x}}) = \{{\boldsymbol{v}}| {\boldsymbol{x}}= \mathop{\mathrm{arg\,max}}{\boldsymbol{v}}\}$ | e.g. text, segmentation |
-
-<span id="tab:surjective" data-label="tab:surjective"></span>
 
 Therefore, in this paper we introduce extensions of flows and diffusion models for categorical variables (depicted in Figure 1): *i)* Argmax Flows bridge the gap between categorical data and continuous normalizing flows using an argmax transformation and a corresponding family of probabilistic inverses for the argmax. In addition *ii)* we introduce Multinomial Diffusion, which is a diffusion model directly defined on categorical variables. Opposed to normalizing flows, defining diffusion for discrete variables directly does not require gradient approximations, because the diffusion trajectory is fixed. As a result of our work, generative normalizing flows and diffusion models can directly learn categorical data.
 
@@ -82,21 +84,17 @@ An important insight in diffusion is that by conditioning on ${\boldsymbol{x}}_0
 Argmax flows define discrete distributions using 1) a density model $p({\boldsymbol{v}})$, such as a normalizing flow, and 2) an argmax layer that maps the continuous ${\boldsymbol{v}}\in \mathbb{R}^{D \times K}$ to a discrete ${\boldsymbol{x}}\in \{1,2,...,K\}^D$ using $$\begin{equation}
 \small
     {\boldsymbol{x}}= \mathop{\mathrm{arg\,max}}{\boldsymbol{v}}\quad \text{ where } \quad x_d = \mathop{\mathrm{arg\,max}}_k v_{dk}.
+\tag{4}
 \end{equation}$$ This is a natural choice to model categorical variables, because it divides the entire continuous space of ${\boldsymbol{v}}$ into symmetric partitions corresponding to categories in ${\boldsymbol{x}}$. To sample from an argmax flow sample ${\boldsymbol{v}}\sim p({\boldsymbol{v}})$ and compute ${\boldsymbol{x}}= \mathop{\mathrm{arg\,max}}{\boldsymbol{v}}$ (Algorithm 1). To generate reasonable samples, it is up to the density model $p({\boldsymbol{v}})$ to capture any complicated dependencies between the different dimensions. While sampling from an argmax flow is straightforward, the main difficulty lies in *optimizing* this generative model. To compute the likelihood of a datapoint ${\boldsymbol{x}}$, we have to compute $$\begin{equation}
 \small
     P({\boldsymbol{x}}) =\! \int P({\boldsymbol{x}}| {\boldsymbol{v}}) p({\boldsymbol{v}})d{\boldsymbol{v}}, ~~P({\boldsymbol{x}}|{\boldsymbol{v}}) \!=\! \delta\big({\boldsymbol{x}}\!=\! \mathop{\mathrm{arg\,max}}({\boldsymbol{v}})\big),
+\tag{5}
 \end{equation}$$ which is intractable. Consequently, we resort to variational inference and specify a variational distribution $q({\boldsymbol{v}}|{\boldsymbol{x}})$. We note that naïvely choosing any variational distribution may lead to samples ${\boldsymbol{v}}\sim q({\boldsymbol{v}}| {\boldsymbol{x}})$ where $\delta({\boldsymbol{x}}= \mathop{\mathrm{arg\,max}}{\boldsymbol{v}}) = 0$, which yields an ELBO of negative infinity. To avoid this, we need a variational distribution $q({\boldsymbol{v}}|{\boldsymbol{x}})$ that satisfies what we term the *argmax constraint*: $$\begin{equation*}
 \small
     {\boldsymbol{x}}= \mathop{\mathrm{arg\,max}}{\boldsymbol{v}}\quad \text{for all} \quad {\boldsymbol{v}}\sim q({\boldsymbol{v}}|{\boldsymbol{x}}).
 \end{equation*}$$ That is, the variational distribution $q({\boldsymbol{v}}|{\boldsymbol{x}})$ should have support limited to $\mathcal{S}({\boldsymbol{x}}) = \{{\boldsymbol{v}}\in \mathbb{R}^{D\times K} : {\boldsymbol{x}}= \mathop{\mathrm{arg\,max}}{\boldsymbol{v}}\}$. Recall that under this condition, the ELBO simplifies to $\mathbb{E}_{{\boldsymbol{v}}\sim q({\boldsymbol{v}}|{\boldsymbol{x}})} \left[ \log p({\boldsymbol{v}}) - \log q({\boldsymbol{v}}|{\boldsymbol{x}}) \right]$, as shown in Algorithm 2. For an illustration of the method see Figure 1a.
 
 **Tabla.** Sampling from Argmax Flows
-
-<div class="algorithm">
-
-<span id="alg:sample_argmax" data-label="alg:sample_argmax"></span>
-
-<div class="algorithmic">
 
 **Input:** $p({\boldsymbol{v}})$
 
@@ -106,17 +104,7 @@ Sample ${\boldsymbol{v}}\sim p({\boldsymbol{v}})$
 
 Compute ${\boldsymbol{x}}= \mathop{\mathrm{arg\,max}}{\boldsymbol{v}}$
 
-</div>
-
-</div>
-
-<div class="algorithm">
-
 **Algoritmo 2.** Optimizing Argmax Flows
-
-<span id="alg:optimize_argmax" data-label="alg:optimize_argmax"></span>
-
-<div class="algorithmic">
 
 **Input:** ${\boldsymbol{x}}$, $p({\boldsymbol{v}})$, $q({\boldsymbol{v}}|{\boldsymbol{x}})$
 
@@ -125,10 +113,6 @@ Compute ${\boldsymbol{x}}= \mathop{\mathrm{arg\,max}}{\boldsymbol{v}}$
 Sample ${\boldsymbol{v}}\sim q({\boldsymbol{v}}|{\boldsymbol{x}})$
 
 Compute $\mathcal{L} = \log p({\boldsymbol{v}}) - \log q({\boldsymbol{v}}|{\boldsymbol{x}})$
-
-</div>
-
-</div>
 
 ## 3.1 Probabilistic Inverse
 
@@ -140,18 +124,14 @@ We are free to specify any variational distribution $q({\boldsymbol{v}}|{\boldsy
 
 A straightforward method to construct a distribution $q({\boldsymbol{v}}|x)$ satisfying the argmax constraint is to use thresholding. That is, we first sample an unbounded variable ${\boldsymbol{u}}\in \mathbb{R}^{K}$ from $q({\boldsymbol{u}}| x)$, which can be for example a conditional Gaussian or normalizing flow. Next, we map ${\boldsymbol{u}}$ to ${\boldsymbol{v}}$ such that element $x$ is the largest: $$\begin{equation}
     v_x = u_x \quad \text{and} \quad {\boldsymbol{v}}_{-x} = \mathrm{threshold}_T({\boldsymbol{u}}_{-x})
+\tag{6}
 \end{equation}$$ where the thresholding is applied elementwise with threshold value $T=v_x$. This ensures that element $v_x$ is the largest, and consequently that $q({\boldsymbol{v}}|x)$ satisfies the argmax constraint. Note that we require the threshold function to be bijective, $\mathrm{threshold}_T: \mathbb{R}\rightarrow (-\infty,T)$, so that we can use the change-of-variables formula to compute $\log q({\boldsymbol{v}}|x)$. In our implementation, thresholding is implemented using a softplus such that all values are mapped below a limit $T$: $$\begin{equation}
 \small
-   v = \mathrm{threshold}_T(u) = T-\mathrm{softplus}(T-u),
+   v = \mathrm{threshold}_T(u) = T-\mathrm{softplus}(T-u), 
+\tag{7}
 \end{equation}$$ where $\mathrm{softplus}(z) = \log(1 + e^z)$ and for which it is guaranteed that $v \in (-\infty, T)$.
 
 **Tabla.** Thresholding-based $q({\boldsymbol{v}}|{\boldsymbol{x}})$
-
-<div class="algorithm">
-
-<span id="alg:thresholding" data-label="alg:thresholding"></span>
-
-<div class="algorithmic">
 
 **Input:** ${\boldsymbol{x}}$, $q({\boldsymbol{u}}|{\boldsymbol{x}})$
 
@@ -165,17 +145,7 @@ ${\boldsymbol{v}}_{-{\boldsymbol{x}}} = \mathrm{threshold}({\boldsymbol{u}}_{-{\
 
 $\log q({\boldsymbol{v}}|{\boldsymbol{x}}) = \log q({\boldsymbol{u}}|{\boldsymbol{x}}) - \log |\det \mathop{}\!\mathrm{d}{\boldsymbol{v}}/ \mathop{}\!\mathrm{d}{\boldsymbol{u}}|$
 
-</div>
-
-</div>
-
-<div class="algorithm">
-
 **Algoritmo 4.** Gumbel-based $q({\boldsymbol{v}}|{\boldsymbol{x}})$
-
-<span id="alg:gumbel" data-label="alg:gumbel"></span>
-
-<div class="algorithmic">
 
 **Input:** ${\boldsymbol{x}}$, $\boldsymbol{\phi}$
 
@@ -191,10 +161,6 @@ $\log q({\boldsymbol{v}}|{\boldsymbol{x}}) = \log \mathrm{Gumbel}({\boldsymbol{v
 
 $+ \log \mathrm{TruncGumbel}({\boldsymbol{v}}_{-{\boldsymbol{x}}} | \boldsymbol{\phi}_{-{\boldsymbol{x}}}, {\boldsymbol{v}}_{\boldsymbol{x}})$
 
-</div>
-
-</div>
-
 #### Gumbel (Alg. 4).
 
 An alternative approach is to let $q({\boldsymbol{v}}|x) = \mathrm{Gumbel}({\boldsymbol{v}}|\boldsymbol{\phi})$ *restricted* to $\mathop{\mathrm{arg\,max}}{\boldsymbol{v}}= x$, where the location parameters $\boldsymbol{\phi}\leftarrow \mathrm{NN}(x)$ are predicted using a neural network $\mathrm{NN}$. The Gumbel distribution has favourable properties: The $\mathop{\mathrm{arg\,max}}$ and $\max$ are independent and the $\max$ is also distributed as a Gumbel: $$\begin{equation}
@@ -208,6 +174,7 @@ An alternative approach is to let $q({\boldsymbol{v}}|x) = \mathrm{Gumbel}({\bol
 \end{equation}$$ where the truncation value $T$ is given by $v_x$ which ensures that the argmax constraint $v_x > v_i$ for $i\not=x$ is satisfied. Recall that to optimize Eq. 2, $\log q({\boldsymbol{v}}| {\boldsymbol{x}})$ is also required, which can be computed using the closed-form expressions for the log density functions (see Table 5). Another property of Gumbel distributions is that $$\begin{equation}
 \small
     P(\mathop{\mathrm{arg\,max}}{\boldsymbol{v}}= i) = \exp \phi_i / \sum_i \exp \phi_i,
+\tag{10}
 \end{equation}$$ which we use to initialize the location parameters $\boldsymbol{\phi}$ to match the empirical distribution of the first minibatch of the data.
 
 #### Gumbel Thresholding.
@@ -256,9 +223,11 @@ One of the innovations in (Ho et al., 2020) was the insight to not predict the p
     \mathrm{KL} \big{(}q({\boldsymbol{x}}_{t-1} | {\boldsymbol{x}}_t, {\boldsymbol{x}}_0) | p({\boldsymbol{x}}_{t-1} | {\boldsymbol{x}}_t)\big{)}  &= \mathrm{KL} \big{(} \mathcal{C}(\boldsymbol{\theta}_{\mathrm{post}}({\boldsymbol{x}}_t, {\boldsymbol{x}}_0)) | \mathcal{C}(\boldsymbol{\theta}_{\mathrm{post}}({\boldsymbol{x}}_t, 
     \hat{{\boldsymbol{x}}}_0))\big{)},
 \end{split}
+\tag{15}
 \end{align}$$ which can be computed using $\sum_k \boldsymbol{\theta}_{\mathrm{post}}({\boldsymbol{x}}_t, {\boldsymbol{x}}_0))_k \cdot \log \frac{\boldsymbol{\theta}_{\mathrm{post}}({\boldsymbol{x}}_t, {\boldsymbol{x}}_0))_k}{\boldsymbol{\theta}_{\mathrm{post}}({\boldsymbol{x}}_t, 
 \hat{{\boldsymbol{x}}}_0))_k}$. Furtermore, to compute $\log p({\boldsymbol{x}}_0 | {\boldsymbol{x}}_1)$ use that ${\boldsymbol{x}}_0$ is onehot: $$\begin{equation}
     \log p({\boldsymbol{x}}_0 | {\boldsymbol{x}}_1) = \sum_k {\boldsymbol{x}}_{0,k} \log  \hat{{\boldsymbol{x}}}_{0,k}
+\tag{16}
 \end{equation}$$
 
 # 5 Related Work
@@ -297,11 +266,7 @@ In our experiments we compare the performance of our methods on language modelli
 |  |  | Argmax Coupling Flow (ours) | 1.82 | 1.93 |  |
 | Diffusion |  | Multinomial Text Diffusion (ours) | 1.72 | 1.75 |  |
 
-<div class="flushleft">
-
 $\star$ Results obtained by running code from the official repository for the `text8` and `enwik8` datasets.\
-
-</div>
 
 ## 6.1 Language data
 
@@ -321,6 +286,12 @@ The performance compared to models in literature is presented in Table 3 alongs
 
 **Figura 3.** Samples from models, `text8`.
 
+*(a) Samples from the Argmax Flow.*
+
+*(b) Samples from the Multinomial Diffusion model.*
+
+*(c) Cityscapes data.*
+
 **Figura 4.** Samples from models, cityscapes.
 
 When comparing non-autoregressive models, Argmax Flows also outperforms the method that lifts the categorical space to a continuous space: IAF / SCF (Ziegler and Rush, 2019). Interestingly, the multinomial text diffusion is a non-autoregressive model that performs even better than the argmax coupling flow, but performs worse than the autoregressive version. For this model it is possible that different diffusion trajectories for $q$ would result in even better performance, because in the current form the denoising model has to be very robust to input noise. These experiments also highlight that there is still a distinct performance gap between standard ARMs and (autoregressive) continuous density model on text, possibly related to the dequantization gap (Nielsen and Winther, 2020). Samples from different models trained on `text8` are depicted in Figure 3. Because of difficulties in reproducing results from Discrete Flows, a comparison and analysis of discrete flows are left out of this section. Instead they are extensively discussed in Appendix C. For additional experiments regarding Cartesian products and sampling time see Appendix D.
@@ -337,67 +308,14 @@ For image-type data, we introduce a categorical image dataset: the cityscapes da
 
 **Tabla 4.** Performance of different dequantization methods on squares and cityscapes dataset, in bits per pixel, lower is better.
 
-<table id="tab:results_cityscapes">
-<thead>
-<tr>
-<th style="text-align: left;">Cityscapes</th>
-<th style="text-align: left;">ELBO</th>
-<th style="text-align: right;">IWBO</th>
-<th style="text-align: right;"></th>
-<th style="text-align: right;"></th>
-<th style="text-align: right;"></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: left;">Round / Unif. (Uria et al., 2013)</td>
-<td style="text-align: left;">1.010</td>
-<td style="text-align: right;">0.930</td>
-<td style="text-align: right;"></td>
-<td style="text-align: right;"></td>
-<td style="text-align: right;"></td>
-</tr>
-<tr>
-<td style="text-align: left;">Round / Var. (Ho et al., 2019)</td>
-<td style="text-align: left;">0.334</td>
-<td style="text-align: right;">0.315</td>
-<td style="text-align: right;"></td>
-<td style="text-align: right;"></td>
-<td style="text-align: right;"></td>
-</tr>
-<tr>
-<td style="text-align: left;">Argmax / Softplus thres. (ours)</td>
-<td style="text-align: left;"><strong>0.303</strong></td>
-<td style="text-align: right;"><strong>0.290</strong></td>
-<td style="text-align: right;"></td>
-<td style="text-align: right;"></td>
-<td style="text-align: right;"></td>
-</tr>
-<tr>
-<td style="text-align: left;">Argmax / Gumbel dist. (ours)</td>
-<td style="text-align: left;">0.365</td>
-<td style="text-align: right;">0.341</td>
-<td style="text-align: right;"></td>
-<td style="text-align: right;"></td>
-<td style="text-align: right;"></td>
-</tr>
-<tr>
-<td style="text-align: left;">Argmax / Gumbel thres. (ours)</td>
-<td style="text-align: left;"><strong>0.307</strong></td>
-<td style="text-align: right;"><strong>0.287</strong></td>
-<td style="text-align: right;"></td>
-<td style="text-align: right;"></td>
-<td style="text-align: right;"></td>
-</tr>
-<tr>
-<td style="text-align: left;">Multinomial Diffusion (ours)</td>
-<td colspan="2" style="text-align: center;">0.305</td>
-<td style="text-align: right;"></td>
-<td style="text-align: right;"></td>
-<td style="text-align: right;"></td>
-</tr>
-</tbody>
-</table>
+| Cityscapes                        | ELBO      |      IWBO |     |     |     |
+|:----------------------------------|:----------|----------:|----:|----:|----:|
+| Round / Unif. (Uria et al., 2013) | 1.010     |     0.930 |     |     |     |
+| Round / Var. (Ho et al., 2019)    | 0.334     |     0.315 |     |     |     |
+| Argmax / Softplus thres. (ours)   | **0.303** | **0.290** |     |     |     |
+| Argmax / Gumbel dist. (ours)      | 0.365     |     0.341 |     |     |     |
+| Argmax / Gumbel thres. (ours)     | **0.307** | **0.287** |     |     |     |
+| Multinomial Diffusion (ours)      | 0.305     |           |     |     |     |
 
 #### Model description
 
@@ -523,6 +441,7 @@ For diffusion we use the cosine schedule for $\{\alpha_t\}$ from (Nichol and Dha
 \end{equation*}$$ where $T$ is the total number of diffusion steps. Nichol and Dhariwal (2021) show that instead of sampling $t$ uniformly, variance is reduced when $t$ is importance-sampled with $q(t) \propto \sqrt{\mathbb{E}[L_t^2]}$, which is estimated using training statistics, and we use their approach. The objective can be summarized as: $$\begin{equation}
     \log P({\boldsymbol{x}}_0) \geq \mathbb{E}_{t \sim q(t), {\boldsymbol{x}}_t \sim q({\boldsymbol{x}}_t | {\boldsymbol{x}}_0)} 
     \left[ - \frac{1}{q(t)} \mathrm{KL} \big{(}q({\boldsymbol{x}}_{t-1} | {\boldsymbol{x}}_t, {\boldsymbol{x}}_0) | p({\boldsymbol{x}}_{t-1} | {\boldsymbol{x}}_t) \right].
+\tag{17}
 \end{equation}$$
 
 #### Gumbel properties
@@ -531,34 +450,34 @@ In Table 5 a useful overview of Gumbel properties are given. These equations ca
 
 **Tabla 5.** Summary of Gumbel properties.
 
-<table id="tab:gumbel">
+<table>
 <thead>
 <tr>
 <th style="text-align: left;">Description</th>
-<th style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">log</mi><mo>&#8289;</mo></mrow><mi>p</mi></mrow><annotation encoding="application/x-tex">\log p</annotation></semantics></math></th>
+<th style="text-align: left;">$\log p$</th>
 <th style="text-align: left;">Sample</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">G</mi><mi mathvariant="normal">u</mi><mi mathvariant="normal">m</mi><mi mathvariant="normal">b</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">l</mi></mrow><mo stretchy="false" form="prefix">(</mo><mi>g</mi><mo stretchy="false" form="prefix">|</mo><mi>ϕ</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mathrm{Gumbel}(g | \phi)</annotation></semantics></math></td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ϕ</mi><mo>−</mo><mi>g</mi><mo>−</mo><mrow><mi mathvariant="normal">exp</mi><mo>&#8289;</mo></mrow><mo stretchy="false" form="prefix">(</mo><mi>ϕ</mi><mo>−</mo><mi>g</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\phi - g - \exp(\phi - g)</annotation></semantics></math></td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>g</mi><mo>=</mo><mi>−</mi><mrow><mi mathvariant="normal">log</mi><mo>&#8289;</mo></mrow><mo stretchy="false" form="prefix">(</mo><mi>−</mi><mrow><mi mathvariant="normal">log</mi><mo>&#8289;</mo></mrow><mo stretchy="false" form="prefix">(</mo><mi>u</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mi>ϕ</mi></mrow><annotation encoding="application/x-tex">g = -\log (-\log(u)) + \phi</annotation></semantics></math><br />
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>u</mi><mo>∼</mo><mi mathvariant="script">𝒰</mi><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">u \sim \mathcal{U}(0, 1)</annotation></semantics></math></td>
+<td style="text-align: left;">$\mathrm{Gumbel}(g | \phi)$</td>
+<td style="text-align: left;">$\phi - g - \exp(\phi - g)$</td>
+<td style="text-align: left;">$g = -\log (-\log(u)) + \phi$<br />
+$u \sim \mathcal{U}(0, 1)$</td>
 </tr>
 <tr>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mrow><mi mathvariant="normal">max</mi><mo>&#8289;</mo></mrow><mi>i</mi></msub><mrow><mi mathvariant="normal">G</mi><mi mathvariant="normal">u</mi><mi mathvariant="normal">m</mi><mi mathvariant="normal">b</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">l</mi></mrow><mo stretchy="false" form="prefix">(</mo><msub><mi>g</mi><mi>i</mi></msub><mo stretchy="false" form="prefix">|</mo><mi>ϕ</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\max_i \mathrm{Gumbel}(g_i | \phi)</annotation></semantics></math></td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">log</mi><mo>&#8289;</mo></mrow><mrow><mi mathvariant="normal">G</mi><mi mathvariant="normal">u</mi><mi mathvariant="normal">m</mi><mi mathvariant="normal">b</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">l</mi></mrow><mo stretchy="false" form="prefix">(</mo><msub><mi>g</mi><mi mathvariant="normal">max</mi></msub><mo stretchy="false" form="prefix">|</mo><msub><mi>ϕ</mi><mi mathvariant="normal">max</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\log \mathrm{Gumbel}(g_{\max} | \phi_{\max})</annotation></semantics></math><br />
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ϕ</mi><mi mathvariant="normal">max</mi></msub><mo>=</mo><mrow><mi mathvariant="normal">log</mi><mo>&#8289;</mo></mrow><msub><mo>∑</mo><mi>i</mi></msub><mrow><mi mathvariant="normal">exp</mi><mo>&#8289;</mo></mrow><msub><mi>ϕ</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\phi_{\max} = \log \sum_i \exp \phi_i</annotation></semantics></math></td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>g</mi><mi mathvariant="normal">max</mi></msub><mo>∼</mo><mrow><mi mathvariant="normal">G</mi><mi mathvariant="normal">u</mi><mi mathvariant="normal">m</mi><mi mathvariant="normal">b</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">l</mi></mrow><mo stretchy="false" form="prefix">(</mo><msub><mi>ϕ</mi><mi mathvariant="normal">max</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">g_{\max} \sim \mathrm{Gumbel}(\phi_{\max})</annotation></semantics></math><br />
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ϕ</mi><mi mathvariant="normal">max</mi></msub><mo>=</mo><mrow><mi mathvariant="normal">log</mi><mo>&#8289;</mo></mrow><msub><mo>∑</mo><mi>i</mi></msub><mrow><mi mathvariant="normal">exp</mi><mo>&#8289;</mo></mrow><msub><mi>ϕ</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\phi_{\max} = \log \sum_i \exp \phi_i</annotation></semantics></math></td>
+<td style="text-align: left;">$\max_i \mathrm{Gumbel}(g_i | \phi)$</td>
+<td style="text-align: left;">$\log \mathrm{Gumbel}(g_{\max} | \phi_{\max})$<br />
+$\phi_{\max} = \log \sum_i \exp \phi_i$</td>
+<td style="text-align: left;">$g_{\max} \sim \mathrm{Gumbel}(\phi_{\max})$<br />
+$\phi_{\max} = \log \sum_i \exp \phi_i$</td>
 </tr>
 <tr>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">T</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">u</mi><mi mathvariant="normal">n</mi><mi mathvariant="normal">c</mi><mi mathvariant="normal">G</mi><mi mathvariant="normal">u</mi><mi mathvariant="normal">m</mi><mi mathvariant="normal">b</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">l</mi></mrow><mo stretchy="false" form="prefix">(</mo><mi>g</mi><mo stretchy="false" form="prefix">|</mo><mi>ϕ</mi><mo>,</mo><mi>T</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mathrm{TruncGumbel}(g| \phi, T)</annotation></semantics></math></td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ϕ</mi><mo>−</mo><mi>g</mi><mo>−</mo><mrow><mi mathvariant="normal">exp</mi><mo>&#8289;</mo></mrow><mo stretchy="false" form="prefix">(</mo><mi>ϕ</mi><mo>−</mo><mi>g</mi><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mrow><mi mathvariant="normal">exp</mi><mo>&#8289;</mo></mrow><mo stretchy="false" form="prefix">(</mo><mi>ϕ</mi><mo>−</mo><mi>T</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\phi - g - \exp(\phi - g) + \exp(\phi - T)</annotation></semantics></math><br />
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>g</mi><mo>&lt;</mo><mi>T</mi></mrow><annotation encoding="application/x-tex">g &lt; T</annotation></semantics></math> <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>−</mi><mi>∞</mi></mrow><annotation encoding="application/x-tex">-\infty</annotation></semantics></math></td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>g</mi><mo>=</mo><mi>ϕ</mi><mo>−</mo><mrow><mi mathvariant="normal">log</mi><mo>&#8289;</mo></mrow><mo stretchy="false" form="prefix">(</mo><mrow><mi mathvariant="normal">exp</mi><mo>&#8289;</mo></mrow><mo stretchy="false" form="prefix">(</mo><mi>ϕ</mi><mo>−</mo><mi>T</mi><mo stretchy="false" form="postfix">)</mo><mo>−</mo><mrow><mi mathvariant="normal">log</mi><mo>&#8289;</mo></mrow><mi>u</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">g = \phi - \log(\exp(\phi - T) - \log u)</annotation></semantics></math><br />
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>u</mi><mo>∼</mo><mi mathvariant="script">𝒰</mi><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">u \sim \mathcal{U}(0, 1)</annotation></semantics></math></td>
+<td style="text-align: left;">$\mathrm{TruncGumbel}(g| \phi, T)$</td>
+<td style="text-align: left;">$\phi - g - \exp(\phi - g) + \exp(\phi - T)$<br />
+$g < T$ $-\infty$</td>
+<td style="text-align: left;">$g = \phi - \log(\exp(\phi - T) - \log u)$<br />
+$u \sim \mathcal{U}(0, 1)$</td>
 </tr>
 </tbody>
 </table>
@@ -615,6 +534,14 @@ Experiments where run on NVIDIA-GTX 1080Ti GPUs, CUDA 10.1 with Python version 3
 
 In this section we detail our efforts to reproduce the results from discrete flows (Tran et al., 2019). Specifically, we are interested in the discrete flows models that map to *factorized* distributions, for instance the discrete bipartite (coupling) flow. We avoid situations where an autoregressive base distribution is used, it may be difficult to identify how much the flow is actually learning versus the ARM as base. For this paper an official implementation was released at <https://github.com/google/edward2/blob/master/edward2/tensorflow/layers/> in the files `discrete_flows.py` and `utils.py`. However, this codebase contains only the high-level modules and code for the toy example, it does not contain the specific code related to the language experiments. These high-level modules and the toy problem were ported to PyTorch here: <https://github.com/TrentBrick/PyTorchDiscreteFlows>. Using this codebase, we were able to compare on the quantized eight Gaussians toy dataset, as depicted in Figure 6. In this experiment we clearly see that argmax flows outperform discrete flows both numerically (6.32 versus 7.0 nats) and visually by comparing the samples or probability mass function.
 
+*(a) Samples from Discrete Flow using a single layer, taken from (Tran et al., 2019).*
+
+*(b) Samples from the quantized 8 Gaussians data distribution.*
+
+*(c) Samples from the Discrete Flows PyTorch re-implementation, achieving 7.0 nats.*
+
+*(d) Probability mass of our Argmax Flow using a single layer, achieving 6.32 nats.*
+
 **Figura 6.** Reproduction of the quantized eight Gaussians experiment. Plots show either the probability mass function or weighted number of samples (which will tend towards the pmf).
 
 Subsequent efforts by others to reproduce the language experiments failed (see <https://github.com/TrentBrick/PyTorchDiscreteFlows/issues/1>). In another work, Lippe and Gavves (2020) also noticed the difficulty of getting discrete flows to succesfully optimize, as detailed in the set shuffling/summation experiment corresponding to Table 5 in the paper.
@@ -660,15 +587,11 @@ A comparison of sampling time speeds are shown in Table 10. A couple of orders 
 | Generative Flow |  | Argmax Flow, AR (ours) | 115 $\pm 0.03$ |  |  |
 |  |  | Argmax Coupling Flow (ours) | 0.40 $\pm0.03$ |  |  |
 |  |  | Discrete Flow (Tran et al., 2019) | 0.16$^\dagger$ |  |  |
-| Diffusion |  | Multinomial Text Diffusion (ours) | 26.6 $\pm2.2$$^{\ddagger}$ |  |  |
+| Diffusion |  | Multinomial Text Diffusion (ours) | 26.6 $\pm2.2 ^{\ddagger}$ |  |  |
 |  |  | Multinomial Text Diffusion, 100 steps (ours) | 2.4 $\pm0.16$ |  |  |
-
-<div class="flushleft">
 
 $\dagger$ Computed on a 288-length sequence instead of 256-length, taken from (Tran et al., 2019).\
 $\ddagger$ This result is for the complete 1000 timesteps chain, improvements are possible by skipping steps.
-
-</div>
 
 Due to the computational cost of running normalizing flows, it is not possible for us to run every model many times. However, generally single-run results suffice, as the performance variance of these models is relatively small. In Table 11 the standard deviation and average performance for a selection of models is shown, taken over $3$ runs. Observe that these standard deviations are small compared to the reported differences between the models. Notice that standard deviations for coupling models are larger, but the performance difference between those types of models is also larger.
 

@@ -80,7 +80,7 @@ While previous work on discrete diffusion supports general forward processes (e.
 
 #### Notation.
 
-We denote scalar discrete random variables with $K$ categories as ‘one-hot’ column vectors and define $\mathcal{V}\in \{{\mathbf x}\in \{0, 1\}^K: \sum_{i=1}^K {\mathbf x}_i = 1\}$ as the set of all such vectors. Define $\text{Cat}(\cdot;\boldsymbol{\mathit{\pi}})$ as the categorical distribution over $K$ classes with probabilities given by $\boldsymbol{\mathit{\pi}}\in \Delta^{K}$, where $\Delta^{K}$ denotes the $K$-simplex. We also assume that the $K$-th category corresponds to a special \[<span class="smallcaps">mask</span>\] token and let ${\mathbf m}\in \mathcal{V}$ be the one-hot vector for this mask, i.e., ${\mathbf m}_{K} = 1$. Additionally, let ${\boldsymbol{1}}= \{1\}^{K}$ and $\langle \mathbf{a}, \mathbf{b} \rangle$ and $\mathbf{a} \odot \mathbf{b}$ respectively denote the dot and Hadamard products between two vectors $\mathbf{a}$ and $\mathbf{b}$.
+We denote scalar discrete random variables with $K$ categories as ‘one-hot’ column vectors and define $\mathcal{V}\in \{{\mathbf x}\in \{0, 1\}^K: \sum_{i=1}^K {\mathbf x}_i = 1\}$ as the set of all such vectors. Define $\text{Cat}(\cdot;\boldsymbol{\mathit{\pi}})$ as the categorical distribution over $K$ classes with probabilities given by $\boldsymbol{\mathit{\pi}}\in \Delta^{K}$, where $\Delta^{K}$ denotes the $K$-simplex. We also assume that the $K$-th category corresponds to a special \[mask\] token and let ${\mathbf m}\in \mathcal{V}$ be the one-hot vector for this mask, i.e., ${\mathbf m}_{K} = 1$. Additionally, let ${\boldsymbol{1}}= \{1\}^{K}$ and $\langle \mathbf{a}, \mathbf{b} \rangle$ and $\mathbf{a} \odot \mathbf{b}$ respectively denote the dot and Hadamard products between two vectors $\mathbf{a}$ and $\mathbf{b}$.
 
 ## 3.1 Interpolating Discrete Diffusion
 
@@ -148,7 +148,7 @@ Furthermore, we induce 2 key properties of the absorbing state diffusion process
 
 #### Zero Masking Probabilities
 
-First, notice that by definition, $\langle {\mathbf x}, {\mathbf m}\rangle = 0$. For this reason, we design the denoising network such that $\langle \mathbf {x}_\theta({\mathbf z}_t, t), {\mathbf m}\rangle= 0$, i.e., we substitute the logit index corresponding to the \[<span class="smallcaps">mask</span>\] token with $-\infty$.
+First, notice that by definition, $\langle {\mathbf x}, {\mathbf m}\rangle = 0$. For this reason, we design the denoising network such that $\langle \mathbf {x}_\theta({\mathbf z}_t, t), {\mathbf m}\rangle= 0$, i.e., we substitute the logit index corresponding to the \[mask\] token with $-\infty$.
 
 #### Carry-Over Unmasking
 
@@ -349,8 +349,6 @@ We perform downstream evaluation with the Genomics Benchmarks (Greá et al., 20
 |       & w/o carry-over (41)      |     $28.56 \pm .15$      |
 |          & w/o zero masking (39) |     $28.51 \pm .15$      |
 
-<span id="tab:lm1b-ablation" data-label="tab:lm1b-ablation"></span>
-
 In Table 8, we can see the effect of our streamlined masked diffusion implementation. The improvements described in Sec. 3.5.1 allow us to greatly reduce perplexity of previously discounted models, such as D3PM (see the bottom row of this table, which is mathematically equivalent to the D3PM formulation). While most works assumed that D3PM achieves mediocre log-likelihoods, we show that is incorrect: our re-implementation almost matches state-of-the-art score-based methods. This introduces a new strong baseline that opens new research opportunities. Additionally, in Table 8, we ablate different components of MDLM. We observe that the perplexity for MDLM trained with a discrete $T=1000$ marginally worsens by 0.1 compared to MDLM trained in continuous time. Additionally, removing the “carry over” operation from the SUBS parameterization increases the perplexity by 1.5 points. However, further removing the “zero masking” operation does not lead to any meaningful change in perplexity. We provide further ablations for the continuous time formulation in the Appendix, showing in  Table 11 that for a pre-trained model, at inference, increasing $T$ yields better likelihoods.
 
 # 6 Related Work
@@ -361,6 +359,7 @@ In Table 8, we can see the effect of our streamlined masked diffusion implement
 
 $$\begin{align}
     \tilde{R}_{t}({\mathbf y}', {\mathbf y}) = - \frac{\alpha'_{t}}{1 - \alpha_{t}} [{\mathbf y}']^\top [\mathbf {x}_\theta({\mathbf y}, t) - {\mathbf m}] \langle {\mathbf y}, {\mathbf m}\rangle
+\tag{12}
 \end{align}$$
 
 **Comparison to Score Estimation**  Score-based approaches to diffusion (Song & Ermon, 2019) extend to discrete states, although they typically further build upon advanced CTMC theory. In particular, SEDD (Lou et al., 2023) optimizes an ELBO[^5] that is a function of the score model, obtaining state-of-the-art log-likelihoods among diffusion models. Our approach, however, is much simpler and does not require advanced theory. Furthermore, we can extract the score for MDLM (76), as demonstrated in Suppl. C.3, making it compatible with various techniques designed for score-based algorithms, such as samplers (Campbell et al., 2022), score parameterization (Lou et al., 2023), efficient designs of the denoising network (Sun et al., 2022), guidance techniques, and more.
@@ -380,8 +379,6 @@ In this work, we explore masked diffusion. With a well-engineered implementation
 # Acknowledgments and Disclosure of Funding
 
 This work was partially funded by the National Science Foundation under awards DGE-1922551, CAREER awards 2046760 and 2145577, and by the National Institute of Health under award MIRA R35GM151243. Marianne Arriola is supported by a NSF Graduate Research Fellowship under award DGE-2139899 and a Hopper-Dean/Bowers CIS Deans Excellence Fellowship.
-
-<div class="appendices">
 
 # A Discrete time ELBO
 
@@ -474,12 +471,14 @@ $$\begin{align}
     & = \text{Cat}\left(
         {\mathbf z}_s; \frac{\alpha_{t}{\mathbf x}}{\alpha_{t}} \right) & \text{\footnotesize } \because {\mathbf x}\odot{\mathbf m}= \mathbf{0} \text{ and } \alpha_{t}= \alpha_{t|s}\alpha_{s} \nonumber \\
     & = \text{Cat}\left({\mathbf z}_s; {\mathbf x}\right) & \text{\footnotesize } \because \alpha_{t}= \alpha_{t|s}\alpha_{s}
+\tag{18}
 \end{align}$$
 
 Thus, we have the following: 
 
 $$\begin{align}
     q({\mathbf z}_s | {\mathbf z}_t={\mathbf x}, {\mathbf x}) = \text{Cat}({\mathbf z}_s; {\mathbf x}).
+\tag{19}
 \end{align}$$
 
 #### Case 2.
@@ -637,6 +636,7 @@ $$\begin{align}
         }_{=0 \;\text{, from (29)}} \langle {\mathbf z}_t, {\mathbf x}\rangle+ \underbrace{
         \text{D}_{\text{KL}}(q({\mathbf z}_s | {\mathbf z}_t={\mathbf m}, {\mathbf x}) \| {p_\theta}({\mathbf z}_s | {\mathbf z}_t={\mathbf m}))}_{
             \text{Given by (30)}} \langle {\mathbf z}_t, {\mathbf m}\rangle
+\tag{31}
 \end{align}$$
 
 Thus, we derive the diffusion loss, ${\mathcal{L}_{T}}$, in the following manner: 
@@ -669,6 +669,7 @@ Consequently, from Equation 33, we derive that
 $$\begin{align}
     & \alpha_{t(0)} = \frac{T}{T+1}, \tag{34}\\
     & \alpha_{t(T)} = 0.
+\tag{35}
 \end{align}$$
 
 Thus we have the following: 
@@ -777,6 +778,7 @@ $$\begin{align}
         \left[\lim_{T \to \infty}T \frac{\alpha_{t}- \alpha_{s}}{1 - \alpha_{t}} \log \langle \mathbf {x}_\theta({\mathbf z}_t, t), {\mathbf x}\rangle\right] & \nonumber \\
     & = \mathbb{E}_{t \sim \mathcal{U}[0, 1], q({\mathbf z}_t | {\mathbf x})} 
     \left[\frac{\alpha'_{t}}{1 - \alpha_{t}} \log \langle \mathbf {x}_\theta({\mathbf z}_t, t), {\mathbf x}\rangle\right] & \text{\footnotesize Using } \lim_{T \to \infty}T (\alpha_{t}- \alpha_{s}) = \alpha'_{t}
+\tag{44}
 \end{align}$$
 
 ### B.2.2 Reconstruction Loss
@@ -820,13 +822,7 @@ $$\begin{align}
 
 In Algorithm 1, we present the training algorithm for MDLM.
 
-<div class="algorithm">
-
 **Algoritmo 1.** Training MDLM
-
-<span id="algo:mdlm_train" data-label="algo:mdlm_train"></span>
-
-<div class="algorithmic">
 
 **repeat**
 
@@ -841,10 +837,6 @@ In Algorithm 1, we present the training algorithm for MDLM.
 $$\nabla_\theta \frac{\alpha'_{t}}{1 - \alpha_{t}} \sum_{\ell} \log \langle \mathbf {x}_\theta^\ell({\mathbf z}^{1:L}_t, t), {\mathbf x}^\ell \rangle$$
 
 **until** converged
-
-</div>
-
-</div>
 
 # C Concrete Score Matching
 
@@ -885,6 +877,7 @@ Using (50), we find that ${q_{t|s}}({\mathbf x}|{\mathbf x}) = \alpha_{t|s}$ for
 $$\begin{align}
     & \lim_{T \to \infty}\left[1 + R_{t}({\mathbf x}, {\mathbf x})\frac{1}{T}\right] = \lim_{T \to \infty}\alpha_{t|s}\nonumber \\
     & \implies R_{t}({\mathbf x}, {\mathbf x}) = \lim_{T \to \infty} T (\alpha_{t|s}- 1) = \frac{\alpha'_{t}}{\alpha_{t}}
+\tag{51}
 \end{align}$$
 
 #### 2. Case $({\mathbf y}' = {\mathbf m}, {\mathbf y}\in \mathcal{V}- \{{\mathbf m}\})$:
@@ -903,6 +896,7 @@ Using (50) and(48), we find ${q_{t|s}}({\mathbf m}|{\mathbf m}) = 1$ and ${q_{t
 
 $$\begin{align}
     R_{t}({\mathbf m}, {\mathbf m}) =  0.
+\tag{53}
 \end{align}$$
 
 Note that when $R_{t}({\mathbf m}, {\mathbf m})$ is constant, the term $\mathcal{O}\left(\frac{1}{T^2}\right)$ reduces to zero, as it includes higher-order time derivatives of $R_{t}$.
@@ -922,6 +916,7 @@ In the context of absorbing state diffusion, these states are never observed. Th
 
 $$\begin{align}
     R_{t}({\mathbf y}' \in \mathcal{V}- \{{\mathbf m}, {\mathbf x}\}, {\mathbf y}\in \{{\mathbf m}, {\mathbf x}\}) = 0
+\tag{55}
 \end{align}$$
 
 Finally, we can express the forward rate matrix as: 
@@ -935,6 +930,7 @@ It can be seen that the columns of this matrix sum to zero, i.e.,
 
 $$\begin{align}
     \sum_{{\mathbf y}' \in \mathcal{V}}R_{t}({\mathbf y}', {\mathbf y}) = 0 \implies R_{t}({\mathbf y}, {\mathbf y}) = \sum_{{\mathbf y}' \neq {\mathbf y}}R_{t}({\mathbf y}', {\mathbf y}),
+\tag{57}
 \end{align}$$
 
 which ensures that the probability mass is preserved in the forward diffusion process. Similarly, the reverse rate matrix $\tilde{R}_{t}$ can be written in terms of the forward rate matrix $R_{t}$ as follows (Lou et al., 2023): 
@@ -970,6 +966,7 @@ $$\begin{align}
         - \frac{q_t({\mathbf y}'|{\mathbf x})}{q_t({\mathbf y}| {\mathbf x})}\log {\mathbf s}_\theta({\mathbf y})_{{\mathbf y}'}
         + K\left(\frac{q_t({\mathbf y}'|{\mathbf x})}{q_t({\mathbf y}| {\mathbf x})}\right) 
         \right) \right]
+\tag{61}
 \end{align}$$
 
 where $K(a) = a \log a - a$. They mention that this expression can be derived from Benton et al. (2022), though they do not provide an explicit derivation. For this reason, we present a rigorous derivation in the following section.
@@ -1063,10 +1060,11 @@ Plugging these into (66), we get:
 
 $$\begin{align}
     & {\mathbf s}_\theta({\mathbf z}_t = {\mathbf m})_{{\mathbf y}\neq {\mathbf m}} = \frac{\alpha_{t}}{1 - \alpha_{t}} \langle \mathbf {x}_\theta({\mathbf z}_t, t), {\mathbf y}\rangle & \text{\footnotesize Using~(70) and~(67)}\tag{71}\\
-    & {\mathbf s}_\theta({\mathbf z}_t = {\mathbf m})_{{\mathbf y}= {\mathbf m}} = 1 & \text{\footnotesize Using~(70)}\\
-    & {\mathbf s}_\theta({\mathbf z}_t \neq {\mathbf m})_{{\mathbf y}= {\mathbf m}} = \frac{1 - \alpha_{t}}{\alpha_{t}} & \text{\footnotesize Using~(69) and~(70)}\\
-    & {\mathbf s}_\theta({\mathbf z}_t \neq {\mathbf m})_{{\mathbf y}= {\mathbf z}_t} = 1 & \text{\footnotesize Using~(69)}\\
+    & {\mathbf s}_\theta({\mathbf z}_t = {\mathbf m})_{{\mathbf y}= {\mathbf m}} = 1 & \text{\footnotesize Using~(70)}\tag{72}\\
+    & {\mathbf s}_\theta({\mathbf z}_t \neq {\mathbf m})_{{\mathbf y}= {\mathbf m}} = \frac{1 - \alpha_{t}}{\alpha_{t}} & \text{\footnotesize Using~(69) and~(70)}\tag{73}\\
+    & {\mathbf s}_\theta({\mathbf z}_t \neq {\mathbf m})_{{\mathbf y}= {\mathbf z}_t} = 1 & \text{\footnotesize Using~(69)}\tag{74}\\
     & {\mathbf s}_\theta({\mathbf z}_t \neq {\mathbf m})_{{\mathbf y}\not \in \{{\mathbf m}, {\mathbf z}_t\}} = 0 & \text{\footnotesize Using~(68) and~(69)}
+\tag{75}
 \end{align}$$
 
 These can be consolidated into the following expression: 
@@ -1285,6 +1283,7 @@ Given `training_steps`, `batch_size`, `context_length`, the number of tokens see
 
 $$\begin{align}
     \texttt{training\_steps} \times \texttt{batch\_size} \times \texttt{context\_length}.
+\tag{88}
 \end{align}$$
 
 However, this expression doesn’t hold for a diffusion model, since at each training step, a fraction of the input tokens are masked before being fed to the model. Let $p_m$ be the probability of a token being masked at a timestep $t$. For the log-linear schedule in our experiments, $p_m=t$. Thus, the expected number of tokens seen by the diffusion model is: 
@@ -1353,7 +1352,7 @@ The Caduceus MLM uses as a backbone a bi-directional variant of the data-depende
 
 All models are pre-trained on 10B tokens (10K steps) and fine-tuned on a generative objective for an additional 50B tokens (50K steps). We use a global batch size of 1024 for a context length of 1024 tokens. Downstream task fine-tuning is performed for 16K steps ( 1B tokens).
 
-For performing Caduceus MLM pre-training, we follow Schiff et al. (2024) for the model size configuration, and hyperparameter selection. For pre-training, we use a fixed 15% mask rate as done in Devlin et al. (2018). Of the ’masked’ tokens, 80% are replaced with \[<span class="smallcaps">mask</span>\] , 10% are replaced with a random token from the vocabulary, and 10% are left unchanged.
+For performing Caduceus MLM pre-training, we follow Schiff et al. (2024) for the model size configuration, and hyperparameter selection. For pre-training, we use a fixed 15% mask rate as done in Devlin et al. (2018). Of the ’masked’ tokens, 80% are replaced with \[mask\] , 10% are replaced with a random token from the vocabulary, and 10% are left unchanged.
 
 For fine-tuning all Mamba-based models (including Caduceus) on diffusion objectives, we lower the learning rate from 8e-3 to 1e-3. For fine-tuning HyenaDNA (Nguyen et al., 2024), we lower the learning rate from 6e-4 to 5e-5. Similar to Gu et al. (2021); Schiff et al. (2024), we found that Mamba-based models were robust to higher learning rates. We exclude timestep embeddings for all Diffusion DNA experiments, as we show it has minimal impact on generative performance (see Table 12, Suppl. E.5).
 
@@ -1410,7 +1409,8 @@ $$\begin{align}
     & = - \mathbb{E}_{q}\int_{t=0}^{t=1} \log \langle \mathbf {x}_\theta({\mathbf z}_t, t), {\mathbf x}\rangle\frac{{\text{d}}}{{\text{d}}t} [f(t)] {\text{d}}t & \text{\footnotesize Substituting } f(t) = \log(1 - \alpha_{t}) & \nonumber \\
     & = - \mathbb{E}_{q}\int_{{\boldsymbol \gamma}= -\infty}^{{\boldsymbol \gamma}= 0} \log \langle {\mathbf x}_{\theta}({\mathbf z}_{f^{-1}({\boldsymbol \gamma})}, f^{-1}({\boldsymbol \gamma})), {\mathbf x}\rangle {\text{d}}{\boldsymbol \gamma}& \text{\footnotesize Change of variables } {\boldsymbol \gamma}\equiv f(t) \nonumber \\
     & = - \mathbb{E}_{q}\int_{{\boldsymbol \gamma}= -\infty}^{{\boldsymbol \gamma}= 0} \log \langle {{\mathbf x}}_{\theta}(\tilde{{\mathbf z}}_{\boldsymbol \gamma}, f^{-1}({\boldsymbol \gamma})), \; {\mathbf x}\rangle {\text{d}}{\boldsymbol \gamma}& \text{\footnotesize } \tilde{{\mathbf z}}_{\boldsymbol \gamma}\equiv {\mathbf z}_{f^{-1}({\boldsymbol \gamma})} \nonumber \\
-    & = - \mathbb{E}_{q}\int_{{\boldsymbol \gamma}= -\infty}^{{\boldsymbol \gamma}= 0} \log \langle \tilde{{\mathbf x}}_{\theta}(\tilde{{\mathbf z}}_{\boldsymbol \gamma}, {\boldsymbol \gamma}), \; {\mathbf x}\rangle {\text{d}}{\boldsymbol \gamma}& \text{\footnotesize } \tilde{{\mathbf x}}_{\theta}(\tilde{{\mathbf z}}_{\boldsymbol \gamma}, {\boldsymbol \gamma}) \equiv {{\mathbf x}}_{\theta}(\tilde{{\mathbf z}}_{\boldsymbol \gamma}, f^{-1}({\boldsymbol \gamma}))
+    & = - \mathbb{E}_{q}\int_{{\boldsymbol \gamma}= -\infty}^{{\boldsymbol \gamma}= 0} \log \langle \tilde{{\mathbf x}}_{\theta}(\tilde{{\mathbf z}}_{\boldsymbol \gamma}, {\boldsymbol \gamma}), \; {\mathbf x}\rangle {\text{d}}{\boldsymbol \gamma}& \text{\footnotesize } \tilde{{\mathbf x}}_{\theta}(\tilde{{\mathbf z}}_{\boldsymbol \gamma}, {\boldsymbol \gamma}) \equiv {{\mathbf x}}_{\theta}(\tilde{{\mathbf z}}_{\boldsymbol \gamma}, f^{-1}({\boldsymbol \gamma})) 
+\tag{94}
 \end{align}$$
 
 This new formulation demonstrates that the diffusion loss is invariant to the functional form of $\alpha_{t}$. In Table 9, we demonstrate empirically that noise schedules with different functional forms evaluate to the same Likelihood which is consistent with our theory. However, different schedules lead to different per data point variance. Notably, the log-linear schedule exhibits the lowest variance among all the noise schedules considered.
@@ -1424,8 +1424,6 @@ This new formulation demonstrates that the diffusion loss is invariant to the fu
 | Cosine Squared (91) | 3.30 |          3.30          |
 | Linear (93)         | 3.30 |          7.57          |
 
-<span id="supp:tab:noise_schedule_variance" data-label="supp:tab:noise_schedule_variance"></span>
-
 ## E.2 Faster sampling with caching
 
 In Figure 10, we compare the wall clock times of variaous methods: AR, SEDD, MDLM with caching, and MDLM without caching for generating 64 samples on a single GPU. When sampling in batches, a change of 1 token would necessitate a call to the denoising model. Therefore, smaller batch sizes have a lower likelihood of a token being unmasked. This might lead one to prefer generating samples in smaller batches, as opposed to using a larger batch size that fully saturates the GPU. Table 10 shows that generating samples with a batch size of 1 and using caching is twice as fast as generating samples without caching while fully utilizing the GPU. In Fig. 2, we observe that MDLM without caching yields samples that consistently get better generative perplexity than SEDD. For $T=\{5k, 10k\}$, both SEDD and MDLM get better generative perplexity than the AR model.
@@ -1437,8 +1435,6 @@ In Figure 10, we compare the wall clock times of variaous methods: AR, SEDD, MDL
 | SEDD       |       $85.3$        |       $155.2$        |
 | MDLM       |       $70.3$        |       $127.9$        |
 | \+ caching |   $\mathbf{40.1}$   |   $\mathbf{60.4}$    |
-
-<span id="tab:caching-wall-clock" data-label="tab:caching-wall-clock"></span>
 
 **Figura 2.** Generative perplexities across wall clock time for generating 64 samples on OWT using a single 32GB A5000 GPU are compared by varying $T\in\{100, 500, 1000, 5000, 10000\}$ in the reverse diffusion process. The samples are generated in mini-batches with a batch size of 16 for AR, SEDD, and MDLM without caching, as it is the largest batch size that fits on this GPU. For MDLM with caching, we vary the batch size.
 
@@ -1979,8 +1975,6 @@ The reviewers of your paper will be asked to use the checklist as one of the fac
     - For initial submissions, do not include any information that would break anonymity (if applicable), such as the institution conducting the review.
 
 End of NEURIPS CHECKLIST. Must be at end of document after appendix
-
-</div>
 
 # References
 

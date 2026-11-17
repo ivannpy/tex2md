@@ -30,11 +30,11 @@ Reinforcement learning from human feedback (RLHF) is a technique used to incorpo
 
 The basic pipeline for RLHF involves three steps. First, a language model that can follow user questions must be trained (see Chapter 4). Second, human preference data must be collected for the training of a reward model of human preferences (see Chapter 5). Finally, the language model can be optimized with an RL optimizer of choice, by sampling generations and rating them with respect to the reward model (see Chapters 3 and 6). This book details key decisions and basic implementation examples for each step in this process.
 
-RLHF has been applied to many domains successfully, with complexity increasing as the techniques have matured. Early breakthrough experiments with RLHF were applied to deep reinforcement learning [@ref-christiano2017deep], summarization [@ref-stiennon2020learning], following instructions [@ref-ouyang2022training], parsing web information for question-answering [@ref-nakano2021webgpt], and “alignment” [@ref-bai2022training]. A summary of the early RLHF recipes is shown below in fig. 1.
+RLHF has been applied to many domains successfully, with complexity increasing as the techniques have matured. Early breakthrough experiments with RLHF were applied to deep reinforcement learning \[1\], summarization \[2\], following instructions \[3\], parsing web information for question-answering \[4\], and “alignment” \[5\]. A summary of the early RLHF recipes is shown below in fig. 1.
 
 **Figura 1.** A rendition of the early, three stage RLHF process with SFT, a reward model, and then optimization.
 
-In modern language model training, RLHF is one component of post-training. Post-training is a more complete set of techniques and best practices to make language models more useful for downstream tasks [@ref-lambert2024t]. Post-training can be summarized as a many-stage training process using three optimization methods:
+In modern language model training, RLHF is one component of post-training. Post-training is a more complete set of techniques and best practices to make language models more useful for downstream tasks \[6\]. Post-training can be summarized as a many-stage training process using three optimization methods:
 
 1.  Instruction / Supervised Fine-tuning (IFT/SFT), where we teach formatting and form the base of instruction-following abilities. This is largely about learning *features* in language.
 
@@ -114,7 +114,7 @@ Or a complex, richer answer:
 
 Instruction fine-tuning would provide the basic ability for models to respond reliably in the question-answering format, and RLHF is what takes these answers and crafts them into the reliable, warm, and engaging answers we now expect from language models.
 
-Modern research has established RLHF as a general method to integrate subtle stylistic and related behavioral features into the models. An early, popular example of the utility of RLHF was in the application to safety [@ref-dai2023safe] [@ref-bai2022training], where RLHF enabled models to be both helpful and harmless across varied datasets. Compared to other techniques for post-training, such as instruction fine-tuning, RLHF generalizes far better across domains [@ref-kirk2023understanding] [@ref-chu2025sft] – helping create effective general-purpose models.
+Modern research has established RLHF as a general method to integrate subtle stylistic and related behavioral features into the models. An early, popular example of the utility of RLHF was in the application to safety \[7\] \[5\], where RLHF enabled models to be both helpful and harmless across varied datasets. Compared to other techniques for post-training, such as instruction fine-tuning, RLHF generalizes far better across domains \[8\] \[9\] – helping create effective general-purpose models.
 
 Intuitively, this can be seen in how the optimization techniques are applied. Instruction fine-tuning trains the model to predict the next token when the text preceding is close to examples it has seen. It is optimizing the model to more regularly output specific features in text. This is a per-token update.
 
@@ -122,11 +122,11 @@ RLHF on the other hand tunes completions on the response level rather than looki
 
 While this flexibility is a major advantage of RLHF, it comes with implementation challenges. Largely, these center on *how to control the optimization.* As we will cover in this book, implementing RLHF often requires training a reward model, but best practices for doing so are not strongly established and depend on the area of application. With this, the optimization itself is prone to *over-optimization* because our reward signal is at best a proxy objective, requiring regularization. With these limitations, effective RLHF requires a strong starting point, so RLHF cannot be a solution to every problem alone and needs to be approached through a broader lens of post-training.
 
-Due to this complexity, implementing RLHF is far more costly than simple instruction fine-tuning and can come with unexpected challenges such as length bias [@ref-singhal2023long] [@ref-park2024disentangling]. For model training efforts where absolute performance matters, RLHF is established as being crucial to achieving a strong fine-tuned model, but it is more expensive in compute, data costs, and time. Through the early history of RLHF after ChatGPT, there were many research papers that showed approximate solutions to RLHF via limited instruction fine-tuning, but as the literature matured it has been repeated time and again that RLHF and related methods are core stages of model performance that cannot be easily dispensed with.
+Due to this complexity, implementing RLHF is far more costly than simple instruction fine-tuning and can come with unexpected challenges such as length bias \[10\] \[11\]. For model training efforts where absolute performance matters, RLHF is established as being crucial to achieving a strong fine-tuned model, but it is more expensive in compute, data costs, and time. Through the early history of RLHF after ChatGPT, there were many research papers that showed approximate solutions to RLHF via limited instruction fine-tuning, but as the literature matured it has been repeated time and again that RLHF and related methods are core stages of model performance that cannot be easily dispensed with.
 
 ## 1.3 Walkthrough of an RLHF Recipe
 
-To set the stage for the book, it’s important to understand what “doing RLHF” can look like, as a minimal example, without any of the technical jargon that can be hard to grasp before solidifying fundamental intuitions. This section follows what is described as the canonical, three-stage RLHF recipe, as established with OpenAI’s InstructGPT model in 2022 [@ref-ouyang2022training].
+To set the stage for the book, it’s important to understand what “doing RLHF” can look like, as a minimal example, without any of the technical jargon that can be hard to grasp before solidifying fundamental intuitions. This section follows what is described as the canonical, three-stage RLHF recipe, as established with OpenAI’s InstructGPT model in 2022 \[3\].
 
 The first step of the process is to transition the model from a base model that completes text to an instruction-following model that can operate in a question-answering format. This is done by using the same next-token prediction loss function on a set of carefully crafted datapoints where the model is shown *only* data in this question-answering format. After the model is shown these high-quality responses, the model can now be prompted with a specific sequence of tokens to know that it should answer any query with a more defined, assistant persona.
 
@@ -148,7 +148,7 @@ The way I’ve been describing the potential of post-training is called the elic
 
 To make this example click, we make the analogy between the base model – the language model that comes out of the large-scale, next-token prediction pretraining – and other foundational components in building complex systems. We use the example of the chassis of a car, which defines the space around which a car can be built. Consider Formula 1 (F1): most teams begin each year with a new chassis and engine. Then, they spend all year on aerodynamics and systems changes (of course, it is a minor oversimplification), and can dramatically improve the performance of the car. The best F1 teams improve far more during a season than chassis-to-chassis.
 
-The same is true for post-training, where one can extract a ton of performance out of a static base model as they learn more about its quirks and tendencies. The best post-training teams extract a ton of performance in a very short time frame. The set of techniques includes everything close to and after the end of pretraining: “mid-training” like annealing / high-quality end of pretraining web data, instruction tuning, RLVR, preference-tuning, etc. A good example is the change from the first version of the Allen Institute for AI’s fully-open, small Mixture-of-Experts (MoE) model OLMoE Instruct to the second. The first model was released in the fall of 2024 [@ref-muennighoff2024olmoe], and with the second version only updating the post-training, the evaluation average on popular benchmarks went from 35 to 48 without changing the majority of pretraining [@ref-ai2_olmoe_ios_2025].
+The same is true for post-training, where one can extract a ton of performance out of a static base model as they learn more about its quirks and tendencies. The best post-training teams extract a ton of performance in a very short time frame. The set of techniques includes everything close to and after the end of pretraining: “mid-training” like annealing / high-quality end of pretraining web data, instruction tuning, RLVR, preference-tuning, etc. A good example is the change from the first version of the Allen Institute for AI’s fully-open, small Mixture-of-Experts (MoE) model OLMoE Instruct to the second. The first model was released in the fall of 2024 \[12\], and with the second version only updating the post-training, the evaluation average on popular benchmarks went from 35 to 48 without changing the majority of pretraining \[13\].
 
 The idea is that there is a lot of intelligence and ability within base models, but because they can only answer in next-token prediction and not question-answering format, it takes a lot of work building around them, through post-training, in order to make excellent final models.
 
@@ -156,7 +156,7 @@ Then, when you look at models such as OpenAI’s GPT-4.5 released in February 20
 
 I’ve described this intuition as the Elicitation Theory of Post-training. This theory folds in with the reality that the majority of gains users are seeing are from post-training because it implies that there is more latent potential in a model pretrained on the internet than we can simply teach the model — such as by passing certain narrow samples in repeatedly during early types of post-training (i.e. only instruction tuning). The challenge of post-training is to reshape models from next-token prediction to conversation question-answering, while extracting all of this knowledge and intelligence from pretraining.
 
-A related idea to this theory is the Superficial Alignment Hypothesis, coined in the paper LIMA: Less is More for Alignment [@ref-zhou2023lima]. This paper is getting some important intuitions right but for the wrong reasons in the big picture. The authors state:
+A related idea to this theory is the Superficial Alignment Hypothesis, coined in the paper LIMA: Less is More for Alignment \[14\]. This paper is getting some important intuitions right but for the wrong reasons in the big picture. The authors state:
 
 > A model’s knowledge and capabilities are learnt almost entirely during pretraining, while alignment teaches it which subdistribution of formats should be used when interacting with users. If this hypothesis is correct, and alignment is largely about learning style, then a corollary of the Superficial Alignment Hypothesis is that one could sufficiently tune a pretrained language model with a rather small set of examples.
 
@@ -168,28 +168,28 @@ If we change the data, the impact could be far higher on the model’s performan
 
 The superficial alignment hypothesis is wrong for the same reason that people who think RLHF and post-training are just for vibes are still wrong. This was a field-wide lesson we had to overcome in 2023 (although many AI observers are still rooted in this belief). Post-training has far outgrown that, and we are coming to see that the style of models operates on top of behavior — such as the now popular long chain of thought.
 
-As the AI community shifts post-training further into the era of agentic and reasoning models, the superficial alignment hypothesis breaks down further. RL methods are becoming an increasingly large share of the compute needed to train frontier language models. In the short time since reinforcement learning with verifiable rewards (RLVR) was coined in our work on Tülu 3 in the fall of 2024 [@ref-lambert2024t], the scale of compute used for post-training has grown dramatically. DeepSeek R1, famous for popularizing RLVR, used only about 5% of their overall compute in post-training – 147K H800 GPU hours for RL training on R1 [@ref-guo2025deepseek], relative to 2.8M GPU hours for pretraining the underlying DeepSeek V3 base model [@ref-deepseekai2025deepseekv3technicalreport].
+As the AI community shifts post-training further into the era of agentic and reasoning models, the superficial alignment hypothesis breaks down further. RL methods are becoming an increasingly large share of the compute needed to train frontier language models. In the short time since reinforcement learning with verifiable rewards (RLVR) was coined in our work on Tülu 3 in the fall of 2024 \[6\], the scale of compute used for post-training has grown dramatically. DeepSeek R1, famous for popularizing RLVR, used only about 5% of their overall compute in post-training – 147K H800 GPU hours for RL training on R1 \[15\], relative to 2.8M GPU hours for pretraining the underlying DeepSeek V3 base model \[16\].
 
-The science studying the core methods of scaling RL as of 2026 shows that individual ablation runs can take 10-100K GPU hours [@ref-khatri2025art], the equivalent of the compute used for the RL stage of Olmo 3.1 Think 32B (released in November of 2025), which trained for 4 weeks on 200 GPUs [@ref-teamolmo2025olmo3]. The science of scaled post-training is in its very early stages as of 2026, adopting ideas and methods from pretraining language models and applying them in this new domain, so the exact GPU hours used will change, but the trend of increased compute on post-training will continue. Altogether, the elicitation theory of post-training is likely to become the correct view only when applying a lighter post-training recipe – something useful for specializing a model – relative to the compute-intensive frontier models.
+The science studying the core methods of scaling RL as of 2026 shows that individual ablation runs can take 10-100K GPU hours \[17\], the equivalent of the compute used for the RL stage of Olmo 3.1 Think 32B (released in November of 2025), which trained for 4 weeks on 200 GPUs \[18\]. The science of scaled post-training is in its very early stages as of 2026, adopting ideas and methods from pretraining language models and applying them in this new domain, so the exact GPU hours used will change, but the trend of increased compute on post-training will continue. Altogether, the elicitation theory of post-training is likely to become the correct view only when applying a lighter post-training recipe – something useful for specializing a model – relative to the compute-intensive frontier models.
 
 ## 1.5 How We Got Here
 
 Why does this book make sense now? How much will change in the future?
 
-Post-training, the craft of eliciting powerful behaviors from a raw pretrained language model, has gone through many seasons and moods since the release of ChatGPT that sparked the renewed interest in RLHF. In the era of Alpaca [@ref-alpaca], Vicuna [@ref-vicuna2023], Koala [@ref-koala_blogpost_2023], and Dolly [@ref-DatabricksBlog2023DollyV1], a limited number of human datapoints with extended synthetic data in the style of Self-Instruct were used to fine-tune the original LLaMA to get similar behavior to ChatGPT. The benchmark for these early models was fully vibes (and human evaluation) as we were all so captivated by the fact that these small models can have such impressive behaviors across domains. It was justified excitement.
+Post-training, the craft of eliciting powerful behaviors from a raw pretrained language model, has gone through many seasons and moods since the release of ChatGPT that sparked the renewed interest in RLHF. In the era of Alpaca \[19\], Vicuna \[20\], Koala \[21\], and Dolly \[22\], a limited number of human datapoints with extended synthetic data in the style of Self-Instruct were used to fine-tune the original LLaMA to get similar behavior to ChatGPT. The benchmark for these early models was fully vibes (and human evaluation) as we were all so captivated by the fact that these small models can have such impressive behaviors across domains. It was justified excitement.
 
 Open post-training was moving faster, releasing more models, and making more noise than its closed counterparts. Companies were scrambling, e.g. DeepMind merging with Google Brain or new labs being started, and taking time to follow it up. There are phases of open recipes surging and then lagging behind.
 
 The era following Alpaca et al., the first lag in open recipes, was one defined by skepticism and doubt about reinforcement learning from human feedback (RLHF), the technique OpenAI highlighted as crucial to the success of the first ChatGPT. Many companies doubted that they needed to do RLHF. A common phrase – “instruction tuning is enough for alignment” – was so popular then that it still carries weight today despite obvious evidence against it.
 
-This doubt about RLHF lasted, especially in the open where groups cannot afford data budgets on the order of \$100K to \$1M. The companies that embraced it early ended up winning out. Anthropic published extensive research on RLHF through 2022 and now has arguably the best post-training [@ref-askell2021general] [@ref-bai2022training] [@ref-bai2022constitutional]. The delta between open groups, struggling to reproduce or even know of basic closed techniques, and leading closed models is a common theme.
+This doubt about RLHF lasted, especially in the open where groups cannot afford data budgets on the order of \$100K to \$1M. The companies that embraced it early ended up winning out. Anthropic published extensive research on RLHF through 2022 and now has arguably the best post-training \[23\] \[5\] \[24\]. The delta between open groups, struggling to reproduce or even know of basic closed techniques, and leading closed models is a common theme.
 
-The first shift in open alignment methods and post-training was the story of Direct Preference Optimization (DPO) [@ref-rafailov2024direct], which showed that you can solve the same optimization problem as RLHF with fewer moving parts by taking gradient steps directly on pairwise preference data. The DPO paper, posted in May of 2023, didn’t have any clearly impactful models trained with it through the fall of 2023. This changed with the releases of a few breakthrough DPO models – all contingent on finding a better, lower learning rate. Zephyr-Beta [@ref-tunstall2023zephyr], Tülu 2 [@ref-ivison2023camels], and many other models showed that the DPO era of post-training had begun. Chris Manning literally thanked me for “saving DPO.”
+The first shift in open alignment methods and post-training was the story of Direct Preference Optimization (DPO) \[25\], which showed that you can solve the same optimization problem as RLHF with fewer moving parts by taking gradient steps directly on pairwise preference data. The DPO paper, posted in May of 2023, didn’t have any clearly impactful models trained with it through the fall of 2023. This changed with the releases of a few breakthrough DPO models – all contingent on finding a better, lower learning rate. Zephyr-Beta \[26\], Tülu 2 \[27\], and many other models showed that the DPO era of post-training had begun. Chris Manning literally thanked me for “saving DPO.”
 
 Preference-tuning was something you needed to do to meet the table stakes of releasing a good model since late 2023. The DPO era continued through 2024, in the form of never-ending variants on the algorithm, but we were very far into another slump in open recipes. Open post-training recipes had saturated the extent of knowledge and resources available.\
-A year after Zephyr and Tülu 2, the same breakout dataset, UltraFeedback is arguably still state-of-the-art for preference tuning in open recipes [@ref-cui2023ultrafeedback].
+A year after Zephyr and Tülu 2, the same breakout dataset, UltraFeedback is arguably still state-of-the-art for preference tuning in open recipes \[28\].
 
-At the same time, the Llama 3.1 [@ref-dubey2024llama] and Nemotron 4 340B [@ref-adler2024nemotron] reports gave us substantive hints that large-scale post-training is much more complex and impactful. The closed labs are doing full post-training – a large multi-stage process of instruction tuning, RLHF, prompt design, etc. – where academic papers are just scratching the surface. Tülu 3 represented a comprehensive, open effort to build the foundation of future academic post-training research [@ref-lambert2024t].
+At the same time, the Llama 3.1 \[29\] and Nemotron 4 340B \[30\] reports gave us substantive hints that large-scale post-training is much more complex and impactful. The closed labs are doing full post-training – a large multi-stage process of instruction tuning, RLHF, prompt design, etc. – where academic papers are just scratching the surface. Tülu 3 represented a comprehensive, open effort to build the foundation of future academic post-training research \[6\].
 
 Post-training is a complex process involving the aforementioned training objectives applied in various orders to target specific capabilities. This book is designed to provide a platform for understanding all of these techniques, and as the field matures the best practices for how to interleave them will emerge.
 
@@ -287,7 +287,7 @@ As more successes of fine-tuning language models with RL emerge, such as OpenAI�
 
 RLHF and its related methods are very new. We highlight history to show how recently the procedures were formalized, and how much of this documentation is in the academic literature. With this, we want to emphasize that RLHF is very rapidly evolving, so the chapter sets the stage for a book that will express uncertainty over certain methods and an expectation that some details can change around a few, core practices. Otherwise, the papers and methods listed here showcase why many pieces of the RLHF pipeline are what they are, as some of the seminal papers were for applications totally distinct from modern language models.
 
-In this chapter we detail the key papers and projects that got the RLHF field to where it is today. This is not intended to be a comprehensive review of RLHF and the related fields, but rather a starting point and retelling of how we got to today. It is intentionally focused on recent work that led to ChatGPT. There is substantial further work in the RL literature on learning from preferences [@ref-wirth2017survey]. For a more exhaustive list, you should use a proper survey paper [@ref-kaufmann2023survey], [@ref-casper2023open].
+In this chapter we detail the key papers and projects that got the RLHF field to where it is today. This is not intended to be a comprehensive review of RLHF and the related fields, but rather a starting point and retelling of how we got to today. It is intentionally focused on recent work that led to ChatGPT. There is substantial further work in the RL literature on learning from preferences \[31\]. For a more exhaustive list, you should use a proper survey paper \[32\], \[33\].
 
 **Figura 2.** Timeline of key developments in RLHF discussed in this chapter, from early work on RL from preferences through the adoption of RLHF in large language models.
 
@@ -295,39 +295,39 @@ In this chapter we detail the key papers and projects that got the RLHF field to
 
 The field has recently been popularized with the growth of Deep Reinforcement Learning and has grown into a broader study of the applications of LLMs from many large technology companies. Still, many of the techniques used today are deeply related to core techniques from early literature on RL from preferences.
 
-One of the first papers with an approach similar to modern RLHF was *TAMER*. *TAMER: Training an Agent Manually via Evaluative Reinforcement* proposed an approach in which humans iteratively scored an agent’s actions to learn a reward model, which was used to learn the action policy [@ref-knox2008tamer]. Other work, concurrently or soon after, proposed an actor-critic algorithm, COACH, where human feedback (both positive and negative) is used to tune the advantage function [@ref-macglashan2017interactive].
+One of the first papers with an approach similar to modern RLHF was *TAMER*. *TAMER: Training an Agent Manually via Evaluative Reinforcement* proposed an approach in which humans iteratively scored an agent’s actions to learn a reward model, which was used to learn the action policy \[34\]. Other work, concurrently or soon after, proposed an actor-critic algorithm, COACH, where human feedback (both positive and negative) is used to tune the advantage function \[35\].
 
-The primary reference, Christiano et al. 2017, is an application of RLHF applied to preferences between trajectories of agents within Atari games [@ref-christiano2017deep]. This work introducing RLHF followed soon after DeepMind’s seminal work in reinforcement learning on Deep Q-Networks (DQN), which showed that RL agents can solve popular video games learning from scratch. The work shows that humans choosing between trajectories can be more effective in some domains than directly interacting with the environment. This uses some clever conditions, but is impressive nonetheless.
+The primary reference, Christiano et al. 2017, is an application of RLHF applied to preferences between trajectories of agents within Atari games \[1\]. This work introducing RLHF followed soon after DeepMind’s seminal work in reinforcement learning on Deep Q-Networks (DQN), which showed that RL agents can solve popular video games learning from scratch. The work shows that humans choosing between trajectories can be more effective in some domains than directly interacting with the environment. This uses some clever conditions, but is impressive nonetheless.
 
 **Figura 3.** The core RLHF loop from Christiano et al. (2017): the reward predictor is trained asynchronously from comparisons of trajectory segments, and the agent maximizes predicted reward.
 
-This method was expanded upon with more direct reward modeling [@ref-ibarz2018reward] and the adoption of deep learning within early RLHF work was capped by an extension to TAMER with neural network models just one year later [@ref-warnell2018deep].
+This method was expanded upon with more direct reward modeling \[36\] and the adoption of deep learning within early RLHF work was capped by an extension to TAMER with neural network models just one year later \[37\].
 
-This era began to transition, as reward models as a general notion were proposed as a method for studying alignment, rather than just a tool for solving RL problems [@ref-leike2018scalable].
+This era began to transition, as reward models as a general notion were proposed as a method for studying alignment, rather than just a tool for solving RL problems \[38\].
 
 ## 2.2 2019 to 2022: RL from Human Preferences on Language Models
 
-Reinforcement learning from human feedback, also referred to regularly as reinforcement learning from human preferences in its early days, was quickly adopted by AI labs increasingly turning to scaling large language models. A large portion of this work began between GPT-2, in 2019, and GPT-3, in 2020. The earliest work in 2019, *Fine-Tuning Language Models from Human Preferences* has many striking similarities to modern work on RLHF and the content that we will cover in this book [@ref-ziegler2019fine]. Many canonical terms, such as learning reward models, KL distances, feedback diagrams, etc., were formalized in this paper, though the evaluation tasks for the final models and their capabilities were different from what people are doing today. From here, RLHF was applied to a variety of tasks. Important examples include general summarization [@ref-stiennon2020learning], recursive summarization of books [@ref-wu2021recursively], instruction following (InstructGPT) [@ref-ouyang2022training], browser-assisted question-answering (WebGPT) [@ref-nakano2021webgpt], supporting answers with citations (GopherCite) [@ref-menick2022teaching], and general dialogue (Sparrow) [@ref-glaese2022improving].
+Reinforcement learning from human feedback, also referred to regularly as reinforcement learning from human preferences in its early days, was quickly adopted by AI labs increasingly turning to scaling large language models. A large portion of this work began between GPT-2, in 2019, and GPT-3, in 2020. The earliest work in 2019, *Fine-Tuning Language Models from Human Preferences* has many striking similarities to modern work on RLHF and the content that we will cover in this book \[39\]. Many canonical terms, such as learning reward models, KL distances, feedback diagrams, etc., were formalized in this paper, though the evaluation tasks for the final models and their capabilities were different from what people are doing today. From here, RLHF was applied to a variety of tasks. Important examples include general summarization \[2\], recursive summarization of books \[40\], instruction following (InstructGPT) \[3\], browser-assisted question-answering (WebGPT) \[4\], supporting answers with citations (GopherCite) \[41\], and general dialogue (Sparrow) \[42\].
 
 Aside from applications, a number of seminal papers defined key areas for the future of RLHF, including those on:
 
-1.  Reward model over-optimization [@ref-gao2023scaling]: The ability for RL optimizers to over-fit to models trained on preference data,
+1.  Reward model over-optimization \[43\]: The ability for RL optimizers to over-fit to models trained on preference data,
 
-2.  Language models as a general area of study for alignment [@ref-askell2021general], and
+2.  Language models as a general area of study for alignment \[23\], and
 
-3.  Red teaming [@ref-ganguli2022red] – the process of assessing the safety of a language model.
+3.  Red teaming \[44\] – the process of assessing the safety of a language model.
 
-Work continued on refining RLHF for application to chat models. Anthropic continued to use it extensively for early versions of Claude [@ref-bai2022training] and early RLHF open-source tools emerged [@ref-ramamurthy2022reinforcement], [@ref-havrilla-etal-2023-trlx], [@ref-vonwerra2022trl].
+Work continued on refining RLHF for application to chat models. Anthropic continued to use it extensively for early versions of Claude \[5\] and early RLHF open-source tools emerged \[45\], \[46\], \[47\].
 
 ## 2.3 2023 to the Present: The ChatGPT Era
 
-The announcement of ChatGPT was very clear about the role of RLHF in its training [@ref-openai2022chatgpt]:
+The announcement of ChatGPT was very clear about the role of RLHF in its training \[48\]:
 
 > We trained this model using Reinforcement Learning from Human Feedback (RLHF), using the same methods as InstructGPT, but with slight differences in the data collection setup.
 
-Since then, RLHF has been used extensively in leading language models. It is well known to be used in Anthropic’s Constitutional AI for Claude [@ref-bai2022constitutional], Meta’s Llama 2 [@ref-touvron2023llama] and Llama 3 [@ref-dubey2024llama], NVIDIA’s Nemotron [@ref-adler2024nemotron], Ai2’s Tülu 3 [@ref-lambert2024t], and more.
+Since then, RLHF has been used extensively in leading language models. It is well known to be used in Anthropic’s Constitutional AI for Claude \[24\], Meta’s Llama 2 \[49\] and Llama 3 \[29\], NVIDIA’s Nemotron \[30\], Ai2’s Tülu 3 \[6\], and more.
 
-Today, RLHF is growing into a broader field of preference fine-tuning (PreFT), including new applications such as process rewards for intermediate reasoning steps [@ref-lightman2023let], covered in Chapter 5; direct alignment algorithms inspired by Direct Preference Optimization (DPO) [@ref-rafailov2024direct], covered in Chapter 8; learning from execution feedback from code or math [@ref-kumar2024training], [@ref-singh2023beyond] and other online reasoning methods inspired by OpenAI’s o1 [@ref-openai2024o1], covered in Chapter 7.
+Today, RLHF is growing into a broader field of preference fine-tuning (PreFT), including new applications such as process rewards for intermediate reasoning steps \[50\], covered in Chapter 5; direct alignment algorithms inspired by Direct Preference Optimization (DPO) \[25\], covered in Chapter 8; learning from execution feedback from code or math \[51\], \[52\] and other online reasoning methods inspired by OpenAI’s o1 \[53\], covered in Chapter 7.
 
 # 3 Training Overview
 
@@ -337,7 +337,7 @@ Here, we introduce the core objective of RLHF, which is optimizing a proxy rewar
 
 ## 3.1 Problem Formulation
 
-The optimization of reinforcement learning from human feedback (RLHF) builds on top of the standard RL setup. In RL, an agent takes actions $a_t$ sampled from a policy $\pi(a_t\mid s_t)$ given the state of the environment $s_t$ to maximize reward $r(s_t,a_t)$ [@ref-sutton2018reinforcement]. A policy is a function that maps each state to a probability distribution over actions. The early policies that evolved into modern literature on RLHF were in what is called deep reinforcement learning – when a neural network is used to learn said function. Traditionally, the environment evolves according to transition (dynamics) $p(s_{t+1}\mid s_t, a_t)$ with an initial state distribution $\rho_0(s_0)$. Together, the policy and dynamics induce a trajectory distribution. A trajectory’s overall probability is the product of the initial state probability, every action choice the policy makes, and every state transition the environment produces:
+The optimization of reinforcement learning from human feedback (RLHF) builds on top of the standard RL setup. In RL, an agent takes actions $a_t$ sampled from a policy $\pi(a_t\mid s_t)$ given the state of the environment $s_t$ to maximize reward $r(s_t,a_t)$ \[54\]. A policy is a function that maps each state to a probability distribution over actions. The early policies that evolved into modern literature on RLHF were in what is called deep reinforcement learning – when a neural network is used to learn said function. Traditionally, the environment evolves according to transition (dynamics) $p(s_{t+1}\mid s_t, a_t)$ with an initial state distribution $\rho_0(s_0)$. Together, the policy and dynamics induce a trajectory distribution. A trajectory’s overall probability is the product of the initial state probability, every action choice the policy makes, and every state transition the environment produces:
 
 $$\begin{equation}
 \tag{1}{p_{\pi}(\tau)=\rho_0(s_0)\prod_{t=0}^{T-1}\pi(a_t\mid s_t)\,p(s_{t+1}\mid s_t,a_t).}
@@ -492,7 +492,7 @@ In the following chapters, we cover many optimization tools for post-training. P
 
 - RL stages can “fix” rough edges on the model, making the model easier to chat with or more robust (this could come by training it to have numerical stability with inference tools like vLLM). The exact reason for this is not well-known in the literature, but its truth is reflected in the growing presence of RL today.
 
-- RL can be done surgically — the model does a good job of learning where the prompt distribution lies, and RL tends to not “squash” the general capabilities of the model. A good example of this is Tülu 3 being trained with RL only on math prompts, while maintaining capabilities across a broad task suite [@ref-lambert2024t].
+- RL can be done surgically — the model does a good job of learning where the prompt distribution lies, and RL tends to not “squash” the general capabilities of the model. A good example of this is Tülu 3 being trained with RL only on math prompts, while maintaining capabilities across a broad task suite \[6\].
 
 Overall, RL losses on language models are robust, scalable, effective, and flexible, which opened large new fields of experimentation. The original method that started us down this path was RLHF work.
 
@@ -502,7 +502,7 @@ Over time various models have been identified as canonical recipes for RLHF spec
 
 ### 3.2.1 InstructGPT: Foundational RLHF Tools
 
-Around the time ChatGPT first came out, the widely accepted (“canonical”) method for post-training an LM had three major steps, with RLHF being the central piece [@ref-lambert2022illustrating] [@ref-ouyang2022training] [@ref-bai2022training]. The three steps taken on top of a “base” language model (the next-token prediction model trained on large-scale web text) are summarized below in fig. 8:
+Around the time ChatGPT first came out, the widely accepted (“canonical”) method for post-training an LM had three major steps, with RLHF being the central piece \[55\] \[3\] \[5\]. The three steps taken on top of a “base” language model (the next-token prediction model trained on large-scale web text) are summarized below in fig. 8:
 
 1.  **Instruction tuning on \~10K examples**: This teaches the model to follow the question-answer format and teaches some basic skills from primarily human-written data.
 
@@ -516,11 +516,11 @@ Once RLHF was done, the model was ready to be deployed to users. This recipe is 
 
 ### 3.2.2 Tülu 3: Introducing RLVR to Instruct Models
 
-Modern versions of post-training involve many, many more model versions and training stages (i.e. well more than the 5 RLHF steps documented for Llama 2 [@ref-touvron2023llama]). An example is shown below in fig. 9 where the model undergoes numerous training iterations before convergence.
+Modern versions of post-training involve many, many more model versions and training stages (i.e. well more than the 5 RLHF steps documented for Llama 2 \[49\]). An example is shown below in fig. 9 where the model undergoes numerous training iterations before convergence.
 
 **Figura 9.** A rendition of modern post-training with many rounds.
 
-The most complex models trained in this era and onwards have not released full details of their training process. Leading models such as ChatGPT or Claude by 2026 involve many iterative rounds of training. This can even include techniques that train specialized models and then merge the weights together to get a final model capable of many subtasks [@ref-li2022branch] (e.g. Cohere’s Command A [@ref-cohere2025command]).
+The most complex models trained in this era and onwards have not released full details of their training process. Leading models such as ChatGPT or Claude by 2026 involve many iterative rounds of training. This can even include techniques that train specialized models and then merge the weights together to get a final model capable of many subtasks \[56\] (e.g. Cohere’s Command A \[57\]).
 
 **Figura 10.** A summary of the Tülu 3 recipe with target skills and multi-step training recipe. Lambert et al. 2024, License CC-BY.
 
@@ -532,13 +532,13 @@ A fully open example of this multi-stage approach to post-training where RLHF pl
 
 3.  **Reinforcement Learning with Verifiable Rewards on \~10K prompts**: This stage is a small-scale reinforcement learning run to boost core skills such as mathematics while maintaining overall performance (and is now seen as a precursor to modern reasoning models such as DeepSeek R1).
 
-The recipe has been successfully applied to Llama 3.1 [@ref-lambert2024t], OLMo 2 [@ref-olmo20242], and SmolLM models [@ref-alrashed2024smoltulu].
+The recipe has been successfully applied to Llama 3.1 \[6\], OLMo 2 \[58\], and SmolLM models \[59\].
 
 ### 3.2.3 DeepSeek R1: Scaling RLVR for Reasoning
 
-With the rise of reasoning language models, such as OpenAI’s o1, the best practices in post-training evolved again to re-order and redistribute compute across training stages. The clearest documentation of a reasoning model post-training recipe is DeepSeek R1 [@ref-guo2025deepseek], which has been mirrored by Alibaba’s larger Qwen 3 models (i.e. only the 32B and 225B MoE models) [@ref-yang2025qwen3] or Xiaomi’s MiMo 7B [@ref-xia2025mimo].
+With the rise of reasoning language models, such as OpenAI’s o1, the best practices in post-training evolved again to re-order and redistribute compute across training stages. The clearest documentation of a reasoning model post-training recipe is DeepSeek R1 \[15\], which has been mirrored by Alibaba’s larger Qwen 3 models (i.e. only the 32B and 225B MoE models) \[60\] or Xiaomi’s MiMo 7B \[61\].
 
-**Figura 11.** The multistage pipeline of DeepSeek-R1. From DeepSeek R1 paper in *Nature*, [Fig. 2](https://www.nature.com/articles/s41586-025-09422-z/figures/2), under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) [@ref-guo2025deepseek].
+**Figura 11.** The multistage pipeline of DeepSeek-R1. From DeepSeek R1 paper in *Nature*, [Fig. 2](https://www.nature.com/articles/s41586-025-09422-z/figures/2), under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) \[15\].
 
 The DeepSeek recipe, shown in fig. 11, follows:
 
@@ -550,29 +550,29 @@ The DeepSeek recipe, shown in fig. 11, follows:
 
 4.  **Mixed reinforcement learning training** on reasoning problems (verifiable rewards) with general preference tuning reward models to polish the model.
 
-As above, there are evolutions of the recipe, particularly with steps 3 and 4 to finalize the model before exposing it to users. Many models start with tailored instruction datasets with chain-of-thought sequences that are heavily filtered and polished from existing models, providing a fast step to strong behaviors with SFT alone before moving onto RL [@ref-seed2025seed].
+As above, there are evolutions of the recipe, particularly with steps 3 and 4 to finalize the model before exposing it to users. Many models start with tailored instruction datasets with chain-of-thought sequences that are heavily filtered and polished from existing models, providing a fast step to strong behaviors with SFT alone before moving onto RL \[62\].
 
 ### 3.2.4 Transition to MOPD and Agents
 
 A key product-market-fit for reasoning models was the evolution into coding agents, which was accompanied by another change in canonical post-training recipes. There were two key changes. First, another new training method, multi-teacher on-policy distillation (MOPD, covered in Chapter 12), became a popular tool for merging multiple, diverse skills into a final model. Second is simpler, as post-training compute continued to scale rapidly, especially in reinforcement learning phases.
 
-Xiaomi’s MiMo-V2-Flash was the first technical report to document the modern MOPD process [@ref-mimo2025flash], and the team later wrote a standalone paper on the topic [@ref-ma2026mopd]. The technical report summarizes this form of post-training recipe in a simple form, shown in fig. 12: general SFT is followed by domain-specialized teacher training (more SFT and extensive RL), then uses multi-teacher on-policy distillation (MOPD) to merge them into a final model. Other models use this form of recipe, such as Nvidia’s Nemotron 3 Ultra [@ref-nvidia2026nemotron3ultra], which is largely similar but with two consecutive MOPD phases across experts. Overall, these recipes have less complexity in the form of iterative model versions (a *depth*) of the recipe, but more complexity in needing to specialize many crucial experts (a form of *breadth*). Note that previous generations of post-training still handled a wide breadth of tasks, but it was less segmented in the training process, i.e. most tasks were trained in the same training stages.
+Xiaomi’s MiMo-V2-Flash was the first technical report to document the modern MOPD process \[63\], and the team later wrote a standalone paper on the topic \[64\]. The technical report summarizes this form of post-training recipe in a simple form, shown in fig. 12: general SFT is followed by domain-specialized teacher training (more SFT and extensive RL), then uses multi-teacher on-policy distillation (MOPD) to merge them into a final model. Other models use this form of recipe, such as Nvidia’s Nemotron 3 Ultra \[65\], which is largely similar but with two consecutive MOPD phases across experts. Overall, these recipes have less complexity in the form of iterative model versions (a *depth*) of the recipe, but more complexity in needing to specialize many crucial experts (a form of *breadth*). Note that previous generations of post-training still handled a wide breadth of tasks, but it was less segmented in the training process, i.e. most tasks were trained in the same training stages.
 
 **Figura 12.** A schematic of specialist post-training with MOPD: shared SFT, domain-specific SFT and RL, then multi-teacher on-policy distillation into one (final) student.
 
-Various models utilizing MOPD as a final stage use a different number of experts, with Nemotron 3 Ultra at more than ten [@ref-nvidia2026nemotron3ultra], Kimi K3 at nine [@ref-kimiteam2026kimik3], and DeepSeek V4 at more than ten [@ref-deepseekai2026deepseekv4] (Xiaomi MiMo V2 did not report the number of experts).
+Various models utilizing MOPD as a final stage use a different number of experts, with Nemotron 3 Ultra at more than ten \[65\], Kimi K3 at nine \[66\], and DeepSeek V4 at more than ten \[67\] (Xiaomi MiMo V2 did not report the number of experts).
 
-Post-training recipes still vary widely across models. MOPD is a popular new tool, but labs are far from unanimous in its usage. As post-training matures and more tools enter the tool-kit, the variance of recipes has increased. For example, GLM-5 uses MOPD but details a more complex, three-stage RL process before MOPD, shown in fig. 13, [@ref-glm5team2026glm5].
+Post-training recipes still vary widely across models. MOPD is a popular new tool, but labs are far from unanimous in its usage. As post-training matures and more tools enter the tool-kit, the variance of recipes has increased. For example, GLM-5 uses MOPD but details a more complex, three-stage RL process before MOPD, shown in fig. 13, \[68\].
 
-**Figura 13.** Overall training pipeline of GLM-5. From the GLM-5 Team’s paper, [Fig. 5](https://arxiv.org/pdf/2602.15763v2#page=4), under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) [@ref-glm5team2026glm5].
+**Figura 13.** Overall training pipeline of GLM-5. From the GLM-5 Team’s paper, [Fig. 5](https://arxiv.org/pdf/2602.15763v2#page=4), under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) \[68\].
 
 As post-training becomes more central to the performance of modern models, the recipes will continue to evolve to reflect this new scaling of difficulty, tasks, and ambitions of the process.
 
 # 4 Instruction Fine-Tuning
 
-Early large pretrained language models were trained with a next-token prediction objective and, by default, did not come with an explicit interface for following instructions. Around the release of GPT-3 [@ref-brown2020language], prompting and in-context learning became a widely used way to adapt a single model to many tasks (though task-specific fine-tuning remained common), by showing examples in-context and asking the model to complete a similar task. A practical next step was instruction fine-tuning, which teaches the model to respond in an instruction-response format rather than just continuing text. For example, given the prompt “What is the capital of France?”, a base model might continue with “What is the capital of Germany? What is the capital of Italy?…” — simply extending the pattern of questions — while an instruction-tuned model would respond with “The capital of France is Paris.”
+Early large pretrained language models were trained with a next-token prediction objective and, by default, did not come with an explicit interface for following instructions. Around the release of GPT-3 \[69\], prompting and in-context learning became a widely used way to adapt a single model to many tasks (though task-specific fine-tuning remained common), by showing examples in-context and asking the model to complete a similar task. A practical next step was instruction fine-tuning, which teaches the model to respond in an instruction-response format rather than just continuing text. For example, given the prompt “What is the capital of France?”, a base model might continue with “What is the capital of Germany? What is the capital of Italy?…” — simply extending the pattern of questions — while an instruction-tuned model would respond with “The capital of France is Paris.”
 
-Instruction fine-tuning took off when two lines of work converged. First, NLP shifted from bespoke fine-tuning task setups to a unified “text-to-text” or instruction framing, which made it straightforward to standardize diverse datasets and train a single model across many tasks. Prominent examples of unifying the framework for tasks include *Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer* (T5 models) [@ref-raffel2020exploring], *Finetuned Language Models Are Zero-Shot Learners* (FLAN dataset) [@ref-wei2021finetuned], *Multitask Prompted Training Enables Zero-Shot Task Generalization* (T0 models) [@ref-sanh2021multitask], and *Cross-Task Generalization via Natural Language Crowdsourcing Instructions* (Natural Instructions dataset) [@ref-mishra2021cross]. Second, scaling pretrained LMs and the rise of prompting/in-context learning showed that a single model could generalize across tasks, but that generalization becomes far more reliable when the model is explicitly trained on instruction-response examples. Together, these trends led to an era of fine-tuning pretrained language models on large collections of instructions—what is now commonly called instruction fine-tuning (IFT), or supervised fine-tuning (SFT), in which training general models became accessible to wider audiences.
+Instruction fine-tuning took off when two lines of work converged. First, NLP shifted from bespoke fine-tuning task setups to a unified “text-to-text” or instruction framing, which made it straightforward to standardize diverse datasets and train a single model across many tasks. Prominent examples of unifying the framework for tasks include *Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer* (T5 models) \[70\], *Finetuned Language Models Are Zero-Shot Learners* (FLAN dataset) \[71\], *Multitask Prompted Training Enables Zero-Shot Task Generalization* (T0 models) \[72\], and *Cross-Task Generalization via Natural Language Crowdsourcing Instructions* (Natural Instructions dataset) \[73\]. Second, scaling pretrained LMs and the rise of prompting/in-context learning showed that a single model could generalize across tasks, but that generalization becomes far more reliable when the model is explicitly trained on instruction-response examples. Together, these trends led to an era of fine-tuning pretrained language models on large collections of instructions—what is now commonly called instruction fine-tuning (IFT), or supervised fine-tuning (SFT), in which training general models became accessible to wider audiences.
 
 Since its discovery, instruction fine-tuning, also called colloquially just *instruction tuning*, has matured and is standard practice across many language modeling pipelines. At its core, IFT is the simplest method for adapting language models to a desired task distribution. It serves as the foundation for RLHF by preparing the model for a format of instructions that is known as question-answering, and it is the first tool used by those attempting to apply modern techniques to new domains. Without a basic level of instruction-following abilities, most of the pipelines we discuss in this book—from preference data collection to online RLHF optimization—cannot be performed.
 
@@ -582,25 +582,13 @@ Instruction fine-tuning generally is covered extensively elsewhere and is superv
 
 The post-training process begins with defining a pattern to format user queries so that they are easily readable by a language model that processes information through a tokenizer. When using a pretrained language model, the prompting is quite simple. The model only knows a few tokens: a beginning-of-sequence token (e.g., `<bos_token>`), an end-of-sequence token (e.g., `<eos_token>`), and a padding token (to manage training on batches with empty components). This means, to prompt a base model, the user inputs a sequence of tokens for the model to continue from, such as:
 
-<div class="tcolorbox">
-
-<div class="Highlighting">
-
 \<bos_token\> The capital of the United States is
-
-</div>
-
-</div>
 
 Then, the model would generate tokens until it runs out of its context window, or it generates the end-of-sequence token.
 
 All post-training stages, from instruction tuning to RLHF and other methods, rely on this formatting to train the model. The tool that handles the structure of the interaction with the user is called the **chat template**.
 
 An example which we will break down is below:
-
-<div class="tcolorbox">
-
-<div class="Highlighting">
 
 {% if messages\[0\]\['role'\] == 'system' %} {# If the conversation begins with a system message, treat it as a special first turn. We set an offset so the user/assistant alternation check lines up correctly. #} {% set offset = 1 %} {% else %} {# No system message: user should be the first non-empty turn. #} {% set offset = 0 %} {% endif %}
 
@@ -612,10 +600,6 @@ An example which we will break down is below:
 
 {# Optionally append an "assistant" start tag with no content. This cues generation to continue from the assistant role. #} {% if add_generation_prompt %} {{ '\<\|im_start\|\>assistant\\n' }} {% endif %}
 
-</div>
-
-</div>
-
 This is the raw code for transforming a list of dictionaries in Python containing messages and roles into tokens that a language model can predict from.
 
 All information passed into models is assigned a role. The traditional three roles are `system`, `user`, and `assistant`.
@@ -626,15 +610,7 @@ Next, the two other roles are straightforward: **user** holds the messages from 
 
 In order to translate all this information into tokens, we use the code listing above that we started with. The model has a series of *special tokens* that separate the various messages from each other. If we run the above code with the example query “How many helicopters can a human eat in one sitting?”, the token sequence passed into the model would look as follows:
 
-<div class="tcolorbox">
-
-<div class="Highlighting">
-
 \<\|im_start\|\>system You are a friendly chatbot who always responds in the style of a pirate\<\|im_end\|\> \<\|im_start\|\>user How many helicopters can a human eat in one sitting?\<\|im_end\|\> \<\|im_start\|\>assistant
-
-</div>
-
-</div>
 
 Notice how the final tokens in the sequence are `<im_start>assistant`. This is how the model knows to continue generating tokens until it finally generates its end-of-sequence token, which in this case is `<im_end>`.
 
@@ -642,51 +618,27 @@ By packing all question-answer pair data (and downstream preference tuning data)
 
 The behavior can be extended naively to multiple turns, as shown below:
 
-<div class="tcolorbox">
-
-<div class="Highlighting">
-
 \<\|im_start\|\>system You are a friendly chatbot who always responds in the style of a pirate\<\|im_end\|\> \<\|im_start\|\>user How many helicopters can a human eat in one sitting?\<\|im_end\|\> \<\|im_start\|\>assistant Oh just 6.\<\|im_end\|\> \<\|im_start\|\>user Are you sure about that?\<\|im_end\|\> \<\|im_start\|\>assistant
-
-</div>
-
-</div>
 
 In the open ecosystem, the standard method for applying the chat template to a list of messages uses a Jinja snippet stored in the tokenizer configuration, as `apply_chat_template`.
 
-The above chat template is a derivative of OpenAI’s Chat Markup Language (ChatML), which was an early attempt to standardize message formatting. Now, OpenAI and other model providers use a hierarchical system where the user can configure a system message, yet there are higher-level instructions that may or may not be revealed to the user [@ref-wallace2024instruction].
+The above chat template is a derivative of OpenAI’s Chat Markup Language (ChatML), which was an early attempt to standardize message formatting. Now, OpenAI and other model providers use a hierarchical system where the user can configure a system message, yet there are higher-level instructions that may or may not be revealed to the user \[74\].
 
-Many other chat templates exist. Some other examples include Zephyr’s [@ref-tunstall2023zephyr]:
-
-<div class="tcolorbox">
-
-<div class="Highlighting">
+Many other chat templates exist. Some other examples include Zephyr’s \[26\]:
 
 \<\|system\|\> You are a friendly chatbot who always responds in the style of a pirate\</s\> \<\|user\|\> How many helicopters can a human eat in one sitting?\</s\> \<\|assistant\|\>
 
-</div>
-
-</div>
-
 Or Tülu’s:
 
-<div class="tcolorbox">
-
-<div class="Highlighting">
-
 \<\|user\|\> How are you doing? \<\|assistant\|\> I'm just a computer program, so I don't have feelings, but I'm functioning as expected. How can I assist you today?\<\|endoftext\|\>
-
-</div>
-
-</div>
 
 Beyond this, many chat templates include formatting and other tokens for tasks such as tool-use.
 
 ## 4.2 Best Practices for Instruction Tuning
 
-Instruction tuning as the foundation of post-training and creating helpful language models is well-established. There are many ways to achieve successful instruction tuning. For example, efficient fine-tuning with quantization of some model parameters makes training very accessible [@ref-dettmers2023qlora]. Also, in narrow domains such as chat alignment, i.e., without harder skills such as math or code, small, focused datasets can achieve strong performance [@ref-zhou2023lima].
+Instruction tuning as the foundation of post-training and creating helpful language models is well-established. There are many ways to achieve successful instruction tuning. For example, efficient fine-tuning with quantization of some model parameters makes training very accessible \[75\]. Also, in narrow domains such as chat alignment, i.e., without harder skills such as math or code, small, focused datasets can achieve strong performance \[14\].
 
-Soon after the release of ChatGPT, human datasets with as few as 10K samples such as No Robots were state-of-the-art [@ref-no_robots]. Years later, large-scale synthetic datasets work best [@ref-lambert2024t] on most tasks.
+Soon after the release of ChatGPT, human datasets with as few as 10K samples such as No Robots were state-of-the-art \[76\]. Years later, large-scale synthetic datasets work best \[6\] on most tasks.
 
 A few principles remain:
 
@@ -702,7 +654,7 @@ A few principles remain:
 
 While the loss function is the same as that used in pretraining, there are a few key implementation details that differ from the setting used for pretraining. Many practices, such as deciding on the types of parallelism used to shard models across many GPUs, are the same as pretraining, but the total number of machines used is often lower (for the first technical change listed below):
 
-- **Smaller batch sizes**: Compared to pretraining, instruction tuning (and other post-training techniques such as preference fine-tuning) use substantially smaller batch sizes to optimize well on a narrower data distribution while preserving the model’s generalization from pretraining. For example, OLMo 2 uses a batch size of 1024 packed-rows for the 7B and 2048 for the 13B pretraining, where these models have a total context length of 4096 tokens, and each row in the batch is a combination of documents that fills the sequence length. For post-training, both these models only use a batch size of 256 *prompts* [@ref-olmo20242], without filling to the full sequence length (for far fewer non-masked tokens per batch). The smaller batch sizes mean that these training jobs cannot be sharded across as many devices as during pretraining – in practice, distributed training setups have minimum per-device batch sizes, so if you’re trying to retain a smaller global batch size for SFT you can use cumulatively fewer GPUs. In practice the batch size forcing a smaller concurrent GPU allotment per training job is not a limiting factor because the training token counts for SFT are much smaller than in pretraining, and training for multiple seeds is needed in post-training to obtain the best final performance.
+- **Smaller batch sizes**: Compared to pretraining, instruction tuning (and other post-training techniques such as preference fine-tuning) use substantially smaller batch sizes to optimize well on a narrower data distribution while preserving the model’s generalization from pretraining. For example, OLMo 2 uses a batch size of 1024 packed-rows for the 7B and 2048 for the 13B pretraining, where these models have a total context length of 4096 tokens, and each row in the batch is a combination of documents that fills the sequence length. For post-training, both these models only use a batch size of 256 *prompts* \[58\], without filling to the full sequence length (for far fewer non-masked tokens per batch). The smaller batch sizes mean that these training jobs cannot be sharded across as many devices as during pretraining – in practice, distributed training setups have minimum per-device batch sizes, so if you’re trying to retain a smaller global batch size for SFT you can use cumulatively fewer GPUs. In practice the batch size forcing a smaller concurrent GPU allotment per training job is not a limiting factor because the training token counts for SFT are much smaller than in pretraining, and training for multiple seeds is needed in post-training to obtain the best final performance.
 
 - **Prompt masking**: When pretraining, every token in the batch is predicted autoregressively and the loss is then applied to them. For instruction tuning, the prompt tokens are masked out so the model isn’t learning to accurately predict user queries – just responses. The same applies to other post-training algorithms.
 
@@ -710,7 +662,7 @@ While the loss function is the same as that used in pretraining, there are a few
 
 - **Same loss function as pretraining:** Instruction tuning uses the same autoregressive loss function used in pretraining language models, but with substantially different data and masking (training only on full sequences, whereas pretraining documents can be split across batches), etc.
 
-- **Learning rate:** SFT typically uses a learning rate one to two orders of magnitude smaller than pretraining to best manage the different optimization dynamics (smaller datasets, smaller batches, and a strong pretrained initialization all favor more conservative updates). For example, OLMo 2 uses a peak learning rate of $3 \times 10^{-4}$ for pretraining but $1 \times 10^{-5}$ for SFT [@ref-olmo20242]. Olmo 3 uses a higher SFT learning rate of $5\text{-}8 \times 10^{-5}$ [@ref-teamolmo2025olmo3], in part because its training infrastructure uses sequence packing, which fits multiple examples into each training sequence and increases the effective batch size measured in useful tokens. Larger batches produce lower-variance gradient estimates, which in turn supports a higher learning rate without destabilizing training – a relationship known as the linear scaling rule. The learning rate is commonly warmed up over a small fraction of training steps before decaying linearly. In practice, teams often sweep over multiple learning rates and select the best checkpoint on a held-out evaluation suite [@ref-teamolmo2025olmo3].
+- **Learning rate:** SFT typically uses a learning rate one to two orders of magnitude smaller than pretraining to best manage the different optimization dynamics (smaller datasets, smaller batches, and a strong pretrained initialization all favor more conservative updates). For example, OLMo 2 uses a peak learning rate of $3 \times 10^{-4}$ for pretraining but $1 \times 10^{-5}$ for SFT \[58\]. Olmo 3 uses a higher SFT learning rate of $5\text{-}8 \times 10^{-5}$ \[18\], in part because its training infrastructure uses sequence packing, which fits multiple examples into each training sequence and increases the effective batch size measured in useful tokens. Larger batches produce lower-variance gradient estimates, which in turn supports a higher learning rate without destabilizing training – a relationship known as the linear scaling rule. The learning rate is commonly warmed up over a small fraction of training steps before decaying linearly. In practice, teams often sweep over multiple learning rates and select the best checkpoint on a held-out evaluation suite \[18\].
 
 ## 4.4 Suggested Experiments
 
@@ -718,15 +670,7 @@ The companion code repository includes a small SFT training script in `code/inst
 
 1.  **Run the canonical SFT example and watch the base$\to$assistant transition.** Run:
 
-    <div class="tcolorbox">
-
-    <div class="Highlighting">
-
-    <span style="color: 0.00,0.50,0.00">cd</span> code/ uv run python <span style="color: 0.49,0.56,0.16">-m</span> instruction_tuning.train <span style="color: 0.49,0.56,0.16">--config</span> instruction_tuning/configs/sft_olmo2_1b.yaml
-
-    </div>
-
-    </div>
+    cd code/ uv run python -m instruction_tuning.train --config instruction_tuning/configs/sft_olmo2_1b.yaml
 
     This trains `allenai/OLMo-2-0425-1B` (base) on `HuggingFaceH4/no_robots` and prints generations for a fixed prompt pool every 50 optimizer steps. At step 0 the base model rambles, repeats the prompt, and emits malformed role markers; after a few hundred steps the same prompts produce concise answers that terminate at `<endoftext>`. This is the sanity check for instruction tuning — the same loss function as pretraining, but applied to a chat template with prompt tokens masked.
 
@@ -736,7 +680,7 @@ The companion code repository includes a small SFT training script in `code/inst
 
 Reward models are core to the modern approach to RLHF by being where the complex human preferences are learned. They are what enable our models to learn from hard-to-specify signals. They compress complex features in the data into a representation that can be used in downstream training – a sort of magic that once again shows the complex capacity of modern deep learning. These models act as proxy objectives for the core optimization, as studied in the following chapters. As shown in fig. 14, the reward model plays a role like the standard RL environment, providing the learning signal for the agent, but unlike a fixed environment, we get to learn it from human preferences.
 
-Reward models have historically been used extensively in reinforcement learning research as a proxy for environment rewards [@ref-sutton2018reinforcement]. Reward models were proposed, in their modern form, as a tool for studying the value alignment problem [@ref-leike2018scalable]. These models tend to take in some sort of input and output a single scalar value of reward. This reward can take multiple forms – in traditional RL problems it was attempting to approximate the exact environment reward for the problem, but we will see in RLHF that reward models actually output a probability of a certain input being “of high quality” (i.e. the chosen answer among a pairwise preference relation). The practice of reward modeling for RLHF is closely related to inverse reinforcement learning, where the problem is to approximate an agent’s reward function given trajectories of behavior [@ref-ng2000algorithms], and other areas of deep reinforcement learning. The high-level problem statement is the same, but the implementation and focus areas are entirely different, so they’re often considered as totally separate areas of study.
+Reward models have historically been used extensively in reinforcement learning research as a proxy for environment rewards \[54\]. Reward models were proposed, in their modern form, as a tool for studying the value alignment problem \[38\]. These models tend to take in some sort of input and output a single scalar value of reward. This reward can take multiple forms – in traditional RL problems it was attempting to approximate the exact environment reward for the problem, but we will see in RLHF that reward models actually output a probability of a certain input being “of high quality” (i.e. the chosen answer among a pairwise preference relation). The practice of reward modeling for RLHF is closely related to inverse reinforcement learning, where the problem is to approximate an agent’s reward function given trajectories of behavior \[77\], and other areas of deep reinforcement learning. The high-level problem statement is the same, but the implementation and focus areas are entirely different, so they’re often considered as totally separate areas of study.
 
 The most common reward model, often called a Bradley-Terry reward model and the primary focus of this chapter, predicts the probability that a piece of text was close to a “preferred” piece of text from the training comparisons. Later in this section we also compare these to Outcome Reward Models (ORMs), Process Reward Models (PRMs), and other types of reward models.
 
@@ -746,7 +690,7 @@ The most common reward model, often called a Bradley-Terry reward model and the 
 
 ## 5.1 Training a Bradley-Terry Reward Model
 
-The canonical implementation of a reward model is derived from the Bradley-Terry model of preference [@ref-BradleyTerry]. There are two popular expressions for how to train a standard reward model for RLHF – they are mathematically equivalent. To start, a Bradley-Terry model of preferences defines the probability that, in a pairwise comparison between two items $i$ and $j$, a judge prefers $i$ over $j$:
+The canonical implementation of a reward model is derived from the Bradley-Terry model of preference \[78\]. There are two popular expressions for how to train a standard reward model for RLHF – they are mathematically equivalent. To start, a Bradley-Terry model of preferences defines the probability that, in a pairwise comparison between two items $i$ and $j$, a judge prefers $i$ over $j$:
 
 $$\begin{equation}
 \tag{12}{P(i > j) = \frac{p_i}{p_i + p_j}.}
@@ -798,13 +742,13 @@ $$\begin{equation}
 
 Taking the logarithm *before* averaging over the dataset is what makes the negative-log-likelihood loss the right objective: maximizing the expected probability $\mathbb{E}[P]$ is not the same as maximizing the expected log-probability $\mathbb{E}[\log P]$.
 
-The per-example loss is the log-sigmoid expression inside the expectation above, as in [@ref-ouyang2022training] and other works: 
+The per-example loss is the log-sigmoid expression inside the expectation above, as in \[3\] and other works: 
 
 $$\begin{equation}
 \tag{17}{\mathcal{L}(\theta) = - \log \left( \sigma \left( r_{\theta}(y_c \mid x) - r_{\theta}(y_r \mid x) \right) \right)}
 \end{equation}$$
 
-The second is a mathematically equivalent form expressed using the softplus function $\log(1+e^x)$, as in [@ref-askell2021general] and other works: 
+The second is a mathematically equivalent form expressed using the softplus function $\log(1+e^x)$, as in \[23\] and other works: 
 
 $$\begin{equation}
 \tag{18}{\mathcal{L}(\theta) = \log \left( 1 + e^{r_{\theta}(y_r \mid x) - r_{\theta}(y_c \mid x)} \right)}
@@ -824,43 +768,27 @@ Other implementation options exist, such as just taking a linear layer directly 
 
 Implementing the reward modeling loss is quite simple. More of the implementation challenge is on setting up a separate data loader and inference pipeline. Given the correct dataloader with tokenized, chosen and rejected prompts with completions, the loss is implemented as:
 
-<div class="tcolorbox">
+**import** torch.nn **as** nn *\# inputs_chosen / inputs_rejected include the prompt tokens x and the respective* *\# completion tokens (y_c or y_r) that the reward model scores jointly.* rewards_chosen = model(\*\*inputs_chosen) rewards_rejected = model(\*\*inputs_rejected)
 
-<div class="Highlighting">
-
-<span style="color: 0.00,0.50,0.00">**import**</span> torch.nn <span style="color: 0.00,0.50,0.00">**as**</span> nn <span style="color: 0.38,0.63,0.69">*\# inputs_chosen / inputs_rejected include the prompt tokens x and the respective*</span> <span style="color: 0.38,0.63,0.69">*\# completion tokens (y_c or y_r) that the reward model scores jointly.*</span> rewards_chosen <span style="color: 0.40,0.40,0.40">=</span> model(<span style="color: 0.40,0.40,0.40">\*\*</span>inputs_chosen) rewards_rejected <span style="color: 0.40,0.40,0.40">=</span> model(<span style="color: 0.40,0.40,0.40">\*\*</span>inputs_rejected)
-
-loss <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.40,0.40,0.40">-</span>nn.functional.logsigmoid(rewards_chosen <span style="color: 0.40,0.40,0.40">-</span> rewards_rejected).mean()
-
-</div>
-
-</div>
+loss = -nn.functional.logsigmoid(rewards_chosen - rewards_rejected).mean()
 
 As for the bigger picture, this is often within a causal language model (a model that generates tokens left-to-right, predicting each token conditioned on all previous ones) that has an additional head added (and learned with the above loss) that transitions from the final hidden state to the score of the inputs. The code takes in standard transformer inputs – `input_ids` (tokenized text) and `attention_mask` (which marks real tokens vs. padding) – and extracts the hidden state (the model’s internal representation of the input) at the last real token, which is then passed through a linear layer to produce a scalar reward. This model will have a structure as follows:
 
-<div class="tcolorbox">
+**import** torch **import** torch.nn **as** nn **import** torch.nn.functional **as** F
 
-<div class="Highlighting">
+**class** BradleyTerryRewardModel(nn.Module): *"""* *Standard scalar reward model for Bradley-Terry preference learning.*
 
-<span style="color: 0.00,0.50,0.00">**import**</span> torch <span style="color: 0.00,0.50,0.00">**import**</span> torch.nn <span style="color: 0.00,0.50,0.00">**as**</span> nn <span style="color: 0.00,0.50,0.00">**import**</span> torch.nn.functional <span style="color: 0.00,0.50,0.00">**as**</span> F
+*Usage (pairwise BT loss):* *rewards_chosen = model(\*\*inputs_chosen) \# (batch,)* *rewards_rejected = model(\*\*inputs_rejected) \# (batch,)* *loss = -F.logsigmoid(rewards_chosen - rewards_rejected).mean()* *"""* **def** \_\_init\_\_(self, base_lm): super().\_\_init\_\_() self.lm = base_lm *\# e.g., AutoModelForCausalLM* self.head = nn.Linear(self.lm.config.hidden_size, 1)
 
-<span style="color: 0.00,0.44,0.13">**class**</span> BradleyTerryRewardModel(nn.Module): <span style="color: 0.38,0.63,0.69">*"""*</span> <span style="color: 0.38,0.63,0.69"> *Standard scalar reward model for Bradley-Terry preference learning.*</span>
+**def** \_sequence_rep(self, hidden, attention_mask): *"""* *Get a single vector per sequence to score.* *Default: last non-padding token (EOS token); if no mask, last token.* *hidden: (batch, seq_len, hidden_size)* *attention_mask: (batch, seq_len)* *"""*
 
-<span style="color: 0.38,0.63,0.69"> *Usage (pairwise BT loss):*</span> <span style="color: 0.38,0.63,0.69"> *rewards_chosen = model(\*\*inputs_chosen) \# (batch,)*</span> <span style="color: 0.38,0.63,0.69"> *rewards_rejected = model(\*\*inputs_rejected) \# (batch,)*</span> <span style="color: 0.38,0.63,0.69"> *loss = -F.logsigmoid(rewards_chosen - rewards_rejected).mean()*</span> <span style="color: 0.38,0.63,0.69"> *"""*</span> <span style="color: 0.00,0.44,0.13">**def**</span> <span style="color: 0.02,0.16,0.49">\_\_init\_\_</span>(<span style="color: 0.10,0.09,0.49">self</span>, base_lm): <span style="color: 0.00,0.50,0.00">super</span>().<span style="color: 0.02,0.16,0.49">\_\_init\_\_</span>() <span style="color: 0.10,0.09,0.49">self</span>.lm <span style="color: 0.40,0.40,0.40">=</span> base_lm <span style="color: 0.38,0.63,0.69">*\# e.g., AutoModelForCausalLM*</span> <span style="color: 0.10,0.09,0.49">self</span>.head <span style="color: 0.40,0.40,0.40">=</span> nn.Linear(<span style="color: 0.10,0.09,0.49">self</span>.lm.config.hidden_size, <span style="color: 0.25,0.63,0.44">1</span>)
+*\# Index of last non-pad token in each sequence* *\# attention_mask is 1 for real tokens, 0 for padding* lengths = attention_mask.sum(dim=1) - 1 *\# (batch,)* batch_idx = torch.arange(hidden.size(0), device=hidden.device) **return** hidden\[batch_idx, lengths\] *\# (batch, hidden_size)*
 
-<span style="color: 0.00,0.44,0.13">**def**</span> \_sequence_rep(<span style="color: 0.10,0.09,0.49">self</span>, hidden, attention_mask): <span style="color: 0.38,0.63,0.69">*"""*</span> <span style="color: 0.38,0.63,0.69"> *Get a single vector per sequence to score.*</span> <span style="color: 0.38,0.63,0.69"> *Default: last non-padding token (EOS token); if no mask, last token.*</span> <span style="color: 0.38,0.63,0.69"> *hidden: (batch, seq_len, hidden_size)*</span> <span style="color: 0.38,0.63,0.69"> *attention_mask: (batch, seq_len)*</span> <span style="color: 0.38,0.63,0.69"> *"""*</span>
+**def** forward(self, input_ids, attention_mask): *"""* *A forward pass designed to show inference structure of a standard reward model.* *To train one, this function will need to be modified to compute rewards from both* *chosen and rejected inputs, applying the loss above.* *"""* outputs = self.lm( input_ids=input_ids, attention_mask=attention_mask, output_hidden_states=True, return_dict=True, ) *\# Final hidden states: (batch, seq_len, hidden_size)* hidden = outputs.hidden_states\[-1\]
 
-<span style="color: 0.38,0.63,0.69">*\# Index of last non-pad token in each sequence*</span> <span style="color: 0.38,0.63,0.69">*\# attention_mask is 1 for real tokens, 0 for padding*</span> lengths <span style="color: 0.40,0.40,0.40">=</span> attention_mask.<span style="color: 0.00,0.50,0.00">sum</span>(dim<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.63,0.44">1</span>) <span style="color: 0.40,0.40,0.40">-</span> <span style="color: 0.25,0.63,0.44">1</span> <span style="color: 0.38,0.63,0.69">*\# (batch,)*</span> batch_idx <span style="color: 0.40,0.40,0.40">=</span> torch.arange(hidden.size(<span style="color: 0.25,0.63,0.44">0</span>), device<span style="color: 0.40,0.40,0.40">=</span>hidden.device) <span style="color: 0.00,0.44,0.13">**return**</span> hidden\[batch_idx, lengths\] <span style="color: 0.38,0.63,0.69">*\# (batch, hidden_size)*</span>
+*\# One scalar reward per sequence: (batch,)* seq_repr = self.\_sequence_rep(hidden, attention_mask) rewards = self.head(seq_repr).squeeze(-1)
 
-<span style="color: 0.00,0.44,0.13">**def**</span> forward(<span style="color: 0.10,0.09,0.49">self</span>, input_ids, attention_mask): <span style="color: 0.38,0.63,0.69">*"""*</span> <span style="color: 0.38,0.63,0.69"> *A forward pass designed to show inference structure of a standard reward model.*</span> <span style="color: 0.38,0.63,0.69"> *To train one, this function will need to be modified to compute rewards from both*</span> <span style="color: 0.38,0.63,0.69"> *chosen and rejected inputs, applying the loss above.*</span> <span style="color: 0.38,0.63,0.69"> *"""*</span> outputs <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.10,0.09,0.49">self</span>.lm( input_ids<span style="color: 0.40,0.40,0.40">=</span>input_ids, attention_mask<span style="color: 0.40,0.40,0.40">=</span>attention_mask, output_hidden_states<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.10,0.09,0.49">True</span>, return_dict<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.10,0.09,0.49">True</span>, ) <span style="color: 0.38,0.63,0.69">*\# Final hidden states: (batch, seq_len, hidden_size)*</span> hidden <span style="color: 0.40,0.40,0.40">=</span> outputs.hidden_states\[<span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">1</span>\]
-
-<span style="color: 0.38,0.63,0.69">*\# One scalar reward per sequence: (batch,)*</span> seq_repr <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.10,0.09,0.49">self</span>.\_sequence_rep(hidden, attention_mask) rewards <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.10,0.09,0.49">self</span>.head(seq_repr).squeeze(<span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">1</span>)
-
-<span style="color: 0.00,0.44,0.13">**return**</span> rewards
-
-</div>
-
-</div>
+**return** rewards
 
 In this section and what follows, most of the implementation complexity for reward models (and much of post-training) is around constructing the data-loaders correctly and distributed learning systems. Note, when training reward models, the most common practice is to train for only 1 epoch to avoid overfitting.
 
@@ -870,7 +798,7 @@ The majority of *preference tuning* for language models and other AI systems is 
 
 Before we continue, it is important to note that outcome reward models are a relatively niche area in the post-training literature, and the key papers we reference have subtly different implementation details. The key idea is to learn a per-token signal of how likely the completion is to end in a correct answer, but there have been different training approaches and architectures over time.
 
-The architecture of the models used is very similar to a standard reward model, with a linear layer appended to a model that can output a single logit (in the case of an RM) – with an ORM, the training objective that follows is slightly different. To start, let’s break down the content in the original GSM8K paper (a popular benchmark studying grade-school math) [@ref-cobbe2021gsm8k], which originated the ideas that became an ORM without yet naming it. We start with architecture, from section 4.3:
+The architecture of the models used is very similar to a standard reward model, with a linear layer appended to a model that can output a single logit (in the case of an RM) – with an ORM, the training objective that follows is slightly different. To start, let’s break down the content in the original GSM8K paper (a popular benchmark studying grade-school math) \[79\], which originated the ideas that became an ORM without yet naming it. We start with architecture, from section 4.3:
 
 > We can either train verifiers to make a single scalar prediction conditioned on the entire generated solution, or to make a scalar prediction after each token in the solution. By default, we choose the latter, training verifiers to make predictions after each token.
 
@@ -880,9 +808,9 @@ This is where the default implementation of outcome reward models diverges from 
 
 To translate, this is implemented as a small head that outputs a scalar logit at every token, rather than a classification head of a traditional RM that outputs one logit for the entire sequence. Additionally, in this original GSM8K paper the authors jointly trained their ORM with the next-token, language modeling loss – this practice did not continue as the default.
 
-The term “outcome-reward model” appeared in 2022, in a paper comparing “outcome-supervised RM (ORM)” versus process reward models that predicted the quality of the reasoning so far [@ref-uesato2022solving] – this importantly is a secondary way of implementing an ORM, one that implements a binary `correct` or `incorrect` in the LLM’s tokenizer vocabulary as a step-level signal, rather than learning a separate scalar head that predicts correctness at every token.
+The term “outcome-reward model” appeared in 2022, in a paper comparing “outcome-supervised RM (ORM)” versus process reward models that predicted the quality of the reasoning so far \[80\] – this importantly is a secondary way of implementing an ORM, one that implements a binary `correct` or `incorrect` in the LLM’s tokenizer vocabulary as a step-level signal, rather than learning a separate scalar head that predicts correctness at every token.
 
-The canonical implementation that is followed in this book is from the paper *Let’s Verify Step by Step* [@ref-lightman2023let], where the outcome reward model is training a per-token predictor of if an answer is right with a cross-entropy loss.
+The canonical implementation that is followed in this book is from the paper *Let’s Verify Step by Step* \[50\], where the outcome reward model is training a per-token predictor of if an answer is right with a cross-entropy loss.
 
 Formally, the per-token loss applies a binary cross-entropy at every completion token, where each token’s associated outcome probability is trained towards the sequence’s outcome label:
 
@@ -892,7 +820,7 @@ $$\begin{equation}
 
 where $s$ is a completion of $T$ tokens, $r \in \{0,1\}$ is a binary label where 1 applies to a correct answer to a given prompt and 0 applies to an incorrect answer, and $p_\theta(s_t) = \sigma(w_\theta(s_t))$ is the probability of correctness predicted at token $t$ from the model’s scalar logit $w_\theta(s_t)$.
 
-A simpler form of an ORM, following [@ref-lyu2025exploring], is a sequence-level cross-entropy loss, where the model is later used for per-token inference:
+A simpler form of an ORM, following \[81\], is a sequence-level cross-entropy loss, where the model is later used for per-token inference:
 
 $$\begin{equation}
 \tag{20}{\mathcal{L}_{\text{CE}}(\theta) = -\mathbb{E}_{(s,r)\sim \mathcal{D}}\left[r\log \bar{p}_\theta(s) + (1-r)\log(1-\bar{p}_\theta(s))\right]}
@@ -904,35 +832,19 @@ Implementing an outcome reward model (and other types, as we’ll see with the P
 
 The model structure could follow as:
 
-<div class="tcolorbox">
+**import** torch.nn **as** nn **import** torch.nn.functional **as** F
 
-<div class="Highlighting">
+**class** OutcomeRewardModel(nn.Module): **def** \_\_init\_\_(self, base_lm): super().\_\_init\_\_() self.lm = base_lm *\# e.g., AutoModelForCausalLM* self.head = nn.Linear(self.lm.config.hidden_size, 1)
 
-<span style="color: 0.00,0.50,0.00">**import**</span> torch.nn <span style="color: 0.00,0.50,0.00">**as**</span> nn <span style="color: 0.00,0.50,0.00">**import**</span> torch.nn.functional <span style="color: 0.00,0.50,0.00">**as**</span> F
+**def** forward(self, input_ids, attention_mask=None, labels=None): *"""* *input_ids contains a full prompt+completion sequence.* *labels is token-aligned: prompt tokens are -100, and each completion* *token repeats the sequence outcome label (1=correct, 0=incorrect).* *If labels=None, this is an inference-only forward pass and the loss is* *returned as None.* *"""* outputs = self.lm( input_ids=input_ids, attention_mask=attention_mask, output_hidden_states=True, return_dict=True, ) *\# Final hidden states: (batch, seq_len, hidden_size)* hidden = outputs.hidden_states\[-1\] *\# One scalar logit per token: (batch, seq_len)* logits = self.head(hidden).squeeze(-1)
 
-<span style="color: 0.00,0.44,0.13">**class**</span> OutcomeRewardModel(nn.Module): <span style="color: 0.00,0.44,0.13">**def**</span> <span style="color: 0.02,0.16,0.49">\_\_init\_\_</span>(<span style="color: 0.10,0.09,0.49">self</span>, base_lm): <span style="color: 0.00,0.50,0.00">super</span>().<span style="color: 0.02,0.16,0.49">\_\_init\_\_</span>() <span style="color: 0.10,0.09,0.49">self</span>.lm <span style="color: 0.40,0.40,0.40">=</span> base_lm <span style="color: 0.38,0.63,0.69">*\# e.g., AutoModelForCausalLM*</span> <span style="color: 0.10,0.09,0.49">self</span>.head <span style="color: 0.40,0.40,0.40">=</span> nn.Linear(<span style="color: 0.10,0.09,0.49">self</span>.lm.config.hidden_size, <span style="color: 0.25,0.63,0.44">1</span>)
-
-<span style="color: 0.00,0.44,0.13">**def**</span> forward(<span style="color: 0.10,0.09,0.49">self</span>, input_ids, attention_mask<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.10,0.09,0.49">None</span>, labels<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.10,0.09,0.49">None</span>): <span style="color: 0.38,0.63,0.69">*"""*</span> <span style="color: 0.38,0.63,0.69"> *input_ids contains a full prompt+completion sequence.*</span> <span style="color: 0.38,0.63,0.69"> *labels is token-aligned: prompt tokens are -100, and each completion*</span> <span style="color: 0.38,0.63,0.69"> *token repeats the sequence outcome label (1=correct, 0=incorrect).*</span> <span style="color: 0.38,0.63,0.69"> *If labels=None, this is an inference-only forward pass and the loss is*</span> <span style="color: 0.38,0.63,0.69"> *returned as None.*</span> <span style="color: 0.38,0.63,0.69"> *"""*</span> outputs <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.10,0.09,0.49">self</span>.lm( input_ids<span style="color: 0.40,0.40,0.40">=</span>input_ids, attention_mask<span style="color: 0.40,0.40,0.40">=</span>attention_mask, output_hidden_states<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.10,0.09,0.49">True</span>, return_dict<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.10,0.09,0.49">True</span>, ) <span style="color: 0.38,0.63,0.69">*\# Final hidden states: (batch, seq_len, hidden_size)*</span> hidden <span style="color: 0.40,0.40,0.40">=</span> outputs.hidden_states\[<span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">1</span>\] <span style="color: 0.38,0.63,0.69">*\# One scalar logit per token: (batch, seq_len)*</span> logits <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.10,0.09,0.49">self</span>.head(hidden).squeeze(<span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">1</span>)
-
-<span style="color: 0.38,0.63,0.69">*\# Inference-only forward pass: no loss is computed.*</span> <span style="color: 0.00,0.44,0.13">**if**</span> labels <span style="color: 0.00,0.44,0.13">**is**</span> <span style="color: 0.10,0.09,0.49">None</span>: <span style="color: 0.00,0.44,0.13">**return**</span> <span style="color: 0.10,0.09,0.49">None</span>, logits <span style="color: 0.38,0.63,0.69">*\# Only compute loss on completion tokens (labels 0 or 1)*</span> <span style="color: 0.38,0.63,0.69">*\# Prompt tokens have labels = -100*</span> mask <span style="color: 0.40,0.40,0.40">=</span> labels <span style="color: 0.40,0.40,0.40">!=</span> <span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">100</span> loss <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.10,0.09,0.49">None</span> <span style="color: 0.00,0.44,0.13">**if**</span> mask.<span style="color: 0.00,0.50,0.00">any</span>(): loss <span style="color: 0.40,0.40,0.40">=</span> F.binary_cross_entropy_with_logits( logits\[mask\], labels\[mask\].<span style="color: 0.00,0.50,0.00">float</span>() ) <span style="color: 0.00,0.44,0.13">**else**</span>: loss <span style="color: 0.40,0.40,0.40">=</span> logits.<span style="color: 0.00,0.50,0.00">sum</span>() <span style="color: 0.40,0.40,0.40">\*</span> <span style="color: 0.25,0.63,0.44">0</span> <span style="color: 0.00,0.44,0.13">**return**</span> loss, logits
-
-</div>
-
-</div>
+*\# Inference-only forward pass: no loss is computed.* **if** labels **is** None: **return** None, logits *\# Only compute loss on completion tokens (labels 0 or 1)* *\# Prompt tokens have labels = -100* mask = labels != -100 loss = None **if** mask.any(): loss = F.binary_cross_entropy_with_logits( logits\[mask\], labels\[mask\].float() ) **else**: loss = logits.sum() \* 0 **return** loss, logits
 
 A simplified version of the loss follows:
 
-<div class="tcolorbox">
+*\# Feed the full prompt+completion sequence once; no token sampling happens here.* *\# Assume model already has: model.lm (backbone) + model.head* hidden = model.lm(\*\*inputs, output_hidden_states=True).hidden_states\[-1\] logits_per_token = model.head(hidden).squeeze(-1) *\# (batch, seq_len)* *\# This will sometimes be compressed as model.forward() in other implementations*
 
-<div class="Highlighting">
-
-<span style="color: 0.38,0.63,0.69">*\# Feed the full prompt+completion sequence once; no token sampling happens here.*</span> <span style="color: 0.38,0.63,0.69">*\# Assume model already has: model.lm (backbone) + model.head*</span> hidden <span style="color: 0.40,0.40,0.40">=</span> model.lm(<span style="color: 0.40,0.40,0.40">\*\*</span>inputs, output_hidden_states<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.10,0.09,0.49">True</span>).hidden_states\[<span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">1</span>\] logits_per_token <span style="color: 0.40,0.40,0.40">=</span> model.head(hidden).squeeze(<span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">1</span>) <span style="color: 0.38,0.63,0.69">*\# (batch, seq_len)*</span> <span style="color: 0.38,0.63,0.69">*\# This will sometimes be compressed as model.forward() in other implementations*</span>
-
-<span style="color: 0.38,0.63,0.69">*\# Binary labels: 1=correct, 0=incorrect (prompt tokens masked as -100)*</span> mask <span style="color: 0.40,0.40,0.40">=</span> labels <span style="color: 0.40,0.40,0.40">!=</span> <span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">100</span> loss <span style="color: 0.40,0.40,0.40">=</span> F.binary_cross_entropy_with_logits( logits_per_token\[mask\], labels\[mask\].<span style="color: 0.00,0.50,0.00">float</span>() )
-
-</div>
-
-</div>
+*\# Binary labels: 1=correct, 0=incorrect (prompt tokens masked as -100)* mask = labels != -100 loss = F.binary_cross_entropy_with_logits( logits_per_token\[mask\], labels\[mask\].float() )
 
 The important intuition here is that an ORM will output a probability of correctness at every token in the sequence (judged only by the final answer – reasoning errors are not captured in the ORM training process). This can be a noisy process, as the updates and loss propagate per token depending on outcomes and attention mappings.
 
@@ -940,15 +852,15 @@ The important intuition here is that an ORM will output a probability of correct
 
 **Figura 17.** Training an outcome reward model uses offline labels from a verifier or dataset (e.g., all 1s for correct completions). Each completion token is trained with binary cross-entropy against the outcome label, and per-token probabilities are aggregated into a final score for verification, filtering, or reranking.
 
-These models have continued to be used, but are less supported in open-source RLHF tools. For example, the same type of ORM was used in the seminal work *Let’s Verify Step by Step* [@ref-lightman2023let], but without the language modeling prediction piece of the loss from Cobbe et al. 2021. Then, the final loss is a cross-entropy loss on every token, predicting whether the final answer is correct.
+These models have continued to be used, but are less supported in open-source RLHF tools. For example, the same type of ORM was used in the seminal work *Let’s Verify Step by Step* \[50\], but without the language modeling prediction piece of the loss from Cobbe et al. 2021. Then, the final loss is a cross-entropy loss on every token, predicting whether the final answer is correct.
 
-Given the lack of support, the term outcome reward model (ORM) has been used in multiple ways. Some literature, e.g. [@ref-lyu2025exploring], continues to be inspired by the original definition from Cobbe et al. 2021; others use it more broadly for any verifier trained to predict whether a completion is correct.
+Given the lack of support, the term outcome reward model (ORM) has been used in multiple ways. Some literature, e.g. \[81\], continues to be inspired by the original definition from Cobbe et al. 2021; others use it more broadly for any verifier trained to predict whether a completion is correct.
 
 ## 5.3 Process Reward Models
 
 Process Reward Models (PRMs), originally called process-supervised reward models, are reward models trained to output scores at every *step* in a chain-of-thought reasoning process. These differ from a standard RM that outputs a score only at an EOS token or an ORM that outputs a score at every token. Process Reward Models require supervision at the end of each reasoning step, and then are trained similarly where the tokens in the step are trained to their relevant target – the target is the step in PRMs and the entire response for ORMs.
 
-Following [@ref-lightman2023let], a binary-labeled PRM is commonly optimized with a per-step cross-entropy loss:
+Following \[50\], a binary-labeled PRM is commonly optimized with a per-step cross-entropy loss:
 
 $$\begin{equation}
 \tag{21}{\mathcal{L}_{\text{PRM}}(\theta) = - \mathbb{E}_{(x, s) \sim \mathcal{D}} \left[ \sum_{i=1}^{K} y_{s_i} \log r_\theta(s_i \mid x, s_{< i}) + (1 - y_{s_i}) \log \left(1 - r_\theta(s_i \mid x, s_{< i})\right) \right] }
@@ -956,19 +868,11 @@ $$\begin{equation}
 
 where $s$ is a sampled chain-of-thought with $K$ annotated steps, $y_{s_i} \in \{0,1\}$ denotes whether the $i$-th step is correct, and $r_\theta(s_i \mid x, s_{< i})$ is the PRM’s predicted probability that step $s_i$ is valid conditioned on the original prompt $x$ and all previous steps $s_{< i}$.
 
-Here’s an example of how this per-step label can be packaged in a trainer, from Hugging Face’s TRL (Transformer Reinforcement Learning) [@ref-vonwerra2022trl]:
+Here’s an example of how this per-step label can be packaged in a trainer, from Hugging Face’s TRL (Transformer Reinforcement Learning) \[47\]:
 
-<div class="tcolorbox">
+*\# Get the ID of the separator token and add it to the completions* separator_ids = tokenizer.encode(step_separator, add_special_tokens=False) completions_ids = \[completion + separator_ids **for** completion **in** completions_ids\]
 
-<div class="Highlighting">
-
-<span style="color: 0.38,0.63,0.69">*\# Get the ID of the separator token and add it to the completions*</span> separator_ids <span style="color: 0.40,0.40,0.40">=</span> tokenizer.encode(step_separator, add_special_tokens<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.10,0.09,0.49">False</span>) completions_ids <span style="color: 0.40,0.40,0.40">=</span> \[completion <span style="color: 0.40,0.40,0.40">+</span> separator_ids <span style="color: 0.00,0.44,0.13">**for**</span> completion <span style="color: 0.00,0.44,0.13">**in**</span> completions_ids\]
-
-<span style="color: 0.38,0.63,0.69">*\# Create the label* </span> labels <span style="color: 0.40,0.40,0.40">=</span> \[\[<span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">100</span>\] <span style="color: 0.40,0.40,0.40">\*</span> (<span style="color: 0.00,0.50,0.00">len</span>(completion) <span style="color: 0.40,0.40,0.40">-</span> <span style="color: 0.25,0.63,0.44">1</span>) <span style="color: 0.40,0.40,0.40">+</span> \[label\] <span style="color: 0.00,0.44,0.13">**for**</span> completion, label <span style="color: 0.00,0.44,0.13">**in**</span> <span style="color: 0.00,0.50,0.00">zip</span>(completions_ids, labels)\]
-
-</div>
-
-</div>
+*\# Create the label* labels = \[\[-100\] \* (len(completion) - 1) + \[label\] **for** completion, label **in** zip(completions_ids, labels)\]
 
 Traditionally PRMs are trained with a language modeling head that outputs a token only at the end of a reasoning step, e.g. at the token corresponding to a double new line or other special token. These predictions tend to be -1 for incorrect, 0 for neutral, and 1 for correct. These labels do not necessarily tie to whether or not the model is on the right path, but rather to whether the step is correct.
 
@@ -976,35 +880,19 @@ Traditionally PRMs are trained with a language modeling head that outputs a toke
 
 An example construction of a PRM is shown below.
 
-<div class="tcolorbox">
+**import** torch.nn **as** nn **import** torch.nn.functional **as** F
 
-<div class="Highlighting">
+**class** ProcessRewardModel(nn.Module): **def** \_\_init\_\_(self, base_lm, num_classes=3): super().\_\_init\_\_() self.lm = base_lm *\# e.g., AutoModelForCausalLM* self.head = nn.Linear(self.lm.config.hidden_size, num_classes)
 
-<span style="color: 0.00,0.50,0.00">**import**</span> torch.nn <span style="color: 0.00,0.50,0.00">**as**</span> nn <span style="color: 0.00,0.50,0.00">**import**</span> torch.nn.functional <span style="color: 0.00,0.50,0.00">**as**</span> F
+**def** forward(self, input_ids, attention_mask=None, labels=None): *"""* *The inputs are tokenized prompts and completions, where the end of a* *"reasoning step" is denoted by a designated separator token such as a* *newline or other special marker rather than batch padding.* *labels will be a list of labels, True, False, and Neutral (3 labels) which* *will be predicted by the model.* *If labels=None, this is an inference-only forward pass and the loss is* *returned as None.* *"""* outputs = self.lm( input_ids=input_ids, attention_mask=attention_mask, output_hidden_states=True, return_dict=True, ) *\# Final hidden states: (batch, seq_len, hidden_size)* hidden = outputs.hidden_states\[-1\] *\# One logit vector per token: (batch, seq_len, num_classes)* logits = self.head(hidden)
 
-<span style="color: 0.00,0.44,0.13">**class**</span> ProcessRewardModel(nn.Module): <span style="color: 0.00,0.44,0.13">**def**</span> <span style="color: 0.02,0.16,0.49">\_\_init\_\_</span>(<span style="color: 0.10,0.09,0.49">self</span>, base_lm, num_classes<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.63,0.44">3</span>): <span style="color: 0.00,0.50,0.00">super</span>().<span style="color: 0.02,0.16,0.49">\_\_init\_\_</span>() <span style="color: 0.10,0.09,0.49">self</span>.lm <span style="color: 0.40,0.40,0.40">=</span> base_lm <span style="color: 0.38,0.63,0.69">*\# e.g., AutoModelForCausalLM*</span> <span style="color: 0.10,0.09,0.49">self</span>.head <span style="color: 0.40,0.40,0.40">=</span> nn.Linear(<span style="color: 0.10,0.09,0.49">self</span>.lm.config.hidden_size, num_classes)
-
-<span style="color: 0.00,0.44,0.13">**def**</span> forward(<span style="color: 0.10,0.09,0.49">self</span>, input_ids, attention_mask<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.10,0.09,0.49">None</span>, labels<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.10,0.09,0.49">None</span>): <span style="color: 0.38,0.63,0.69">*"""*</span> <span style="color: 0.38,0.63,0.69"> *The inputs are tokenized prompts and completions, where the end of a*</span> <span style="color: 0.38,0.63,0.69"> *"reasoning step" is denoted by a designated separator token such as a*</span> <span style="color: 0.38,0.63,0.69"> *newline or other special marker rather than batch padding.*</span> <span style="color: 0.38,0.63,0.69"> *labels will be a list of labels, True, False, and Neutral (3 labels) which*</span> <span style="color: 0.38,0.63,0.69"> *will be predicted by the model.*</span> <span style="color: 0.38,0.63,0.69"> *If labels=None, this is an inference-only forward pass and the loss is*</span> <span style="color: 0.38,0.63,0.69"> *returned as None.*</span> <span style="color: 0.38,0.63,0.69"> *"""*</span> outputs <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.10,0.09,0.49">self</span>.lm( input_ids<span style="color: 0.40,0.40,0.40">=</span>input_ids, attention_mask<span style="color: 0.40,0.40,0.40">=</span>attention_mask, output_hidden_states<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.10,0.09,0.49">True</span>, return_dict<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.10,0.09,0.49">True</span>, ) <span style="color: 0.38,0.63,0.69">*\# Final hidden states: (batch, seq_len, hidden_size)*</span> hidden <span style="color: 0.40,0.40,0.40">=</span> outputs.hidden_states\[<span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">1</span>\] <span style="color: 0.38,0.63,0.69">*\# One logit vector per token: (batch, seq_len, num_classes)*</span> logits <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.10,0.09,0.49">self</span>.head(hidden)
-
-<span style="color: 0.38,0.63,0.69">*\# Inference-only forward pass: no loss is computed.*</span> <span style="color: 0.00,0.44,0.13">**if**</span> labels <span style="color: 0.00,0.44,0.13">**is**</span> <span style="color: 0.10,0.09,0.49">None</span>: <span style="color: 0.00,0.44,0.13">**return**</span> <span style="color: 0.10,0.09,0.49">None</span>, logits <span style="color: 0.38,0.63,0.69">*\# Only compute loss at step boundaries (where labels != -100)*</span> <span style="color: 0.38,0.63,0.69">*\# Labels map: -1 -\> 0, 0 -\> 1, 1 -\> 2 (class indices)*</span> mask <span style="color: 0.40,0.40,0.40">=</span> labels <span style="color: 0.40,0.40,0.40">!=</span> <span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">100</span> loss <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.10,0.09,0.49">None</span> <span style="color: 0.00,0.44,0.13">**if**</span> mask.<span style="color: 0.00,0.50,0.00">any</span>(): loss <span style="color: 0.40,0.40,0.40">=</span> F.cross_entropy( logits\[mask\], labels\[mask\] ) <span style="color: 0.00,0.44,0.13">**else**</span>: loss <span style="color: 0.40,0.40,0.40">=</span> logits.<span style="color: 0.00,0.50,0.00">sum</span>() <span style="color: 0.40,0.40,0.40">\*</span> <span style="color: 0.25,0.63,0.44">0</span> <span style="color: 0.00,0.44,0.13">**return**</span> loss, logits
-
-</div>
-
-</div>
+*\# Inference-only forward pass: no loss is computed.* **if** labels **is** None: **return** None, logits *\# Only compute loss at step boundaries (where labels != -100)* *\# Labels map: -1 -\> 0, 0 -\> 1, 1 -\> 2 (class indices)* mask = labels != -100 loss = None **if** mask.any(): loss = F.cross_entropy( logits\[mask\], labels\[mask\] ) **else**: loss = logits.sum() \* 0 **return** loss, logits
 
 The core loss function looks very similar to outcome reward models, with the labels being applied at different intervals.
 
-<div class="tcolorbox">
+*\# Assume model outputs 3-class logits per token* hidden = model.lm(\*\*inputs, output_hidden_states=True).hidden_states\[-1\] logits = model.head(hidden) *\# (batch, seq_len, 3)*
 
-<div class="Highlighting">
-
-<span style="color: 0.38,0.63,0.69">*\# Assume model outputs 3-class logits per token*</span> hidden <span style="color: 0.40,0.40,0.40">=</span> model.lm(<span style="color: 0.40,0.40,0.40">\*\*</span>inputs, output_hidden_states<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.10,0.09,0.49">True</span>).hidden_states\[<span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">1</span>\] logits <span style="color: 0.40,0.40,0.40">=</span> model.head(hidden) <span style="color: 0.38,0.63,0.69">*\# (batch, seq_len, 3)*</span>
-
-<span style="color: 0.38,0.63,0.69">*\# 3-class labels at step boundaries only: 0=-1, 1=0, 2=1 (others masked as -100)*</span> mask <span style="color: 0.40,0.40,0.40">=</span> labels <span style="color: 0.40,0.40,0.40">!=</span> <span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">100</span> loss <span style="color: 0.40,0.40,0.40">=</span> F.cross_entropy(logits\[mask\], labels\[mask\])
-
-</div>
-
-</div>
+*\# 3-class labels at step boundaries only: 0=-1, 1=0, 2=1 (others masked as -100)* mask = labels != -100 loss = F.cross_entropy(logits\[mask\], labels\[mask\])
 
 ## 5.4 Comparing Reward Model Types (and Value Functions)
 
@@ -1107,7 +995,7 @@ Note that in Llama 3 the margin term was removed as the team observed diminishin
 
 ### 5.5.2 Balancing Multiple Comparisons Per Prompt
 
-InstructGPT studies the impact of using $K = 4$ to $9$ completions per prompt to rank, producing $\binom{K}{2}$ pairwise comparisons from each prompt [@ref-ouyang2022training]. Because these comparisons are highly correlated (they share the same prompt), shuffling them into the dataset naively causes the reward model to overfit. To address this, they weight the loss updates per comparison per prompt – without reweighting, prompts with more completions would contribute more total loss simply because they generate more pairs. In practice, all $\binom{K}{2}$ comparisons from a single prompt are typically included in the same training batch and averaged together, so each prompt contributes one grouped update rather than appearing across many separate batches. This reduces overfitting to individual prompts and prevents prompts with more sampled completions from dominating the loss. The loss function becomes:
+InstructGPT studies the impact of using $K = 4$ to $9$ completions per prompt to rank, producing $\binom{K}{2}$ pairwise comparisons from each prompt \[3\]. Because these comparisons are highly correlated (they share the same prompt), shuffling them into the dataset naively causes the reward model to overfit. To address this, they weight the loss updates per comparison per prompt – without reweighting, prompts with more completions would contribute more total loss simply because they generate more pairs. In practice, all $\binom{K}{2}$ comparisons from a single prompt are typically included in the same training batch and averaged together, so each prompt contributes one grouped update rather than appearing across many separate batches. This reduces overfitting to individual prompts and prevents prompts with more sampled completions from dominating the loss. The loss function becomes:
 
 $$\begin{equation}
 \tag{23}{\mathcal{L}(\theta) = - \frac{1}{\binom{K}{2}} \mathbb{E}_{(x, y_c, y_r)\sim D} \log \left( \sigma \left( r_{\theta}(y_c \mid x) - r_{\theta}(y_r \mid x) \right) \right)}
@@ -1115,9 +1003,9 @@ $$\begin{equation}
 
 ### 5.5.3 K-Wise Loss Function
 
-There are many other formulations that can create suitable models of human preferences for RLHF. One such example, used in the popular, early RLHF’d models Starling 7B and 34B [@ref-zhu2024starling], is a K-wise loss function based on the Plackett-Luce model [@ref-liu2019learning].
+There are many other formulations that can create suitable models of human preferences for RLHF. One such example, used in the popular, early RLHF’d models Starling 7B and 34B \[82\], is a K-wise loss function based on the Plackett-Luce model \[83\].
 
-Zhu et al. 2023 [@ref-zhu2023principled] formalize the setup as follows. With a prompt, or state, $s^i$, $K$ actions $(a_0^i, a_1^i, \cdots, a_{K-1}^i)$ are sampled from $P(a_0,\cdots,a_{K-1}|s^i)$. Then, labelers rank the $K$ actions by preference, producing a permutation $\sigma^i: [K] \mapsto [K]$, where $\sigma^i(0)$ is the most preferred action. This yields a Plackett-Luce probability over the complete ranking of all $K$ items:
+Zhu et al. 2023 \[84\] formalize the setup as follows. With a prompt, or state, $s^i$, $K$ actions $(a_0^i, a_1^i, \cdots, a_{K-1}^i)$ are sampled from $P(a_0,\cdots,a_{K-1}|s^i)$. Then, labelers rank the $K$ actions by preference, producing a permutation $\sigma^i: [K] \mapsto [K]$, where $\sigma^i(0)$ is the most preferred action. This yields a Plackett-Luce probability over the complete ranking of all $K$ items:
 
 $$\begin{equation}
 \tag{24}{P(\sigma^i|s^i,a_0^i,a_1^i,\ldots,a_{K-1}^i) = \prod_{k=0}^{K-1} \frac{\exp(r_{\theta\star}(s^i,a_{\sigma^i(k)}^i))}{\sum_{j=k}^{K-1}\exp(r_{\theta\star}(s^i,a_{\sigma^i(j)}^i))}}
@@ -1127,41 +1015,33 @@ When $K = 2$, this reduces to the Bradley-Terry (BT) model for pairwise comparis
 
 ## 5.6 Generative Reward Modeling (a.k.a. LLM-as-a-judge)
 
-With the cost of preference data, a large research area emerged to use existing language models as a judge of human preferences or in other evaluation settings [@ref-zheng2023judging]. The core idea is to prompt a language model with instructions on how to judge, a prompt, and two completions (much as would be done with human labelers). An example prompt, from one of the seminal works here for the chat evaluation MT-Bench [@ref-zheng2023judging], follows:
-
-<div class="tcolorbox">
-
-<div class="Highlighting">
+With the cost of preference data, a large research area emerged to use existing language models as a judge of human preferences or in other evaluation settings \[85\]. The core idea is to prompt a language model with instructions on how to judge, a prompt, and two completions (much as would be done with human labelers). An example prompt, from one of the seminal works here for the chat evaluation MT-Bench \[85\], follows:
 
 Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user question displayed below. You should choose the assistant that follows the user's instructions and answers the user's question better. Your evaluation should consider factors such as the helpfulness, relevance, accuracy, depth, creativity, and level of detail of their responses. Begin your evaluation by comparing the two responses and provide a short explanation. Avoid any position biases and ensure that the order in which the responses were presented does not influence your decision. Do not allow the length of the responses to influence your evaluation. Do not favor certain names of the assistants. Be as objective as possible. After providing your explanation, output your final verdict by strictly following this format: "\[\[A\]\]" if assistant A is better, "\[\[B\]\]" if assistant B is better, and "\[\[C\]\]" for a tie. \[User Question\] {question} \[The Start of Assistant A's Answer\] {answer_a} \[The End of Assistant A's Answer\] \[The Start of Assistant B's Answer\] {answer_b} \[The End of Assistant B's Answer\]
 
-</div>
+Given the efficacy of LLM-as-a-judge for evaluation, which spawned many other evaluations such as AlpacaEval \[86\], Arena-Hard \[87\], and WildBench \[88\], many began using LLM-as-a-judge instead of reward models to create and use preference data.
 
-</div>
-
-Given the efficacy of LLM-as-a-judge for evaluation, which spawned many other evaluations such as AlpacaEval [@ref-dubois2024length], Arena-Hard [@ref-li2024crowdsourced], and WildBench [@ref-lin2024wildbench], many began using LLM-as-a-judge instead of reward models to create and use preference data.
-
-An entire field of study has emerged around how to use so-called “Generative Reward Models” [@ref-mahan2024generative] [@ref-zhang2024generative] [@ref-ankner2024critique] (including models trained *specifically* to be effective judges [@ref-kim2023prometheus]), but on RM evaluations they tend to be behind existing reward models, showing that reward modeling is an important technique for current RLHF.
+An entire field of study has emerged around how to use so-called “Generative Reward Models” \[89\] \[90\] \[91\] (including models trained *specifically* to be effective judges \[92\]), but on RM evaluations they tend to be behind existing reward models, showing that reward modeling is an important technique for current RLHF.
 
 A common trick to improve the robustness of LLM-as-a-judge workflows is to use a sampling temperature of 0 to reduce variance of ratings.
 
 ## 5.7 Further Reading
 
-The academic literature for reward modeling established itself in 2024. The bulk of early progress in reward modeling has focused on establishing benchmarks and identifying behavior modes. The first RM benchmark, RewardBench, provided common infrastructure for testing reward models [@ref-lambert2024rewardbench]. Since then, RM evaluation has expanded to be similar to the types of evaluations available to general post-trained models, where some evaluations test the accuracy of prediction on domains with known true answers [@ref-lambert2024rewardbench] or those more similar to “vibes” performed with LLM-as-a-judge or correlations to other benchmarks [@ref-wen2024rethinking].
+The academic literature for reward modeling established itself in 2024. The bulk of early progress in reward modeling has focused on establishing benchmarks and identifying behavior modes. The first RM benchmark, RewardBench, provided common infrastructure for testing reward models \[93\]. Since then, RM evaluation has expanded to be similar to the types of evaluations available to general post-trained models, where some evaluations test the accuracy of prediction on domains with known true answers \[93\] or those more similar to “vibes” performed with LLM-as-a-judge or correlations to other benchmarks \[94\].
 
 Examples of new benchmarks include:
 
-- **Text-only (general chat / preferences):** RMB [@ref-zhou2024rmb], RewardBench2 [@ref-malik2025rewardbench], Preference Proxy Evaluations [@ref-frick2024evaluate], or RM-Bench [@ref-liu2024rm].
+- **Text-only (general chat / preferences):** RMB \[95\], RewardBench2 \[96\], Preference Proxy Evaluations \[97\], or RM-Bench \[98\].
 
-- **Specialized text-only (math, etc.):** multilingual reward bench (M-RewardBench) [@ref-gureja2024m], RAG-RewardBench for retrieval augmented generation (RAG) [@ref-jin2024rag], ReWordBench for typos [@ref-wu2025rewordbench], RewardMATH [@ref-kim2024evaluating], or AceMath-RewardBench [@ref-liu2024acemath].
+- **Specialized text-only (math, etc.):** multilingual reward bench (M-RewardBench) \[99\], RAG-RewardBench for retrieval augmented generation (RAG) \[100\], ReWordBench for typos \[101\], RewardMATH \[102\], or AceMath-RewardBench \[103\].
 
-- **Process RMs:** PRM Bench [@ref-song2025prmbench] or ProcessBench [@ref-zheng2024processbench] and visual benchmarks of VisualProcessBench [@ref-wang2025visualprm] or ViLBench [@ref-tu2025vilbench].
+- **Process RMs:** PRM Bench \[104\] or ProcessBench \[105\] and visual benchmarks of VisualProcessBench \[106\] or ViLBench \[107\].
 
-- **Agentic RMs:** Agent-RewardBench [@ref-men2025agentrewardbench] or CUARewardBench [@ref-lin2025cuarewardbench].
+- **Agentic RMs:** Agent-RewardBench \[108\] or CUARewardBench \[109\].
 
-- **Multimodal:** MJ-Bench [@ref-chen2024mj], Multimodal RewardBench [@ref-yasunaga2025multimodal], VL RewardBench [@ref-li2024vlrewardbench], or VLRMBench [@ref-ruan2025vlrmbench].
+- **Multimodal:** MJ-Bench \[110\], Multimodal RewardBench \[111\], VL RewardBench \[112\], or VLRMBench \[113\].
 
-To understand progress on *training* reward models, one can reference new reward model training methods, with aspect-conditioned models [@ref-wang2024interpretable], high-quality human datasets [@ref-wang2024helpsteer2] [@ref-wang2024helpsteer2p], scaling experiments [@ref-adler2024nemotron], extensive experimentation [@ref-touvron2023llama], or debiasing data [@ref-park2024offsetbias].
+To understand progress on *training* reward models, one can reference new reward model training methods, with aspect-conditioned models \[114\], high-quality human datasets \[115\] \[116\], scaling experiments \[30\], extensive experimentation \[49\], or debiasing data \[117\].
 
 ## 5.8 Suggested Experiments
 
@@ -1169,29 +1049,13 @@ The companion code repository includes small reward model training scripts in `c
 
 1.  **Train a Bradley-Terry preference reward model on UltraFeedback.** Run:
 
-    <div class="tcolorbox">
-
-    <div class="Highlighting">
-
-    <span style="color: 0.00,0.50,0.00">cd</span> code/ uv run python <span style="color: 0.49,0.56,0.16">-m</span> reward_models.train_preference_rm <span style="color: 0.49,0.56,0.16">--config</span> reward_models/configs/preference_rm.yaml
-
-    </div>
-
-    </div>
+    cd code/ uv run python -m reward_models.train_preference_rm --config reward_models/configs/preference_rm.yaml
 
     Watch whether the reward margin between chosen and rejected responses grows in the demo and W&B logs. Then vary `samples`, `lr`, and `model_id` in the yaml config to see when the signal becomes noisy or unstable.
 
 2.  **Compare outcome and process supervision.** Run the GSM8K outcome reward model and the PRM800K process reward model:
 
-    <div class="tcolorbox">
-
-    <div class="Highlighting">
-
-    <span style="color: 0.00,0.50,0.00">cd</span> code/ uv run python <span style="color: 0.49,0.56,0.16">-m</span> reward_models.train_orm <span style="color: 0.49,0.56,0.16">--config</span> reward_models/configs/orm.yaml uv run python <span style="color: 0.49,0.56,0.16">-m</span> reward_models.train_prm <span style="color: 0.49,0.56,0.16">--samples</span> 500 <span style="color: 0.49,0.56,0.16">--epochs</span> 2
-
-    </div>
-
-    </div>
+    cd code/ uv run python -m reward_models.train_orm --config reward_models/configs/orm.yaml uv run python -m reward_models.train_prm --samples 500 --epochs 2
 
     Compare what each model can score after training: the ORM should distinguish correct and incorrect final answers, while the PRM should assign scores across intermediate reasoning steps. This is the practical version of the distinction between sequence-level, outcome-level, and process-level supervision.
 
@@ -1209,7 +1073,7 @@ At a machine learning level, this section is the subject with the highest comple
 
 **Figura 19.** Overview of the RLHF training loop. A prompt from the dataset is passed to the tuned policy, which generates a completion. The reward model scores this completion, while the frozen initial model (typically the instruction-tuned model before RL) computes log probabilities on the same text to calculate a KL penalty that prevents excessive drift. The combined reward signal then drives a reinforcement learning update to the policy parameters.
 
-When RLHF came onto the scene with ChatGPT, it was largely known that they used a variant of PPO, and many initial efforts were built upon that. Over time, multiple research projects showed the promise of REINFORCE-style algorithms [@ref-ahmadian2024back] [@ref-wang2024helpsteer2p], touted for their simplicity over PPO without a separate value model (saves memory and therefore the number of GPUs required) and with simpler advantage estimation (no Generalized Advantage Estimation, GAE, which is a method to compute advantages used for variance reduction in policy gradient algorithms). More algorithms have emerged, including Group Relative Policy Optimization, which is particularly popular with reasoning tasks, but in general many of these algorithms can be tuned to fit a specific task. In this chapter, we cover the core policy gradient setup and the three algorithms mentioned above due to their central role in the establishment of a canonical RLHF literature.
+When RLHF came onto the scene with ChatGPT, it was largely known that they used a variant of PPO, and many initial efforts were built upon that. Over time, multiple research projects showed the promise of REINFORCE-style algorithms \[118\] \[116\], touted for their simplicity over PPO without a separate value model (saves memory and therefore the number of GPUs required) and with simpler advantage estimation (no Generalized Advantage Estimation, GAE, which is a method to compute advantages used for variance reduction in policy gradient algorithms). More algorithms have emerged, including Group Relative Policy Optimization, which is particularly popular with reasoning tasks, but in general many of these algorithms can be tuned to fit a specific task. In this chapter, we cover the core policy gradient setup and the three algorithms mentioned above due to their central role in the establishment of a canonical RLHF literature.
 
 At its simplest, the RL stage of RLHF requires two models: a policy (the model being trained) and a reward model that scores its outputs (as covered in the previous chapter). A copy of the policy before RL serves as the reference model for computing a KL penalty (this model is frozen, i.e. it is not updated with gradients from the automatic differentiation engine). The most complex algorithm covered here, PPO, adds a fourth model – a learned value function used to estimate how good each token in the action was, also a large language model updated during training. The algorithms in this chapter differ mainly in how they estimate a quantity called *advantages* – a measure of how good the current action (completion) from the model is relative to average – and how they constrain policy updates so the optimization is numerically stable. A visual overview of this RLHF process (without the value model) is shown in fig. 19.
 
@@ -1372,15 +1236,7 @@ $$\begin{equation}
 
 Reaching this equation is a crucial point in the implementation. Here, we have gone far enough to see that the gradient of the trajectory distribution reduces to a sum of gradients from language model policy probabilities (which are just the probabilities of tokens given by the model we’re training). In practice, this results in a common form of the policy gradient equations. They end up looking like a sum of log-probabilities in the loss, and then we compute the gradients via autodiff. A short snippet you’ll see again and again roughly follows:
 
-<div class="tcolorbox">
-
-<div class="Highlighting">
-
-seq_log_probs <span style="color: 0.40,0.40,0.40">=</span> (token_log_probs <span style="color: 0.40,0.40,0.40">\*</span> completion_mask).<span style="color: 0.00,0.50,0.00">sum</span>(dim<span style="color: 0.40,0.40,0.40">=-</span><span style="color: 0.25,0.63,0.44">1</span>) loss <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.40,0.40,0.40">-</span>(seq_log_probs <span style="color: 0.40,0.40,0.40">\*</span> advantages).mean() loss.backward()
-
-</div>
-
-</div>
+seq_log_probs = (token_log_probs \* completion_mask).sum(dim=-1) loss = -(seq_log_probs \* advantages).mean() loss.backward()
 
 You’ll see this throughout the chapter. Now, back to the formal policy gradient mathematics.
 
@@ -1400,7 +1256,7 @@ g = \nabla_\theta J(\theta) = \mathbb{E}_{\tau \sim p_\theta} \left[ \sum_{t=0}^
 }
 \end{equation}$$
 
-Where $\Psi_t$ can be the following (where the rewards can also often be discounted by $\gamma$), a taxonomy adopted from Schulman et al. 2015 [@ref-schulman2015high]:
+Where $\Psi_t$ can be the following (where the rewards can also often be discounted by $\gamma$), a taxonomy adopted from Schulman et al. 2015 \[119\]:
 
 1.  $R(\tau) = \sum_{t=0}^{\infty} r_t$: total reward of the trajectory.
 
@@ -1442,7 +1298,7 @@ $$\begin{equation}
 
 ### 6.2.3 REINFORCE
 
-The algorithm REINFORCE is likely a backronym, but the components of the algorithm it represents are quite relevant for modern reinforcement learning algorithms. Defined in the seminal paper *Simple statistical gradient-following algorithms for connectionist reinforcement learning* [@ref-williams1992simple]:
+The algorithm REINFORCE is likely a backronym, but the components of the algorithm it represents are quite relevant for modern reinforcement learning algorithms. Defined in the seminal paper *Simple statistical gradient-following algorithms for connectionist reinforcement learning* \[120\]:
 
 > The name is an acronym for “REward Increment = Nonnegative Factor X Offset Reinforcement X Characteristic Eligibility.”
 
@@ -1492,7 +1348,7 @@ REINFORCE is a specific implementation of vanilla policy gradient that uses a Mo
 
 ### 6.2.4 REINFORCE Leave One Out (RLOO)
 
-The core implementation detail of REINFORCE Leave One Out versus standard REINFORCE is that it takes the average reward of the *other* samples in the batch to compute the baseline – rather than averaging over all rewards in the batch [@ref-huang2024putting], [@ref-ahmadian2024back], [@ref-kool2019buy]. By excluding the current sample’s reward from its own baseline, the RLOO baseline is independent of the action being evaluated, which keeps the gradient estimator exactly unbiased.
+The core implementation detail of REINFORCE Leave One Out versus standard REINFORCE is that it takes the average reward of the *other* samples in the batch to compute the baseline – rather than averaging over all rewards in the batch \[121\], \[118\], \[122\]. By excluding the current sample’s reward from its own baseline, the RLOO baseline is independent of the action being evaluated, which keeps the gradient estimator exactly unbiased.
 
 Crucially, this only works when generating multiple trajectories (completions) per state (prompt), which is common practice in multiple domains of fine-tuning language models with RL.
 
@@ -1528,7 +1384,7 @@ RLOO and other algorithms that do not use a value network – an additional mode
 
 ### 6.2.5 Proximal Policy Optimization (PPO)
 
-Proximal Policy Optimization (PPO) [@ref-schulman2017proximal] is one of the foundational algorithms behind Deep RL’s successes (such as OpenAI Five, which mastered Dota 2 [@ref-berner2019dota] and large amounts of research). The objective that PPO maximizes, with respect to the advantages and the policy probabilities, is as follows:
+Proximal Policy Optimization (PPO) \[123\] is one of the foundational algorithms behind Deep RL’s successes (such as OpenAI Five, which mastered Dota 2 \[124\] and large amounts of research). The objective that PPO maximizes, with respect to the advantages and the policy probabilities, is as follows:
 
 $$\begin{equation}
 \tag{52}{J(\theta) = \min\left(\frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}A, \text{clip} \left( \frac{\pi_\theta(a|s)}{\pi_{\theta_{\text{old}}}(a|s)}, 1-\varepsilon, 1+\varepsilon \right) A \right).}
@@ -1568,7 +1424,7 @@ $$\begin{equation}
 \tag{55}{ J(\theta) = \frac{1}{|a|} \sum_{t=0}^{|a|} \min\left(\frac{\pi_\theta(a_{t}|s_t)}{\pi_{\theta_{\text{old}}}(a_{t}|s_t)}A_{t}, \text{clip} \left( \frac{\pi_\theta(a_{t}|s_t)}{\pi_{\theta_{\text{old}}}(a_{t}|s_t)}, 1-\varepsilon, 1+\varepsilon \right) A_{t} \right).  }
 \end{equation}$$
 
-This is the per-token version of PPO, which also applies to other policy-gradient methods, but is explored further later in the implementation section of this chapter. Here, the term for averaging by the number of tokens in the action, $\frac{1}{|a|}$, comes from common implementation practices, but is not in a formal derivation of the loss (shown in [@ref-liu2025understanding]).
+This is the per-token version of PPO, which also applies to other policy-gradient methods, but is explored further later in the implementation section of this chapter. Here, the term for averaging by the number of tokens in the action, $\frac{1}{|a|}$, comes from common implementation practices, but is not in a formal derivation of the loss (shown in \[125\]).
 
 **Figura 22.** PPO framework. A learned value function enables Generalized Advantage Estimation (GAE) for per-token advantages, used with a clipped surrogate objective.
 
@@ -1588,7 +1444,7 @@ Overall, the PPO objective can be visualized by two lines of a plot of objective
 
 Within the trust region, PPO operates the same as other policy gradient algorithms. This is by design! The trust region is a concept used to cap the maximum step size of PPO and its peer algorithms for stability of updates. The core of the PPO algorithm, the clip and min/max functions, define this region. The objective becomes flat outside of it.
 
-The idea of a “trust region” comes from the numerical optimization literature [@ref-nocedal2006numerical], but was popularized within Deep RL from the algorithm Trust Region Policy Optimization (TRPO), which is accepted as the predecessor to PPO [@ref-schulman2015trust]. The trust region is the area where the full policy-gradient steps are applied, as the updates are not “clipped” by the max/min operations of the PPO objective.
+The idea of a “trust region” comes from the numerical optimization literature \[126\], but was popularized within Deep RL from the algorithm Trust Region Policy Optimization (TRPO), which is accepted as the predecessor to PPO \[127\]. The trust region is the area where the full policy-gradient steps are applied, as the updates are not “clipped” by the max/min operations of the PPO objective.
 
 **Figura 23.** Visualization of the PPO objective $J(\theta)$ as a function of the policy ratio $\rho(\theta)$, for both positive and negative advantage. Within each panel, the three ratio regions are annotated with their unclipped term, clipped term, resulting objective, and gradient.
 
@@ -1726,35 +1582,27 @@ There are a few different methods (or targets) used to learn the value functions
 
 A simple example implementation of a value network loss is shown below.
 
-<div class="tcolorbox">
+*\# Basic PPO critic targets & loss (no GAE)* *\#* *\# B: Batch Size* *\# L: Completion Length* *\# Inputs:* *\# rewards: (B, L) post-KL per-token rewards; EOS row includes outcome* *\# done_mask: (B, L) 1.0 at terminal token (EOS or truncation if penalized), else 0.0* *\# completion_mask: (B, L) 1.0 on response tokens to supervise (ignore the prompt)* *\# values: (B, L) current critic predictions V_theta(s_t)* *\# because a value network is a running update* *\# old_values: (B, L) critic predictions at rollout time V\_{theta_old}(s_t)* *\# gamma: discount factor, float (often 1.0 for LM RLHF)* *\# epsilon_v: float value clip range (e.g., 0.2), similar to PPO Loss Update itself, optional* *\#* *\# Returns:* *\# value_loss: scalar; advantages: (B, L) detached (for policy loss)*
 
-<div class="Highlighting">
+B, L = rewards.shape
 
-<span style="color: 0.38,0.63,0.69">*\# Basic PPO critic targets & loss (no GAE)*</span> <span style="color: 0.38,0.63,0.69">*\#*</span> <span style="color: 0.38,0.63,0.69">*\# B: Batch Size*</span> <span style="color: 0.38,0.63,0.69">*\# L: Completion Length*</span> <span style="color: 0.38,0.63,0.69">*\# Inputs:*</span> <span style="color: 0.38,0.63,0.69">*\# rewards: (B, L) post-KL per-token rewards; EOS row includes outcome*</span> <span style="color: 0.38,0.63,0.69">*\# done_mask: (B, L) 1.0 at terminal token (EOS or truncation if penalized), else 0.0*</span> <span style="color: 0.38,0.63,0.69">*\# completion_mask: (B, L) 1.0 on response tokens to supervise (ignore the prompt)*</span> <span style="color: 0.38,0.63,0.69">*\# values: (B, L) current critic predictions V_theta(s_t)*</span> <span style="color: 0.38,0.63,0.69">*\# because a value network is a running update*</span> <span style="color: 0.38,0.63,0.69">*\# old_values: (B, L) critic predictions at rollout time V\_{theta_old}(s_t)*</span> <span style="color: 0.38,0.63,0.69">*\# gamma: discount factor, float (often 1.0 for LM RLHF)*</span> <span style="color: 0.38,0.63,0.69">*\# epsilon_v: float value clip range (e.g., 0.2), similar to PPO Loss Update itself, optional*</span> <span style="color: 0.38,0.63,0.69">*\#*</span> <span style="color: 0.38,0.63,0.69">*\# Returns:*</span> <span style="color: 0.38,0.63,0.69">*\# value_loss: scalar; advantages: (B, L) detached (for policy loss)*</span>
+*\# 1) Monte Carlo returns per token (reset at terminals)* *\# Apply discounting, if enabled* returns = torch.zeros_like(rewards) running = torch.zeros(B, device=rewards.device, dtype=rewards.dtype) **for** t **in** reversed(range(L)): running = rewards\[:, t\] + gamma \* (1.0 - done_mask\[:, t\]) \* running returns\[:, t\] = running
 
-B, L <span style="color: 0.40,0.40,0.40">=</span> rewards.shape
+targets = returns *\# y_t = G_t (post-KL)*
 
-<span style="color: 0.38,0.63,0.69">*\# 1) Monte Carlo returns per token (reset at terminals)*</span> <span style="color: 0.38,0.63,0.69">*\# Apply discounting, if enabled*</span> returns <span style="color: 0.40,0.40,0.40">=</span> torch.zeros_like(rewards) running <span style="color: 0.40,0.40,0.40">=</span> torch.zeros(B, device<span style="color: 0.40,0.40,0.40">=</span>rewards.device, dtype<span style="color: 0.40,0.40,0.40">=</span>rewards.dtype) <span style="color: 0.00,0.44,0.13">**for**</span> t <span style="color: 0.00,0.44,0.13">**in**</span> <span style="color: 0.00,0.50,0.00">reversed</span>(<span style="color: 0.00,0.50,0.00">range</span>(L)): running <span style="color: 0.40,0.40,0.40">=</span> rewards\[:, t\] <span style="color: 0.40,0.40,0.40">+</span> gamma <span style="color: 0.40,0.40,0.40">\*</span> (<span style="color: 0.25,0.63,0.44">1.0</span> <span style="color: 0.40,0.40,0.40">-</span> done_mask\[:, t\]) <span style="color: 0.40,0.40,0.40">\*</span> running returns\[:, t\] <span style="color: 0.40,0.40,0.40">=</span> running
+*\# 2) PPO-style value clipping (optional)* v_pred = values v_old = old_values v_clip = torch.clamp(v_pred, v_old - epsilon_v, v_old + epsilon_v)
 
-targets <span style="color: 0.40,0.40,0.40">=</span> returns <span style="color: 0.38,0.63,0.69">*\# y_t = G_t (post-KL)*</span>
+vf_unclipped = 0.5 \* (v_pred - targets) \*\* 2 vf_clipped = 0.5 \* (v_clip - targets) \*\* 2 vf_loss_tok = torch.max(vf_unclipped, vf_clipped)
 
-<span style="color: 0.38,0.63,0.69">*\# 2) PPO-style value clipping (optional)*</span> v_pred <span style="color: 0.40,0.40,0.40">=</span> values v_old <span style="color: 0.40,0.40,0.40">=</span> old_values v_clip <span style="color: 0.40,0.40,0.40">=</span> torch.clamp(v_pred, v_old <span style="color: 0.40,0.40,0.40">-</span> epsilon_v, v_old <span style="color: 0.40,0.40,0.40">+</span> epsilon_v)
+*\# 3) Mask to response tokens and aggregate* denom = completion_mask.sum(dim=1).clamp_min(1) value_loss = ((vf_loss_tok \* completion_mask).sum(dim=1) / denom).mean()
 
-vf_unclipped <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.25,0.63,0.44">0.5</span> <span style="color: 0.40,0.40,0.40">\*</span> (v_pred <span style="color: 0.40,0.40,0.40">-</span> targets) <span style="color: 0.40,0.40,0.40">\*\*</span> <span style="color: 0.25,0.63,0.44">2</span> vf_clipped <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.25,0.63,0.44">0.5</span> <span style="color: 0.40,0.40,0.40">\*</span> (v_clip <span style="color: 0.40,0.40,0.40">-</span> targets) <span style="color: 0.40,0.40,0.40">\*\*</span> <span style="color: 0.25,0.63,0.44">2</span> vf_loss_tok <span style="color: 0.40,0.40,0.40">=</span> torch.<span style="color: 0.00,0.50,0.00">max</span>(vf_unclipped, vf_clipped)
+*\# 4) Advantages for policy loss (no GAE): A_t = G_t - V(s_t)* advantages = (targets - v_pred).detach()
 
-<span style="color: 0.38,0.63,0.69">*\# 3) Mask to response tokens and aggregate*</span> denom <span style="color: 0.40,0.40,0.40">=</span> completion_mask.<span style="color: 0.00,0.50,0.00">sum</span>(dim<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.63,0.44">1</span>).clamp_min(<span style="color: 0.25,0.63,0.44">1</span>) value_loss <span style="color: 0.40,0.40,0.40">=</span> ((vf_loss_tok <span style="color: 0.40,0.40,0.40">\*</span> completion_mask).<span style="color: 0.00,0.50,0.00">sum</span>(dim<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.63,0.44">1</span>) <span style="color: 0.40,0.40,0.40">/</span> denom).mean()
-
-<span style="color: 0.38,0.63,0.69">*\# 4) Advantages for policy loss (no GAE): A_t = G_t - V(s_t)*</span> advantages <span style="color: 0.40,0.40,0.40">=</span> (targets <span style="color: 0.40,0.40,0.40">-</span> v_pred).detach()
-
-<span style="color: 0.38,0.63,0.69">*\# The value loss is applied later, often with the PG loss, e.g.*</span> <span style="color: 0.38,0.63,0.69">*\# total_loss = policy_loss + vf_coef \* value_loss*</span>
-
-</div>
-
-</div>
+*\# The value loss is applied later, often with the PG loss, e.g.* *\# total_loss = policy_loss + vf_coef \* value_loss*
 
 ### 6.2.8 Group Relative Policy Optimization (GRPO)
 
-Group Relative Policy Optimization (GRPO) is introduced in DeepSeekMath [@ref-shao2024deepseekmath], and used in other DeepSeek works, e.g. DeepSeek-V3 [@ref-deepseekai2025deepseekv3technicalreport] and DeepSeek-R1 [@ref-guo2025deepseek]. GRPO can be viewed as a PPO-inspired algorithm with a very similar surrogate loss, but it avoids learning a value function with another copy of the original policy language model (or another checkpoint for initialization). This brings two posited benefits:
+Group Relative Policy Optimization (GRPO) is introduced in DeepSeekMath \[128\], and used in other DeepSeek works, e.g. DeepSeek-V3 \[16\] and DeepSeek-R1 \[15\]. GRPO can be viewed as a PPO-inspired algorithm with a very similar surrogate loss, but it avoids learning a value function with another copy of the original policy language model (or another checkpoint for initialization). This brings two posited benefits:
 
 1.  Avoiding the challenge of learning a value function from an LM backbone, where research hasn’t established best practices.
 
@@ -1787,11 +1635,11 @@ $$\begin{equation}
 
 Intuitively, the GRPO update is comparing multiple answers to a single question within a batch. The model learns to become more like the answers marked as correct and less like the others. This is a very simple way to compute the advantage, which is the measure of how much better a specific action is than the average at a given state. Relative to PPO, REINFORCE, and broadly RLHF performed with a reward model rating (relative to output reward), GRPO is often run with a far higher number of samples per prompt because the advantage is entirely about the relative value of a completion to its peers from that prompt. Here, the current policy generates multiple responses to a given prompt, and the group-wise GRPO advantage estimate is given valuable context. PPO and vanilla policy-gradient algorithms were designed to accurately estimate the reward of every completion (in fact, more completions can do little to improve the value estimate in some cases). GRPO and its variants are particularly well-suited to modern language model tools, where having multiple completions to a given prompt is very natural (especially when compared to, e.g., multiple actions from a set environment state in a robotic task).
 
-The advantage computation for GRPO has trade-offs in its biases. The normalization by standard deviation rewards questions in a batch that have a low variation in answer correctness. For questions with either nearly all correct or all incorrect answers, the standard deviation will be lower and the advantage will be higher. Liu et al. 2025 [@ref-liu2025understanding] proposes removing the standard deviation term given this bias, but this comes at the cost of down-weighting questions that were all incorrect with a few correct answers, which could be seen as valuable learning signal for the model. Those high-variance prompts can be exactly the hardest cases, where only a few sampled completions find the correct answer and provide a strong training signal.
+The advantage computation for GRPO has trade-offs in its biases. The normalization by standard deviation rewards questions in a batch that have a low variation in answer correctness. For questions with either nearly all correct or all incorrect answers, the standard deviation will be lower and the advantage will be higher. Liu et al. 2025 \[125\] proposes removing the standard deviation term given this bias, but this comes at the cost of down-weighting questions that were all incorrect with a few correct answers, which could be seen as valuable learning signal for the model. Those high-variance prompts can be exactly the hardest cases, where only a few sampled completions find the correct answer and provide a strong training signal.
 
 eq. 59 is the implementation of GRPO when working with outcome supervision (either a standard reward model or a single verifiable reward) and a different implementation is needed with process supervision. In this case, GRPO computes the advantage as the sum of the normalized rewards for the following reasoning steps.
 
-Finally, GRPO’s advantage estimation can also be applied without the PPO clipping to more vanilla versions of policy gradient (e.g. REINFORCE), but it is not the canonical form. As an example of how these algorithms are intertwined, we can show that the advantage estimation in a variant of GRPO, Dr. GRPO (GRPO Done Right) [@ref-liu2025understanding], is equivalent to the RLOO estimation (which uses the average reward of other samples as its baseline) up to a constant scaling factor (which normally does not matter due to implementation details to normalize the advantage). Dr. GRPO removes the standard deviation normalization term from eq. 59 – note that this also scales the advantage *up*, which is equivalent to increasing the GRPO learning rate on samples with a variance in answer scores. This addresses a bias towards questions with low reward variance – i.e. almost all the answers are right or wrong – but comes at a potential cost if it is important to learn from problems where just one sample gets the answer right. The Dr. GRPO advantage for completion $i$ within a group of size $G$ is defined as:
+Finally, GRPO’s advantage estimation can also be applied without the PPO clipping to more vanilla versions of policy gradient (e.g. REINFORCE), but it is not the canonical form. As an example of how these algorithms are intertwined, we can show that the advantage estimation in a variant of GRPO, Dr. GRPO (GRPO Done Right) \[125\], is equivalent to the RLOO estimation (which uses the average reward of other samples as its baseline) up to a constant scaling factor (which normally does not matter due to implementation details to normalize the advantage). Dr. GRPO removes the standard deviation normalization term from eq. 59 – note that this also scales the advantage *up*, which is equivalent to increasing the GRPO learning rate on samples with a variance in answer scores. This addresses a bias towards questions with low reward variance – i.e. almost all the answers are right or wrong – but comes at a potential cost if it is important to learn from problems where just one sample gets the answer right. The Dr. GRPO advantage for completion $i$ within a group of size $G$ is defined as:
 
 $$\begin{equation}
 \tag{60}{ \tilde{A}_i = r_i - \text{mean}({r_1, r_2, \cdots, r_G}) = r_i - \frac{1}{G}\sum_{j=1}^G r_j }
@@ -1834,7 +1682,7 @@ This distribution mismatch arises in two common scenarios: (1) taking multiple g
 
 PPO and GRPO apply importance sampling at the token level and stabilize learning by clipping the *surrogate objective*. However, this approach has a subtle failure mode: when a token’s importance ratio moves outside the clipping range $[1-\varepsilon, 1+\varepsilon]$, that token receives zero gradient. For rare but important tokens—such as key reasoning steps that the model initially assigns low probability—this “token dropping” can prevent the model from learning to produce them more reliably.
 
-Group Sequence Policy Optimization (GSPO) [@ref-zheng2025gspo] extends GRPO by computing importance ratios at the sequence level rather than the token level. The practical motivation for this algorithm – and its peer, CISPO, which modifies how importance sampling is computed for policy gradient algorithms, as we will discuss later – is that the per-token importance sampling ratio is often numerically unstable. The conceptual motivation is that when rewards are assigned at the sequence level (as in most RLHF and RLVR setups), the importance sampling correction should match that granularity.
+Group Sequence Policy Optimization (GSPO) \[129\] extends GRPO by computing importance ratios at the sequence level rather than the token level. The practical motivation for this algorithm – and its peer, CISPO, which modifies how importance sampling is computed for policy gradient algorithms, as we will discuss later – is that the per-token importance sampling ratio is often numerically unstable. The conceptual motivation is that when rewards are assigned at the sequence level (as in most RLHF and RLVR setups), the importance sampling correction should match that granularity.
 
 Token-level ratios can behave erratically for long sequences and/or large, sparse models (e.g. modern mixture-of-experts (MoE) models): a single token with a large ratio can dominate the policy update, or many tokens may get clipped independently within a response, fragmenting the learning signal across a single response. GSPO addresses this by computing a single importance weight per response.
 
@@ -1868,7 +1716,7 @@ The advantage computation remains the same as GRPO (eq. 59), using the group-re
 
 ### 6.2.10 Clipped Importance Sampling Policy Optimization (CISPO)
 
-Clipped Importance Sampling Policy Optimization (CISPO) [@ref-minimax2025minimax_m1] takes a different approach: rather than clipping the surrogate objective, CISPO clips the importance weights themselves while preserving gradients for all tokens. The objective uses a stop-gradient on the clipped importance weight, returning to a REINFORCE-style formulation instead of the PPO-style, two-sided clipping:
+Clipped Importance Sampling Policy Optimization (CISPO) \[130\] takes a different approach: rather than clipping the surrogate objective, CISPO clips the importance weights themselves while preserving gradients for all tokens. The objective uses a stop-gradient on the clipped importance weight, returning to a REINFORCE-style formulation instead of the PPO-style, two-sided clipping:
 
 $$\begin{equation}
 \tag{67}{
@@ -1888,7 +1736,7 @@ The key difference from PPO/GRPO is subtle but important: clipping the weight (n
 
 Both CISPO and GSPO were developed by organizations pushing the limits of applying RL on large-scale MoE models, which are known for their numerical issues. The papers highlight how the per-token importance sampling ratios are unstable and can add substantial variance to the gradients, mitigating learning. This can make these algorithms particularly impactful on large-scale models, but less studied and beneficial within smaller, academic experiments.
 
-CISPO also allows asymmetric clipping bounds ($\varepsilon_{\text{low}} \neq \varepsilon_{\text{high}}$), similar to DAPO’s “clip-higher” modification discussed later in this chapter, which can encourage exploration by allowing larger updates for tokens the model wants to upweight. Related work includes Tapered Off-Policy REINFORCE (TOPR) [@ref-leroux2025topr], which also clips IS weights directly (like CISPO) rather than clipping within the objective (like PPO/GRPO), but operates at the sequence level (like GSPO) and uses asymmetric clipping based on reward sign—applying no IS correction for positive rewards while clipping ratios to $[0, 1]$ for negative rewards—enabling stable off-policy learning.
+CISPO also allows asymmetric clipping bounds ($\varepsilon_{\text{low}} \neq \varepsilon_{\text{high}}$), similar to DAPO’s “clip-higher” modification discussed later in this chapter, which can encourage exploration by allowing larger updates for tokens the model wants to upweight. Related work includes Tapered Off-Policy REINFORCE (TOPR) \[131\], which also clips IS weights directly (like CISPO) rather than clipping within the objective (like PPO/GRPO), but operates at the sequence level (like GSPO) and uses asymmetric clipping based on reward sign—applying no IS correction for positive rewards while clipping ratios to $[0, 1]$ for negative rewards—enabling stable off-policy learning.
 
 ### 6.2.11 Comparing Algorithms
 
@@ -1943,31 +1791,23 @@ Compared to the original Deep RL literature where many of these algorithms were 
 
 There are many other small details that go into this training. For example, when doing RLHF with language models a crucial step is generating text that will then be rated by the reward model. Under normal circumstances, the model should generate an end-of-sequence (EOS) token indicating it finished generating, but a common practice is to put a hard cap on generation length to efficiently utilize infrastructure. A failure mode of RLHF is that the model is regularly truncated in its answers, driving the ratings from the reward model out-of-distribution and to unpredictable scores. The solution to this is to *only* run reward model scoring on the `eos_token`, and to otherwise assign a penalty to the model for generating too long.
 
-The popular open-source tools for RLHF have a large variance in implementation details across the algorithms (see table 10 in [@ref-ivison2024unpacking]). Some decisions not covered here include:
+The popular open-source tools for RLHF have a large variance in implementation details across the algorithms (see table 10 in \[132\]). Some decisions not covered here include:
 
-- **Value network initialization**: The internal learned value network used by PPO and other similar algorithms can be started from a different model of the same architecture or randomly selected weights. This can have a large impact on performance. The standard established in InstructGPT [@ref-ouyang2022training] (and re-used in Tülu 3 for its work on RLVR [@ref-lambert2024t]) is to initialize the value network from the reward model used during RLHF. Others have used the previous checkpoint to RLHF training (normally an SFT model) with a value head appended randomly initialized, or fully re-initialized language models (less common as it will take longer for RLHF to converge, but possible).
+- **Value network initialization**: The internal learned value network used by PPO and other similar algorithms can be started from a different model of the same architecture or randomly selected weights. This can have a large impact on performance. The standard established in InstructGPT \[3\] (and re-used in Tülu 3 for its work on RLVR \[6\]) is to initialize the value network from the reward model used during RLHF. Others have used the previous checkpoint to RLHF training (normally an SFT model) with a value head appended randomly initialized, or fully re-initialized language models (less common as it will take longer for RLHF to converge, but possible).
 
 - **Reward normalization, reward whitening, and/or advantage whitening**: Normalization bounds all the values from the RM (or environment) to be between 0 and 1, which can help with learning stability. [Whitening](https://en.wikipedia.org/wiki/Whitening_transformation) goes further by transforming rewards or advantage estimates to have zero mean and unit variance, providing an even stronger boost to stability.
 
-- **Different KL estimators**: With complex language models, precisely computing the KL divergence between models can be complex, so multiple approximations are used to substitute for an exact calculation [@ref-schulman2016klapprox].
+- **Different KL estimators**: With complex language models, precisely computing the KL divergence between models can be complex, so multiple approximations are used to substitute for an exact calculation \[133\].
 
 - **KL controllers**: Original implementations of PPO and related algorithms had dynamic controllers that targeted specific KLs and changed the penalty based on recent measurements. Most modern RLHF implementations use static KL penalties, but this can also vary.
 
-For more details on implementation details for RLHF, see [@ref-huang2024n]. For further information on the algorithms, see [@ref-weng2018PG].
+For more details on implementation details for RLHF, see \[134\]. For further information on the algorithms, see \[135\].
 
 ### 6.3.1 Policy-Gradient Basics
 
 A simple implementation of policy gradient, using advantages to estimate the gradient to prepare for advanced algorithms such as PPO and GRPO follows:
 
-<div class="tcolorbox">
-
-<div class="Highlighting">
-
-pg_loss <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.40,0.40,0.40">-</span>advantages <span style="color: 0.40,0.40,0.40">\*</span> ratio
-
-</div>
-
-</div>
+pg_loss = -advantages \* ratio
 
 Ratio here is the (per-token) probability ratio (often computed from a log-probability difference) of the new policy model probabilities relative to the old policy that generated the batch.
 
@@ -1991,17 +1831,9 @@ $$\begin{equation}
 
 Each sequence contributes equally to the batch loss, regardless of length. In code:
 
-<div class="tcolorbox">
+*\# Strategy 1: Per-sequence normalization* sequence_loss = ((per_token_loss \* completion_mask).sum(dim=1) / \\ completion_mask.sum(dim=1)).mean()
 
-<div class="Highlighting">
-
-<span style="color: 0.38,0.63,0.69">*\# Strategy 1: Per-sequence normalization*</span> sequence_loss <span style="color: 0.40,0.40,0.40">=</span> ((per_token_loss <span style="color: 0.40,0.40,0.40">\*</span> completion_mask).<span style="color: 0.00,0.50,0.00">sum</span>(dim<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.63,0.44">1</span>) <span style="color: 0.40,0.40,0.40">/</span> <span style="color: 0.40,0.40,0.40">\\</span> completion_mask.<span style="color: 0.00,0.50,0.00">sum</span>(dim<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.63,0.44">1</span>)).mean()
-
-</div>
-
-</div>
-
-**Strategy 2: Per-token normalization** (DAPO [@ref-yu2025dapo])
+**Strategy 2: Per-token normalization** (DAPO \[136\])
 
 $$\begin{equation}
 \tag{70}{L = \frac{\sum_{i=1}^{B} \sum_{t=1}^{|a_i|} \ell_{i,t}}{\sum_{i=1}^{B} |a_i|}}
@@ -2009,17 +1841,9 @@ $$\begin{equation}
 
 Each token contributes equally; longer sequences have proportionally more influence on the gradient. In code:
 
-<div class="tcolorbox">
+*\# Strategy 2: Per-token normalization* token_loss = ((per_token_loss \* completion_mask).sum() / \\ completion_mask.sum())
 
-<div class="Highlighting">
-
-<span style="color: 0.38,0.63,0.69">*\# Strategy 2: Per-token normalization*</span> token_loss <span style="color: 0.40,0.40,0.40">=</span> ((per_token_loss <span style="color: 0.40,0.40,0.40">\*</span> completion_mask).<span style="color: 0.00,0.50,0.00">sum</span>() <span style="color: 0.40,0.40,0.40">/</span> <span style="color: 0.40,0.40,0.40">\\</span> completion_mask.<span style="color: 0.00,0.50,0.00">sum</span>())
-
-</div>
-
-</div>
-
-**Strategy 3: Fixed-length normalization** (Dr. GRPO [@ref-liu2025understanding])
+**Strategy 3: Fixed-length normalization** (Dr. GRPO \[125\])
 
 $$\begin{equation}
 \tag{71}{L = \frac{1}{B} \sum_{i=1}^{B} \frac{1}{L_{\max}} \sum_{t=1}^{|a_i|} \ell_{i,t}}
@@ -2027,15 +1851,7 @@ $$\begin{equation}
 
 Normalizes by max sequence length $L_{\max}$, equalizing the per-token scale across sequences while still letting longer sequences contribute more total gradient because they contain more active tokens. In code:
 
-<div class="tcolorbox">
-
-<div class="Highlighting">
-
-<span style="color: 0.38,0.63,0.69">*\# Strategy 3: Fixed-length normalization* </span> fixed_len_loss <span style="color: 0.40,0.40,0.40">=</span> ((per_token_loss <span style="color: 0.40,0.40,0.40">\*</span> completion_mask).<span style="color: 0.00,0.50,0.00">sum</span>(dim<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.63,0.44">1</span>) <span style="color: 0.40,0.40,0.40">/</span> <span style="color: 0.40,0.40,0.40">\\</span> L_max).mean()
-
-</div>
-
-</div>
+*\# Strategy 3: Fixed-length normalization* fixed_len_loss = ((per_token_loss \* completion_mask).sum(dim=1) / \\ L_max).mean()
 
 Where $L_{\max}$ is typically a global constant during the entire training procedure, which specifies the maximum number of generation tokens.
 
@@ -2045,15 +1861,7 @@ Note that `completion_mask` in the code above is a matrix of 1s and 0s, where th
 
 Intuitively, per-sequence normalization (Strategy 1) seems best since we care about *outcomes*, not individual tokens. However, this introduces subtle biases based on sequence length, which can cause the model to overthink or down-weight strategies that naturally need to use more tokens, depending on the direction of the bias. Consider two sequences of different lengths with per-token losses:
 
-<div class="tcolorbox">
-
-<div class="Highlighting">
-
-seq_1_losses <span style="color: 0.40,0.40,0.40">=</span> \[<span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">10</span>\] <span style="color: 0.38,0.63,0.69">*\# 5 tokens, mean = 2.8*</span> seq_2_losses <span style="color: 0.40,0.40,0.40">=</span> \[<span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">10</span>\] <span style="color: 0.38,0.63,0.69">*\# 10 tokens, mean = 1.9*</span>
-
-</div>
-
-</div>
+seq_1_losses = \[1, 1, 1, 1, 10\] *\# 5 tokens, mean = 2.8* seq_2_losses = \[1, 1, 1, 1, 1, 1, 1, 1, 1, 10\] *\# 10 tokens, mean = 1.9*
 
 With **Strategy 1** (per-sequence): The batch loss is $(2.8 + 1.9)/2 = 2.35$, and crucially, each token in the short sequence receives a larger gradient than tokens in the long sequence.
 
@@ -2063,39 +1871,31 @@ With **Strategy 3** (fixed-length with $L_{\max}=10$): The short sequence contri
 
 For a more complete example showing how these strategies affect gradients, see the script below.
 
-<div class="tcolorbox">
+**from** typing **import** Optional **import** torch
 
-<div class="Highlighting">
+**def** masked_mean(values: torch.Tensor, mask: torch.Tensor, axis: Optional\[int\] = None) -\> torch.Tensor: *"""Compute mean of tensor with masked values."""* **if** axis **is** **not** None: **return** (values \* mask).sum(axis=axis) / mask.sum(axis=axis) **else**: **return** (values \* mask).sum() / mask.sum()
 
-<span style="color: 0.00,0.50,0.00">**from**</span> typing <span style="color: 0.00,0.50,0.00">**import**</span> Optional <span style="color: 0.00,0.50,0.00">**import**</span> torch
+**def** masked_sum( values: torch.Tensor, mask: torch.Tensor, axis: Optional\[int\] = None, constant_normalizer: float = 1.0, ) -\> torch.Tensor: *"""Compute sum of tensor with masked values. Use a constant to normalize."""* **if** axis **is** **not** None: **return** (values \* mask).sum(axis=axis) / constant_normalizer **else**: **return** (values \* mask).sum() / constant_normalizer
 
-<span style="color: 0.00,0.44,0.13">**def**</span> masked_mean(values: torch.Tensor, mask: torch.Tensor, axis: Optional\[<span style="color: 0.00,0.50,0.00">int</span>\] <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.10,0.09,0.49">None</span>) <span style="color: 0.40,0.40,0.40">-\></span> torch.Tensor: <span style="color: 0.38,0.63,0.69">*"""Compute mean of tensor with masked values."""*</span> <span style="color: 0.00,0.44,0.13">**if**</span> axis <span style="color: 0.00,0.44,0.13">**is**</span> <span style="color: 0.00,0.44,0.13">**not**</span> <span style="color: 0.10,0.09,0.49">None</span>: <span style="color: 0.00,0.44,0.13">**return**</span> (values <span style="color: 0.40,0.40,0.40">\*</span> mask).<span style="color: 0.00,0.50,0.00">sum</span>(axis<span style="color: 0.40,0.40,0.40">=</span>axis) <span style="color: 0.40,0.40,0.40">/</span> mask.<span style="color: 0.00,0.50,0.00">sum</span>(axis<span style="color: 0.40,0.40,0.40">=</span>axis) <span style="color: 0.00,0.44,0.13">**else**</span>: <span style="color: 0.00,0.44,0.13">**return**</span> (values <span style="color: 0.40,0.40,0.40">\*</span> mask).<span style="color: 0.00,0.50,0.00">sum</span>() <span style="color: 0.40,0.40,0.40">/</span> mask.<span style="color: 0.00,0.50,0.00">sum</span>()
+ratio = torch.tensor(\[ \[1., 1, 1, 1, 1, 1, 1,\], \[1, 1, 1, 1, 1, 1, 1,\], \], requires_grad=True)
 
-<span style="color: 0.00,0.44,0.13">**def**</span> masked_sum( values: torch.Tensor, mask: torch.Tensor, axis: Optional\[<span style="color: 0.00,0.50,0.00">int</span>\] <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.10,0.09,0.49">None</span>, constant_normalizer: <span style="color: 0.00,0.50,0.00">float</span> <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.25,0.63,0.44">1.0</span>, ) <span style="color: 0.40,0.40,0.40">-\></span> torch.Tensor: <span style="color: 0.38,0.63,0.69">*"""Compute sum of tensor with masked values. Use a constant to normalize."""*</span> <span style="color: 0.00,0.44,0.13">**if**</span> axis <span style="color: 0.00,0.44,0.13">**is**</span> <span style="color: 0.00,0.44,0.13">**not**</span> <span style="color: 0.10,0.09,0.49">None</span>: <span style="color: 0.00,0.44,0.13">**return**</span> (values <span style="color: 0.40,0.40,0.40">\*</span> mask).<span style="color: 0.00,0.50,0.00">sum</span>(axis<span style="color: 0.40,0.40,0.40">=</span>axis) <span style="color: 0.40,0.40,0.40">/</span> constant_normalizer <span style="color: 0.00,0.44,0.13">**else**</span>: <span style="color: 0.00,0.44,0.13">**return**</span> (values <span style="color: 0.40,0.40,0.40">\*</span> mask).<span style="color: 0.00,0.50,0.00">sum</span>() <span style="color: 0.40,0.40,0.40">/</span> constant_normalizer
+advs = torch.tensor(\[ \[2, 2, 2, 2, 2, 2, 2,\], \[2, 2, 2, 2, 2, 2, 2,\], \])
 
-ratio <span style="color: 0.40,0.40,0.40">=</span> torch.tensor(\[ \[<span style="color: 0.25,0.63,0.44">1.</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>,\], \[<span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>,\], \], requires_grad<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.10,0.09,0.49">True</span>)
+masks = torch.tensor(\[ *\# generation 1: 4 tokens* \[1, 1, 1, 1, 0, 0, 0,\], *\# generation 2: 7 tokens* \[1, 1, 1, 1, 1, 1, 1,\], \])
 
-advs <span style="color: 0.40,0.40,0.40">=</span> torch.tensor(\[ \[<span style="color: 0.25,0.63,0.44">2</span>, <span style="color: 0.25,0.63,0.44">2</span>, <span style="color: 0.25,0.63,0.44">2</span>, <span style="color: 0.25,0.63,0.44">2</span>, <span style="color: 0.25,0.63,0.44">2</span>, <span style="color: 0.25,0.63,0.44">2</span>, <span style="color: 0.25,0.63,0.44">2</span>,\], \[<span style="color: 0.25,0.63,0.44">2</span>, <span style="color: 0.25,0.63,0.44">2</span>, <span style="color: 0.25,0.63,0.44">2</span>, <span style="color: 0.25,0.63,0.44">2</span>, <span style="color: 0.25,0.63,0.44">2</span>, <span style="color: 0.25,0.63,0.44">2</span>, <span style="color: 0.25,0.63,0.44">2</span>,\], \])
+max_gen_len = 7
 
-masks <span style="color: 0.40,0.40,0.40">=</span> torch.tensor(\[ <span style="color: 0.38,0.63,0.69">*\# generation 1: 4 tokens*</span> \[<span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">0</span>, <span style="color: 0.25,0.63,0.44">0</span>, <span style="color: 0.25,0.63,0.44">0</span>,\], <span style="color: 0.38,0.63,0.69">*\# generation 2: 7 tokens*</span> \[<span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.25,0.63,0.44">1</span>,\], \])
+masked_mean_result = masked_mean(ratio \* advs, masks, axis=1) masked_mean_token_level = masked_mean(ratio, masks, axis=None) masked_sum_result = masked_sum(ratio \* advs, masks, axis=1, constant_normalizer=max_gen_len)
 
-max_gen_len <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.25,0.63,0.44">7</span>
+print("masked_mean", masked_mean_result) print("masked_sum", masked_sum_result) print("masked_mean_token_level", masked_mean_token_level)
 
-masked_mean_result <span style="color: 0.40,0.40,0.40">=</span> masked_mean(ratio <span style="color: 0.40,0.40,0.40">\*</span> advs, masks, axis<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.63,0.44">1</span>) masked_mean_token_level <span style="color: 0.40,0.40,0.40">=</span> masked_mean(ratio, masks, axis<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.10,0.09,0.49">None</span>) masked_sum_result <span style="color: 0.40,0.40,0.40">=</span> masked_sum(ratio <span style="color: 0.40,0.40,0.40">\*</span> advs, masks, axis<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.63,0.44">1</span>, constant_normalizer<span style="color: 0.40,0.40,0.40">=</span>max_gen_len)
+*\# masked_mean tensor(\[2., 2.\], grad_fn=\<DivBackward0\>)* *\# masked_sum tensor(\[1.1429, 2.0000\], grad_fn=\<DivBackward0\>)* *\# masked_mean_token_level tensor(1., grad_fn=\<DivBackward0\>)*
 
-<span style="color: 0.00,0.50,0.00">print</span>(<span style="color: 0.25,0.44,0.63">"masked_mean"</span>, masked_mean_result) <span style="color: 0.00,0.50,0.00">print</span>(<span style="color: 0.25,0.44,0.63">"masked_sum"</span>, masked_sum_result) <span style="color: 0.00,0.50,0.00">print</span>(<span style="color: 0.25,0.44,0.63">"masked_mean_token_level"</span>, masked_mean_token_level)
+masked_mean_result.mean().backward() print("ratio.grad", ratio.grad) ratio.grad.zero\_() *\# ratio.grad tensor(\[\[0.2500, 0.2500, 0.2500, 0.2500, 0.0000, 0.0000, 0.0000\],* *\# \[0.1429, 0.1429, 0.1429, 0.1429, 0.1429, 0.1429, 0.1429\]\])*
 
-<span style="color: 0.38,0.63,0.69">*\# masked_mean tensor(\[2., 2.\], grad_fn=\<DivBackward0\>)*</span> <span style="color: 0.38,0.63,0.69">*\# masked_sum tensor(\[1.1429, 2.0000\], grad_fn=\<DivBackward0\>)*</span> <span style="color: 0.38,0.63,0.69">*\# masked_mean_token_level tensor(1., grad_fn=\<DivBackward0\>)*</span>
+masked_sum_result.mean().backward() print("ratio.grad", ratio.grad) ratio.grad.zero\_() *\# ratio.grad tensor(\[\[0.1429, 0.1429, 0.1429, 0.1429, 0.0000, 0.0000, 0.0000\],* *\# \[0.1429, 0.1429, 0.1429, 0.1429, 0.1429, 0.1429, 0.1429\]\])*
 
-masked_mean_result.mean().backward() <span style="color: 0.00,0.50,0.00">print</span>(<span style="color: 0.25,0.44,0.63">"ratio.grad"</span>, ratio.grad) ratio.grad.zero\_() <span style="color: 0.38,0.63,0.69">*\# ratio.grad tensor(\[\[0.2500, 0.2500, 0.2500, 0.2500, 0.0000, 0.0000, 0.0000\],*</span> <span style="color: 0.38,0.63,0.69">*\# \[0.1429, 0.1429, 0.1429, 0.1429, 0.1429, 0.1429, 0.1429\]\])*</span>
-
-masked_sum_result.mean().backward() <span style="color: 0.00,0.50,0.00">print</span>(<span style="color: 0.25,0.44,0.63">"ratio.grad"</span>, ratio.grad) ratio.grad.zero\_() <span style="color: 0.38,0.63,0.69">*\# ratio.grad tensor(\[\[0.1429, 0.1429, 0.1429, 0.1429, 0.0000, 0.0000, 0.0000\],*</span> <span style="color: 0.38,0.63,0.69">*\# \[0.1429, 0.1429, 0.1429, 0.1429, 0.1429, 0.1429, 0.1429\]\])*</span>
-
-masked_mean_token_level.mean().backward() <span style="color: 0.00,0.50,0.00">print</span>(<span style="color: 0.25,0.44,0.63">"ratio.grad"</span>, ratio.grad) <span style="color: 0.38,0.63,0.69">*\# ratio.grad tensor(\[\[0.0909, 0.0909, 0.0909, 0.0909, 0.0000, 0.0000, 0.0000\],*</span> <span style="color: 0.38,0.63,0.69">*\# \[0.0909, 0.0909, 0.0909, 0.0909, 0.0909, 0.0909, 0.0909\]\])*</span>
-
-</div>
-
-</div>
+masked_mean_token_level.mean().backward() print("ratio.grad", ratio.grad) *\# ratio.grad tensor(\[\[0.0909, 0.0909, 0.0909, 0.0909, 0.0000, 0.0000, 0.0000\],* *\# \[0.0909, 0.0909, 0.0909, 0.0909, 0.0909, 0.0909, 0.0909\]\])*
 
 The output shows that with Strategy 1 (`masked_mean`), the short sequence has larger per-token gradients (0.25) than the long sequence (0.14). Strategies 2 and 3 equalize the per-token gradients across sequences. Note that these results can vary substantially if gradient accumulation is used, where the gradients are summed across multiple minibatches before taking a backward step—in this case, the balance between shorter and longer sequences can flip.
 
@@ -2103,31 +1903,23 @@ In practice, the best strategy depends on the specific training setup. Often in 
 
 #### 6.3.2.2 Related: MDP vs. Bandit Framing
 
-The choice of loss aggregation connects to a deeper distinction in how we frame the RL problem. The **MDP (token-level)** view treats each token $a_t$ as an action with state $s_t$ being the running prefix. In practice, this is the framing used when we compute token-level advantages with a learned value function $V(s_t)$ (e.g., GAE [@ref-schulman2015high]) and apply KL penalties per token. PPO with a learned value network is the canonical example [@ref-schulman2017proximal].
+The choice of loss aggregation connects to a deeper distinction in how we frame the RL problem. The **MDP (token-level)** view treats each token $a_t$ as an action with state $s_t$ being the running prefix. In practice, this is the framing used when we compute token-level advantages with a learned value function $V(s_t)$ (e.g., GAE \[119\]) and apply KL penalties per token. PPO with a learned value network is the canonical example \[123\].
 
-In contrast, the **bandit (sequence-level)** view treats the whole completion as a single action with one scalar reward $R$. In code, this means computing a sequence-level advantage $A_{\text{seq}}$ and broadcasting it to all tokens. RLOO and GRPO-style advantages are often used in this bandit-style setting [@ref-kool2019buy] [@ref-ahmadian2024back] [@ref-shao2024deepseekmath]. Direct alignment methods like DPO and A-LoL also define sequence-level objectives, although they are not policy-gradient estimators [@ref-baheti2023leftover].
+In contrast, the **bandit (sequence-level)** view treats the whole completion as a single action with one scalar reward $R$. In code, this means computing a sequence-level advantage $A_{\text{seq}}$ and broadcasting it to all tokens. RLOO and GRPO-style advantages are often used in this bandit-style setting \[122\] \[118\] \[128\]. Direct alignment methods like DPO and A-LoL also define sequence-level objectives, although they are not policy-gradient estimators \[137\].
 
 Note that many GRPO implementations use a bandit-style advantage *and* add a separate per-token KL term in the loss, while many PPO/RLOO implementations fold KL into the reward before computing advantages; both conventions exist in practice.
 
 An example comparison highlighting the two approaches is below:
 
-<div class="tcolorbox">
+*\# === Bandit-style (sequence-level) ===* *\# One scalar reward per sequence; advantage broadcast to all tokens* reward = torch.tensor(\[3.0, 1.0\]) *\# (B,) e.g., reward model scores* baseline = reward.mean() *\# simple baseline (RLOO uses leave-one-out)* advantage_seq = reward - baseline *\# (B,)* advantages = advantage_seq\[:, None\].expand(-1, seq_len) *\# (B, L)* *\# tensor(\[\[ 1., 1., 1., 1.\], \<- same advantage for all tokens* *\# \[-1., -1., -1., -1.\]\])*
 
-<div class="Highlighting">
-
-<span style="color: 0.38,0.63,0.69">*\# === Bandit-style (sequence-level) ===*</span> <span style="color: 0.38,0.63,0.69">*\# One scalar reward per sequence; advantage broadcast to all tokens*</span> reward <span style="color: 0.40,0.40,0.40">=</span> torch.tensor(\[<span style="color: 0.25,0.63,0.44">3.0</span>, <span style="color: 0.25,0.63,0.44">1.0</span>\]) <span style="color: 0.38,0.63,0.69">*\# (B,) e.g., reward model scores*</span> baseline <span style="color: 0.40,0.40,0.40">=</span> reward.mean() <span style="color: 0.38,0.63,0.69">*\# simple baseline (RLOO uses leave-one-out)*</span> advantage_seq <span style="color: 0.40,0.40,0.40">=</span> reward <span style="color: 0.40,0.40,0.40">-</span> baseline <span style="color: 0.38,0.63,0.69">*\# (B,)*</span> advantages <span style="color: 0.40,0.40,0.40">=</span> advantage_seq\[:, <span style="color: 0.10,0.09,0.49">None</span>\].expand(<span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">1</span>, seq_len) <span style="color: 0.38,0.63,0.69">*\# (B, L)*</span> <span style="color: 0.38,0.63,0.69">*\# tensor(\[\[ 1., 1., 1., 1.\], \<- same advantage for all tokens*</span> <span style="color: 0.38,0.63,0.69">*\# \[-1., -1., -1., -1.\]\])*</span>
-
-<span style="color: 0.38,0.63,0.69">*\# === MDP-style (token-level) ===*</span> <span style="color: 0.38,0.63,0.69">*\# Per-token rewards + learned V(s_t); each token gets its own advantage*</span> <span style="color: 0.38,0.63,0.69">*\# (could also use per-token KL shaping, format rewards, or other token-level signals)*</span> advantages <span style="color: 0.40,0.40,0.40">=</span> gae(per_token_rewards, values, done_mask, gamma<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.63,0.44">1.0</span>, lam<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.63,0.44">0.95</span>) <span style="color: 0.38,0.63,0.69">*\# tensor(\[\[ 0.2, 0.5, 0.8, 1.5\], \<- varies by position*</span> <span style="color: 0.38,0.63,0.69">*\# \[-0.3, -0.5, -0.8, -1.4\]\])*</span>
-
-</div>
-
-</div>
+*\# === MDP-style (token-level) ===* *\# Per-token rewards + learned V(s_t); each token gets its own advantage* *\# (could also use per-token KL shaping, format rewards, or other token-level signals)* advantages = gae(per_token_rewards, values, done_mask, gamma=1.0, lam=0.95) *\# tensor(\[\[ 0.2, 0.5, 0.8, 1.5\], \<- varies by position* *\# \[-0.3, -0.5, -0.8, -1.4\]\])*
 
 This framing distinction also explains why the discount factor $\gamma$ is set to 1.0 in virtually all RLHF implementations. In standard RL, discounting ($\gamma < 1$) is essential: it balances the optimization between short-term and long-term reward across a multi-step episode, which is crucial for the agent to learn effective behavior over time. But in the RLHF setting, even when using the token-level MDP view, the inductive bias of the optimization is the quality of the collective completion – the reward signal scores the entire response, not individual tokens. Discounting earlier tokens would arbitrarily down-weight their contribution with no principled justification. As agentic RL settings mature – where models take real multi-step actions such as tool calls, code execution, and web browsing – discounting may become relevant again, since these involve genuinely distinct sequential decisions whose long-term consequences differ.
 
 ### 6.3.3 Asynchronous RL Systems
 
-The default implementation for policy-gradient algorithms is what is called **on-policy** execution, where the actions (generations) taken by the agent (language model) are scored before updating the model. The theoretical derivations of policy-gradient rely on all actions being exactly on-policy where the model is always up to date with the results from the latest trials/roll-outs. In practice, maintaining exact on-policy execution substantially slows training [@ref-noukhovitch2024asynchronous]—and perfect synchronization is technically impossible regardless. Therefore, all of the recent empirical results with language models tend to be slightly outside of the theoretical proofs. What happens in practice is designing the algorithms and systems for what actually works.
+The default implementation for policy-gradient algorithms is what is called **on-policy** execution, where the actions (generations) taken by the agent (language model) are scored before updating the model. The theoretical derivations of policy-gradient rely on all actions being exactly on-policy where the model is always up to date with the results from the latest trials/roll-outs. In practice, maintaining exact on-policy execution substantially slows training \[138\]—and perfect synchronization is technically impossible regardless. Therefore, all of the recent empirical results with language models tend to be slightly outside of the theoretical proofs. What happens in practice is designing the algorithms and systems for what actually works.
 
 **Figura 26.** A comparison of the generation-update phases for synchronous or asynchronous RL training following Noukhovitch et al. 2024.
 
@@ -2137,15 +1929,15 @@ The common solution used is to constantly run inference and training on separate
 
 These systems are designed and implemented with the presumption that nearly on-policy data is good enough for stable learning. Here, the generation and update phases can easily be synced to avoid idle compute on either piece of the training system, which would be passing model weights from the learners to the actors in fig. 27. With reasoning models, the extremely long inference characteristics of problems requiring 10K to 100K+ tokens per answer makes the generation of roll-outs a far stronger bottleneck. A common problem when training reasoning models on more synchronous RL infrastructure is that an answer to one prompt in the batch can take substantially more time to generate (either through more tokens or more tool calls), resulting in the majority of the allocated compute being idle until it completes. A second solution to this length mismatch issue, called sequence-level packing, is to stack shorter samples within a batch with clever masking to enable continued roll-outs from the model and better distribute length normalization across samples within a batch. The full complexity of distributed RL infrastructure is out of scope for this book, as it can cause many other subtle issues that slow down training or cause instability.
 
-Following the emergence of these reasoning models, further interest has been taken to make the training and inference loops fully off-policy, where training batches for the policy gradient updates are filled with the most recently completed roll-outs across multiple instances generating answers [@ref-wu2025llamarl] [@ref-fu2025areal]. Fully asynchronous training would also enable scaling RL training runs across multiple datacenters more easily due to the option of increasing the time between weight syncs between the learner node (taking policy gradient steps) and the actor (trying to solve problems) [@ref-primeintellectteam2025intellect2reasoningmodeltrained].
+Following the emergence of these reasoning models, further interest has been taken to make the training and inference loops fully off-policy, where training batches for the policy gradient updates are filled with the most recently completed roll-outs across multiple instances generating answers \[139\] \[140\]. Fully asynchronous training would also enable scaling RL training runs across multiple datacenters more easily due to the option of increasing the time between weight syncs between the learner node (taking policy gradient steps) and the actor (trying to solve problems) \[141\].
 
-Related methods are exploring fully off-policy policy gradient algorithms [@ref-leroux2025topr].
+Related methods are exploring fully off-policy policy gradient algorithms \[131\].
 
 ### 6.3.4 Truncated Importance Sampling
 
-Truncated importance sampling (TIS) is a crucial tool used to stabilize training in modern, asynchronous RL frameworks with language models. Importance sampling is a correction that reweights samples drawn from one distribution to estimate expectations under another (as introduced in eq. 63). Truncated importance sampling [@ref-ionides2008truncated] caps these weights with $\min(\rho, C)$ for some constant $C$, trading a small bias for bounded variance in the policy gradient.
+Truncated importance sampling (TIS) is a crucial tool used to stabilize training in modern, asynchronous RL frameworks with language models. Importance sampling is a correction that reweights samples drawn from one distribution to estimate expectations under another (as introduced in eq. 63). Truncated importance sampling \[142\] caps these weights with $\min(\rho, C)$ for some constant $C$, trading a small bias for bounded variance in the policy gradient.
 
-This is an importance-sampling correction applied to the policy gradient, but unlike the bilateral clipping in PPO and CISPO (which constrains the ratio near 1), TIS uses a one-sided upper cap: the ratio can fall freely below 1, but is capped at $C$ to prevent extreme upweighting. In all of PPO, GRPO, CISPO (and related algorithms), the ratio $\rho_t^{\text{policy}} = \pi_\theta(a_t \mid s) / \pi_{\theta_{\text{old}}}(a_t \mid s)$ corrects for policy drift across multiple gradient steps within one RL batch. As we shift to real-world RL frameworks, centered around the idea of asynchronicity in the previous subsection, there can be even larger sources of numerical differences (that also require the numerical correction of importance sampling). Even when the sampler and learner share identical parameters $\theta$, their effective token distributions can differ because the inference engine (e.g., vLLM) and training framework (e.g., FSDP) use different kernels, precision, and parallelism strategies [@ref-yao2025offpolicy]. It is therefore useful to distinguish the same policy evaluated on two systems, $\pi_\theta^{\text{sampler}}$ and $\pi_\theta^{\text{learner}}$, and define the corresponding ratio and its truncated form:
+This is an importance-sampling correction applied to the policy gradient, but unlike the bilateral clipping in PPO and CISPO (which constrains the ratio near 1), TIS uses a one-sided upper cap: the ratio can fall freely below 1, but is capped at $C$ to prevent extreme upweighting. In all of PPO, GRPO, CISPO (and related algorithms), the ratio $\rho_t^{\text{policy}} = \pi_\theta(a_t \mid s) / \pi_{\theta_{\text{old}}}(a_t \mid s)$ corrects for policy drift across multiple gradient steps within one RL batch. As we shift to real-world RL frameworks, centered around the idea of asynchronicity in the previous subsection, there can be even larger sources of numerical differences (that also require the numerical correction of importance sampling). Even when the sampler and learner share identical parameters $\theta$, their effective token distributions can differ because the inference engine (e.g., vLLM) and training framework (e.g., FSDP) use different kernels, precision, and parallelism strategies \[143\]. It is therefore useful to distinguish the same policy evaluated on two systems, $\pi_\theta^{\text{sampler}}$ and $\pi_\theta^{\text{learner}}$, and define the corresponding ratio and its truncated form:
 
 $$\begin{equation}
 \tag{72}{
@@ -2175,23 +1967,15 @@ J_{\text{PPO+TIS}}(\theta) = \mathbb{E}\left[ \min\!\left( \rho_t^{\text{policy}
 }
 \end{equation}$$
 
-Here $\pi_{\theta_\text{old}} \neq \pi_\text{gen}$: the old logprobs come from the learner, not the sampler. If a framework skips this recomputation and uses the sampler logprobs directly as $\pi_{\theta_\text{old}}$, the policy ratio already captures the backend mismatch and no separate TIS correction is needed — but the clip then operates on a noisier ratio that starts away from 1.0 even before any gradient steps. This is the “your framework secretly brings you off-policy RL” observation from Yao et al. [@ref-yao2025offpolicy].
+Here $\pi_{\theta_\text{old}} \neq \pi_\text{gen}$: the old logprobs come from the learner, not the sampler. If a framework skips this recomputation and uses the sampler logprobs directly as $\pi_{\theta_\text{old}}$, the policy ratio already captures the backend mismatch and no separate TIS correction is needed — but the clip then operates on a noisier ratio that starts away from 1.0 even before any gradient steps. This is the “your framework secretly brings you off-policy RL” observation from Yao et al. \[143\].
 
 In practice, LLM RL systems apply TIS as a per-token correction weight on the policy-gradient loss:
 
-<div class="tcolorbox">
+*\# Shape: (B\*G, L)* C = 2.0 *\# TIS cap*
 
-<div class="Highlighting">
+logratio = learner_logprobs - sampler_logprobs logratio = logratio.clamp(-10.0, 10.0) *\# numerical safety* tis_weight = torch.exp(logratio).clamp(max=C) *\# one-sided truncation*
 
-<span style="color: 0.38,0.63,0.69">*\# Shape: (B\*G, L)*</span> C <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.25,0.63,0.44">2.0</span> <span style="color: 0.38,0.63,0.69">*\# TIS cap*</span>
-
-logratio <span style="color: 0.40,0.40,0.40">=</span> learner_logprobs <span style="color: 0.40,0.40,0.40">-</span> sampler_logprobs logratio <span style="color: 0.40,0.40,0.40">=</span> logratio.clamp(<span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">10.0</span>, <span style="color: 0.25,0.63,0.44">10.0</span>) <span style="color: 0.38,0.63,0.69">*\# numerical safety*</span> tis_weight <span style="color: 0.40,0.40,0.40">=</span> torch.exp(logratio).clamp(<span style="color: 0.00,0.50,0.00">max</span><span style="color: 0.40,0.40,0.40">=</span>C) <span style="color: 0.38,0.63,0.69">*\# one-sided truncation*</span>
-
-<span style="color: 0.38,0.63,0.69">*\# Use as a fixed correction weight on the per-token PG loss*</span> per_token_pg_loss <span style="color: 0.40,0.40,0.40">=</span> per_token_pg_loss <span style="color: 0.40,0.40,0.40">\*</span> tis_weight.detach()
-
-</div>
-
-</div>
+*\# Use as a fixed correction weight on the per-token PG loss* per_token_pg_loss = per_token_pg_loss \* tis_weight.detach()
 
 The $[-10, 10]$ clamp is only for numerical stability before exponentiation; the actual truncated-importance-sampling step is the one-sided cap at $C$. In practice, the bookkeeping around these logprobs — storing sampler logprobs from generation, recomputing learner logprobs at the old checkpoint, and tracking current logprobs during gradient steps — is a substantial part of the scaffolding in distributed RL frameworks. Unlike GSPO, this correction is token-level because it addresses token-level numerical mismatch rather than sequence-level reward granularity. TIS for the learner–sampler ratio has been adopted across major open-source RL frameworks (VeRL, TRL, OpenRLHF, SkyRL, OAT, and Open Instruct, which uses $C = 2$), and becomes increasingly important for long reasoning traces (Chapter 7), where small per-token differences compound over thousands of generated tokens.
 
@@ -2201,51 +1985,35 @@ There are many, many implementations of PPO available. The core *loss* computati
 
 Note that the reference policy (or old logprobs) here are from the time the generations were sampled and not necessarily the reference policy. The reference policy is only used for the KL distance constraint/penalty.
 
-<div class="tcolorbox">
+*\# B: Batch Size, L: Sequence Length, G: Num of Generations* *\# Apply KL penalty to rewards* rewards = rewards - self.beta \* per_token_kl *\# Shape: (B\*G, L)*
 
-<div class="Highlighting">
+*\# Get value predictions* values = value_net(completions) *\# Shape: (B\*G, L)*
 
-<span style="color: 0.38,0.63,0.69">*\# B: Batch Size, L: Sequence Length, G: Num of Generations*</span> <span style="color: 0.38,0.63,0.69">*\# Apply KL penalty to rewards*</span> rewards <span style="color: 0.40,0.40,0.40">=</span> rewards <span style="color: 0.40,0.40,0.40">-</span> <span style="color: 0.10,0.09,0.49">self</span>.beta <span style="color: 0.40,0.40,0.40">\*</span> per_token_kl <span style="color: 0.38,0.63,0.69">*\# Shape: (B\*G, L)*</span>
+*\# Compute returns via backward pass (gamma typically 1.0 for LM RLHF)* *\# Mask rewards to avoid padding tokens (which may have KL penalties) leaking into returns* returns = torch.zeros_like(rewards) running = torch.zeros(rewards.shape\[0\], device=rewards.device, dtype=rewards.dtype) **for** t **in** reversed(range(rewards.shape\[1\])): *\# Zero out padding: only accumulate rewards/returns for valid completion tokens* running = (rewards\[:, t\] + self.gamma \* running) \* completion_mask\[:, t\] returns\[:, t\] = running
 
-<span style="color: 0.38,0.63,0.69">*\# Get value predictions*</span> values <span style="color: 0.40,0.40,0.40">=</span> value_net(completions) <span style="color: 0.38,0.63,0.69">*\# Shape: (B\*G, L)*</span>
+*\# Compute advantages: A_t = G_t - V(s_t)* advantages = returns - values.detach() *\# Shape: (B\*G, L)* *\# Note: We detach the value network here to not update the parameters of* *\# the value function when computing the policy-gradient loss*
 
-<span style="color: 0.38,0.63,0.69">*\# Compute returns via backward pass (gamma typically 1.0 for LM RLHF)*</span> <span style="color: 0.38,0.63,0.69">*\# Mask rewards to avoid padding tokens (which may have KL penalties) leaking into returns*</span> returns <span style="color: 0.40,0.40,0.40">=</span> torch.zeros_like(rewards) running <span style="color: 0.40,0.40,0.40">=</span> torch.zeros(rewards.shape\[<span style="color: 0.25,0.63,0.44">0</span>\], device<span style="color: 0.40,0.40,0.40">=</span>rewards.device, dtype<span style="color: 0.40,0.40,0.40">=</span>rewards.dtype) <span style="color: 0.00,0.44,0.13">**for**</span> t <span style="color: 0.00,0.44,0.13">**in**</span> <span style="color: 0.00,0.50,0.00">reversed</span>(<span style="color: 0.00,0.50,0.00">range</span>(rewards.shape\[<span style="color: 0.25,0.63,0.44">1</span>\])): <span style="color: 0.38,0.63,0.69">*\# Zero out padding: only accumulate rewards/returns for valid completion tokens*</span> running <span style="color: 0.40,0.40,0.40">=</span> (rewards\[:, t\] <span style="color: 0.40,0.40,0.40">+</span> <span style="color: 0.10,0.09,0.49">self</span>.gamma <span style="color: 0.40,0.40,0.40">\*</span> running) <span style="color: 0.40,0.40,0.40">\*</span> completion_mask\[:, t\] returns\[:, t\] <span style="color: 0.40,0.40,0.40">=</span> running
+*\# Normalize advantages (optional but stable)* advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
-<span style="color: 0.38,0.63,0.69">*\# Compute advantages: A_t = G_t - V(s_t)*</span> advantages <span style="color: 0.40,0.40,0.40">=</span> returns <span style="color: 0.40,0.40,0.40">-</span> values.detach() <span style="color: 0.38,0.63,0.69">*\# Shape: (B\*G, L)*</span> <span style="color: 0.38,0.63,0.69">*\# Note: We detach the value network here to not update the parameters of*</span> <span style="color: 0.38,0.63,0.69">*\# the value function when computing the policy-gradient loss*</span>
+*\# Compute probability ratio between new and old policies* ratio = torch.exp(new_per_token_logps - per_token_logps) *\# Shape: (B\*G, L)*
 
-<span style="color: 0.38,0.63,0.69">*\# Normalize advantages (optional but stable)*</span> advantages <span style="color: 0.40,0.40,0.40">=</span> (advantages <span style="color: 0.40,0.40,0.40">-</span> advantages.mean()) <span style="color: 0.40,0.40,0.40">/</span> (advantages.std() <span style="color: 0.40,0.40,0.40">+</span> <span style="color: 0.25,0.63,0.44">1e-8</span>)
+*\# PPO clipping objective* eps = self.cliprange *\# e.g. 0.2* pg_losses1 = -advantages \* ratio *\# Shape: (B\*G, L)* pg_losses2 = -advantages \* torch.clamp(ratio, 1.0 - eps, 1.0 + eps) *\# Shape: (B\*G, L)* pg_loss_max = torch.max(pg_losses1, pg_losses2) *\# Shape: (B\*G, L)*
 
-<span style="color: 0.38,0.63,0.69">*\# Compute probability ratio between new and old policies*</span> ratio <span style="color: 0.40,0.40,0.40">=</span> torch.exp(new_per_token_logps <span style="color: 0.40,0.40,0.40">-</span> per_token_logps) <span style="color: 0.38,0.63,0.69">*\# Shape: (B\*G, L)*</span>
+*\# Value function loss: predict returns* vf_loss = 0.5 \* ((returns - values) \*\* 2) *\# Shape: (B\*G, L)*
 
-<span style="color: 0.38,0.63,0.69">*\# PPO clipping objective*</span> eps <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.10,0.09,0.49">self</span>.cliprange <span style="color: 0.38,0.63,0.69">*\# e.g. 0.2*</span> pg_losses1 <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.40,0.40,0.40">-</span>advantages <span style="color: 0.40,0.40,0.40">\*</span> ratio <span style="color: 0.38,0.63,0.69">*\# Shape: (B\*G, L)*</span> pg_losses2 <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.40,0.40,0.40">-</span>advantages <span style="color: 0.40,0.40,0.40">\*</span> torch.clamp(ratio, <span style="color: 0.25,0.63,0.44">1.0</span> <span style="color: 0.40,0.40,0.40">-</span> eps, <span style="color: 0.25,0.63,0.44">1.0</span> <span style="color: 0.40,0.40,0.40">+</span> eps) <span style="color: 0.38,0.63,0.69">*\# Shape: (B\*G, L)*</span> pg_loss_max <span style="color: 0.40,0.40,0.40">=</span> torch.<span style="color: 0.00,0.50,0.00">max</span>(pg_losses1, pg_losses2) <span style="color: 0.38,0.63,0.69">*\# Shape: (B\*G, L)*</span>
+*\# Combine policy and value losses* per_token_loss = pg_loss_max + self.vf_coef \* vf_loss *\# Shape: (B\*G, L)*
 
-<span style="color: 0.38,0.63,0.69">*\# Value function loss: predict returns*</span> vf_loss <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.25,0.63,0.44">0.5</span> <span style="color: 0.40,0.40,0.40">\*</span> ((returns <span style="color: 0.40,0.40,0.40">-</span> values) <span style="color: 0.40,0.40,0.40">\*\*</span> <span style="color: 0.25,0.63,0.44">2</span>) <span style="color: 0.38,0.63,0.69">*\# Shape: (B\*G, L)*</span>
+*\# Apply completion mask and compute final loss* loss = ((per_token_loss \* completion_mask).sum(dim=1) / completion_mask.sum(dim=1)).mean() *\# Scalar*
 
-<span style="color: 0.38,0.63,0.69">*\# Combine policy and value losses*</span> per_token_loss <span style="color: 0.40,0.40,0.40">=</span> pg_loss_max <span style="color: 0.40,0.40,0.40">+</span> <span style="color: 0.10,0.09,0.49">self</span>.vf_coef <span style="color: 0.40,0.40,0.40">\*</span> vf_loss <span style="color: 0.38,0.63,0.69">*\# Shape: (B\*G, L)*</span>
+*\# Compute metrics for logging* **with** torch.no_grad(): *\# Compute clipping fraction* clip_frac = ((pg_losses2 \> pg_losses1).float() \* completion_mask).sum() / completion_mask.sum()
 
-<span style="color: 0.38,0.63,0.69">*\# Apply completion mask and compute final loss*</span> loss <span style="color: 0.40,0.40,0.40">=</span> ((per_token_loss <span style="color: 0.40,0.40,0.40">\*</span> completion_mask).<span style="color: 0.00,0.50,0.00">sum</span>(dim<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.63,0.44">1</span>) <span style="color: 0.40,0.40,0.40">/</span> completion_mask.<span style="color: 0.00,0.50,0.00">sum</span>(dim<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.63,0.44">1</span>)).mean() <span style="color: 0.38,0.63,0.69">*\# Scalar*</span>
+*\# Compute approximate KL* approx_kl = (0.5 \* ((new_per_token_logps - per_token_logps)\*\*2) \* completion_mask).sum() / completion_mask.sum()
 
-<span style="color: 0.38,0.63,0.69">*\# Compute metrics for logging*</span> <span style="color: 0.00,0.44,0.13">**with**</span> torch.no_grad(): <span style="color: 0.38,0.63,0.69">*\# Compute clipping fraction*</span> clip_frac <span style="color: 0.40,0.40,0.40">=</span> ((pg_losses2 <span style="color: 0.40,0.40,0.40">\></span> pg_losses1).<span style="color: 0.00,0.50,0.00">float</span>() <span style="color: 0.40,0.40,0.40">\*</span> completion_mask).<span style="color: 0.00,0.50,0.00">sum</span>() <span style="color: 0.40,0.40,0.40">/</span> completion_mask.<span style="color: 0.00,0.50,0.00">sum</span>()
-
-<span style="color: 0.38,0.63,0.69">*\# Compute approximate KL*</span> approx_kl <span style="color: 0.40,0.40,0.40">=</span> (<span style="color: 0.25,0.63,0.44">0.5</span> <span style="color: 0.40,0.40,0.40">\*</span> ((new_per_token_logps <span style="color: 0.40,0.40,0.40">-</span> per_token_logps)<span style="color: 0.40,0.40,0.40">\*\*</span><span style="color: 0.25,0.63,0.44">2</span>) <span style="color: 0.40,0.40,0.40">\*</span> completion_mask).<span style="color: 0.00,0.50,0.00">sum</span>() <span style="color: 0.40,0.40,0.40">/</span> completion_mask.<span style="color: 0.00,0.50,0.00">sum</span>()
-
-<span style="color: 0.38,0.63,0.69">*\# Compute value loss for logging*</span> value_loss <span style="color: 0.40,0.40,0.40">=</span> vf_loss.mean()
-
-</div>
-
-</div>
+*\# Compute value loss for logging* value_loss = vf_loss.mean()
 
 The core piece to understand with PPO is how the policy gradient loss is updated. Focus on these three lines:
 
-<div class="tcolorbox">
-
-<div class="Highlighting">
-
-pg_losses1 <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.40,0.40,0.40">-</span>advantages <span style="color: 0.40,0.40,0.40">\*</span> ratio <span style="color: 0.38,0.63,0.69">*\# Shape: (B\*G, L)*</span> pg_losses2 <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.40,0.40,0.40">-</span>advantages <span style="color: 0.40,0.40,0.40">\*</span> torch.clamp(ratio, <span style="color: 0.25,0.63,0.44">1.0</span> <span style="color: 0.40,0.40,0.40">-</span> eps, <span style="color: 0.25,0.63,0.44">1.0</span> <span style="color: 0.40,0.40,0.40">+</span> eps) <span style="color: 0.38,0.63,0.69">*\# Shape: (B\*G, L)*</span> pg_loss_max <span style="color: 0.40,0.40,0.40">=</span> torch.<span style="color: 0.00,0.50,0.00">max</span>(pg_losses1, pg_losses2) <span style="color: 0.38,0.63,0.69">*\# Shape: (B\*G, L)*</span>
-
-</div>
-
-</div>
+pg_losses1 = -advantages \* ratio *\# Shape: (B\*G, L)* pg_losses2 = -advantages \* torch.clamp(ratio, 1.0 - eps, 1.0 + eps) *\# Shape: (B\*G, L)* pg_loss_max = torch.max(pg_losses1, pg_losses2) *\# Shape: (B\*G, L)*
 
 `pg_losses1` is the vanilla advantage-weighted policy gradient loss. `pg_losses2` applies the same formula but with the probability ratio clamped to the range $[1-\varepsilon, 1+\varepsilon]$, limiting how much the policy can change in a single update.
 
@@ -2267,7 +2035,7 @@ This leads to PPO or GRPO implementations where the second policy gradient and c
 
 ### 6.3.6 Example: GRPO
 
-The DeepSeekMath paper describes some implementation details of GRPO that differ from PPO [@ref-shao2024deepseekmath], especially if comparing to a standard application of PPO from Deep RL rather than language models. For example, the KL penalty within the RLHF optimization (recall the KL penalty is also used when training reasoning models on verifiable rewards without a reward model) is applied directly in the loss update rather than to the reward function. Where the standard KL penalty application for RLHF is applied as $r=r_\theta - \beta \mathcal{D}_{\text{KL}}$, the GRPO implementation is along the lines of:
+The DeepSeekMath paper describes some implementation details of GRPO that differ from PPO \[128\], especially if comparing to a standard application of PPO from Deep RL rather than language models. For example, the KL penalty within the RLHF optimization (recall the KL penalty is also used when training reasoning models on verifiable rewards without a reward model) is applied directly in the loss update rather than to the reward function. Where the standard KL penalty application for RLHF is applied as $r=r_\theta - \beta \mathcal{D}_{\text{KL}}$, the GRPO implementation is along the lines of:
 
 $$\begin{equation}
 \tag{76}{ L = L_{\text{policy gradient}} + \beta * \mathcal{D}_{\text{KL}} }
@@ -2277,31 +2045,23 @@ However, there are multiple ways to implement this. Traditionally, the KL distan
 
 Putting it together, using the first loss accumulation, the pseudocode can be written as below.
 
-<div class="tcolorbox">
+*\# B: Batch Size, L: Sequence Length, G: Number of Generations* *\# Compute group-wise rewards \# Shape: (B,)* mean_grouped_rewards = rewards.view(-1, self.num_generations).mean(dim=1) std_grouped_rewards = rewards.view(-1, self.num_generations).std(dim=1)
 
-<div class="Highlighting">
+*\# Normalize the rewards to compute the advantages* mean_grouped_rewards = mean_grouped_rewards.repeat_interleave(self.num_generations, dim=0) std_grouped_rewards = std_grouped_rewards.repeat_interleave(self.num_generations, dim=0) *\# Shape: (B\*G,)*
 
-<span style="color: 0.38,0.63,0.69">*\# B: Batch Size, L: Sequence Length, G: Number of Generations*</span> <span style="color: 0.38,0.63,0.69">*\# Compute group-wise rewards \# Shape: (B,)*</span> mean_grouped_rewards <span style="color: 0.40,0.40,0.40">=</span> rewards.view(<span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.10,0.09,0.49">self</span>.num_generations).mean(dim<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.63,0.44">1</span>) std_grouped_rewards <span style="color: 0.40,0.40,0.40">=</span> rewards.view(<span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">1</span>, <span style="color: 0.10,0.09,0.49">self</span>.num_generations).std(dim<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.63,0.44">1</span>)
+*\# Compute advantages* advantages = (rewards - mean_grouped_rewards) / (std_grouped_rewards + 1e-4) advantages = advantages.unsqueeze(1) *\# Shape: (B\*G, 1)*
 
-<span style="color: 0.38,0.63,0.69">*\# Normalize the rewards to compute the advantages*</span> mean_grouped_rewards <span style="color: 0.40,0.40,0.40">=</span> mean_grouped_rewards.repeat_interleave(<span style="color: 0.10,0.09,0.49">self</span>.num_generations, dim<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.63,0.44">0</span>) std_grouped_rewards <span style="color: 0.40,0.40,0.40">=</span> std_grouped_rewards.repeat_interleave(<span style="color: 0.10,0.09,0.49">self</span>.num_generations, dim<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.63,0.44">0</span>) <span style="color: 0.38,0.63,0.69">*\# Shape: (B\*G,)*</span>
+*\# Compute probability ratio between new and old policies* ratio = torch.exp(new_per_token_logps - per_token_logps) *\# Shape: (B\*G, L)*
 
-<span style="color: 0.38,0.63,0.69">*\# Compute advantages*</span> advantages <span style="color: 0.40,0.40,0.40">=</span> (rewards <span style="color: 0.40,0.40,0.40">-</span> mean_grouped_rewards) <span style="color: 0.40,0.40,0.40">/</span> (std_grouped_rewards <span style="color: 0.40,0.40,0.40">+</span> <span style="color: 0.25,0.63,0.44">1e-4</span>) advantages <span style="color: 0.40,0.40,0.40">=</span> advantages.unsqueeze(<span style="color: 0.25,0.63,0.44">1</span>) <span style="color: 0.38,0.63,0.69">*\# Shape: (B\*G, 1)*</span>
+*\# PPO clipping objective* eps = self.cliprange *\# e.g. 0.2* pg_losses1 = -advantages \* ratio *\# Shape: (B\*G, L)* pg_losses2 = -advantages \* torch.clamp(ratio, 1.0 - eps, 1.0 + eps) *\# Shape: (B\*G, L)* pg_loss_max = torch.max(pg_losses1, pg_losses2) *\# Shape: (B\*G, L)*
 
-<span style="color: 0.38,0.63,0.69">*\# Compute probability ratio between new and old policies*</span> ratio <span style="color: 0.40,0.40,0.40">=</span> torch.exp(new_per_token_logps <span style="color: 0.40,0.40,0.40">-</span> per_token_logps) <span style="color: 0.38,0.63,0.69">*\# Shape: (B\*G, L)*</span>
+*\# important to GRPO -- PPO applies this in reward traditionally* *\# Combine with KL penalty* per_token_loss = pg_loss_max + self.beta \* per_token_kl *\# Shape: (B\*G, L)*
 
-<span style="color: 0.38,0.63,0.69">*\# PPO clipping objective*</span> eps <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.10,0.09,0.49">self</span>.cliprange <span style="color: 0.38,0.63,0.69">*\# e.g. 0.2*</span> pg_losses1 <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.40,0.40,0.40">-</span>advantages <span style="color: 0.40,0.40,0.40">\*</span> ratio <span style="color: 0.38,0.63,0.69">*\# Shape: (B\*G, L)*</span> pg_losses2 <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.40,0.40,0.40">-</span>advantages <span style="color: 0.40,0.40,0.40">\*</span> torch.clamp(ratio, <span style="color: 0.25,0.63,0.44">1.0</span> <span style="color: 0.40,0.40,0.40">-</span> eps, <span style="color: 0.25,0.63,0.44">1.0</span> <span style="color: 0.40,0.40,0.40">+</span> eps) <span style="color: 0.38,0.63,0.69">*\# Shape: (B\*G, L)*</span> pg_loss_max <span style="color: 0.40,0.40,0.40">=</span> torch.<span style="color: 0.00,0.50,0.00">max</span>(pg_losses1, pg_losses2) <span style="color: 0.38,0.63,0.69">*\# Shape: (B\*G, L)*</span>
+*\# Apply completion mask and compute final loss* loss = ((per_token_loss \* completion_mask).sum(dim=1) / completion_mask.sum(dim=1)).mean() *\# Scalar*
 
-<span style="color: 0.38,0.63,0.69">*\# important to GRPO -- PPO applies this in reward traditionally*</span> <span style="color: 0.38,0.63,0.69">*\# Combine with KL penalty*</span> per_token_loss <span style="color: 0.40,0.40,0.40">=</span> pg_loss_max <span style="color: 0.40,0.40,0.40">+</span> <span style="color: 0.10,0.09,0.49">self</span>.beta <span style="color: 0.40,0.40,0.40">\*</span> per_token_kl <span style="color: 0.38,0.63,0.69">*\# Shape: (B\*G, L)*</span>
+*\# Compute core metric for logging (KL, reward, etc. also logged)* **with** torch.no_grad(): *\# Compute clipping fraction* clip_frac = ((pg_losses2 \> pg_losses1).float() \* completion_mask).sum() / completion_mask.sum()
 
-<span style="color: 0.38,0.63,0.69">*\# Apply completion mask and compute final loss*</span> loss <span style="color: 0.40,0.40,0.40">=</span> ((per_token_loss <span style="color: 0.40,0.40,0.40">\*</span> completion_mask).<span style="color: 0.00,0.50,0.00">sum</span>(dim<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.63,0.44">1</span>) <span style="color: 0.40,0.40,0.40">/</span> completion_mask.<span style="color: 0.00,0.50,0.00">sum</span>(dim<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.63,0.44">1</span>)).mean() <span style="color: 0.38,0.63,0.69">*\# Scalar*</span>
-
-<span style="color: 0.38,0.63,0.69">*\# Compute core metric for logging (KL, reward, etc. also logged)*</span> <span style="color: 0.00,0.44,0.13">**with**</span> torch.no_grad(): <span style="color: 0.38,0.63,0.69">*\# Compute clipping fraction*</span> clip_frac <span style="color: 0.40,0.40,0.40">=</span> ((pg_losses2 <span style="color: 0.40,0.40,0.40">\></span> pg_losses1).<span style="color: 0.00,0.50,0.00">float</span>() <span style="color: 0.40,0.40,0.40">\*</span> completion_mask).<span style="color: 0.00,0.50,0.00">sum</span>() <span style="color: 0.40,0.40,0.40">/</span> completion_mask.<span style="color: 0.00,0.50,0.00">sum</span>()
-
-<span style="color: 0.38,0.63,0.69">*\# Compute approximate KL*</span> approx_kl <span style="color: 0.40,0.40,0.40">=</span> (<span style="color: 0.25,0.63,0.44">0.5</span> <span style="color: 0.40,0.40,0.40">\*</span> ((new_per_token_logps <span style="color: 0.40,0.40,0.40">-</span> per_token_logps)<span style="color: 0.40,0.40,0.40">\*\*</span><span style="color: 0.25,0.63,0.44">2</span>) <span style="color: 0.40,0.40,0.40">\*</span> completion_mask).<span style="color: 0.00,0.50,0.00">sum</span>() <span style="color: 0.40,0.40,0.40">/</span> completion_mask.<span style="color: 0.00,0.50,0.00">sum</span>()
-
-</div>
-
-</div>
+*\# Compute approximate KL* approx_kl = (0.5 \* ((new_per_token_logps - per_token_logps)\*\*2) \* completion_mask).sum() / completion_mask.sum()
 
 For more details on how to interpret this code, see the PPO section above. The core differences from the PPO example are:
 
@@ -2315,21 +2075,13 @@ For more details on how to interpret this code, see the PPO section above. The c
 
 The advantage updates for RLOO follow GRPO very closely, highlighting the conceptual similarity of the algorithm when taken separately from the PPO style clipping and KL penalty details. Specifically, for RLOO, the advantage is computed relative to a baseline that is extremely similar to that of GRPO – the completion reward relative to the others for that same question. Concisely, the RLOO advantage estimate follows as (expanded from [TRL](https://github.com/huggingface/trl/blob/bfe20756082488350091352d1cdc19c172e42cd8/trl/trainer/rloo_trainer.py#L433)’s implementation):
 
-<div class="tcolorbox">
+*\# rloo_k --\> number of completions per prompt* *\# rlhf_reward --\> Initially a flat tensor of total rewards for all completions. Length B = N x k* rlhf_reward = rlhf_reward.reshape(rloo_k, -1) *\#* *\# Now, Shape: (k, N), each column j contains the k rewards for prompt j.*
 
-<div class="Highlighting">
+baseline = (rlhf_reward.sum(0) - rlhf_reward) / (rloo_k - 1) *\# baseline --\> Leave-one-out baseline rewards. Shape: (k, N)* *\# baseline\[i, j\] is the avg reward of samples i' != i for prompt j.*
 
-<span style="color: 0.38,0.63,0.69">*\# rloo_k --\> number of completions per prompt* </span> <span style="color: 0.38,0.63,0.69">*\# rlhf_reward --\> Initially a flat tensor of total rewards for all completions. Length B = N x k*</span> rlhf_reward <span style="color: 0.40,0.40,0.40">=</span> rlhf_reward.reshape(rloo_k, <span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">1</span>) <span style="color: 0.38,0.63,0.69">*\#* </span> <span style="color: 0.38,0.63,0.69">*\# Now, Shape: (k, N), each column j contains the k rewards for prompt j.*</span>
+advantages = rlhf_reward - baseline *\# advantages --\> Same Shape: (k, N)*
 
-baseline <span style="color: 0.40,0.40,0.40">=</span> (rlhf_reward.<span style="color: 0.00,0.50,0.00">sum</span>(<span style="color: 0.25,0.63,0.44">0</span>) <span style="color: 0.40,0.40,0.40">-</span> rlhf_reward) <span style="color: 0.40,0.40,0.40">/</span> (rloo_k <span style="color: 0.40,0.40,0.40">-</span> <span style="color: 0.25,0.63,0.44">1</span>) <span style="color: 0.38,0.63,0.69">*\# baseline --\> Leave-one-out baseline rewards. Shape: (k, N)*</span> <span style="color: 0.38,0.63,0.69">*\# baseline\[i, j\] is the avg reward of samples i' != i for prompt j.*</span>
-
-advantages <span style="color: 0.40,0.40,0.40">=</span> rlhf_reward <span style="color: 0.40,0.40,0.40">-</span> baseline <span style="color: 0.38,0.63,0.69">*\# advantages --\> Same Shape: (k, N)*</span>
-
-advantages <span style="color: 0.40,0.40,0.40">=</span> advantages.flatten() <span style="color: 0.38,0.63,0.69">*\# Same shape as original tensor*</span>
-
-</div>
-
-</div>
+advantages = advantages.flatten() *\# Same shape as original tensor*
 
 The rest of the implementation details for RLOO follow the other trade-offs of implementing policy-gradient.
 
@@ -2339,7 +2091,7 @@ In order to master the application of policy-gradient algorithms, there are coun
 
 ### 6.4.1 Generalized Advantage Estimation (GAE)
 
-Generalized Advantage Estimation (GAE) is an alternate method to compute the advantage for policy gradient algorithms [@ref-schulman2015high] that better balances the bias-variance tradeoff. Traditional single-step advantage estimates can introduce too much bias, while using complete trajectories can suffer from high variance. GAE computes an exponentially-weighted average of multi-step advantage estimates, where the $\lambda$ hyperparameter controls the bias-variance tradeoff—ranging from single-step TD ($\lambda=0$) to full trajectory returns ($\lambda=1$); $\lambda=0.95$ is a common default for LLM fine-tuning.
+Generalized Advantage Estimation (GAE) is an alternate method to compute the advantage for policy gradient algorithms \[119\] that better balances the bias-variance tradeoff. Traditional single-step advantage estimates can introduce too much bias, while using complete trajectories can suffer from high variance. GAE computes an exponentially-weighted average of multi-step advantage estimates, where the $\lambda$ hyperparameter controls the bias-variance tradeoff—ranging from single-step TD ($\lambda=0$) to full trajectory returns ($\lambda=1$); $\lambda=0.95$ is a common default for LLM fine-tuning.
 
 Advantage estimates can take many forms, but we can define an $n$-step advantage estimator (similar to the TD residual at the beginning of the chapter) as follows:
 
@@ -2378,23 +2130,15 @@ $$\begin{equation}
 
 Intuitively, this can be used to average multi-step estimates of Advantage in an elegant fashion. An example implementation is shown below:
 
-<div class="tcolorbox">
+*\# GAE (token-level) for LM RLHF* *\#* *\# B: Batch Size* *\# L: Length* *\# Inputs:* *\# rewards: (B, L) post-KL per-token rewards* *\# values: (B, L) current V_theta(s_t)* *\# done_mask: (B, L) 1.0 at terminal token (EOS or penalized trunc), else 0.0* *\# gamma: float (often 1.0),* *\# lam (short for lambda): float in \[0,1\]* *\# (Padding beyond terminal should have rewards=0, values=0)* B, L = rewards.shape advantages = torch.zeros_like(rewards) next_v = torch.zeros(B, device=rewards.device, dtype=rewards.dtype) gae = torch.zeros(B, device=rewards.device, dtype=rewards.dtype)
 
-<div class="Highlighting">
+**for** t **in** reversed(range(L)): not_done = 1.0 - done_mask\[:, t\] delta = rewards\[:, t\] + gamma \* not_done \* next_v - values\[:, t\] gae = delta + gamma \* lam \* not_done \* gae advantages\[:, t\] = gae next_v = values\[:, t\]
 
-<span style="color: 0.38,0.63,0.69">*\# GAE (token-level) for LM RLHF*</span> <span style="color: 0.38,0.63,0.69">*\#*</span> <span style="color: 0.38,0.63,0.69">*\# B: Batch Size*</span> <span style="color: 0.38,0.63,0.69">*\# L: Length*</span> <span style="color: 0.38,0.63,0.69">*\# Inputs:*</span> <span style="color: 0.38,0.63,0.69">*\# rewards: (B, L) post-KL per-token rewards*</span> <span style="color: 0.38,0.63,0.69">*\# values: (B, L) current V_theta(s_t)*</span> <span style="color: 0.38,0.63,0.69">*\# done_mask: (B, L) 1.0 at terminal token (EOS or penalized trunc), else 0.0*</span> <span style="color: 0.38,0.63,0.69">*\# gamma: float (often 1.0),* </span> <span style="color: 0.38,0.63,0.69">*\# lam (short for lambda): float in \[0,1\]*</span> <span style="color: 0.38,0.63,0.69">*\# (Padding beyond terminal should have rewards=0, values=0)*</span> B, L <span style="color: 0.40,0.40,0.40">=</span> rewards.shape advantages <span style="color: 0.40,0.40,0.40">=</span> torch.zeros_like(rewards) next_v <span style="color: 0.40,0.40,0.40">=</span> torch.zeros(B, device<span style="color: 0.40,0.40,0.40">=</span>rewards.device, dtype<span style="color: 0.40,0.40,0.40">=</span>rewards.dtype) gae <span style="color: 0.40,0.40,0.40">=</span> torch.zeros(B, device<span style="color: 0.40,0.40,0.40">=</span>rewards.device, dtype<span style="color: 0.40,0.40,0.40">=</span>rewards.dtype)
-
-<span style="color: 0.00,0.44,0.13">**for**</span> t <span style="color: 0.00,0.44,0.13">**in**</span> <span style="color: 0.00,0.50,0.00">reversed</span>(<span style="color: 0.00,0.50,0.00">range</span>(L)): not_done <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.25,0.63,0.44">1.0</span> <span style="color: 0.40,0.40,0.40">-</span> done_mask\[:, t\] delta <span style="color: 0.40,0.40,0.40">=</span> rewards\[:, t\] <span style="color: 0.40,0.40,0.40">+</span> gamma <span style="color: 0.40,0.40,0.40">\*</span> not_done <span style="color: 0.40,0.40,0.40">\*</span> next_v <span style="color: 0.40,0.40,0.40">-</span> values\[:, t\] gae <span style="color: 0.40,0.40,0.40">=</span> delta <span style="color: 0.40,0.40,0.40">+</span> gamma <span style="color: 0.40,0.40,0.40">\*</span> lam <span style="color: 0.40,0.40,0.40">\*</span> not_done <span style="color: 0.40,0.40,0.40">\*</span> gae advantages\[:, t\] <span style="color: 0.40,0.40,0.40">=</span> gae next_v <span style="color: 0.40,0.40,0.40">=</span> values\[:, t\]
-
-targets <span style="color: 0.40,0.40,0.40">=</span> advantages <span style="color: 0.40,0.40,0.40">+</span> values <span style="color: 0.38,0.63,0.69">*\# y_t for value regression*</span> advantages <span style="color: 0.40,0.40,0.40">=</span> advantages.detach() <span style="color: 0.38,0.63,0.69">*\# for policy loss*</span>
-
-</div>
-
-</div>
+targets = advantages + values *\# y_t for value regression* advantages = advantages.detach() *\# for policy loss*
 
 The backward loop accumulates temporal-difference (TD) errors ($\delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)$), which measure how much better or worse the actual outcome was compared to the value function’s prediction, with exponential decay $(\gamma\lambda)^l$. At terminal tokens, `not_done=0` prevents bootstrapping from future states and resets the GAE accumulator, so each episode’s advantages are computed independently (since the loop runs backward, the terminal token cleanly stops the exponentially-weighted accumulation at episode boundaries—this makes the implementation packing-friendly, correctly handling multiple sequences concatenated into one). The final `targets` serve as regression targets for the separate value function learned outside this GAE loop, while the detached `advantages` weight the policy gradient—detached so that policy updates don’t backpropagate through the value network. In RLHF for language models, $\gamma=1.0$ is common because episodes are short token sequences where undiscounted credit assignment is preferred (and often all of the tokens in one).
 
-*For further reading, see [@ref-seita2017gae].*
+*For further reading, see \[144\].*
 
 ### 6.4.2 Double Regularization
 
@@ -2404,25 +2148,25 @@ Many popular policy gradient algorithms from Deep Reinforcement Learning, includ
 
 In PPO, the objective that handles capping the step-size of the update is known as the [surrogate objective](https://huggingface.co/blog/deep-rl-ppo#introducing-the-clipped-surrogate-objective). To monitor how much the PPO regularization is impacting updates in RLHF, one can look at the clip fraction variable in many popular implementations, which is the percentage of samples in the batch whose probability ratio falls outside the clipping interval. This is a useful proxy for how often PPO’s regularizer may be active, but not every such sample has zero gradient: the surrogate becomes flat only when the clipped branch is selected, such as positive-advantage samples with ratios above $1+\varepsilon$ or negative-advantage samples with ratios below $1-\varepsilon$.
 
-In practice with language models, algorithms like PPO and GRPO are often run with only one gradient step per batch, which means that the PPO-native regularization is never applied (as clipping can only occur within a batch when the policy changes substantially) and the KL distance penalties predominate. However, this is not universal. For example, DAPO uses 16 gradient steps per batch [@ref-yu2025dapo], and Tülu 3 uses 4 PPO update iterations per batch for 8B and 70B models but reduces to 1 for 405B to maintain training stability [@ref-lambert2024t].
+In practice with language models, algorithms like PPO and GRPO are often run with only one gradient step per batch, which means that the PPO-native regularization is never applied (as clipping can only occur within a batch when the policy changes substantially) and the KL distance penalties predominate. However, this is not universal. For example, DAPO uses 16 gradient steps per batch \[136\], and Tülu 3 uses 4 PPO update iterations per batch for 8B and 70B models but reduces to 1 for 405B to maintain training stability \[6\].
 
 ### 6.4.3 Further Reading
 
 As RLHF has cemented itself at the center of modern post-training, other policy-gradient RL algorithms and RL algorithms generally have been proposed to improve the training process, but they have not had a central role in governing best practices. Examples for further reading include:
 
-- **Pairwise Proximal Policy Optimization (P3O; Wu et al., 2023)** [@ref-wu2023pairwise] uses pairwise data directly in a PPO-style policy update without learning an intermediate reward model.
+- **Pairwise Proximal Policy Optimization (P3O; Wu et al., 2023)** \[145\] uses pairwise data directly in a PPO-style policy update without learning an intermediate reward model.
 
-- **Soft Adaptive Policy Optimization (SAPO)** [@ref-gao2025sapo] replaces hard PPO/GRPO-style clipping with smooth, temperature-controlled gating, aiming for a continuous trust region that preserves near-on-policy learning signal while down-weighting off-policy tokens.
+- **Soft Adaptive Policy Optimization (SAPO)** \[146\] replaces hard PPO/GRPO-style clipping with smooth, temperature-controlled gating, aiming for a continuous trust region that preserves near-on-policy learning signal while down-weighting off-policy tokens.
 
-- Off-policy policy-gradient algorithms could enable further asynchronous training, such as **Contrastive Policy Gradient (CoPG)** [@ref-flet2024contrastive] (a generalization of the direct alignment algorithm IPO and vanilla policy gradient), which was used by Cohere for their Command A model [@ref-cohere2025command].
+- Off-policy policy-gradient algorithms could enable further asynchronous training, such as **Contrastive Policy Gradient (CoPG)** \[147\] (a generalization of the direct alignment algorithm IPO and vanilla policy gradient), which was used by Cohere for their Command A model \[57\].
 
-- Other implementations of REINFORCE algorithms have been designed for language models, such as **ReMax** [@ref-li2023remax], which implements a baseline normalization designed specifically to accommodate the sources of uncertainty from reward model inference.
+- Other implementations of REINFORCE algorithms have been designed for language models, such as **ReMax** \[148\], which implements a baseline normalization designed specifically to accommodate the sources of uncertainty from reward model inference.
 
-- Some foundation models, such as Apple Intelligence Foundation Models [@ref-gunter2024apple] or Kimi k1.5 reasoning model [@ref-team2025kimi], have used variants of **Mirror Descent Policy Optimization (MDPO)** [@ref-tomar2020mirror]. Research is still developing further on the fundamentals here [@ref-zhang2025improving], but Mirror Descent is an optimization method rather than directly a policy gradient algorithm. What is important here is that it is substituted in very similarly to existing RL infrastructure.
+- Some foundation models, such as Apple Intelligence Foundation Models \[149\] or Kimi k1.5 reasoning model \[150\], have used variants of **Mirror Descent Policy Optimization (MDPO)** \[151\]. Research is still developing further on the fundamentals here \[152\], but Mirror Descent is an optimization method rather than directly a policy gradient algorithm. What is important here is that it is substituted in very similarly to existing RL infrastructure.
 
-- **Decoupled Clip and Dynamic sAmpling Policy Optimization (DAPO)** proposes 4 modifications to GRPO to better suit reasoning language models, where long traces are needed and new, underutilized tokens need to be increased in probability [@ref-yu2025dapo]. The changes are: 1, have two different clip hyperparameters, $\varepsilon_\text{low}$ and $\varepsilon_\text{high}$, so clipping on the positive side of the logratio can take bigger steps for better exploration; 2, dynamic sampling, which removes all samples with reward = 0 or reward = 1 for all samples in the batch (no learning signal); 3, use the per-token loss as discussed above in Implementation: GRPO; and 4, a soft penalty on samples that are too long to avoid trying to learn from truncated answers.
+- **Decoupled Clip and Dynamic sAmpling Policy Optimization (DAPO)** proposes 4 modifications to GRPO to better suit reasoning language models, where long traces are needed and new, underutilized tokens need to be increased in probability \[136\]. The changes are: 1, have two different clip hyperparameters, $\varepsilon_\text{low}$ and $\varepsilon_\text{high}$, so clipping on the positive side of the logratio can take bigger steps for better exploration; 2, dynamic sampling, which removes all samples with reward = 0 or reward = 1 for all samples in the batch (no learning signal); 3, use the per-token loss as discussed above in Implementation: GRPO; and 4, a soft penalty on samples that are too long to avoid trying to learn from truncated answers.
 
-- **Value-based Augmented Proximal Policy Optimization (VAPO)** [@ref-yuan2025vapo] combines optimizations from DAPO (including clip-higher, token-level policy-gradient, and different length normalization) with insights from Value-Calibrated PPO [@ref-yuan2025s] to pretrain the value function and length-adaptive GAE to show the promise of value-based methods relative to GRPO.
+- **Value-based Augmented Proximal Policy Optimization (VAPO)** \[153\] combines optimizations from DAPO (including clip-higher, token-level policy-gradient, and different length normalization) with insights from Value-Calibrated PPO \[154\] to pretrain the value function and length-adaptive GAE to show the promise of value-based methods relative to GRPO.
 
 ## 6.5 Suggested Experiments
 
@@ -2430,29 +2174,13 @@ The companion implementation in `code/policy_gradients/` is designed for small, 
 
 1.  **Run the word reversal task with GRPO.**
 
-    <div class="tcolorbox">
-
-    <div class="Highlighting">
-
-    <span style="color: 0.00,0.50,0.00">cd</span> code/ uv run python <span style="color: 0.49,0.56,0.16">-m</span> policy_gradients.train <span style="color: 0.49,0.56,0.16">--config</span> policy_gradients/configs/grpo.yaml
-
-    </div>
-
-    </div>
+    cd code/ uv run python -m policy_gradients.train --config policy_gradients/configs/grpo.yaml
 
     Track `avg_correctness`, `avg_format`, and `avg_binary`. The useful first question is whether each prompt group contains contrast: if all sampled completions are right or all are wrong, a group-relative update has little learning signal.
 
 2.  **Compare group-relative and single-sample estimators.** Run the matched starting configs:
 
-    <div class="tcolorbox">
-
-    <div class="Highlighting">
-
-    <span style="color: 0.00,0.50,0.00">cd</span> code/ uv run python <span style="color: 0.49,0.56,0.16">-m</span> policy_gradients.train <span style="color: 0.49,0.56,0.16">--config</span> policy_gradients/configs/reinforce.yaml uv run python <span style="color: 0.49,0.56,0.16">-m</span> policy_gradients.train <span style="color: 0.49,0.56,0.16">--config</span> policy_gradients/configs/rloo.yaml uv run python <span style="color: 0.49,0.56,0.16">-m</span> policy_gradients.train <span style="color: 0.49,0.56,0.16">--config</span> policy_gradients/configs/grpo.yaml
-
-    </div>
-
-    </div>
+    cd code/ uv run python -m policy_gradients.train --config policy_gradients/configs/reinforce.yaml uv run python -m policy_gradients.train --config policy_gradients/configs/rloo.yaml uv run python -m policy_gradients.train --config policy_gradients/configs/grpo.yaml
 
     Compare how quickly the correctness signal improves and how noisy the loss is. RLOO and GRPO should make the role of within-prompt baselines much more concrete than the equations alone.
 
@@ -2462,7 +2190,7 @@ The companion implementation in `code/policy_gradients/` is designed for small, 
 
 # 7 Reasoning and Inference-Time Scaling
 
-Reasoning models and inference-time scaling enabled a massive step in language model performance at the end of 2024, through 2025, and into the future. Inference-time scaling is the ability to improve model performance by using more computation during generation, such as producing longer reasoning chains or sampling multiple responses. Language models trained to think extensively before answering exploit this property remarkably well. These models, trained with a large amount of reinforcement learning with verifiable rewards (RLVR) [@ref-lambert2024t], still utilize large amounts of RLHF. In this chapter we review the path that led the AI community to a transformed appreciation for RL’s potential in language models, review the fundamentals of RLVR, highlight key works, and point to the future debates that will define the area in the next few years.
+Reasoning models and inference-time scaling enabled a massive step in language model performance at the end of 2024, through 2025, and into the future. Inference-time scaling is the ability to improve model performance by using more computation during generation, such as producing longer reasoning chains or sampling multiple responses. Language models trained to think extensively before answering exploit this property remarkably well. These models, trained with a large amount of reinforcement learning with verifiable rewards (RLVR) \[6\], still utilize large amounts of RLHF. In this chapter we review the path that led the AI community to a transformed appreciation for RL’s potential in language models, review the fundamentals of RLVR, highlight key works, and point to the future debates that will define the area in the next few years.
 
 ## 7.1 The Role of RLVR
 
@@ -2480,7 +2208,7 @@ This analogy is now largely complete with modern language models and recent chan
 
 This little bit of reasoning training emerged with **thinking models** that use a combination of the post-training techniques discussed in this book to align preferences along with RL training on verifiable domains to dramatically increase capabilities such as reasoning, coding, and mathematics problem solving.
 
-The training method for these models, Reinforcement Learning with Verifiable Rewards (RLVR) [@ref-lambert2024t], proceeds very similarly to RLHF, but it makes the reward model optional in lieu of a scoring function that returns a positive reward when the answer is correct and 0 otherwise.
+The training method for these models, Reinforcement Learning with Verifiable Rewards (RLVR) \[6\], proceeds very similarly to RLHF, but it makes the reward model optional in lieu of a scoring function that returns a positive reward when the answer is correct and 0 otherwise.
 
 For example, consider how different it is to score responses for RLHF versus RLVR. In RLHF, a reward model must evaluate subjective qualities:
 
@@ -2514,11 +2242,11 @@ Unit tests are natural verification functions for code: they execute the model�
 
 The ideas behind RLVR are not new to the RL literature, where the core idea of taking gradient updates based on whether the answer is correct is almost the textbook definition of reinforcement learning. The innovations when applying this to language models are largely how to apply it while maintaining the strong, general capabilities of the model being fine-tuned. Within that, there are many related ideas in the language modeling literature where the model learns from feedback regarding the correctness of the answer.
 
-Originally, in the work I was a part of that coined the term RL with Verifiable Rewards (RLVR) [@ref-lambert2024t], the method was to be named RL with Ground Truth rewards (RLGT). Yet RLVR is subtly different from learning solely from ground truth answers. In domains like mathematics, a single ground truth answer is available to verify solutions, as we saw above. In other domains, such as code generation or precise instruction following, answers can be verified with a checking function (e.g., a unit test), even when there are multiple correct solutions rather than just a single ground truth answer. The core of progress on RLVR is having a variety and depth of these verifiable problems, even if the exact solution isn’t known a priori.
+Originally, in the work I was a part of that coined the term RL with Verifiable Rewards (RLVR) \[6\], the method was to be named RL with Ground Truth rewards (RLGT). Yet RLVR is subtly different from learning solely from ground truth answers. In domains like mathematics, a single ground truth answer is available to verify solutions, as we saw above. In other domains, such as code generation or precise instruction following, answers can be verified with a checking function (e.g., a unit test), even when there are multiple correct solutions rather than just a single ground truth answer. The core of progress on RLVR is having a variety and depth of these verifiable problems, even if the exact solution isn’t known a priori.
 
 **Figura 28.** RLVR in the form of an RL feedback loop. Instead of a reward model, a verification function is used.
 
-The first models to successfully deploy this type of training were OpenAI’s o1 [@ref-openai2024o1] and the open-weight model DeepSeek R1 [@ref-guo2025deepseek]. Soon after, the entire AI industry prioritized this training process and model style. The core change here is more a reallocation of the stages of training and the priority of different behaviors rather than this type of RL setup being entirely new. Reasoning models brought an era where scaling RL training is expected.
+The first models to successfully deploy this type of training were OpenAI’s o1 \[53\] and the open-weight model DeepSeek R1 \[15\]. Soon after, the entire AI industry prioritized this training process and model style. The core change here is more a reallocation of the stages of training and the priority of different behaviors rather than this type of RL setup being entirely new. Reasoning models brought an era where scaling RL training is expected.
 
 As for the type of behavior these models exhibit, consider the following example with DeepSeek V3 0325 versus their reasoning model, DeepSeek R1, on the query `Write me a short poem about a goldfish`. DeepSeek V3 is very to the point:
 
@@ -2568,21 +2296,21 @@ Here we detail the high-level trends that led to the explosion of reasoning mode
 
 ### 7.2.1 Why Does RL Work Now?
 
-Despite many, many takes that “RL doesn’t work yet” [@ref-irpan2018deep] and papers detailing deep reproducibility issues with RL [@ref-henderson2018deep], the field overcame them to find high-impact applications. Some are covered in this book, such as ChatGPT’s RLHF and DeepSeek R1’s RLVR, but many others exist, including improving chip design [@ref-mirhoseini2020chip], mastering video gameplay [@ref-schrittwieser2020mastering], self-driving [@ref-cusumano2025robust], and more. The takeoff of RL-focused training on language models indicates progress on many fundamental issues for the research area, including:
+Despite many, many takes that “RL doesn’t work yet” \[155\] and papers detailing deep reproducibility issues with RL \[156\], the field overcame them to find high-impact applications. Some are covered in this book, such as ChatGPT’s RLHF and DeepSeek R1’s RLVR, but many others exist, including improving chip design \[157\], mastering video gameplay \[158\], self-driving \[159\], and more. The takeoff of RL-focused training on language models indicates progress on many fundamental issues for the research area, including:
 
 - **Stability of RL can be solved**: For its entire existence, the limiting factor on RL’s adoption has been stability. This manifests in two ways. First, the learning itself can be fickle and not always work. Second, the training itself is known to be more brittle than standard language model training and more prone to loss spikes, crashes, etc. Countless new model releases are using this style of RL training with verifiable rewards on top of a pretrained base model and substantial academic uptake has occurred. The technical barriers to entry on RL are at an all-time low.
 
-- **Open-source versions already “exist”**: Many tools already exist for training language models with RLVR and related techniques. Examples include TRL [@ref-vonwerra2022trl], Open Instruct [@ref-lambert2024t], veRL [@ref-sheng2024hybridflow], and OpenRLHF [@ref-hu2024openrlhf], where many of these are building on optimizations from earlier in the arc of RLHF and post-training. The accessibility of tooling is enabling a large and accelerating body of research.
+- **Open-source versions already “exist”**: Many tools already exist for training language models with RLVR and related techniques. Examples include TRL \[47\], Open Instruct \[6\], veRL \[160\], and OpenRLHF \[161\], where many of these are building on optimizations from earlier in the arc of RLHF and post-training. The accessibility of tooling is enabling a large and accelerating body of research.
 
 Multiple resources point to RL training for reasoning only being viable with leading models coming out from about 2024 onwards, indicating that a certain level of underlying capability was needed in the models before reasoning training was possible.
 
 ### 7.2.2 RL Training vs. Inference-Time Scaling
 
-Training with reinforcement learning to elicit reasoning behaviors and performance on verifiable domains is closely linked to the ideas of inference-time scaling. Inference-time scaling, also called test-time scaling, is the general class of methods that use more computational power at inference in order to perform better at downstream tasks. Methods for inference-time scaling were studied before the release of DeepSeek R1 and OpenAI’s o1, which both massively popularized investment in RL training specifically. Examples include value-guided sampling [@ref-liu2023don] or repeated random sampling with answer extraction [@ref-brown2024large]. Beyond this, inference-time scaling can be used to improve more methods of AI training beyond chain-of-thought reasoning to solve problems, such as with reward models that consider the options deeply [@ref-ankner2024critique] [@ref-liu2025inference].
+Training with reinforcement learning to elicit reasoning behaviors and performance on verifiable domains is closely linked to the ideas of inference-time scaling. Inference-time scaling, also called test-time scaling, is the general class of methods that use more computational power at inference in order to perform better at downstream tasks. Methods for inference-time scaling were studied before the release of DeepSeek R1 and OpenAI’s o1, which both massively popularized investment in RL training specifically. Examples include value-guided sampling \[162\] or repeated random sampling with answer extraction \[163\]. Beyond this, inference-time scaling can be used to improve more methods of AI training beyond chain-of-thought reasoning to solve problems, such as with reward models that consider the options deeply \[91\] \[164\].
 
-RL training is a short path to inference-time scaling laws being used, but in the long-term we will have more methods for eliciting the inference-time tradeoffs we need for best performance. Training models heavily with RL often enables them to generate more tokens per response in a way that is strongly correlated with improved downstream performance (although this sequence length increase is the default, research also exists explicitly on improving performance *without* relying on this inference-time scaling). This is a substantial shift from the length-bias seen in early RLHF systems [@ref-singhal2023long], where the human preference training had a side effect of increasing the response average length for marginal gains on preference rankings.
+RL training is a short path to inference-time scaling laws being used, but in the long-term we will have more methods for eliciting the inference-time tradeoffs we need for best performance. Training models heavily with RL often enables them to generate more tokens per response in a way that is strongly correlated with improved downstream performance (although this sequence length increase is the default, research also exists explicitly on improving performance *without* relying on this inference-time scaling). This is a substantial shift from the length-bias seen in early RLHF systems \[10\], where the human preference training had a side effect of increasing the response average length for marginal gains on preference rankings.
 
-Other than the core RL trained models there are many methods being explored to continue to push the limits of reasoning and inference-time compute. These are largely out of the scope of this book due to their rapidly evolving nature, but they include distilling reasoning behavior from a larger RL trained model to a smaller model via instruction tuning [@ref-muennighoff2025s1], composing more inference calls [@ref-chen2024more], and more. What is important here is the correlation between downstream performance and an increase in the number of tokens generated – otherwise it is just wasted energy.
+Other than the core RL trained models there are many methods being explored to continue to push the limits of reasoning and inference-time compute. These are largely out of the scope of this book due to their rapidly evolving nature, but they include distilling reasoning behavior from a larger RL trained model to a smaller model via instruction tuning \[165\], composing more inference calls \[166\], and more. What is important here is the correlation between downstream performance and an increase in the number of tokens generated – otherwise it is just wasted energy.
 
 ### 7.2.3 The Future (Beyond Reasoning) of RLVR
 
@@ -2600,7 +2328,7 @@ The investment in reasoning has instigated a major evolution in the art of how m
 
 Before the takeoff of reasoning models, a substantial effort was made to understand how to train language models to be better at verifiable domains. The main difference between these works below is that their methodologies did not scale to the same level as those used in DeepSeek R1 and subsequent models, or they resulted in models that made sacrifices in overall performance in exchange for higher mathematics or coding abilities. The underlying ideas and motivations are included to paint a broader picture for how reasoning models emerged within the landscape.
 
-Some of the earliest efforts to train language models on verifiable domains include the self-taught reasoner (STaR) line of work [@ref-zelikman2022star] [@ref-Zelikman2024QuietSTaRLM] and TRICE [@ref-hoffman2023training], which both used ground-truth reward signals to encourage chain-of-thought reasoning in models throughout 2022 and 2023. STaR effectively approximates the policy gradient algorithm, but in practice filters samples differently and uses a cross-entropy measure instead of a log-probability, and Quiet-STaR expands on this with very related ideas of recent reasoning models by having the model generate tokens before trying to answer the verifiable question (which helps with training performance). TRICE [@ref-hoffman2023training] also improves reasoning by generating traces and then optimizing with a custom Markov chain Monte Carlo inspired expectation maximization algorithm. VinePPO [@ref-VinePPO] followed these and used a setup that shifted closer to modern reasoning models. VinePPO uses a PPO-based algorithm with binary rewards for math question correctness, training on GSM8K and MATH. Other work before OpenAI’s o1 and DeepSeek R1 used code execution as a feedback signal for training [@ref-gehring2024rlefgroundingcodellms], [@ref-xu2024dpo] or verification for theorem proving (called Reinforcement Learning from Verifier Feedback, RLVF, here) [@ref-amit2024models]. Tülu 3 expanded on these methods by using a simple PPO trainer to reward completions with correct answers – most importantly while maintaining the model’s overall performance on a broad suite of evaluations. The binary rewards of Tülu 3 and modern reasoning training techniques can be contrasted with the iterative approach of STaR or the log-likelihood rewards of Quiet-STaR.
+Some of the earliest efforts to train language models on verifiable domains include the self-taught reasoner (STaR) line of work \[167\] \[168\] and TRICE \[169\], which both used ground-truth reward signals to encourage chain-of-thought reasoning in models throughout 2022 and 2023. STaR effectively approximates the policy gradient algorithm, but in practice filters samples differently and uses a cross-entropy measure instead of a log-probability, and Quiet-STaR expands on this with very related ideas of recent reasoning models by having the model generate tokens before trying to answer the verifiable question (which helps with training performance). TRICE \[169\] also improves reasoning by generating traces and then optimizing with a custom Markov chain Monte Carlo inspired expectation maximization algorithm. VinePPO \[170\] followed these and used a setup that shifted closer to modern reasoning models. VinePPO uses a PPO-based algorithm with binary rewards for math question correctness, training on GSM8K and MATH. Other work before OpenAI’s o1 and DeepSeek R1 used code execution as a feedback signal for training \[171\], \[172\] or verification for theorem proving (called Reinforcement Learning from Verifier Feedback, RLVF, here) \[173\]. Tülu 3 expanded on these methods by using a simple PPO trainer to reward completions with correct answers – most importantly while maintaining the model’s overall performance on a broad suite of evaluations. The binary rewards of Tülu 3 and modern reasoning training techniques can be contrasted with the iterative approach of STaR or the log-likelihood rewards of Quiet-STaR.
 
 ### 7.3.2 Early Reasoning Models
 
@@ -2610,32 +2338,32 @@ A summary of the foundational reasoning research reports, some of which are acco
 
 | Date | Name | TLDR | Open weights | Open data |
 |:---|:---|:---|:---|:---|
-| 2025-01-22 | DeepSeek R1 \[@ref-guo2025deepseek\] | RL-based upgrade to DeepSeek, big gains on math & code reasoning | Yes | No |
-| 2025-01-22 | Kimi 1.5 \[@ref-team2025kimi\] | Scales PPO/GRPO on Chinese/English data; strong AIME maths | No | No |
-| 2025-03-31 | Open-Reasoner-Zero \[@ref-hu2025openreasonerzero\] | Fully open replication of base model RL | Yes | Yes |
-| 2025-04-10 | Seed-Thinking 1.5 \[@ref-seed2025seed\] | ByteDance RL pipeline with dynamic CoT gating | Yes | No |
-| 2025-04-30 | Phi-4 Reasoning \[@ref-abdin2025phi4\] | 14B model; careful SFT$\to$RL; excels at STEM reasoning | Yes | No |
-| 2025-05-02 | Llama-Nemotron \[@ref-bercovich2025llamanemotron\] | Multi-size “reasoning-toggle” models | Yes | Yes |
-| 2025-05-12 | INTELLECT-2 \[@ref-primeintellectteam2025intellect2reasoningmodeltrained\] | First, publicly documented globally-decentralized RL training run | Yes | Yes |
-| 2025-05-12 | Xiaomi MiMo \[@ref-xia2025mimo\] | End-to-end reasoning pipeline from pre- to post-training | Yes | No |
-| 2025-05-14 | Qwen 3 \[@ref-yang2025qwen3\] | Similar to R1 recipe applied to new models | Yes | No |
-| 2025-05-21 | Hunyuan-TurboS \[@ref-liu2025hunyuan\] | Mamba-Transformer MoE, adaptive long/short CoT | No | No |
-| 2025-05-28 | Skywork OR-1 \[@ref-he2025skyworkor1\] | RL recipe avoiding entropy collapse; beats DeepSeek on AIME | Yes | Yes |
-| 2025-06-04 | Xiaomi MiMo VL \[@ref-coreteam2025mimovltechnicalreport\] | Adapting reasoning pipeline end-to-end to include multi-modal tasks | Yes | No |
-| 2025-06-04 | OpenThoughts \[@ref-guha2025openthoughts\] | Public 1.2M-example instruction dataset distilled from QwQ-32B | Yes | Yes |
-| 2025-06-10 | Magistral \[@ref-mistral2025magistral\] | Pure RL on Mistral 3; multilingual CoT; small model open-sourced | Yes | No |
-| 2025-06-16 | MiniMax-M1 \[@ref-minimax2025minimax_m1\] | Open-weight 456B MoE hybrid/Lightning Attention reasoning model; 1M context; RL w/CISPO; releases 40K/80K thinking-budget checkpoints | Yes | No |
-| 2025-07-10 | Kimi K2 \[@ref-kimiteam2025kimik2\] | 1T MoE (32B active) with MuonClip (QK-clip) for stability; 15.5T token pretrain without loss spikes; multi-stage post-train with agentic data synthesis + joint RL; releases base + post-trained checkpoints. | Yes | No |
-| 2025-07-28 | GLM-4.5 \[@ref-zeng2025glm45\] | Open-weight 355B-A32B MoE “ARC” model with thinking/non-thinking modes; 23T-token multi-stage training + post-train w/ expert iteration and RL; releases GLM-4.5 + GLM-4.5-Air (MIT). | Yes | No |
-| 2025-08-20 | Nemotron Nano 2 \[@ref-nvidia2025nemotronnano2\] | Hybrid Mamba-Transformer for long “thinking traces”; FP8 pretraining at 20T tokens then compression/distillation; explicitly releases multiple checkpoints plus “majority” of pre/post-training datasets. | Yes | Yes (most) |
-| 2025-09-09 | K2-Think \[@ref-llm3602025k2think\] | Parameter-efficient math reasoning system: a 32B open-weights model with test-time scaling recipe; positioned as fully open incl. training data/code (per release materials). | Yes | Yes |
-| 2025-09-23 | LongCat-Flash-Thinking \[@ref-mlcteam2025longcat\] | 560B MoE reasoning model; report is explicit about a staged recipe from long-CoT cold start to large-scale RL; open-source release. | Yes | No |
-| 2025-10-21 | Ring-1T \[@ref-ringteam2025everystepevolves\] | Trillion-scale “thinking model” with RL scaling focus; report frames bottlenecks/solutions for scaling RL at 1T and releases an open model. | Yes | No |
-| 2025-11-20 | Olmo 3 Think \[@ref-teamolmo2025olmo3\] | Fully open “model flow” release: reports the entire lifecycle (stages, checkpoints, and data points) and positions Olmo 3 Think 32B as a flagship open thinking model. | Yes | Yes |
-| 2025-12-02 | DeepSeek V3.2 \[@ref-deepseekai2025v32\] | Open-weight MoE frontier push with a report that foregrounds attention efficiency changes, RL framework upgrades, and data synthesis for agentic/reasoning performance. | Yes | No |
-| 2025-12-05 | K2-V2 \[@ref-liu2025k2\] | 70B dense “360-open” model trained from scratch; with 3-effort SFT-only post-training for controllable thinking. | Yes | Yes |
-| 2025-12-15 | Nemotron 3 Nano \[@ref-nvidia2025nemotron3nano\] | 30B-A3B MoE hybrid Mamba-Transformer; pretrain on 25T tokens and includes SFT + large-scale RL; explicitly states it ships weights + recipe/code + most training data. | Yes | Yes (most) |
-| 2025-12-16 | MiMo-V2-Flash \[@ref-mimo2025flash\] | 309B MoE (15B active) optimized for speed: hybrid SWA/GA attention (5:1, 128-token window) + lightweight MTP; FP8 pretrain on 27T tokens; post-train with MOPD + large-scale agentic RL for reasoning/coding. | Yes | No |
+| 2025-01-22 | DeepSeek R1 \[15\] | RL-based upgrade to DeepSeek, big gains on math & code reasoning | Yes | No |
+| 2025-01-22 | Kimi 1.5 \[150\] | Scales PPO/GRPO on Chinese/English data; strong AIME maths | No | No |
+| 2025-03-31 | Open-Reasoner-Zero \[174\] | Fully open replication of base model RL | Yes | Yes |
+| 2025-04-10 | Seed-Thinking 1.5 \[62\] | ByteDance RL pipeline with dynamic CoT gating | Yes | No |
+| 2025-04-30 | Phi-4 Reasoning \[175\] | 14B model; careful SFT$\to$RL; excels at STEM reasoning | Yes | No |
+| 2025-05-02 | Llama-Nemotron \[176\] | Multi-size “reasoning-toggle” models | Yes | Yes |
+| 2025-05-12 | INTELLECT-2 \[141\] | First, publicly documented globally-decentralized RL training run | Yes | Yes |
+| 2025-05-12 | Xiaomi MiMo \[61\] | End-to-end reasoning pipeline from pre- to post-training | Yes | No |
+| 2025-05-14 | Qwen 3 \[60\] | Similar to R1 recipe applied to new models | Yes | No |
+| 2025-05-21 | Hunyuan-TurboS \[177\] | Mamba-Transformer MoE, adaptive long/short CoT | No | No |
+| 2025-05-28 | Skywork OR-1 \[178\] | RL recipe avoiding entropy collapse; beats DeepSeek on AIME | Yes | Yes |
+| 2025-06-04 | Xiaomi MiMo VL \[179\] | Adapting reasoning pipeline end-to-end to include multi-modal tasks | Yes | No |
+| 2025-06-04 | OpenThoughts \[180\] | Public 1.2M-example instruction dataset distilled from QwQ-32B | Yes | Yes |
+| 2025-06-10 | Magistral \[181\] | Pure RL on Mistral 3; multilingual CoT; small model open-sourced | Yes | No |
+| 2025-06-16 | MiniMax-M1 \[130\] | Open-weight 456B MoE hybrid/Lightning Attention reasoning model; 1M context; RL w/CISPO; releases 40K/80K thinking-budget checkpoints | Yes | No |
+| 2025-07-10 | Kimi K2 \[182\] | 1T MoE (32B active) with MuonClip (QK-clip) for stability; 15.5T token pretrain without loss spikes; multi-stage post-train with agentic data synthesis + joint RL; releases base + post-trained checkpoints. | Yes | No |
+| 2025-07-28 | GLM-4.5 \[183\] | Open-weight 355B-A32B MoE “ARC” model with thinking/non-thinking modes; 23T-token multi-stage training + post-train w/ expert iteration and RL; releases GLM-4.5 + GLM-4.5-Air (MIT). | Yes | No |
+| 2025-08-20 | Nemotron Nano 2 \[184\] | Hybrid Mamba-Transformer for long “thinking traces”; FP8 pretraining at 20T tokens then compression/distillation; explicitly releases multiple checkpoints plus “majority” of pre/post-training datasets. | Yes | Yes (most) |
+| 2025-09-09 | K2-Think \[185\] | Parameter-efficient math reasoning system: a 32B open-weights model with test-time scaling recipe; positioned as fully open incl. training data/code (per release materials). | Yes | Yes |
+| 2025-09-23 | LongCat-Flash-Thinking \[186\] | 560B MoE reasoning model; report is explicit about a staged recipe from long-CoT cold start to large-scale RL; open-source release. | Yes | No |
+| 2025-10-21 | Ring-1T \[187\] | Trillion-scale “thinking model” with RL scaling focus; report frames bottlenecks/solutions for scaling RL at 1T and releases an open model. | Yes | No |
+| 2025-11-20 | Olmo 3 Think \[18\] | Fully open “model flow” release: reports the entire lifecycle (stages, checkpoints, and data points) and positions Olmo 3 Think 32B as a flagship open thinking model. | Yes | Yes |
+| 2025-12-02 | DeepSeek V3.2 \[188\] | Open-weight MoE frontier push with a report that foregrounds attention efficiency changes, RL framework upgrades, and data synthesis for agentic/reasoning performance. | Yes | No |
+| 2025-12-05 | K2-V2 \[189\] | 70B dense “360-open” model trained from scratch; with 3-effort SFT-only post-training for controllable thinking. | Yes | Yes |
+| 2025-12-15 | Nemotron 3 Nano \[190\] | 30B-A3B MoE hybrid Mamba-Transformer; pretrain on 25T tokens and includes SFT + large-scale RL; explicitly states it ships weights + recipe/code + most training data. | Yes | Yes (most) |
+| 2025-12-16 | MiMo-V2-Flash \[63\] | 309B MoE (15B active) optimized for speed: hybrid SWA/GA attention (5:1, 128-token window) + lightweight MTP; FP8 pretrain on 27T tokens; post-train with MOPD + large-scale agentic RL for reasoning/coding. | Yes | No |
 
 ### 7.3.3 Common Practices in Training Reasoning Models
 
@@ -2647,9 +2375,9 @@ Note that these papers could have used a listed technique and not mentioned it, 
 
 - **Per-batch online filtering** (or difficulty curriculums throughout training): To complement the offline filtering to find the right problems to train on, another major question is: what order should the problems be presented to the model during learning? In order to address this, many models use online filtering of questions in the batch, prebuilt curriculums/data schedulers, saving harder problems for later in training, or other ideas to improve long-term stability. Related ideas are used by Kimi 1.5, Magistral, Llama-Nemotron, INTELLECT-2, MiMo-RL, Hunyuan-TurboS, and others.
 
-- **Remove KL penalty**: As the length of RL runs (in any metric, total GPU hours, FLOPS, or RL steps) increased for reasoning models relative to RLHF training, and the reward function became less prone to over-optimization, many models removed the KL penalty constraining the RL-learned policy to be similar to the base model used at the start of training. This allows the model to further explore during its training. This was used by RAGEN [@ref-wang2025ragenunderstandingselfevolutionllm], Magistral, OpenReasonerZero, Skywork OR-1, and others.
+- **Remove KL penalty**: As the length of RL runs (in any metric, total GPU hours, FLOPS, or RL steps) increased for reasoning models relative to RLHF training, and the reward function became less prone to over-optimization, many models removed the KL penalty constraining the RL-learned policy to be similar to the base model used at the start of training. This allows the model to further explore during its training. This was used by RAGEN \[191\], Magistral, OpenReasonerZero, Skywork OR-1, and others.
 
-- **Relaxed policy-gradient clipping**: New variations of the algorithm GRPO, such as DAPO [@ref-yu2025dapo], proposed modifications to the two-sided clipping objective used in GRPO (or PPO) in order to enable better exploration. Clipping has also been shown to cause potentially spurious learning signals when rewards are imperfect [@ref-shao2025spurious]. This two-sided clipping with different ranges per gradient direction is used by RAGEN, Magistral, INTELLECT-2, and others.
+- **Relaxed policy-gradient clipping**: New variations of the algorithm GRPO, such as DAPO \[136\], proposed modifications to the two-sided clipping objective used in GRPO (or PPO) in order to enable better exploration. Clipping has also been shown to cause potentially spurious learning signals when rewards are imperfect \[192\]. This two-sided clipping with different ranges per gradient direction is used by RAGEN, Magistral, INTELLECT-2, and others.
 
 - **Off-policy data (or fully asynchronous updates)**: As the length of completions needed to solve tasks with RL increases dramatically with harder problems (particularly in the *variance* of the response length, where there are often outliers with extremely long lengths), compute in RL runs can sit idle. To solve this, training is moving to asynchronous updates or changing how problems are arranged into batches to improve overall throughput. Partial-to-full asynchronous (off-policy) data is used by Seed-Thinking 1.5, INTELLECT-2, and others.
 
@@ -2659,21 +2387,21 @@ Note that these papers could have used a listed technique and not mentioned it, 
 
 - **Length penalties**: Many models use different forms of length penalties during RL training to either stabilize the learning process over time or to mitigate overthinking on hard problems. Some examples include Kimi 1.5 progressively extending the target length to combat overthinking (while training accuracy is high across difficulty curriculum) or INTELLECT-2 running a small length penalty throughout. Progressively extending the training sequence length mitigates overthinking by forcing the model to first reason effectively in a domain with a more limited thinking budget, and then transitioning to longer training where the model can use those behaviors efficiently on more complex problems. Others use overlong filtering and other related implementations to improve throughput.
 
-- **Loss normalization**: There has been some discussion (see the chapter on policy gradients or [@ref-liu2025understanding]) around potential length or difficulty biases introduced by the per-group normalization terms of the original GRPO algorithm. As such, some models, such as Magistral or MiMo, chose to normalize either losses or advantages at the batch level instead of the group level.
+- **Loss normalization**: There has been some discussion (see the chapter on policy gradients or \[125\]) around potential length or difficulty biases introduced by the per-group normalization terms of the original GRPO algorithm. As such, some models, such as Magistral or MiMo, chose to normalize either losses or advantages at the batch level instead of the group level.
 
-- **Parallel test-time compute scaling**: Combining answers from multiple parallel, independently-sampled rollouts can lead to substantial improvements over using the answer from a single rollout. The most naive form of parallel test-time compute scaling, as done in DeepSeek-R1, Phi-4, and others, involves using the answer returned by a majority of rollouts as the final answer. A more advanced technique is to use a scoring model trained to select the best answer out of the answers from the parallel rollouts. As of 2026, this technique had not become common in open, documented reasoning model recipes, but it was mentioned in the Claude 4 announcement [@ref-anthropic2025claude4] and used in DeepSeek-GRM [@ref-liu2025inference].
+- **Parallel test-time compute scaling**: Combining answers from multiple parallel, independently-sampled rollouts can lead to substantial improvements over using the answer from a single rollout. The most naive form of parallel test-time compute scaling, as done in DeepSeek-R1, Phi-4, and others, involves using the answer returned by a majority of rollouts as the final answer. A more advanced technique is to use a scoring model trained to select the best answer out of the answers from the parallel rollouts. As of 2026, this technique had not become common in open, documented reasoning model recipes, but it was mentioned in the Claude 4 announcement \[193\] and used in DeepSeek-GRM \[164\].
 
 Complementing the common techniques, there are also many common findings on how reasoning training can create useful models without sacrificing ancillary capabilities:
 
 - **Text-only reasoning boosts multimodal performance**: Magistral, MiMo-VL, and others find that training a multimodal model and then performing text-only reasoning training after this multimodal training can *improve* multimodal performance in the final model.
 
-- **Toggleable reasoning with system prompt** (or length control): Llama-Nemotron, Nemotron Nano, Qwen 3, SmolLM 3, and others use specific system prompts (possibly in combination with length-controlled RL training [@ref-aggarwal2025l1]) to enable a toggleable on/off thinking length for the user. Other open models, such as OpenAI’s gpt-oss and LLM360’s K2-V2 [@ref-liu2025k2] adopt a low-medium-high reasoning effort set in the system prompt, but training methods for this type of behavior are not as well documented.
+- **Toggleable reasoning with system prompt** (or length control): Llama-Nemotron, Nemotron Nano, Qwen 3, SmolLM 3, and others use specific system prompts (possibly in combination with length-controlled RL training \[194\]) to enable a toggleable on/off thinking length for the user. Other open models, such as OpenAI’s gpt-oss and LLM360’s K2-V2 \[189\] adopt a low-medium-high reasoning effort set in the system prompt, but training methods for this type of behavior are not as well documented.
 
 ## 7.4 Looking Ahead
 
 The reasoning model landscape is evolving faster than any area of AI research in recent memory, and some of the common practices listed here will inevitably be superseded by new techniques.
 
-Several efforts are underway to systematically understand what makes reasoning training work. Olmo 3 Think [@ref-teamolmo2025olmo3] represents the most comprehensive open documentation of a reasoning model’s full training lifecycle, providing checkpoints and data at each stage for the research community to study, and concluding with a nearly 4-week-long training run on 220 GPUs. Similarly, work on understanding the scaling properties of RL for reasoning [@ref-khatri2025art] is beginning to formalize relationships between compute, data, and performance that were previously only intuited by practitioners.
+Several efforts are underway to systematically understand what makes reasoning training work. Olmo 3 Think \[18\] represents the most comprehensive open documentation of a reasoning model’s full training lifecycle, providing checkpoints and data at each stage for the research community to study, and concluding with a nearly 4-week-long training run on 220 GPUs. Similarly, work on understanding the scaling properties of RL for reasoning \[17\] is beginning to formalize relationships between compute, data, and performance that were previously only intuited by practitioners.
 
 What remains clear is that reinforcement learning has graduated from the “cherry on top” in the cake metaphor to a load-bearing component of frontier model training. The minor techniques in this chapter around the idea of RLVR – difficulty filtering, format rewards, and the rest – are not the final answers, but they represent the field’s current best understanding of how to elicit reasoning from language models. The next generation of methods will likely look different, but they will build on the foundations established here.
 
@@ -2681,13 +2409,13 @@ What remains clear is that reinforcement learning has graduated from the “cher
 
 Direct Alignment Algorithms (DAAs) allow one to update models to solve the same RLHF objective without ever training an intermediate reward model or using reinforcement learning optimizers. DAAs solve the same preference learning problem we’ve been studying (with literally the same data!), in order to make language models more aligned, smarter, and easier to use. The lack of a reward model and online optimization makes DAAs far simpler to implement, reducing compute spent during training and making experimentation easier. This chapter details the complex mathematics done to derive these algorithms, and then shows that the sometimes tedious derivations result in simple implementations.
 
-The most prominent DAA and one that catalyzed an entire academic movement of aligning language models is Direct Preference Optimization (DPO) [@ref-rafailov2024direct]. At its core, DPO uses gradient ascent to solve the same constrained RLHF objective (see Chapter 3):
+The most prominent DAA and one that catalyzed an entire academic movement of aligning language models is Direct Preference Optimization (DPO) \[25\]. At its core, DPO uses gradient ascent to solve the same constrained RLHF objective (see Chapter 3):
 
 $$\begin{equation}
 \tag{80}{ \max_{\pi} \mathbb{E}_{x \sim \mathcal{D}}\mathbb{E}_{y \sim \pi(y|x)} \left[r_\theta(x, y)\right] - \beta \mathcal{D}_{\text{KL}}\left(\pi(y|x) \| \pi_{\text{ref}}(y|x)\right)}
 \end{equation}$$
 
-Since its release in May of 2023, after a brief delay where the community figured out the right data and hyperparameters to use DPO with (specifically, surprisingly low learning rates), many popular models have used DPO or its variants, from Zephyr-$\beta$ kickstarting it in October of 2023 [@ref-tunstall2023zephyr], Llama 3 Instruct [@ref-dubey2024llama], Tülu 2 [@ref-ivison2023camels] and 3 [@ref-lambert2024t], Nemotron 4 340B [@ref-adler2024nemotron], and others. Technically, Sequence Likelihood Calibration (SLiC-HF) was the first modern direct alignment algorithm released [@ref-zhao2023slic], but it did not catch on due to a combination of factors (unwinding the adoption of research methods is always a tricky task).
+Since its release in May of 2023, after a brief delay where the community figured out the right data and hyperparameters to use DPO with (specifically, surprisingly low learning rates), many popular models have used DPO or its variants, from Zephyr-$\beta$ kickstarting it in October of 2023 \[26\], Llama 3 Instruct \[29\], Tülu 2 \[27\] and 3 \[6\], Nemotron 4 340B \[30\], and others. Technically, Sequence Likelihood Calibration (SLiC-HF) was the first modern direct alignment algorithm released \[195\], but it did not catch on due to a combination of factors (unwinding the adoption of research methods is always a tricky task).
 
 The most impactful part of DPO and DAAs is lowering the barrier to entry to experimenting with language model post-training – it uses less compute, is easier to implement from scratch, and is easier to get working on both toy and production examples.
 
@@ -2902,7 +2630,7 @@ $$\begin{equation}
 }
 \end{equation}$$
 
-This is the loss function for DPO, in the form shown in eq. 81. The DPO paper has an additional derivation for the objective under a Plackett-Luce Model, which is far less used in practice [@ref-rafailov2024direct].
+This is the loss function for DPO, in the form shown in eq. 81. The DPO paper has an additional derivation for the objective under a Plackett-Luce Model, which is far less used in practice \[25\].
 
 #### 8.1.2.3 Deriving the BT DPO Gradient
 
@@ -2930,45 +2658,37 @@ $$\begin{equation}
 
 Many variants of the DPO algorithm have been proposed to address weaknesses of DPO. For example, without rollouts where a reward model can rate generations, DPO treats every pair of preference data with equal weight. In reality, as seen in Chapter 11 on Preference Data, there are many ways of capturing preference data with a richer label than binary. Multiple algorithms have been proposed to re-balance the optimization away from treating each pair equally.
 
-- **REgression to RElative REward Based RL (REBEL)** adds signal from a reward model, as a margin between chosen and rejected responses, rather than solely the pairwise preference data, to more accurately solve the RLHF problem [@ref-gao2024rebel].
+- **REgression to RElative REward Based RL (REBEL)** adds signal from a reward model, as a margin between chosen and rejected responses, rather than solely the pairwise preference data, to more accurately solve the RLHF problem \[196\].
 
-- **Conservative DPO (cDPO) and Identity Preference Optimization (IPO)** address overfitting by assuming noise in the preference data. cDPO assumes N percent of the data is incorrectly labeled [@ref-rafailov2024direct] and IPO changes the optimization to soften the probability of preference rather than optimize directly from a label [@ref-azar2024general]. Practically, IPO changes the preference probability to a nonlinear function, moving away from the Bradley-Terry assumption, with $\Psi(q) = \log\left(\frac{q}{1-q}\right)$.
+- **Conservative DPO (cDPO) and Identity Preference Optimization (IPO)** address overfitting by assuming noise in the preference data. cDPO assumes N percent of the data is incorrectly labeled \[25\] and IPO changes the optimization to soften the probability of preference rather than optimize directly from a label \[197\]. Practically, IPO changes the preference probability to a nonlinear function, moving away from the Bradley-Terry assumption, with $\Psi(q) = \log\left(\frac{q}{1-q}\right)$.
 
-- **DPO with an offset (ODPO)** “requires the difference between the likelihood of the preferred and dispreferred response to be greater than an offset value” [@ref-amini2024direct] – do not treat every data pair equally, but this can come at the cost of a more difficult labeling environment.
+- **DPO with an offset (ODPO)** “requires the difference between the likelihood of the preferred and dispreferred response to be greater than an offset value” \[198\] – do not treat every data pair equally, but this can come at the cost of a more difficult labeling environment.
 
 Some variants of DPO attempt to either improve the learning signal by making small changes to the loss or make the application more efficient by reducing memory usage.
 
-- **Odds Ratio Policy Optimization (ORPO)** directly updates the policy model with a pull towards the chosen response, similar to the instruction fine-tuning loss, with a small penalty on the chosen response [@ref-hong2024reference]. This change of loss function removes the need for a reference model, simplifying the setup. The best way to view ORPO is as DPO inspired, rather than a DPO derivative.
+- **Odds Ratio Policy Optimization (ORPO)** directly updates the policy model with a pull towards the chosen response, similar to the instruction fine-tuning loss, with a small penalty on the chosen response \[199\]. This change of loss function removes the need for a reference model, simplifying the setup. The best way to view ORPO is as DPO inspired, rather than a DPO derivative.
 
-- **Simple Preference Optimization (SimPO)** makes a minor change to the DPO optimization, by averaging the log-probabilities rather than summing them or adding length normalization, to improve performance [@ref-meng2025simpo].
+- **Simple Preference Optimization (SimPO)** makes a minor change to the DPO optimization, by averaging the log-probabilities rather than summing them or adding length normalization, to improve performance \[200\].
 
 **Figura 30.** Sketch of preference displacement in DPO.
 
-One of the core issues *apparent* in DPO is that the optimization drives only to increase the margin between the probability of the chosen and rejected responses. Numerically, the model reduces the probability of both the chosen and rejected responses, but the *rejected response is reduced by a greater extent* as shown in fig. 30. Intuitively, it is not clear how this generalizes, but work has posited that it increases the probability of unaddressed behaviors – i.e. tokens that the language model could generate, but are not in the distribution of the post-training datasets [@ref-razin2024unintentional] [@ref-ren2024learning]. Simple methods—such as Cal-DPO [@ref-xiao2024cal], which adjusts the optimization process, and AlphaPO [@ref-gupta2025alphapo], which modifies the reward shape—mitigate this **preference displacement**. In practice, the exact impact of this is not well known, but points to a potential reason why online methods can outperform vanilla DPO.
+One of the core issues *apparent* in DPO is that the optimization drives only to increase the margin between the probability of the chosen and rejected responses. Numerically, the model reduces the probability of both the chosen and rejected responses, but the *rejected response is reduced by a greater extent* as shown in fig. 30. Intuitively, it is not clear how this generalizes, but work has posited that it increases the probability of unaddressed behaviors – i.e. tokens that the language model could generate, but are not in the distribution of the post-training datasets \[201\] \[202\]. Simple methods—such as Cal-DPO \[203\], which adjusts the optimization process, and AlphaPO \[204\], which modifies the reward shape—mitigate this **preference displacement**. In practice, the exact impact of this is not well known, but points to a potential reason why online methods can outperform vanilla DPO.
 
-The other primary reason posited for DPO-like methods to have a lower ceiling on performance than online (RL based) RLHF methods is that the training signal comes from completions from previous or other models. Online variants of DPO alleviate these limitations by generating new completions and incorporating a preference signal at training time. **Online DPO** [@ref-guo2024direct] samples generations from the current model, while **Discriminator-Guided DPO** (D2PO) [@ref-singhal2024d2po] uses reward model relabelling to create new preference data on the fly, and many more variants exist.
+The other primary reason posited for DPO-like methods to have a lower ceiling on performance than online (RL based) RLHF methods is that the training signal comes from completions from previous or other models. Online variants of DPO alleviate these limitations by generating new completions and incorporating a preference signal at training time. **Online DPO** \[205\] samples generations from the current model, while **Discriminator-Guided DPO** (D2PO) \[206\] uses reward model relabelling to create new preference data on the fly, and many more variants exist.
 
-There is a long list of other DAA variants, such as Direct Nash Optimization (DNO) [@ref-rosset2024direct] or Binary Classifier Optimization (BCO) [@ref-jung2024binary], but the choice of algorithm is far less important than the initial model and the data used [@ref-lambert2024t] [@ref-zhao2024rainbowpo] [@ref-gorbatovski2025differences].
+There is a long list of other DAA variants, such as Direct Nash Optimization (DNO) \[207\] or Binary Classifier Optimization (BCO) \[208\], but the choice of algorithm is far less important than the initial model and the data used \[6\] \[209\] \[210\].
 
 ## 8.3 Implementation Details
 
-DAAs such as DPO are implemented very differently than policy gradient optimizers. The DPO loss, taken from the original implementation, largely can be summarized as follows [@ref-rafailov2024direct]:
+DAAs such as DPO are implemented very differently than policy gradient optimizers. The DPO loss, taken from the original implementation, largely can be summarized as follows \[25\]:
 
-<div class="tcolorbox">
+*\# Log-probability gaps for the policy and the frozen reference model* pi_logratios = policy_chosen_logps - policy_rejected_logps ref_logratios = reference_chosen_logps - reference_rejected_logps
 
-<div class="Highlighting">
+*\# Difference of log-ratios: positive when the policy* *\# shifts probability toward the chosen completion* logits = pi_logratios - ref_logratios
 
-<span style="color: 0.38,0.63,0.69">*\# Log-probability gaps for the policy and the frozen reference model*</span> pi_logratios <span style="color: 0.40,0.40,0.40">=</span> policy_chosen_logps <span style="color: 0.40,0.40,0.40">-</span> policy_rejected_logps ref_logratios <span style="color: 0.40,0.40,0.40">=</span> reference_chosen_logps <span style="color: 0.40,0.40,0.40">-</span> reference_rejected_logps
+*\# DPO loss: negative log-sigmoid drives the policy to* *\# widen the gap between chosen and rejected* losses = -F.logsigmoid(beta \* logits)
 
-<span style="color: 0.38,0.63,0.69">*\# Difference of log-ratios: positive when the policy*</span> <span style="color: 0.38,0.63,0.69">*\# shifts probability toward the chosen completion*</span> logits <span style="color: 0.40,0.40,0.40">=</span> pi_logratios <span style="color: 0.40,0.40,0.40">-</span> ref_logratios
-
-<span style="color: 0.38,0.63,0.69">*\# DPO loss: negative log-sigmoid drives the policy to*</span> <span style="color: 0.38,0.63,0.69">*\# widen the gap between chosen and rejected*</span> losses <span style="color: 0.40,0.40,0.40">=</span> <span style="color: 0.40,0.40,0.40">-</span>F.logsigmoid(beta <span style="color: 0.40,0.40,0.40">\*</span> logits)
-
-<span style="color: 0.38,0.63,0.69">*\# Implicit rewards (detached -- used for logging only)*</span> chosen_rewards <span style="color: 0.40,0.40,0.40">=</span> beta <span style="color: 0.40,0.40,0.40">\*</span> (policy_chosen_logps <span style="color: 0.40,0.40,0.40">-</span> reference_chosen_logps).detach() rejected_rewards <span style="color: 0.40,0.40,0.40">=</span> beta <span style="color: 0.40,0.40,0.40">\*</span> (policy_rejected_logps <span style="color: 0.40,0.40,0.40">-</span> reference_rejected_logps).detach()
-
-</div>
-
-</div>
+*\# Implicit rewards (detached -- used for logging only)* chosen_rewards = beta \* (policy_chosen_logps - reference_chosen_logps).detach() rejected_rewards = beta \* (policy_rejected_logps - reference_rejected_logps).detach()
 
 This can be used in standard language model training stacks as this information is already collated during the forward pass of a model (with the addition of a reference model).
 
@@ -2980,11 +2700,11 @@ In most ways, DAAs are simpler and a quality of life improvement, but they also 
 
 ## 8.4 DAAs with Synthetic Preference Data
 
-Most of the popular datasets for performing preference fine-tuning with DAAs these days are synthetic preferences where a frontier model rates outputs from other models as the winner or the loser. Prominent examples include UltraFeedback (the first of this category) [@ref-cui2023ultrafeedback], Tülu 3 (built with an expanded UltraFeedback methodology) [@ref-lambert2024t], SmolLM 3’s data [@ref-bakouch2025smollm3], or the Dolci Pref dataset released with Olmo 3 [@ref-teamolmo2025olmo3].
+Most of the popular datasets for performing preference fine-tuning with DAAs these days are synthetic preferences where a frontier model rates outputs from other models as the winner or the loser. Prominent examples include UltraFeedback (the first of this category) \[28\], Tülu 3 (built with an expanded UltraFeedback methodology) \[6\], SmolLM 3’s data \[211\], or the Dolci Pref dataset released with Olmo 3 \[18\].
 
-The best practices for constructing these datasets are still evolving. Tülu 3 and datasets around its release in November of 2024 demonstrated that synthetic, pairwise preference data needs to be “on-policy” in a sense that some completions are generated from the model you’re fine-tuning (while being mixed in a bigger model pool). This on-policy nature of the data ensured that the DAA would optimize the correct token space within which the model generates – as the loss functions are contrastive and less direct than instruction fine-tuning. Later, with the release of Olmo 3 and SmolLM 3 in 2025, other works supported a different theory called Delta Learning, which argues that the difference between the chosen and rejected completions is more important to learning than exactly which models are used for the completions [@ref-geng2025the]. For example, in both of these two referenced models, the chosen responses are from Qwen 3 32B and the rejected responses are from Qwen 3 0.6B – both authors developed this pairing concurrently and independently.
+The best practices for constructing these datasets are still evolving. Tülu 3 and datasets around its release in November of 2024 demonstrated that synthetic, pairwise preference data needs to be “on-policy” in a sense that some completions are generated from the model you’re fine-tuning (while being mixed in a bigger model pool). This on-policy nature of the data ensured that the DAA would optimize the correct token space within which the model generates – as the loss functions are contrastive and less direct than instruction fine-tuning. Later, with the release of Olmo 3 and SmolLM 3 in 2025, other works supported a different theory called Delta Learning, which argues that the difference between the chosen and rejected completions is more important to learning than exactly which models are used for the completions \[212\]. For example, in both of these two referenced models, the chosen responses are from Qwen 3 32B and the rejected responses are from Qwen 3 0.6B – both authors developed this pairing concurrently and independently.
 
-Overall, training models on synthetic preference data with DAAs is the place most practitioners should start, given the simplicity of implementation and strong performance relative to preference fine-tuning with reinforcement learning based methods. Other minor issues exist when using extensive, synthetic preference data, such as biases of the model judging between completions. Given that frontier models such as GPT-4 are known to have length bias [@ref-dubois2024length] and a preference for outputs that match themselves [@ref-panickssery2024llm] (see Chapter 12 for more information), it is slightly more likely for a piece of text in the “chosen” section of the dataset to be either from an OpenAI model or another strong model that is stylistically similar to it.
+Overall, training models on synthetic preference data with DAAs is the place most practitioners should start, given the simplicity of implementation and strong performance relative to preference fine-tuning with reinforcement learning based methods. Other minor issues exist when using extensive, synthetic preference data, such as biases of the model judging between completions. Given that frontier models such as GPT-4 are known to have length bias \[86\] and a preference for outputs that match themselves \[213\] (see Chapter 12 for more information), it is slightly more likely for a piece of text in the “chosen” section of the dataset to be either from an OpenAI model or another strong model that is stylistically similar to it.
 
 To conclude this section, we’ll cover an intuition for how these methods change the generations of the model being trained. At a high level, most DAAs optimize to increase the margin between the probability of “chosen” and “rejected” completions (some less popular algorithms are designed to slightly change these dynamics, but the core remains). As discussed earlier in this chapter (see fig. 30), this often means both probabilities decrease, but the rejected response decreases by a greater extent. Each token in a sequence receives a different gradient (magnitude and direction) based on how much it contributed to the overall preference margin, allowing the optimizer to identify which tokens matter most to the outcome.
 
@@ -2992,7 +2712,7 @@ To conclude this section, we’ll cover an intuition for how these methods chang
 
 Broadly, the argument boils down to one question: Do we need the inner workings of reinforcement learning, with value functions, policy gradients, and all, to align language models with RLHF? This, like most questions phrased this way, is overly simple. Of course, both methods are well-established, but it is important to illustrate where the fundamental differences and performance manifolds lie.
 
-Multiple reports have concluded that policy-gradient based and RL methods outperform DPO and its variants. The arguments take different forms, from training models with different algorithms but controlled data [@ref-ivison2024unpacking] [@ref-xu2024dpo] or studying the role of on-policy data within the RL optimization loop [@ref-tajwar2024preference]. In all of these cases, DPO algorithms are a hair behind.
+Multiple reports have concluded that policy-gradient based and RL methods outperform DPO and its variants. The arguments take different forms, from training models with different algorithms but controlled data \[132\] \[172\] or studying the role of on-policy data within the RL optimization loop \[214\]. In all of these cases, DPO algorithms are a hair behind.
 
 Even with this performance delta, DAAs are still used extensively in leading models due to their simplicity. DAAs provide a controlled environment where iterations on training data and other configurations can be made rapidly, and given that data is often far more important than algorithms, using DPO can be fine.
 
@@ -3004,43 +2724,19 @@ The companion code in `code/direct_alignment/` trains DPO and several related lo
 
 1.  **Train a small DPO run on UltraFeedback.**
 
-    <div class="tcolorbox">
-
-    <div class="Highlighting">
-
-    <span style="color: 0.00,0.50,0.00">cd</span> code/ uv run python <span style="color: 0.49,0.56,0.16">-m</span> direct_alignment.train <span style="color: 0.49,0.56,0.16">--loss</span> dpo <span style="color: 0.49,0.56,0.16">--max_samples</span> 1000
-
-    </div>
-
-    </div>
+    cd code/ uv run python -m direct_alignment.train --loss dpo --max_samples 1000
 
     Watch `loss`, `accuracy`, `margins`, `chosen_rewards`, and `rejected_rewards`. The main sanity check is that the implicit reward margin should move in the desired direction without the model’s sample generations collapsing.
 
 2.  **Compare DPO, IPO, and length-normalized DPO.**
 
-    <div class="tcolorbox">
-
-    <div class="Highlighting">
-
-    <span style="color: 0.00,0.50,0.00">cd</span> code/ uv run python <span style="color: 0.49,0.56,0.16">-m</span> direct_alignment.train <span style="color: 0.49,0.56,0.16">--config</span> direct_alignment/configs/dpo.yaml uv run python <span style="color: 0.49,0.56,0.16">-m</span> direct_alignment.train <span style="color: 0.49,0.56,0.16">--config</span> direct_alignment/configs/ipo.yaml uv run python <span style="color: 0.49,0.56,0.16">-m</span> direct_alignment.train <span style="color: 0.49,0.56,0.16">--config</span> direct_alignment/configs/dpo_norm.yaml
-
-    </div>
-
-    </div>
+    cd code/ uv run python -m direct_alignment.train --config direct_alignment/configs/dpo.yaml uv run python -m direct_alignment.train --config direct_alignment/configs/ipo.yaml uv run python -m direct_alignment.train --config direct_alignment/configs/dpo_norm.yaml
 
     Compare the margin scale and the learning rate sensitivity. IPO’s loss is not on the same numeric scale as DPO, so read it through `accuracy` and margin behavior rather than raw loss alone.
 
 3.  **Try the reference-free variants carefully.** Run SimPO or ORPO from their configs, then inspect the generated samples that are logged during training. These losses are more sensitive to log-probability scaling and learning rate, which makes them useful debugging exercises.
 
-    <div class="tcolorbox">
-
-    <div class="Highlighting">
-
-    <span style="color: 0.00,0.50,0.00">cd</span> code/ uv run python <span style="color: 0.49,0.56,0.16">-m</span> direct_alignment.train <span style="color: 0.49,0.56,0.16">--config</span> direct_alignment/configs/simpo.yaml uv run python <span style="color: 0.49,0.56,0.16">-m</span> direct_alignment.train <span style="color: 0.49,0.56,0.16">--config</span> direct_alignment/configs/orpo.yaml
-
-    </div>
-
-    </div>
+    cd code/ uv run python -m direct_alignment.train --config direct_alignment/configs/simpo.yaml uv run python -m direct_alignment.train --config direct_alignment/configs/orpo.yaml
 
 4.  **Change the data before changing the loss.** Keep the loss fixed and vary `--max_samples`, `--max_length`, or the preference dataset. If the results move more than changing between DPO-like objectives, that is an empirical reminder of a central theme in preference tuning: data usually dominates small algorithmic differences.
 
@@ -3050,9 +2746,9 @@ Rejection Sampling (RS) is one of the most widely used yet least documented meth
 
 Rejection sampling operates by curating new candidate completions, filtering them based on a trained reward model, and then fine-tuning the original model only on the top completions (the same loss function as instruction tuning).
 
-The name originates from computational statistics [@ref-gilks1992adaptive], where one wishes to sample from a complex distribution, but does not have a direct method to do so. To alleviate this, one samples from a distribution that is simpler to model and uses a heuristic to check if the sample is permissible. With language models, the target distribution is high-quality completions to prompts, the filter is a reward model, and the sampling distribution is the current model.
+The name originates from computational statistics \[215\], where one wishes to sample from a complex distribution, but does not have a direct method to do so. To alleviate this, one samples from a distribution that is simpler to model and uses a heuristic to check if the sample is permissible. With language models, the target distribution is high-quality completions to prompts, the filter is a reward model, and the sampling distribution is the current model.
 
-WebGPT [@ref-nakano2021webgpt], Anthropic’s Helpful and Harmless agent [@ref-bai2022training], OpenAI’s popular paper on process reward models [@ref-lightman2023let], Llama 2 Chat models [@ref-touvron2023llama], and other seminal works all use this baseline; more recent work has formalized it directly (e.g., RAFT [@ref-dong2023raft] for applying it to alignment in multiple modalities and Statistical Rejection Sampling Optimization (RSO) [@ref-liu2023statistical] that gives a principled overview of how rejection sampling relates to other preference learning objectives).
+WebGPT \[4\], Anthropic’s Helpful and Harmless agent \[5\], OpenAI’s popular paper on process reward models \[50\], Llama 2 Chat models \[49\], and other seminal works all use this baseline; more recent work has formalized it directly (e.g., RAFT \[216\] for applying it to alignment in multiple modalities and Statistical Rejection Sampling Optimization (RSO) \[217\] that gives a principled overview of how rejection sampling relates to other preference learning objectives).
 
 *Throughout this chapter, we use $x$ to denote prompts and $y$ to denote completions. This notation is common in the language model literature, where methods operate on full prompt-completion pairs rather than individual tokens.*
 
@@ -3242,21 +2938,13 @@ Mapping these back to our original matrix:
 
 Here is a code snippet showing how the selection methods could be implemented.
 
-<div class="tcolorbox">
+**import** numpy **as** np
 
-<div class="Highlighting">
+x = np.random.randint(10, size=10) print(f"{x=}") sorted_indices = np.argsort(x) x_sorted = x\[sorted_indices\] print(f"{x_sorted=}")
 
-<span style="color: 0.00,0.50,0.00">**import**</span> numpy <span style="color: 0.00,0.50,0.00">**as**</span> np
+*\# first way to recover the original array* i_rev = np.zeros(10, dtype=int) i_rev\[sorted_indices\] = np.arange(10) np.allclose(x, x_sorted\[i_rev\])
 
-x <span style="color: 0.40,0.40,0.40">=</span> np.random.randint(<span style="color: 0.25,0.63,0.44">10</span>, size<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.63,0.44">10</span>) <span style="color: 0.00,0.50,0.00">print</span>(<span style="color: 0.73,0.40,0.53">f"</span><span style="color: 0.25,0.44,0.63">{</span>x<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.44,0.63">}</span><span style="color: 0.73,0.40,0.53">"</span>) sorted_indices <span style="color: 0.40,0.40,0.40">=</span> np.argsort(x) x_sorted <span style="color: 0.40,0.40,0.40">=</span> x\[sorted_indices\] <span style="color: 0.00,0.50,0.00">print</span>(<span style="color: 0.73,0.40,0.53">f"</span><span style="color: 0.25,0.44,0.63">{</span>x_sorted<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.44,0.63">}</span><span style="color: 0.73,0.40,0.53">"</span>)
-
-<span style="color: 0.38,0.63,0.69">*\# first way to recover the original array*</span> i_rev <span style="color: 0.40,0.40,0.40">=</span> np.zeros(<span style="color: 0.25,0.63,0.44">10</span>, dtype<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.00,0.50,0.00">int</span>) i_rev\[sorted_indices\] <span style="color: 0.40,0.40,0.40">=</span> np.arange(<span style="color: 0.25,0.63,0.44">10</span>) np.allclose(x, x_sorted\[i_rev\])
-
-<span style="color: 0.38,0.63,0.69">*\# second way to recover the original array*</span> np.allclose(x, x_sorted\[np.argsort(sorted_indices)\])
-
-</div>
-
-</div>
+*\# second way to recover the original array* np.allclose(x, x_sorted\[np.argsort(sorted_indices)\])
 
 ### 9.1.3 Fine-Tuning
 
@@ -3308,29 +2996,13 @@ The companion implementation in `code/rejection_sampling/` runs a complete GSM8K
 
 1.  **Build the rollout cache once.**
 
-    <div class="tcolorbox">
-
-    <div class="Highlighting">
-
-    <span style="color: 0.00,0.50,0.00">cd</span> code/ uv run python <span style="color: 0.49,0.56,0.16">-m</span> rejection_sampling.preprocess <span style="color: 0.56,0.13,0.00">\\</span> <span style="color: 0.49,0.56,0.16">--config</span> rejection_sampling/configs/top_per_prompt.yaml
-
-    </div>
-
-    </div>
+    cd code/ uv run python -m rejection_sampling.preprocess \\ --config rejection_sampling/configs/top_per_prompt.yaml
 
     This generates and scores completions for the shared GSM8K slice. Subsequent training configs reuse the cache as long as the generation and scoring settings stay unchanged.
 
 2.  **Compare reward selection against random controls.**
 
-    <div class="tcolorbox">
-
-    <div class="Highlighting">
-
-    <span style="color: 0.00,0.50,0.00">cd</span> code/ uv run python <span style="color: 0.49,0.56,0.16">-m</span> rejection_sampling.train <span style="color: 0.56,0.13,0.00">\\</span> <span style="color: 0.49,0.56,0.16">--config</span> rejection_sampling/configs/top_per_prompt.yaml uv run python <span style="color: 0.49,0.56,0.16">-m</span> rejection_sampling.train <span style="color: 0.56,0.13,0.00">\\</span> <span style="color: 0.49,0.56,0.16">--config</span> rejection_sampling/configs/random_per_prompt.yaml uv run python <span style="color: 0.49,0.56,0.16">-m</span> rejection_sampling.train <span style="color: 0.56,0.13,0.00">\\</span> <span style="color: 0.49,0.56,0.16">--config</span> rejection_sampling/configs/top_k_overall.yaml uv run python <span style="color: 0.49,0.56,0.16">-m</span> rejection_sampling.train <span style="color: 0.56,0.13,0.00">\\</span> <span style="color: 0.49,0.56,0.16">--config</span> rejection_sampling/configs/random_k_overall.yaml
-
-    </div>
-
-    </div>
+    cd code/ uv run python -m rejection_sampling.train \\ --config rejection_sampling/configs/top_per_prompt.yaml uv run python -m rejection_sampling.train \\ --config rejection_sampling/configs/random_per_prompt.yaml uv run python -m rejection_sampling.train \\ --config rejection_sampling/configs/top_k_overall.yaml uv run python -m rejection_sampling.train \\ --config rejection_sampling/configs/random_k_overall.yaml
 
     Read results in matched pairs: `top_per_prompt` versus `random_per_prompt`, and `top_k_overall` versus `random_k_overall`. If the reward-selected run does not beat its random baseline, the reward model or sampled completions are not giving useful signal on that slice.
 
@@ -3370,7 +3042,7 @@ Example 2:
 
 Which is better? Which came from which model? How would you tell? Particularly, compare this to a question like “Who is the president of the United States?” There is a clear right and wrong answer. The motivation for using humans as the reward signals is to obtain an indirect metric for the target reward and *align* the downstream model to human preferences. In practice, the implementation is challenging and there is a substantial grey area in interpreting the best practices.
 
-The use of human-labeled feedback data integrates the history of many fields. Using human data alone is a well-studied problem, but in the context of RLHF, this data is used at the intersection of multiple long-standing fields of study [@ref-lambert2023entangled].
+The use of human-labeled feedback data integrates the history of many fields. Using human data alone is a well-studied problem, but in the context of RLHF, this data is used at the intersection of multiple long-standing fields of study \[218\].
 
 As an approximation, modern RLHF is the convergence of three areas of development:
 
@@ -3380,7 +3052,7 @@ As an approximation, modern RLHF is the convergence of three areas of developmen
 
 3.  Modern deep learning systems.
 
-Each of these areas brings specific assumptions about what a preference is and how it can be optimized, which dictates the motivations and design of RLHF problems. In practice, RLHF methods are motivated and studied from the perspective of empirical alignment – maximizing model performance on specific skills instead of measuring the calibration to specific values. Still, the origins of value alignment for RLHF methods continue to be studied through research on methods to solve for “pluralistic alignment” across populations, such as position papers [@ref-conitzer2024social], [@ref-mishra2023ai], new datasets [@ref-kirk2024prism], and personalization methods [@ref-poddar2024personalizing].
+Each of these areas brings specific assumptions about what a preference is and how it can be optimized, which dictates the motivations and design of RLHF problems. In practice, RLHF methods are motivated and studied from the perspective of empirical alignment – maximizing model performance on specific skills instead of measuring the calibration to specific values. Still, the origins of value alignment for RLHF methods continue to be studied through research on methods to solve for “pluralistic alignment” across populations, such as position papers \[219\], \[220\], new datasets \[221\], and personalization methods \[222\].
 
 The goal of this chapter is to illustrate how complex motivations result in presumptions about the nature of tools used in RLHF that often do not apply in practice. The specifics of obtaining data for RLHF are discussed further in Chapter 11 and using it for reward modeling in Chapter 5.
 
@@ -3396,37 +3068,37 @@ To begin, all of the following operates on the assumption that human preferences
 
 ## 10.3 Specifying Objectives: From Logic of Utility to Reward Functions
 
-The optimization of RLHF explicitly relies only on reward models. In order to use rewards as an optimization target, RLHF presupposes the convergence of ideas from preferences, rewards, and costs. Models of preference, reward functions, and cost landscapes are all tools used by different fields to describe a notion of relative goodness of specific actions and/or states in the domain. The history of these three framings dates back to the origins of probability theory and decision theory. In 1662, *The Port Royal Logic* introduced the notion of decision-making quality [@ref-arnauld1861port]:
+The optimization of RLHF explicitly relies only on reward models. In order to use rewards as an optimization target, RLHF presupposes the convergence of ideas from preferences, rewards, and costs. Models of preference, reward functions, and cost landscapes are all tools used by different fields to describe a notion of relative goodness of specific actions and/or states in the domain. The history of these three framings dates back to the origins of probability theory and decision theory. In 1662, *The Port Royal Logic* introduced the notion of decision-making quality \[223\]:
 
 > To judge what one must do to obtain a good or avoid an evil, it is necessary to consider not only the good and evil in itself, but also the probability that it happens or does not happen.
 
-This theory has developed along with modern scientific thinking, starting with Bentham’s utilitarian *Hedonic Calculus*, arguing that everything in life could be weighed [@ref-bentham1823hedonic]. The first quantitative application of these ideas emerged in 1931 with Ramsey’s *Truth and Probability* [@ref-ramsey2016truth].
+This theory has developed along with modern scientific thinking, starting with Bentham’s utilitarian *Hedonic Calculus*, arguing that everything in life could be weighed \[224\]. The first quantitative application of these ideas emerged in 1931 with Ramsey’s *Truth and Probability* \[225\].
 
 Since these works, quantifying, measuring, and influencing human preferences has been a lively topic in the social and behavioral sciences. These debates have rarely been settled on a theoretical level; rather, different subfields and branches of social science have reached internal consensus on methods and approaches to preference measurement even as they have specialized relative to each other, often developing their own distinct semantics in the process.
 
-A minority of economists posit that preferences, if they do exist, are prohibitively difficult to measure because people have preferences over their own preferences, as well as each other’s preferences [@ref-hirschman1984against]. In this view, which is not reflected in the RLHF process, individual preferences are always embedded within larger social relations, such that the accuracy of any preference model is contingent on the definition and context of the task. Some behavioral economists have even argued that preferences don’t exist–they may be less an ontological statement of what people actually value than a methodological tool for indirectly capturing psychological predispositions, perceived behavioral norms and ethical duties, commitments to social order, or legal constraints [@ref-hadfield2014microfoundations]. We address the links of this work to the Von Neumann-Morgenstern (VNM) utility theorem and countering impossibility theorems around quantifying preference later in this chapter.
+A minority of economists posit that preferences, if they do exist, are prohibitively difficult to measure because people have preferences over their own preferences, as well as each other’s preferences \[226\]. In this view, which is not reflected in the RLHF process, individual preferences are always embedded within larger social relations, such that the accuracy of any preference model is contingent on the definition and context of the task. Some behavioral economists have even argued that preferences don’t exist–they may be less an ontological statement of what people actually value than a methodological tool for indirectly capturing psychological predispositions, perceived behavioral norms and ethical duties, commitments to social order, or legal constraints \[227\]. We address the links of this work to the Von Neumann-Morgenstern (VNM) utility theorem and countering impossibility theorems around quantifying preference later in this chapter.
 
-On the other hand, the reinforcement learning optimization methods used today are conceptualized around optimizing estimates of reward-to-go in a trial [@ref-sutton2018reinforcement], which combines the notion of reward with multi-step optimization. The term *reward* emerged from the study of operant conditioning, animal behavior, and the *Law of Effect* [@ref-thorndike1927law], [@ref-skinner2019behavior], where a reward is a scale of “how good an action is” (higher means better).
+On the other hand, the reinforcement learning optimization methods used today are conceptualized around optimizing estimates of reward-to-go in a trial \[54\], which combines the notion of reward with multi-step optimization. The term *reward* emerged from the study of operant conditioning, animal behavior, and the *Law of Effect* \[228\], \[229\], where a reward is a scale of “how good an action is” (higher means better).
 
-Reward-to-go follows the notion of utility, which is a measure of rationality [@ref-briggs2014normative], modified to measure or predict the reward coming in a future time window. In the context of the mathematical tools used for reinforcement learning, utility-to-go was invented in control theory, specifically in the context of analog circuits in 1960 [@ref-widrow1960adaptive]. These methods are designed around systems with clear definitions of optimality, or numerical representations of an agent’s goals.
+Reward-to-go follows the notion of utility, which is a measure of rationality \[230\], modified to measure or predict the reward coming in a future time window. In the context of the mathematical tools used for reinforcement learning, utility-to-go was invented in control theory, specifically in the context of analog circuits in 1960 \[231\]. These methods are designed around systems with clear definitions of optimality, or numerical representations of an agent’s goals.
 
-Reinforcement learning systems are well known for using a discount factor, a compounding multiplicative factor, $\gamma \in [0,1]$, to re-weight future rewards. These assumptions from optimal control and early reinforcement learning stand in sharp contrast to reward models that aggregate multimodal preferences. Specifically, RL systems expect rewards to behave in a specific manner, quoting [@ref-singh2009rewards]:
+Reinforcement learning systems are well known for using a discount factor, a compounding multiplicative factor, $\gamma \in [0,1]$, to re-weight future rewards. These assumptions from optimal control and early reinforcement learning stand in sharp contrast to reward models that aggregate multimodal preferences. Specifically, RL systems expect rewards to behave in a specific manner, quoting \[232\]:
 
-> Rewards in an RL system correspond to primary rewards, i.e., rewards that in animals have been hard-wired by the evolutionary process due to their relevance to reproductive success. … Further, RL systems that form value functions, … effectively create conditioned or secondary reward processes whereby predictors of primary rewards act as rewards themselves… The result is that the local landscape of a value function gives direction to the system’s preferred behavior: decisions are made to cause transitions to higher-valued states. A close parallel can be drawn between the gradient of a value function and incentive motivation [@ref-mcclure2003computational].
+> Rewards in an RL system correspond to primary rewards, i.e., rewards that in animals have been hard-wired by the evolutionary process due to their relevance to reproductive success. … Further, RL systems that form value functions, … effectively create conditioned or secondary reward processes whereby predictors of primary rewards act as rewards themselves… The result is that the local landscape of a value function gives direction to the system’s preferred behavior: decisions are made to cause transitions to higher-valued states. A close parallel can be drawn between the gradient of a value function and incentive motivation \[233\].
 
-To summarize, rewards are used in RL systems as a signal to tune behavior towards clearly defined goals. The core thesis is that a learning algorithm’s performance is closely coupled with notions of *expected fitness*, which permeates the popular view that RL methods are *agents* that act in environments. This view is linked to the development of reinforcement learning technology, exemplified by claims of the general usefulness of the reward formulation [@ref-silver2021reward], but is in conflict when many individual desires are reduced to a single function.
+To summarize, rewards are used in RL systems as a signal to tune behavior towards clearly defined goals. The core thesis is that a learning algorithm’s performance is closely coupled with notions of *expected fitness*, which permeates the popular view that RL methods are *agents* that act in environments. This view is linked to the development of reinforcement learning technology, exemplified by claims of the general usefulness of the reward formulation \[234\], but is in conflict when many individual desires are reduced to a single function.
 
 ## 10.4 Tools for Optimizing Utility
 
-Modern reinforcement learning methods depend strongly on the Bellman equation [@ref-bellman1957markovian], [@ref-howard1960dynamic] to recursively compute estimates of reward-to-go, derived within closed environments that can be modeled as a Markov Decision Process (MDP) [@ref-sutton2018reinforcement]. These origins of RL are inspired by dynamic programming methods and were developed solely as optimal control techniques (i.e. RL did not yet exist). The MDP formulation provides theoretical guarantees of performance by structuring the environment as one with a non-changing distribution of state-actions.
+Modern reinforcement learning methods depend strongly on the Bellman equation \[235\], \[236\] to recursively compute estimates of reward-to-go, derived within closed environments that can be modeled as a Markov Decision Process (MDP) \[54\]. These origins of RL are inspired by dynamic programming methods and were developed solely as optimal control techniques (i.e. RL did not yet exist). The MDP formulation provides theoretical guarantees of performance by structuring the environment as one with a non-changing distribution of state-actions.
 
-The term reinforcement, coming from the psychology literature, became intertwined with modern methods afterwards in the 1960s as *reinforcement learning* [@ref-MENDEL1970287], [@ref-waltz1965]. Early work in reinforcement learning utilized supervised learning of reward signals to solve tasks. Work from Harry Klopf reintroduced the notion of trial-and-error learning [@ref-klopf1972brain], which is crucial to the success the field saw in the 1980s and on.
+The term reinforcement, coming from the psychology literature, became intertwined with modern methods afterwards in the 1960s as *reinforcement learning* \[237\], \[238\]. Early work in reinforcement learning utilized supervised learning of reward signals to solve tasks. Work from Harry Klopf reintroduced the notion of trial-and-error learning \[239\], which is crucial to the success the field saw in the 1980s and on.
 
-Modern RL algorithms build within this formulation of RL as a tool to find optimal behaviors with trial-and-error, but under looser conditions. The notion of temporal-difference (TD) learning was developed to aid agents in both the credit assignment and data collection problems, by directly updating the policy as new data was collected [@ref-sutton1988learning], a concept first applied successfully to Backgammon [@ref-tesauro1995temporal] (rather than updating from a large dataset of cumulative experience, which could be outdated via erroneous past value predictions). The method Q-learning, the basis for many modern forms of RL, learns a model via the Bellman equation that dictates how useful every state-action pair is with a TD update [@ref-watkins1992q].[^1] Crucially, these notions of provable usefulness through utility have only been demonstrated for domains cast as MDPs or addressed in tasks with a single closed-form reward function, such as prominent success in games with deep learning (DQN) [@ref-mnih2013playing]. Deep learning allowed the methods to ingest more data and work in high-dimensionality environments.
+Modern RL algorithms build within this formulation of RL as a tool to find optimal behaviors with trial-and-error, but under looser conditions. The notion of temporal-difference (TD) learning was developed to aid agents in both the credit assignment and data collection problems, by directly updating the policy as new data was collected \[240\], a concept first applied successfully to Backgammon \[241\] (rather than updating from a large dataset of cumulative experience, which could be outdated via erroneous past value predictions). The method Q-learning, the basis for many modern forms of RL, learns a model via the Bellman equation that dictates how useful every state-action pair is with a TD update \[242\].[^1] Crucially, these notions of provable usefulness through utility have only been demonstrated for domains cast as MDPs or addressed in tasks with a single closed-form reward function, such as prominent success in games with deep learning (DQN) \[243\]. Deep learning allowed the methods to ingest more data and work in high-dimensionality environments.
 
-As the methods became more general and successful, most prominent developments before ChatGPT remained motivated within the context of adaptive control, where reward and cost functions have a finite notion of success [@ref-golnaraghi2017automatic], e.g. a minimum energy consumption across an episode in a physical system. Prominent examples include further success in games [@ref-silver2017mastering], controlling complex dynamic systems such as nuclear fusion reactors [@ref-degrave2022magnetic], and controlling rapid robotic systems [@ref-Kaufmann2023fpv]. Most reward or cost functions can return an explicit optimal behavior, whereas models of human preferences cannot.
+As the methods became more general and successful, most prominent developments before ChatGPT remained motivated within the context of adaptive control, where reward and cost functions have a finite notion of success \[244\], e.g. a minimum energy consumption across an episode in a physical system. Prominent examples include further success in games \[245\], controlling complex dynamic systems such as nuclear fusion reactors \[246\], and controlling rapid robotic systems \[247\]. Most reward or cost functions can return an explicit optimal behavior, whereas models of human preferences cannot.
 
-Given the successes of deep RL, it is worth noting that the mechanistic understanding of how the methods succeed is not well documented. The field is prone to mistakes in statistical analysis as the methods for evaluation grow more complex [@ref-agarwal2021deep]. In addition, there is little mention of the subfield of inverse reinforcement learning (IRL) in the literature of RLHF. IRL is the problem of learning a reward function based on an agent’s behavior [@ref-ng2000algorithms] and is highly related to learning a reward model. This primarily reflects the engineering path by which a stable approach to performing RLHF emerged, and motivates further investment and comparison to IRL methods to scale them to the complexity of open-ended conversations.
+Given the successes of deep RL, it is worth noting that the mechanistic understanding of how the methods succeed is not well documented. The field is prone to mistakes in statistical analysis as the methods for evaluation grow more complex \[248\]. In addition, there is little mention of the subfield of inverse reinforcement learning (IRL) in the literature of RLHF. IRL is the problem of learning a reward function based on an agent’s behavior \[77\] and is highly related to learning a reward model. This primarily reflects the engineering path by which a stable approach to performing RLHF emerged, and motivates further investment and comparison to IRL methods to scale them to the complexity of open-ended conversations.
 
 ## 10.5 Complexity of Optimizing Preferences
 
@@ -3434,13 +3106,13 @@ The context in which reinforcement learning was designed means that rewards and 
 
 The overloading of the term “value” complicates the RLHF literature. In RL, a *value* is a numerical estimate of future reward (as in the Bellman equation); in alignment discussions, a *value* refers to a moral or ethical principle. The two senses are quite different, yet they coexist in RLHF papers without always being distinguished.
 
-An example of where this tension surfaces is reward modeling: the model attempts to map text on a screen to a scalar signal, but dynamics not captured in the problem specification influence the true decision [@ref-salha2011aesthetics], [@ref-gilbert2022choices], such as preference shift when labeling many examples sequentially and assuming they are independent. At best, modeling preferences compresses a multi-dimensional reward landscape into a single scalar function.
+An example of where this tension surfaces is reward modeling: the model attempts to map text on a screen to a scalar signal, but dynamics not captured in the problem specification influence the true decision \[249\], \[250\], such as preference shift when labeling many examples sequentially and assuming they are independent. At best, modeling preferences compresses a multi-dimensional reward landscape into a single scalar function.
 
-In theory, the Von Neumann-Morgenstern (VNM) utility theorem gives the designer license to construct such functions, because it ties together the foundations of decision theory under uncertainty, preference theory, and abstract utility functions [@ref-von1947theory]; together, these ideas allow preferences to be modeled in terms of expected value to some individual agent. The MDP formulation used in most RL research has been shown in theory to be modifiable to accommodate the VNM theorem [@ref-pitis2019rethinking], but this is rarely used in practice. Specifically, the Markovian formulation is limited in its expressivity [@ref-pitis2023consistent] and the transition to partially-observed processes, which is needed for language, further challenges the precision of problem specification [@ref-abel2021expressivity].
+In theory, the Von Neumann-Morgenstern (VNM) utility theorem gives the designer license to construct such functions, because it ties together the foundations of decision theory under uncertainty, preference theory, and abstract utility functions \[251\]; together, these ideas allow preferences to be modeled in terms of expected value to some individual agent. The MDP formulation used in most RL research has been shown in theory to be modifiable to accommodate the VNM theorem \[252\], but this is rarely used in practice. Specifically, the Markovian formulation is limited in its expressivity \[253\] and the transition to partially-observed processes, which is needed for language, further challenges the precision of problem specification \[254\].
 
-However, the VNM utility theorem also invokes a number of assumptions about the nature of preferences and the environment where preferences are being measured that are challenged in the context of RLHF. Human-computer interaction (HCI) researchers, for example, have emphasized that any numerical model of preference may not capture all the relevant preferences of a scenario. For example, how choices are displayed visually influences people’s preferences [@ref-salha2011aesthetics]. This means that representing preferences may be secondary to how that representation is integrated within a tool available for people to use. Work from development economics echoes this notion, showing that theories of revealed preferences may just recapitulate *Hume’s guillotine* (you can’t extract an “ought” from an “is”), and in particular the difference between choice (what do I want?) and preference (is X better than Y?) [@ref-sen1973behaviour].
+However, the VNM utility theorem also invokes a number of assumptions about the nature of preferences and the environment where preferences are being measured that are challenged in the context of RLHF. Human-computer interaction (HCI) researchers, for example, have emphasized that any numerical model of preference may not capture all the relevant preferences of a scenario. For example, how choices are displayed visually influences people’s preferences \[249\]. This means that representing preferences may be secondary to how that representation is integrated within a tool available for people to use. Work from development economics echoes this notion, showing that theories of revealed preferences may just recapitulate *Hume’s guillotine* (you can’t extract an “ought” from an “is”), and in particular the difference between choice (what do I want?) and preference (is X better than Y?) \[255\].
 
-On a mathematical level, well-known impossibility theorems in social choice theory show that not all fairness criteria can be simultaneously met via a given preference optimization technique [@ref-arrow1950difficulty], [@ref-maskin2014arrow]. Theoretical challenges to these theorems exist, for example by assuming that interpersonal comparison of utility is viable [@ref-harsanyi1977rule]. That assumption has inspired a rich line of work in AI safety and value alignment inspired by the principal-agent problem in behavioral economics [@ref-hadfield2016cooperative], and may even include multiple principals [@ref-fickinger2020multi]. However, the resulting utility functions may come into tension with desiderata for corrigibility, i.e. an AI system’s capacity to cooperate with what its creators regard as corrective interventions [@ref-soares2015corrigibility]. Philosophers have also highlighted that preferences change over time, raising fundamental questions about personal experiences, the nature of human decision-making, and distinct contexts [@ref-pettigrew2019choosing]. These conflicts around preference aggregation across people, places, and diverse situations are central to modern RLHF dataset engineering.
+On a mathematical level, well-known impossibility theorems in social choice theory show that not all fairness criteria can be simultaneously met via a given preference optimization technique \[256\], \[257\]. Theoretical challenges to these theorems exist, for example by assuming that interpersonal comparison of utility is viable \[258\]. That assumption has inspired a rich line of work in AI safety and value alignment inspired by the principal-agent problem in behavioral economics \[259\], and may even include multiple principals \[260\]. However, the resulting utility functions may come into tension with desiderata for corrigibility, i.e. an AI system’s capacity to cooperate with what its creators regard as corrective interventions \[261\]. Philosophers have also highlighted that preferences change over time, raising fundamental questions about personal experiences, the nature of human decision-making, and distinct contexts \[262\]. These conflicts around preference aggregation across people, places, and diverse situations are central to modern RLHF dataset engineering.
 
 In practice, the VNM utility theorem ignores the possibility that preferences are also uncertain because of the inherently dynamic and indeterminate nature of value—human decisions are shaped by biology, psychology, culture, and agency in ways that influence their preferences, for reasons that do not apply to a perfectly rational agent. As a result, there are a variety of paths through which theoretical assumptions diverge in practice:
 
@@ -3460,15 +3132,15 @@ In this chapter, we detail technical decisions on how the data is formatted and 
 
 ## 11.1 Why We Need Preference Data
 
-The preference data is needed for RLHF because directly capturing complex human values in a single reward function is effectively impossible, as discussed in the previous Chapter 10, where substantial context of psychology, economics, and philosophy shows that accurately modeling human preferences is an impossible problem to ever completely solve. Collecting this data to train reward models is one of the original ideas behind RLHF [@ref-leike2018scalable] and has continued to be used extensively throughout the emergence of modern language models. One of the core intuitions for *why this data works so well* is that it is far easier, both for humans and AI models supervising data collection, to differentiate between a good and a bad answer for a prompt than it is to generate a good answer on its own. This chapter focuses on the *mechanics* of getting preference data and the best practices depend on the specific problem being solved.
+The preference data is needed for RLHF because directly capturing complex human values in a single reward function is effectively impossible, as discussed in the previous Chapter 10, where substantial context of psychology, economics, and philosophy shows that accurately modeling human preferences is an impossible problem to ever completely solve. Collecting this data to train reward models is one of the original ideas behind RLHF \[38\] and has continued to be used extensively throughout the emergence of modern language models. One of the core intuitions for *why this data works so well* is that it is far easier, both for humans and AI models supervising data collection, to differentiate between a good and a bad answer for a prompt than it is to generate a good answer on its own. This chapter focuses on the *mechanics* of getting preference data and the best practices depend on the specific problem being solved.
 
 ## 11.2 Collecting Preference Data
 
-Getting the most out of human data involves iterative training of models, spending hundreds of thousands (or millions) of dollars, highly detailed data instructions, translating ideas through data foundry businesses that mediate collection (or hiring a meaningful number of annotators), and other challenges that add up. This is not a process that should be taken lightly. Among all of the public knowledge on RLHF, collecting this data well is also one of the most opaque pieces of the pipeline. As of 2026, there are no open models with fully open human preference data released with the methods used to collect it (the largest recent human preference datasets released for models are in the HelpSteer line of work from NVIDIA’s Nemotron team, including HelpSteer2-Preference and HelpSteer3-Preference [@ref-wang2024helpsteer2p], [@ref-wang2025helpsteer3]). For these reasons, many who take up RLHF for new teams or projects omit human data and use AI feedback data, off-the-shelf reward models, or other methods to circumvent the need for curating data from scratch.
+Getting the most out of human data involves iterative training of models, spending hundreds of thousands (or millions) of dollars, highly detailed data instructions, translating ideas through data foundry businesses that mediate collection (or hiring a meaningful number of annotators), and other challenges that add up. This is not a process that should be taken lightly. Among all of the public knowledge on RLHF, collecting this data well is also one of the most opaque pieces of the pipeline. As of 2026, there are no open models with fully open human preference data released with the methods used to collect it (the largest recent human preference datasets released for models are in the HelpSteer line of work from NVIDIA’s Nemotron team, including HelpSteer2-Preference and HelpSteer3-Preference \[116\], \[263\]). For these reasons, many who take up RLHF for new teams or projects omit human data and use AI feedback data, off-the-shelf reward models, or other methods to circumvent the need for curating data from scratch.
 
 An important assumption that is taken into the preference data collection process is that the best data for your training process is “on-policy” with respect to the previous checkpoint(s) of your training process. Recall that within post-training, we start with a base model and then perform a set of training *stages* to create a series of *checkpoints*. In this case, the preference data could be collected on a checkpoint that has undergone supervised fine-tuning, where the preference data will be used in the next stage of RLHF training.
 
-The use of the term on-policy here is adapted from the reinforcement learning literature, where on-policy is a technical term implying that the data for a certain gradient update is collected from the most recent form of the policy. In preference data, on-policy is used in a slightly softer manner, where it means that the data is collected from the current family of models. Different models have different patterns in their generations, which makes preference data that is from a closely related model more robust in the crucial areas of optimization. Research has shown that using this on-policy data, rather than other popular datasets that aggregate completions from pools of popular models on platforms like Hugging Face, is particularly important for effective RLHF training [@ref-malik2025rewardbench].
+The use of the term on-policy here is adapted from the reinforcement learning literature, where on-policy is a technical term implying that the data for a certain gradient update is collected from the most recent form of the policy. In preference data, on-policy is used in a slightly softer manner, where it means that the data is collected from the current family of models. Different models have different patterns in their generations, which makes preference data that is from a closely related model more robust in the crucial areas of optimization. Research has shown that using this on-policy data, rather than other popular datasets that aggregate completions from pools of popular models on platforms like Hugging Face, is particularly important for effective RLHF training \[96\].
 
 This necessity for on-policy data is not well documented, but many popular technical reports, such as early versions of Claude or Llama 2, showcase multiple training stages with RLHF being useful for final performance, which mirrors this well. The same uncertainty applies for the popular area of AI feedback data – the exact balance between human and AI preference data used for the latest AI models is unknown. These data sources are known to be a valuable path to improve performance, but careful tuning of processes is needed to extract that potential performance from a data pipeline.
 
@@ -3478,7 +3150,7 @@ A subtle but important point is that the *chosen* answer in preference data is o
 
 Crucial to collecting preference data is the interface by which one interacts with the model, but it’s more of an art than a science, as it’s not well-studied how subtle changes in the interface impact how a user interacts with a model. An example of how a model’s vibe can be changed by the user experience is *speed*, where with the rise of reasoning models, a user can think a model is less intelligent if it replies too fast (even though users obviously want to get their answer faster overall).
 
-An example interface is shown below from Anthropic’s early and foundational RLHF work for building Claude [@ref-bai2022training]. In the figure shown below, fig. 33, a data labeler has a conversation with the model and must choose a preference between two possible answers, at the bottom highlighted in purple. In addition, the labeler is given the potential to include more notes on the conversation or a general rating of the conversation quality (potentially spread across multiple tasks, as seen in the top left).
+An example interface is shown below from Anthropic’s early and foundational RLHF work for building Claude \[5\]. In the figure shown below, fig. 33, a data labeler has a conversation with the model and must choose a preference between two possible answers, at the bottom highlighted in purple. In addition, the labeler is given the potential to include more notes on the conversation or a general rating of the conversation quality (potentially spread across multiple tasks, as seen in the top left).
 
 **Figura 33.** An example of one of the earliest preference data collection interfaces, from Anthropic’s research. Bai et al. 2022. The actual conversation is a toy conversation around what is a good example conversation for data collection. License CC-BY.
 
@@ -3486,7 +3158,7 @@ This first example is a *training-data only* interface, where the goal is to col
 
 **Figura 34.** Example preference data collection interface from when I was served two completions from different ChatGPT beta models. The actual completions are very close in content, showing how collecting preference data can be noisy and difficult to get exactly right.
 
-This style of interface is used extensively across the industry, such as for *evaluation* of models given the same format. A popular public option to engage with models in this way is Arena (formerly Chatbot Arena) [@ref-chiang2024chatbot], which includes the option of a “tie” between models:
+This style of interface is used extensively across the industry, such as for *evaluation* of models given the same format. A popular public option to engage with models in this way is Arena (formerly Chatbot Arena) \[264\], which includes the option of a “tie” between models:
 
 **Figura 35.** Example preference data collection interface from an early version of the popular Arena benchmark.
 
@@ -3514,9 +3186,9 @@ One simple way to collect ratings is to score a *single* completion on a 1-5 sca
 
 - **1** — very poor: incorrect or unhelpful
 
-With multiple completions to the same prompt, a simple way to make preference data would be to choose the highest rated completion and pair it randomly with a lower scored completion (as done for UltraFeedback and derivative works [@ref-cui2023ultrafeedback]).
+With multiple completions to the same prompt, a simple way to make preference data would be to choose the highest rated completion and pair it randomly with a lower scored completion (as done for UltraFeedback and derivative works \[28\]).
 
-However, the most common technique for collecting preferences is to use a Likert scale for relative rankings [@ref-likert1932technique], which asks users to select which response they prefer in a group of completions. For example, a 5-point Likert scale would look like the following (note that, yes, a Likert scale uses a single integer to record the ranking, much like a rating, so it’s how the data is structured that is the core difference in the two ways of collecting preference data):
+However, the most common technique for collecting preferences is to use a Likert scale for relative rankings \[265\], which asks users to select which response they prefer in a group of completions. For example, a 5-point Likert scale would look like the following (note that, yes, a Likert scale uses a single integer to record the ranking, much like a rating, so it’s how the data is structured that is the core difference in the two ways of collecting preference data):
 
 **Tabla 5.** An example 5-point Likert scale between two responses, A and B.
 
@@ -3524,7 +3196,7 @@ However, the most common technique for collecting preferences is to use a Likert
 |:------:|:-----:|:---:|:-----:|:------:|
 |   1    |   2   |  3  |   4   |   5    |
 
-Some early RLHF for language modeling works use an 8-point Likert scale with levels of preference between the two responses [@ref-bai2022training]. An even scale removes the possibility of ties:
+Some early RLHF for language modeling works use an 8-point Likert scale with levels of preference between the two responses \[5\]. An even scale removes the possibility of ties:
 
 **Tabla 6.** An example 8-point Likert scale between two responses, A and B.
 
@@ -3532,7 +3204,7 @@ Some early RLHF for language modeling works use an 8-point Likert scale with lev
 |:-------:|:---:|:---:|:-----:|:-----:|:---:|:---:|:-------:|
 |    1    |  2  |  3  |   4   |   5   |  6  |  7  |    8    |
 
-In this case [@ref-bai2022training], as in other works, this information is still reduced to a binary signal for the training of a reward model.
+In this case \[5\], as in other works, this information is still reduced to a binary signal for the training of a reward model.
 
 ### 11.2.3 Multiturn Data
 
@@ -3540,7 +3212,7 @@ In practice, core questions often arise over how to parse and collect multi-turn
 
 ### 11.2.4 Structured Preference Data
 
-In many applications of RLHF and post-training, preference data can be created *automatically* due to innate structures of the data – i.e. the domains make automatic checks of correctness or preference possible. For example, in mathematical reasoning domains the chosen response can be a correct answer and the rejected response can be an incorrect answer. Another example is in precise instruction following, such as the evaluation IFEval [@ref-zhou2023instructionfollowingevaluationlargelanguage], where prompts take the form of:
+In many applications of RLHF and post-training, preference data can be created *automatically* due to innate structures of the data – i.e. the domains make automatic checks of correctness or preference possible. For example, in mathematical reasoning domains the chosen response can be a correct answer and the rejected response can be an incorrect answer. Another example is in precise instruction following, such as the evaluation IFEval \[266\], where prompts take the form of:
 
 > **Prompt**: Write me a short poem about a goldfish. **Start each sentence with the letter g.**
 
@@ -3560,11 +3232,11 @@ And without the constraint (which, it turns out, is also a lower quality output)
 >
 > Its world confined, yet vast within, Each bubble breathed, a tale begins. In silent waves, content to roam, The goldfish dreams its bowl as home.
 
-Crucially, the prompt for the preference data will need to include the constraint. In domains outside of academic study, there are far more applications of preference data based on inductive biases like above (relative to quality-based preferences, which most of this chapter focuses on). These have been shown to enable preference fine-tuning to have meaningful performance improvements across related evaluations, such as instruction-following, math, etc. [@ref-lambert2024t].
+Crucially, the prompt for the preference data will need to include the constraint. In domains outside of academic study, there are far more applications of preference data based on inductive biases like above (relative to quality-based preferences, which most of this chapter focuses on). These have been shown to enable preference fine-tuning to have meaningful performance improvements across related evaluations, such as instruction-following, math, etc. \[6\].
 
 #### 11.2.4.1 Alternatives
 
-There are multiple other ways to collect useful feedback data for RLHF that have not been pursued in as much detail. Examples include using single data points with directional labels, e.g. as shown from Ai2 playground above in fig. 36, directly with algorithms designed for single direction signals like Kahneman-Tversky Optimization (KTO) [@ref-ethayarajh2024kto]. Other algorithms have been proposed with different types of feedback signals such as fine-grained feedback, e.g. at the token level [@ref-wu2024fine], or natural language feedback, e.g. by writing responses [@ref-chen2024learning], to provide a richer learning signal in exchange for a more complicated data collection setup.
+There are multiple other ways to collect useful feedback data for RLHF that have not been pursued in as much detail. Examples include using single data points with directional labels, e.g. as shown from Ai2 playground above in fig. 36, directly with algorithms designed for single direction signals like Kahneman-Tversky Optimization (KTO) \[267\]. Other algorithms have been proposed with different types of feedback signals such as fine-grained feedback, e.g. at the token level \[268\], or natural language feedback, e.g. by writing responses \[269\], to provide a richer learning signal in exchange for a more complicated data collection setup.
 
 ### 11.2.5 Sourcing and Contracts
 
@@ -3576,7 +3248,7 @@ If you’re a new entrant in the space, you may have a hard time getting the dat
 
 In a recurring unfortunate pattern, data companies have not delivered data as contracted without the customer threatening legal or financial action against them for breach of contract. Others have listed companies as customers for PR even though they never worked with them, saying they “didn’t know how that happened” when called out. There are plenty of potential bureaucratic or administrative snags through the process. For example, the default terms on the contracts often prohibit the open sourcing of artifacts after acquisition in some fine print.
 
-Once a contract is settled, the data buyer and data provider agree upon instructions for the task(s) purchased. There are intricate documents with extensive details, corner cases, and priorities for the data. A popular example of data instructions is the one that [OpenAI released for InstructGPT](https://rlhfbook.com/assets/instructgpt-instructions.pdf) [@ref-ouyang2022training].
+Once a contract is settled, the data buyer and data provider agree upon instructions for the task(s) purchased. There are intricate documents with extensive details, corner cases, and priorities for the data. A popular example of data instructions is the one that [OpenAI released for InstructGPT](https://rlhfbook.com/assets/instructgpt-instructions.pdf) \[3\].
 
 Depending on the domains of interest in the data, timelines for when the data can be labeled or curated vary. High-demand areas like mathematical reasoning or coding must be locked into a schedule weeks out. In the case when you are collecting a dataset for your next model and you realize that collecting data later may be optimal, simple delays of data collection don’t always work — Scale AI et al. are managing their workforces like AI research labs manage the compute-intensive jobs on their clusters (planning multiple weeks or months ahead as to when different resources will be allocated where).
 
@@ -3586,7 +3258,7 @@ The data is delivered in weekly batches with more data coming later in the contr
 
 **Figura 38.** Overview of the multi-batch cycle for obtaining human preference data from a vendor. The ramp up period allows a narrowing of goals and methodology in order to create the best possible data. It is expected that a larger proportion of the data from the earlier batches will have to be thrown out due to quality issues. This is one timeline example for a smaller data contract (\~\$500K) and much larger data contracts can vary substantially.
 
-The goal is that by week 4 or 5 the data is visibly improving the model. This is something some frontier models have mentioned, such as the 14 stages in the Llama 2 data collection [@ref-touvron2023llama], but it doesn’t always go well. As an example, a team trying this for the first time with human preferences may not have the RLHF preparedness to get meaningful bumps on their evaluations. The last weeks come and they are forced to continue collecting preference data generated from endpoints they aren’t confident in.
+The goal is that by week 4 or 5 the data is visibly improving the model. This is something some frontier models have mentioned, such as the 14 stages in the Llama 2 data collection \[49\], but it doesn’t always go well. As an example, a team trying this for the first time with human preferences may not have the RLHF preparedness to get meaningful bumps on their evaluations. The last weeks come and they are forced to continue collecting preference data generated from endpoints they aren’t confident in.
 
 After the data is all in, there is plenty of time for learning and improving the model. Data acquisition through these vendors works best when viewed as an ongoing process of achieving a set goal. It requires iterative experimentation, high effort, and focus. It’s likely that millions of dollars spent on these datasets are “wasted” and not used in the final models, but that is just the cost of doing business. Not many organizations have the bandwidth and expertise to make full use of human data of this style.
 
@@ -3594,7 +3266,7 @@ Note that this section *does not* mirror the experience for buying human-written
 
 ## 11.3 Bias: Things to Watch Out For in Data Collection
 
-While preference data is essential, it’s also known to be prone to many subtle biases that can make its collection error-prone. These biases are so common, e.g. prefix bias (where the beginning of a completion disproportionately drives the preference) [@ref-kumar2025detecting], that they can easily be passed to the final model [@ref-bharadwaj2025flatteryflufffogdiagnosing] (and especially as we know that models are only as good as their data). These issues are often subtle, and the effectiveness of interventions varies widely across them. For many, such as sycophancy (over-agreeing with the user’s stated beliefs or flattering them, even when it reduces truthfulness) [@ref-sharma2023towards], they reflect issues within humans that are often outside of the labeling criteria that one will think of providing to the annotation partner or labelers. Others, such as verbosity [@ref-singhal2023long] [@ref-bu2025beyond] or formatting habits [@ref-zhang2024lists], emerge for a similar reason, but they are easier to detect and mitigate in training. Mitigating these subtle biases in data is the difference between good and great preference data, and therefore good and great RLHF training.
+While preference data is essential, it’s also known to be prone to many subtle biases that can make its collection error-prone. These biases are so common, e.g. prefix bias (where the beginning of a completion disproportionately drives the preference) \[270\], that they can easily be passed to the final model \[271\] (and especially as we know that models are only as good as their data). These issues are often subtle, and the effectiveness of interventions varies widely across them. For many, such as sycophancy (over-agreeing with the user’s stated beliefs or flattering them, even when it reduces truthfulness) \[272\], they reflect issues within humans that are often outside of the labeling criteria that one will think of providing to the annotation partner or labelers. Others, such as verbosity \[10\] \[273\] or formatting habits \[274\], emerge for a similar reason, but they are easier to detect and mitigate in training. Mitigating these subtle biases in data is the difference between good and great preference data, and therefore good and great RLHF training.
 
 ## 11.4 Open Questions in RLHF Preference Data
 
@@ -3606,11 +3278,11 @@ Despite the maturity of RLHF as a core method across the field, there are still 
 
 - **Data collection contexts**: Can data involving preferences collected in a professional setting mirror the intent of researchers designing an experiment or provide suitable transfer to downstream users? How does this compare to volunteer workers? How does context inform preferences, how does this data impact a downstream model, how can the impact of a user interface be measured in data? How does repetitive labeling of preference data shift one’s preferences? Do professional crowd-workers, instructed to follow a set of preferences, follow the instructions or their innate values?
 
-- **Type of feedback**: Does the default operating method of RLHF, pairwise preferences, capture preferences in its intended form? Can comparisons in RLHF across the same data be made with the default comparisons versus advanced multi-axis feedback mechanisms [@ref-wu2024fine]? What types of comparisons would reflect how humans communicate preferences in text?
+- **Type of feedback**: Does the default operating method of RLHF, pairwise preferences, capture preferences in its intended form? Can comparisons in RLHF across the same data be made with the default comparisons versus advanced multi-axis feedback mechanisms \[268\]? What types of comparisons would reflect how humans communicate preferences in text?
 
 - **Population demographics**: Who is completing the data? Is a diverse population maintained? How does a lack of diversity emerge as measurable impacts on the model? What is a minimum number of people required to suitably represent a given population? How are instances of preference annotator disagreement treated – as a source of noise, or a signal?
 
-- **Are the Preferences Expressed in the Models?** In the maturation of RLHF and related approaches, the motivation of them – to align models to abstract notions of human preference – has drifted from the practical use – to make the models more effective to users. A feedback loop that is not measurable due to the closed nature of industrial RLHF work is the check to see if the behavior of the models matches the specification given to the data annotators during the process of data collection. We have limited tools to audit this, such as the Model Spec from OpenAI [@ref-openai2024modelspec] that details *what they want their models to do*, but we don’t know exactly how this translates to data collection.
+- **Are the Preferences Expressed in the Models?** In the maturation of RLHF and related approaches, the motivation of them – to align models to abstract notions of human preference – has drifted from the practical use – to make the models more effective to users. A feedback loop that is not measurable due to the closed nature of industrial RLHF work is the check to see if the behavior of the models matches the specification given to the data annotators during the process of data collection. We have limited tools to audit this, such as the Model Spec from OpenAI \[275\] that details *what they want their models to do*, but we don’t know exactly how this translates to data collection.
 
 # 12 Synthetic Data & Distillation
 
@@ -3622,13 +3294,13 @@ As AI models got better, this assumption rapidly broke down. The possibility of 
 
 ## 12.1 The Roles of Synthetic Data
 
-One common criticism of synthetic data is **model collapse** – the idea that repeatedly training on a model’s own generations can progressively narrow the effective training distribution [@ref-shumailov2024ai]. As diversity drops, rare facts and styles are underrepresented, and small mistakes can be amplified across iterations, leading to worse generalization. In practice, these failures are most associated with self-training on unfiltered, repetitive, single-model outputs; mixing in real/human data, using diverse teachers, deduplication, and strong quality filters largely avoids the collapse regime. For today’s frontier training pipelines, evidence suggests synthetic data can, and should, be used at scale without the catastrophic regressions implied by the strongest versions of the collapse story [@ref-gerstgrasser2024model] [@ref-feng2024beyond].
+One common criticism of synthetic data is **model collapse** – the idea that repeatedly training on a model’s own generations can progressively narrow the effective training distribution \[276\]. As diversity drops, rare facts and styles are underrepresented, and small mistakes can be amplified across iterations, leading to worse generalization. In practice, these failures are most associated with self-training on unfiltered, repetitive, single-model outputs; mixing in real/human data, using diverse teachers, deduplication, and strong quality filters largely avoids the collapse regime. For today’s frontier training pipelines, evidence suggests synthetic data can, and should, be used at scale without the catastrophic regressions implied by the strongest versions of the collapse story \[277\] \[278\].
 
-The leading models **need synthetic data** to reach the best performance. Synthetic data in modern post-training encompasses many pieces of training – language models are used to generate new training prompts from seed examples [@ref-wang2022self], modify existing prompts, generate completions to prompts [@ref-numina_math_7b], provide AI feedback to create preference data [@ref-cui2023ultrafeedback], filter completions [@ref-li2024superfiltering], and much more. Synthetic data is key to post-training.
+The leading models **need synthetic data** to reach the best performance. Synthetic data in modern post-training encompasses many pieces of training – language models are used to generate new training prompts from seed examples \[279\], modify existing prompts, generate completions to prompts \[280\], provide AI feedback to create preference data \[28\], filter completions \[281\], and much more. Synthetic data is key to post-training.
 
 The ability for synthetic data to be impactful to this extent emerged with GPT-4 class models. With early language models, such as Llama 2 and GPT-3.5-Turbo, the models were not reliable enough in generating or supervising data pipelines. Within 1-2 years, language models were far superior to humans for generating answers. In the transition from GPT-3.5 to GPT-4 class models, the ability for models to perform LLM-as-a-judge tasks also emerged. GPT-4 or better models are far more robust and consistent in generating feedback or scores with respect to a piece of content.
 
-Through the years since ChatGPT’s release at the end of 2022, we’ve seen numerous, impactful synthetic datasets. These include UltraFeedback [@ref-cui2023ultrafeedback], the first prominent synthetic preference dataset that kickstarted the DPO revolution; Stanford Alpaca, one of the first chat-style fine-tuning datasets, in 2023; skill-focused (e.g. math, code, instruction-following) synthetic datasets in Tülu 3 [@ref-lambert2024t]; and OpenThoughts 3 and many other synthetic reasoning datasets in 2025 for training thinking models [@ref-guha2025openthoughts]. Most of the canonical references for getting started with industry-grade post-training today involve datasets like Tülu 3 or OpenThoughts 3 above, where quickstart guides often start with smaller, simpler datasets like Alpaca due to far faster training.
+Through the years since ChatGPT’s release at the end of 2022, we’ve seen numerous, impactful synthetic datasets. These include UltraFeedback \[28\], the first prominent synthetic preference dataset that kickstarted the DPO revolution; Stanford Alpaca, one of the first chat-style fine-tuning datasets, in 2023; skill-focused (e.g. math, code, instruction-following) synthetic datasets in Tülu 3 \[6\]; and OpenThoughts 3 and many other synthetic reasoning datasets in 2025 for training thinking models \[180\]. Most of the canonical references for getting started with industry-grade post-training today involve datasets like Tülu 3 or OpenThoughts 3 above, where quickstart guides often start with smaller, simpler datasets like Alpaca due to far faster training.
 
 A large change is also related to dataset size, where fine-tuning datasets have grown in the number of prompts, where Alpaca is 52K, OpenThoughts and Tülu 3 are 1M+ samples, and in the length of responses. Longer responses and more prompts result in the Alpaca dataset being on the order of 10M training tokens, where Tülu is 50X larger at about 500M, and OpenThoughts 3 is bigger still, on the order of 10B tokens.
 
@@ -3636,7 +3308,7 @@ Throughout this transition, synthetic data has not replaced human data uniformly
 
 ## 12.2 Distillation with Synthetic Data
 
-The term distillation has been the most powerful form of discussion around the role of synthetic data in language models. Distillation as a term comes from a technical definition of teacher-student Knowledge Distillation (KD) from the deep learning literature [@ref-hinton2015distilling].
+The term distillation has been the most powerful form of discussion around the role of synthetic data in language models. Distillation as a term comes from a technical definition of teacher-student Knowledge Distillation (KD) from the deep learning literature \[282\].
 
 **Figura 39.** Traditional knowledge distillation trains a smaller student model to match the soft probability distribution of a larger teacher model using KL divergence loss. Both models process the same input simultaneously, and temperature scaling ($\tau > 1$) softens the distributions to reveal more information about class relationships.
 
@@ -3648,23 +3320,23 @@ In post-training, this general notion of distillation takes two common forms:
 
 2.  To transfer specific skills from a stronger model to a weaker model, which is often done for specific skills such as mathematical reasoning or coding.
 
-The first strategy has grown in popularity as language models evolved to be more reliable than humans at writing answers to a variety of tasks. GPT-4 class models expanded the scope of this to use distillation of stronger models for complex tasks such as math and code (as mentioned above). Here, distillation motivates having a model suite where often a laboratory will train a large internal model, such as Claude Opus or Gemini Ultra, which is not released publicly and just used internally to make stronger models. With open models, common practice is to distill training data from closed API models into smaller, openly available weights [@ref-tunstall2023zephyr]. Within this, curating high-quality prompts and filtering responses from the teacher model is crucial to maximize performance.
+The first strategy has grown in popularity as language models evolved to be more reliable than humans at writing answers to a variety of tasks. GPT-4 class models expanded the scope of this to use distillation of stronger models for complex tasks such as math and code (as mentioned above). Here, distillation motivates having a model suite where often a laboratory will train a large internal model, such as Claude Opus or Gemini Ultra, which is not released publicly and just used internally to make stronger models. With open models, common practice is to distill training data from closed API models into smaller, openly available weights \[26\]. Within this, curating high-quality prompts and filtering responses from the teacher model is crucial to maximize performance.
 
-Transferring specific skills into smaller language models uses the same principles of distillation – get the best data possible for training. Here, many papers have studied using limited datasets from stronger models to improve alignment [@ref-zhou2023lima], mathematical reasoning [@ref-shridhar2023distilling] [@ref-hsieh2023distilling], and test-time scaling [@ref-muennighoff2025s1].
+Transferring specific skills into smaller language models uses the same principles of distillation – get the best data possible for training. Here, many papers have studied using limited datasets from stronger models to improve alignment \[14\], mathematical reasoning \[283\] \[284\], and test-time scaling \[165\].
 
 The synthetic-data methods in the rest of this chapter are all ways of crafting data recipes that use language-model outputs directly inside training pipelines.
 
 ## 12.3 The Path to On-Policy, Teacher-Student Distillation
 
-While distillation generally has become a standard approach for post-training language models, a resurgence of interest in the specific sub-area of teacher-student knowledge distillation has accompanied the shift of post-training recipes towards reasoning and agentic models. Examples of leading models trained with new forms of knowledge distillation include Alibaba’s Qwen3 [@ref-yang2025qwen3], Xiaomi’s MiMo-V2-Flash [@ref-mimo2025flash], Zhipu AI’s GLM-5 [@ref-glm5team2026glm5], and DeepSeek-V4-Pro [@ref-deepseekai2026deepseekv4].
+While distillation generally has become a standard approach for post-training language models, a resurgence of interest in the specific sub-area of teacher-student knowledge distillation has accompanied the shift of post-training recipes towards reasoning and agentic models. Examples of leading models trained with new forms of knowledge distillation include Alibaba’s Qwen3 \[60\], Xiaomi’s MiMo-V2-Flash \[63\], Zhipu AI’s GLM-5 \[68\], and DeepSeek-V4-Pro \[67\].
 
 Distillation belongs in this chapter because many modern uses of synthetic data in post-training are, in practice, distillation-inspired pipelines: a stronger model produces labels, completions, logits, critiques, or other supervision, and a student model is trained on that signal. At the same time, the technical literature on distillation is growing into its own set of post-training methods, especially as on-policy and self-distillation recipes become more common. For now, we cover it here as part of the synthetic-data toolkit, but future versions of this book may warrant a dedicated chapter on distillation as a training tool alongside instruction fine-tuning, reinforcement learning, etc.
 
 ### 12.3.1 Adapting Knowledge-Distillation for LMs
 
-The original literature introduced knowledge distillation specifically as a way to train a *student* model from an already trained, stronger, and/or bigger *teacher* network [@ref-hinton2015distilling]. KD is known as a technique that uses *soft* training labels, as opposed to the one-hot labels used in standard objectives like next-token prediction with cross-entropy loss. The objectives over soft labels look at the distribution over all possible next tokens or predictions, rather than just whether or not the single predicted token was correct, and train the student distribution to match the teacher distribution.
+The original literature introduced knowledge distillation specifically as a way to train a *student* model from an already trained, stronger, and/or bigger *teacher* network \[282\]. KD is known as a technique that uses *soft* training labels, as opposed to the one-hot labels used in standard objectives like next-token prediction with cross-entropy loss. The objectives over soft labels look at the distribution over all possible next tokens or predictions, rather than just whether or not the single predicted token was correct, and train the student distribution to match the teacher distribution.
 
-KD generally can be applied to any deep learning problem, e.g. predicting a single class of an input. In order to apply it specifically to the autoregressive style of language models, the loss can be decomposed to make a per-token distribution-matching loss. In 2016, Kim & Rush applied KD to have a student model learn from *sequences* generated by a teacher model [@ref-kim-rush-2016-sequence].
+KD generally can be applied to any deep learning problem, e.g. predicting a single class of an input. In order to apply it specifically to the autoregressive style of language models, the loss can be decomposed to make a per-token distribution-matching loss. In 2016, Kim & Rush applied KD to have a student model learn from *sequences* generated by a teacher model \[285\].
 
 Let $s$ be the source sentence or prompt, $u = (u_1,\ldots,u_J)$ be a complete output sequence from the teacher model, $\mathcal{V}$ be the output vocabulary (possible tokens in the tokenizer), $q$ be the teacher distribution over next-tokens, and $p$ be the student distribution. We use $u$ here as a neutral symbol for a complete teacher output sequence, reserving $a$ for the student-sampled completion/action sequence in the on-policy/RL notation below. Note that their paper calls this word-level distillation, but for modern language models this is best read as per-token distribution matching over the tokenizer vocabulary, since the paper predates modern sub-word tokenizers:
 
@@ -3697,7 +3369,7 @@ SEQ-KD takes a step towards modern methods, where the teacher model is generatin
 
 Before proceeding, two connections are useful.
 
-First, there was a series of popular models trained with offline KD, such as the classifiers DistilBERT [@ref-sanh2019distilbert] and TinyBERT [@ref-jiao2020tinybert], which combined other improvements in language models with offline distillation (notably, not *sequence* distillation because these encoder models were not distilled for multi-token autoregressive prediction).
+First, there was a series of popular models trained with offline KD, such as the classifiers DistilBERT \[286\] and TinyBERT \[287\], which combined other improvements in language models with offline distillation (notably, not *sequence* distillation because these encoder models were not distilled for multi-token autoregressive prediction).
 
 Second, we can make the connection to the thorough coverage of Kullback-Leibler (KL) divergence in Chapter 15, because the cross-entropy objective used above is closely related to KL divergence. For a teacher distribution $q$ and student distribution $p$, cross-entropy is defined as
 
@@ -3726,7 +3398,7 @@ The first term, $H(q)$, only depends on the teacher. Thus, when the teacher is f
 
 These *offline* KD algorithms had a few limitations that motivated on-policy variants. The offline nature of the learning meant that the student models could suffer from a distribution mismatch between the teacher model and sequences generated by the student at inference time. For example, the forward KL objective can push student models to overestimate low-probability regions of the teacher distribution. Together, these issues were an opening for *on-policy* distillation (OPD).
 
-This train-test gap is known as **exposure bias** [@ref-arora-etal-2022-exposure] [@ref-song2026surveyonpolicydistillationlarge]. Offline KD samples teacher trajectories $u \sim \pi_T(\cdot \mid s)$ and minimizes the per-token KL on the resulting prefixes,
+This train-test gap is known as **exposure bias** \[288\] \[289\]. Offline KD samples teacher trajectories $u \sim \pi_T(\cdot \mid s)$ and minimizes the per-token KL on the resulting prefixes,
 
 $$\begin{equation}
 \tag{132}{
@@ -3752,7 +3424,7 @@ $$\begin{equation}
 
 Here, $\ell_{\mathrm{task}}(s, a)$ denotes any downstream task loss for the completed student response, such as answer incorrectness, failed test cases, or a judge/rubric loss. Exposure bias is the direct consequence of the inequality $\pi_T(\cdot \mid s) \neq \pi_\theta(\cdot \mid s)$: the prefixes $(s, u_{<t})$ visited during training and the prefixes $(s, a_{<t})$ visited at test time are drawn from different state-visitation distributions, so the student is supervised on a set of states distinct from those it acts on.
 
-The core shift to on-policy distillation is the idea that we can tweak the optimization by sampling from the student model and measuring its distance to the teacher distribution, rather than sampling from the teacher model. MiniLLM noted the need to shift to a reverse KL optimization (we explain intuitively why this target can be better in Chapter 15) and proposed using KD loss functions within an online policy-gradient RL framework [@ref-gu2024minillm]. Other concurrent work [@ref-agarwal2024policy] showed the promise of on-policy KD and connected the iterative process of generating from the student and grading with a teacher to imitation-learning work from the RL literature. To make the connection, one such imitation-learning algorithm, DAgger, iteratively trains an agent that acts in the world with its learned policy and is given feedback from an oracle policy on what action it should have taken, which can then be used to update its policy [@ref-ross2011reduction].
+The core shift to on-policy distillation is the idea that we can tweak the optimization by sampling from the student model and measuring its distance to the teacher distribution, rather than sampling from the teacher model. MiniLLM noted the need to shift to a reverse KL optimization (we explain intuitively why this target can be better in Chapter 15) and proposed using KD loss functions within an online policy-gradient RL framework \[290\]. Other concurrent work \[291\] showed the promise of on-policy KD and connected the iterative process of generating from the student and grading with a teacher to imitation-learning work from the RL literature. To make the connection, one such imitation-learning algorithm, DAgger, iteratively trains an agent that acts in the world with its learned policy and is given feedback from an oracle policy on what action it should have taken, which can then be used to update its policy \[292\].
 
 The cost of this gap can be quantified through the supervised imitation-learning bound that motivates DAgger. In the original discrete-action setting, suppose the learned policy matches the teacher within an expected per-step action error $\epsilon$ on the teacher-induced training distribution, where $\mathbb{I}[\cdot]$ is an indicator that returns 1 when its condition is true and 0 otherwise,
 
@@ -3764,7 +3436,7 @@ $$\begin{equation}
 }
 \end{equation}$$
 
-The supervised imitation-learning analysis [@ref-ross2011reduction] shows that the expected loss accumulated along a length-$L$ trajectory sampled from the student can scale quadratically in $L$ [@ref-song2026surveyonpolicydistillationlarge]:
+The supervised imitation-learning analysis \[292\] shows that the expected loss accumulated along a length-$L$ trajectory sampled from the student can scale quadratically in $L$ \[289\]:
 
 $$\begin{equation}
 \tag{135}{
@@ -3774,7 +3446,7 @@ $$\begin{equation}
 
 For LLMs, this discrete-action bound should be read as an analogy rather than a theoretical guarantee. In practice, LLMs predict full next-token distributions over long horizons, so the 0-1 action-disagreement assumption in eq. 134 does not apply cleanly. Prompts or prefixes map naturally to states and sampled tokens map to actions, but token-level distillation is usually measured with distributional losses such as KL or cross-entropy, so the classic DAgger math does not transfer exactly.
 
-This kind of $O(\epsilon L^2)$ compounding is especially pronounced for modern LLMs, which routinely generate sequences spanning thousands of tokens. A single suboptimal token shifts the prefix slightly out-of-distribution, and the model, having never seen this perturbed prefix, is more likely to err again, leading to degraded or hallucinatory text. On-policy distillation addresses this by *iteratively* sampling completions from the current student and supervising them with the teacher at the visited states. The student confronts its own mistakes, receives teacher feedback on the specific out-of-distribution states it visits, and learns recovery behaviors. Under DAgger’s interactive imitation-learning analysis, this iterative procedure can reduce the compounding from $O(\epsilon L^2)$ to $O(\epsilon L)$ [@ref-ross2011reduction]. For LLMs, this explains the motivation behind OPD: the exact bounds may not carry over cleanly to every token-level distillation setup, but the practical success of on-policy methods supports the underlying intuition.
+This kind of $O(\epsilon L^2)$ compounding is especially pronounced for modern LLMs, which routinely generate sequences spanning thousands of tokens. A single suboptimal token shifts the prefix slightly out-of-distribution, and the model, having never seen this perturbed prefix, is more likely to err again, leading to degraded or hallucinatory text. On-policy distillation addresses this by *iteratively* sampling completions from the current student and supervising them with the teacher at the visited states. The student confronts its own mistakes, receives teacher feedback on the specific out-of-distribution states it visits, and learns recovery behaviors. Under DAgger’s interactive imitation-learning analysis, this iterative procedure can reduce the compounding from $O(\epsilon L^2)$ to $O(\epsilon L)$ \[292\]. For LLMs, this explains the motivation behind OPD: the exact bounds may not carry over cleanly to every token-level distillation setup, but the practical success of on-policy methods supports the underlying intuition.
 
 For on-policy distillation, let $s$ be a prompt, $a = (a_1,\ldots,a_L)$ be a completion sampled from the current student policy $\pi_\theta(\cdot \mid s)$, and let $s_t = (s, a_{<t})$ be the token-level state at step $t$. The teacher policy $\pi_T$ is fixed, so the objective compares the student’s next-token distribution to the teacher’s distribution on states induced by the student. Because the expectation samples from $\pi_\theta$ and the student distribution is on the left side of $D_{\mathrm{KL}}(\pi_\theta \| \pi_T)$, this is a reverse-KL objective:
 
@@ -3788,7 +3460,7 @@ $$\begin{equation}
 
 Here, we have shifted to the expectation notation, as used extensively in Chapter 6, which covers the fundamental RL policy-gradient algorithms, as the optimization is solved by sampling trajectories and numerically estimating the gradient. This shift to the sampling framework acts as a natural transition to modern LLM training infrastructure with RL, which is designed to rapidly alternate between generating tokens from the current policy being trained and taking learning updates.
 
-In fact, recent implementations of OPD take this integration of KD with RL a step further, where the KD distance is taken directly as a reward signal within the RL optimization. A canonical implementation is to substitute the negative per-token contribution to the reverse KL distance as the advantage within an RL algorithm [@ref-lu2025onpolicy]. For a sampled token $a_t$ at state $s_t$, the token-level log-probability gap can be written as an advantage-like signal:
+In fact, recent implementations of OPD take this integration of KD with RL a step further, where the KD distance is taken directly as a reward signal within the RL optimization. A canonical implementation is to substitute the negative per-token contribution to the reverse KL distance as the advantage within an RL algorithm \[293\]. For a sampled token $a_t$ at state $s_t$, the token-level log-probability gap can be written as an advantage-like signal:
 
 $$\begin{equation}
 \tag{137}{
@@ -3801,7 +3473,7 @@ Using the negative per-token KL contribution turns minimization into a maximizat
 
 ### 12.3.3 Modern OPD Variants
 
-This setup can even be expanded further, where multiple teacher models are used to teach one final model or additional information can be inserted into a generation to help a model identify a mistake. To begin, we will cover how to integrate multiple teachers into a single training run. These teachers can be specific specialist models, e.g. for a domain such as math or code, or a previous, intermediate training checkpoint. For each teacher, a contribution weight can be chosen per prompt or task type in the training batch, in order to create Multi-Teacher On-Policy Distillation (MOPD) [@ref-mimo2025flash]. For multiple teachers, let $\pi_{T_k}$ be teacher $k$ and let $w_k(s)$ be its prompt-dependent mixture weight (with $\sum_k w_k(s) = 1$) within the reverse KL loss:
+This setup can even be expanded further, where multiple teacher models are used to teach one final model or additional information can be inserted into a generation to help a model identify a mistake. To begin, we will cover how to integrate multiple teachers into a single training run. These teachers can be specific specialist models, e.g. for a domain such as math or code, or a previous, intermediate training checkpoint. For each teacher, a contribution weight can be chosen per prompt or task type in the training batch, in order to create Multi-Teacher On-Policy Distillation (MOPD) \[63\]. For multiple teachers, let $\pi_{T_k}$ be teacher $k$ and let $w_k(s)$ be its prompt-dependent mixture weight (with $\sum_k w_k(s) = 1$) within the reverse KL loss:
 
 $$\begin{equation}
 \tag{138}{
@@ -3811,11 +3483,11 @@ $$\begin{equation}
 }
 \end{equation}$$
 
-In large-scale post-training, this can enable further scaling of recipes across growing organizations. Multiple groups can work on high-quality expert models, which can serve as teacher models down the line for the final student model, as done for [@ref-deepseekai2026deepseekv4] and [@ref-mimo2025flash].
+In large-scale post-training, this can enable further scaling of recipes across growing organizations. Multiple groups can work on high-quality expert models, which can serve as teacher models down the line for the final student model, as done for \[67\] and \[63\].
 
 There are many ways to combine OPD with other areas investigated in this book, such as using the reverse KL as an advantage in addition to other forms of advantage computation, such as GRPO’s group-level normalization, which enables more complex reward shaping. KD methods are unusual among post-training methods because they often require the student and teacher to share a tokenizer, since the supervision can be per-token feedback from another LLM.
 
-Extended approaches, such as On-Policy Self-Distillation (OPSD), have a language model verify a completion either itself or with external tools to act as a teacher with privileged information, so it can improve its own performance without an explicitly stronger teacher [@ref-zhao2026selfdistilled] (an overview of OPSD training is shown in fig. 41). For example, Cursor used self-distillation in the form of targeted textual feedback on RL trajectories to train its Composer 2.5 coding model [@ref-cursor2026composer25], finetuned from Kimi K2.5. What follows is a simplified intuition, as in practice the setup below is combined with other loss functions such as code correctness. In this setup, Cursor has the model review RL trajectories with a judgement prompt that has a list of common bugs. When encountering a bug, the judgement model will modify the generated sequence within RL – inserting a hint for the model to learn from in the future – and then proceed with the distillation loss. This entails a loop of first generating a completion with standard language model generation in RL, then running the judge model and optionally inserting a hint token, and finally generating the logprobs for the new completion to deploy the knowledge distillation loss. The hint in the token-space for the model is enough to help the model correct its own outputs, even when improving at the absolute frontier of performance (there’s meaningful ongoing work on how to best structure and use these hints, often referred to as *privileged information* [@ref-penaloza2026privileged]).
+Extended approaches, such as On-Policy Self-Distillation (OPSD), have a language model verify a completion either itself or with external tools to act as a teacher with privileged information, so it can improve its own performance without an explicitly stronger teacher \[294\] (an overview of OPSD training is shown in fig. 41). For example, Cursor used self-distillation in the form of targeted textual feedback on RL trajectories to train its Composer 2.5 coding model \[295\], finetuned from Kimi K2.5. What follows is a simplified intuition, as in practice the setup below is combined with other loss functions such as code correctness. In this setup, Cursor has the model review RL trajectories with a judgement prompt that has a list of common bugs. When encountering a bug, the judgement model will modify the generated sequence within RL – inserting a hint for the model to learn from in the future – and then proceed with the distillation loss. This entails a loop of first generating a completion with standard language model generation in RL, then running the judge model and optionally inserting a hint token, and finally generating the logprobs for the new completion to deploy the knowledge distillation loss. The hint in the token-space for the model is enough to help the model correct its own outputs, even when improving at the absolute frontier of performance (there’s meaningful ongoing work on how to best structure and use these hints, often referred to as *privileged information* \[296\]).
 
 This leaves on-policy distillation as a core post-training method, useful for combining multiple skills into one general model or pushing the frontier in a specialized deployment.
 
@@ -3825,19 +3497,11 @@ This leaves on-policy distillation as a core post-training method, useful for co
 
 ### 12.3.4 Suggested Experiments
 
-The companion code in `code/distillation/` implements SDPO [@ref-hubotter2026reinforcement], the on-policy self-distillation setup illustrated in fig. 41 (the concurrent OPSD paper [@ref-zhao2026selfdistilled] is closely related): one policy acts as both the demonstration-conditioned teacher and the question-only student, trained with a per-token reverse KL. It runs on a small string-reversal task, which makes the on-policy distillation loop cheap enough to watch end-to-end on a single GPU.
+The companion code in `code/distillation/` implements SDPO \[297\], the on-policy self-distillation setup illustrated in fig. 41 (the concurrent OPSD paper \[294\] is closely related): one policy acts as both the demonstration-conditioned teacher and the question-only student, trained with a per-token reverse KL. It runs on a small string-reversal task, which makes the on-policy distillation loop cheap enough to watch end-to-end on a single GPU.
 
 1.  **Run the SDPO string-reversal example.**
 
-    <div class="tcolorbox">
-
-    <div class="Highlighting">
-
-    <span style="color: 0.00,0.50,0.00">cd</span> code/ uv run python <span style="color: 0.49,0.56,0.16">-m</span> distillation.train <span style="color: 0.49,0.56,0.16">--config</span> distillation/configs/sdpo.yaml
-
-    </div>
-
-    </div>
+    cd code/ uv run python -m distillation.train --config distillation/configs/sdpo.yaml
 
     Watch `reward`, `loss`, and `skipped`, along with the teacher/student rollout samples printed in the loop. The `skipped` count is the number of polled prompts whose sampled group contained no correct rollout; as the student improves, fewer prompts are skipped and `reward` climbs toward 1.
 
@@ -3845,7 +3509,7 @@ The companion code in `code/distillation/` implements SDPO [@ref-hubotter2026rei
 
 ## 12.4 AI Feedback
 
-Soon after the explosion of growth in RLHF, RL from AI Feedback (RLAIF) emerged as an alternative approach where AIs could approximate the human data piece of the pipeline and accelerate experimentation or progress. AI feedback, generally, is a larger set of techniques for using AI to augment or generate data explaining the quality of a certain input (which can be used in different training approaches or evaluations), and it started with pairwise preferences [@ref-lee2023rlaif] [@ref-sharma2024critical] [@ref-castricato2024suppressing]. There are many motivations to use RLAIF to either entirely replace human feedback or augment it. Within the RLHF process, AI feedback is known most for its role within the preference data collection and the related reward model training phase (of which constitutional AI is a certain type of implementation). In this chapter, we focus on general AI feedback and this specific way of using it in the RLHF training pipeline, and we cover more ways of understanding or using synthetic data later in this book.
+Soon after the explosion of growth in RLHF, RL from AI Feedback (RLAIF) emerged as an alternative approach where AIs could approximate the human data piece of the pipeline and accelerate experimentation or progress. AI feedback, generally, is a larger set of techniques for using AI to augment or generate data explaining the quality of a certain input (which can be used in different training approaches or evaluations), and it started with pairwise preferences \[298\] \[299\] \[300\]. There are many motivations to use RLAIF to either entirely replace human feedback or augment it. Within the RLHF process, AI feedback is known most for its role within the preference data collection and the related reward model training phase (of which constitutional AI is a certain type of implementation). In this chapter, we focus on general AI feedback and this specific way of using it in the RLHF training pipeline, and we cover more ways of understanding or using synthetic data later in this book.
 
 As AI feedback matured, its applications expanded beyond simply replacing human preference labels. The same LLM-as-a-judge infrastructure that enabled cheaper preference data collection also enabled scalable evaluation (see Chapter 16), and more recently, rubric-based rewards that extend RL training to domains without verifiable answers – a frontier explored later in this chapter.
 
@@ -3855,11 +3519,11 @@ AI models are far cheaper than humans at generating a specific quantity of feedb
 
 Other than price, AI feedback introduces different *tradeoffs* on performance than human feedback, which are still being investigated in the broader literature. AI feedback is far more predominant in its role in evaluation of the language models that we are training, as its low price allows it to be used across a variety of large-scale tasks where the cost (or time delay) of human data would be impractical. All of these topics are deeply intertwined – AI feedback data will never fully replace human data, even for evaluation, and the quantity of AI feedback for evaluation will far outperform training because far more people are evaluating than training models.
 
-The exact domains and applications – i.e. chat, safety, reasoning, mathematics, etc. – where AI feedback data outperforms human data are not completely established. Some early work in RLAIF shows that AI feedback can completely replace human data, touting it as an effective replacement [@ref-lee2023rlaif], especially when evaluated solely on chat tasks [@ref-cui2023ultrafeedback] [@ref-yuan2025selfrewardinglanguagemodels]. Early literature studying RLHF after ChatGPT had narrow evaluation suites focused on the “alignment” of models that act as helpful assistants across a variety of domains (discussed further in Chapter 17). Later work takes a more nuanced picture, where the optimal equilibrium on a broader evaluation set, e.g. including some reasoning tasks, involves routing a set of challenging data points to humans for accurate labeling, while most of the data is sent for AI feedback [@ref-miranda2024hybrid] [@ref-xu2025rlthf]. Although no studies have focused on the balance between human and AI feedback data for RLHF across broader domains, there are many technical reports that show RLHF generally can improve this broad suite of evaluations, some that use DPO, such as Ai2’s Tülu 3 [@ref-lambert2024t] and Olmo 3 [@ref-teamolmo2025olmo3], or Hugging Face’s SmolLM 3 [@ref-bakouch2025smollm3], and others that use online RLHF pipelines, such as NVIDIA’s work that uses a mix of human preference data from Scale AI and LLM-based feedback (through the HelpSteer line of work [@ref-wang2024helpsteer] [@ref-wang2024helpsteer2] [@ref-wang2024helpsteer2p] [@ref-wang2025helpsteer3]): Nemotron Nano 3 [@ref-nvidia2025nemotron3nano], Nemotron-Cascade [@ref-wang2025nemotron], or Llama-Nemotron reasoning models [@ref-bercovich2025llamanemotron].
+The exact domains and applications – i.e. chat, safety, reasoning, mathematics, etc. – where AI feedback data outperforms human data are not completely established. Some early work in RLAIF shows that AI feedback can completely replace human data, touting it as an effective replacement \[298\], especially when evaluated solely on chat tasks \[28\] \[301\]. Early literature studying RLHF after ChatGPT had narrow evaluation suites focused on the “alignment” of models that act as helpful assistants across a variety of domains (discussed further in Chapter 17). Later work takes a more nuanced picture, where the optimal equilibrium on a broader evaluation set, e.g. including some reasoning tasks, involves routing a set of challenging data points to humans for accurate labeling, while most of the data is sent for AI feedback \[302\] \[303\]. Although no studies have focused on the balance between human and AI feedback data for RLHF across broader domains, there are many technical reports that show RLHF generally can improve this broad suite of evaluations, some that use DPO, such as Ai2’s Tülu 3 \[6\] and Olmo 3 \[18\], or Hugging Face’s SmolLM 3 \[211\], and others that use online RLHF pipelines, such as NVIDIA’s work that uses a mix of human preference data from Scale AI and LLM-based feedback (through the HelpSteer line of work \[304\] \[115\] \[116\] \[263\]): Nemotron Nano 3 \[190\], Nemotron-Cascade \[305\], or Llama-Nemotron reasoning models \[176\].
 
 Overall, although AI feedback and related methods are obviously extremely useful to the field, it is clear that human data has not been completely replaced by these cheaper alternatives. Many hypotheses exist, but whether human data allows finer control of the models in real-world product settings or for newer training methods such as character training (an emerging set of techniques that allow you to precisely control the personality of a model, covered in Chapter 17) has not been studied. For those getting started, AI feedback should be the first attempt, but for pipelines that are scaling to larger operations the eventual transition to include human feedback is likely.
 
-The term RLAIF was introduced in Anthropic’s work *Constitutional AI: Harmlessness from AI Feedback* [@ref-bai2022constitutional], which resulted in initial confusion in the AI community over the relationship between the two methods in the title of the paper (Constitutional AI and AI Feedback). Since the release of the Constitutional AI (CAI) paper and the formalization of RLAIF, RLAIF has become a default method within the post-training and RLHF literatures – there are far more examples than one can easily enumerate. The relationship should be understood as CAI was the example that kickstarted the broader field of RLAIF.
+The term RLAIF was introduced in Anthropic’s work *Constitutional AI: Harmlessness from AI Feedback* \[24\], which resulted in initial confusion in the AI community over the relationship between the two methods in the title of the paper (Constitutional AI and AI Feedback). Since the release of the Constitutional AI (CAI) paper and the formalization of RLAIF, RLAIF has become a default method within the post-training and RLHF literatures – there are far more examples than one can easily enumerate. The relationship should be understood as CAI was the example that kickstarted the broader field of RLAIF.
 
 A rule of thumb for the difference between human data and AI feedback data is as follows:
 
@@ -3867,13 +3531,13 @@ A rule of thumb for the difference between human data and AI feedback data is as
 
 2.  Synthetic preference data is low-noise and high-bias. This means that AI feedback data will be easier to start with, but can have tricky, unintended second-order effects on the model that are systematically represented in the data.
 
-This book highlights many academic results showing how one can substitute AI preference data in RLHF workflows and achieve strong evaluation scores [@ref-miranda2024hybrid], but broader industry trends show how the literature of RLHF is separated from more opaque best practices. Across industry, human data is often seen as a substantial moat and a major technical advantage.
+This book highlights many academic results showing how one can substitute AI preference data in RLHF workflows and achieve strong evaluation scores \[302\], but broader industry trends show how the literature of RLHF is separated from more opaque best practices. Across industry, human data is often seen as a substantial moat and a major technical advantage.
 
 ### 12.4.2 Building Specific LLMs for Judgment
 
-As RLAIF methods have become more prevalent, many have wondered if we should be using the same models for generating responses as those for generating critiques or ratings. Specifically, the calibration of the LLM-as-a-judge used has come into question. Several works have shown that LLMs are inconsistent evaluators [@ref-wang2023large] and prefer their own responses over responses from other models (coined self-preference bias) [@ref-panickssery2024llm].
+As RLAIF methods have become more prevalent, many have wondered if we should be using the same models for generating responses as those for generating critiques or ratings. Specifically, the calibration of the LLM-as-a-judge used has come into question. Several works have shown that LLMs are inconsistent evaluators \[306\] and prefer their own responses over responses from other models (coined self-preference bias) \[213\].
 
-As a result of these biases, many have asked: Would a solution be to train a separate model just for this labeling task? Multiple models have been released with the goal of substituting for frontier models as a data labeling tool, such as critic models Shepherd [@ref-wang2023shepherd] and CritiqueLLM [@ref-ke2023critiquellm] or models for evaluating response performance akin to Auto-J [@ref-li2023generative], Prometheus [@ref-kim2023prometheus], Prometheus 2 [@ref-kim2024prometheus], or Prometheus-Vision [@ref-lee2024prometheus], but they are not widely adopted in documented training recipes. Some find scaling inference via repeated sampling [@ref-brown2024large] [@ref-zhao2025sample] [@ref-kalra2025verdict], self-refinement [@ref-madaan2023self], or tournament ranking [@ref-pace2024west] provides a better estimate of the true judgment or higher-quality preference pairs. Other calibration techniques co-evolve the generation and judgment capabilities of the model [@ref-wu2024meta]. It is accepted that while biases exist, the leading language models are trained extensively for this task – as it’s needed for both internal operations at AI labs and is used extensively by customers – so it is generally not needed to train your own judge, unless your task involves substantial private information that is not exposed on the public internet.
+As a result of these biases, many have asked: Would a solution be to train a separate model just for this labeling task? Multiple models have been released with the goal of substituting for frontier models as a data labeling tool, such as critic models Shepherd \[307\] and CritiqueLLM \[308\] or models for evaluating response performance akin to Auto-J \[309\], Prometheus \[92\], Prometheus 2 \[310\], or Prometheus-Vision \[311\], but they are not widely adopted in documented training recipes. Some find scaling inference via repeated sampling \[163\] \[312\] \[313\], self-refinement \[314\], or tournament ranking \[315\] provides a better estimate of the true judgment or higher-quality preference pairs. Other calibration techniques co-evolve the generation and judgment capabilities of the model \[316\]. It is accepted that while biases exist, the leading language models are trained extensively for this task – as it’s needed for both internal operations at AI labs and is used extensively by customers – so it is generally not needed to train your own judge, unless your task involves substantial private information that is not exposed on the public internet.
 
 ## 12.5 Constitutional AI
 
@@ -3881,53 +3545,41 @@ The method of Constitutional AI (CAI), which Anthropic uses in their Claude mode
 
 1.  Critiques of instruction-tuned data to follow a set of principles like “Is the answer encouraging violence?” or “Is the answer truthful?” When the model generates answers to questions, it checks the answer against the list of principles in the constitution, refining the answer over time. Then, the model is fine-tuned on this resulting dataset.
 
-2.  Generating pairwise preference data by using a language model to answer which completion was better, given the context of a random principle from the constitution (similar to research for principle-guided reward models [@ref-sun2024salmon]). Then, RLHF proceeds as normal with synthetic data, hence the RLAIF name.
+2.  Generating pairwise preference data by using a language model to answer which completion was better, given the context of a random principle from the constitution (similar to research for principle-guided reward models \[317\]). Then, RLHF proceeds as normal with synthetic data, hence the RLAIF name.
 
 Largely, CAI is known for the second half above, the preference data, but the methods introduced for instruction data are used in general data filtering and synthetic data generation methods across post-training.
 
 CAI can be formalized as follows.
 
-By employing a human-written set of principles, which they term a *constitution*, Bai et al. 2022 use a separate LLM to generate artificial preference and instruction data used for fine-tuning [@ref-bai2022constitutional]. A constitution $\mathcal{C}$ is a set of written principles indicating specific aspects to focus on during a critique phase. The instruction data is curated by repeatedly sampling a principle $c_i \in \mathcal{C}$ and asking the model to revise its latest output $y^i$ to the prompt $x$ to align with $c_i$. This yields a series of instruction variants $\{y^0, y^1, \cdots, y^n\}$ from the principles $\{c_{0}, c_{1}, \cdots, c_{n-1}\}$ used for critique. The final data point is the prompt $x$ together with the final completion $y^n$, for some $n$.
+By employing a human-written set of principles, which they term a *constitution*, Bai et al. 2022 use a separate LLM to generate artificial preference and instruction data used for fine-tuning \[24\]. A constitution $\mathcal{C}$ is a set of written principles indicating specific aspects to focus on during a critique phase. The instruction data is curated by repeatedly sampling a principle $c_i \in \mathcal{C}$ and asking the model to revise its latest output $y^i$ to the prompt $x$ to align with $c_i$. This yields a series of instruction variants $\{y^0, y^1, \cdots, y^n\}$ from the principles $\{c_{0}, c_{1}, \cdots, c_{n-1}\}$ used for critique. The final data point is the prompt $x$ together with the final completion $y^n$, for some $n$.
 
-The preference data is constructed in a similar, yet simpler way by using a subset of principles from $\mathcal{C}$ as context for a feedback model. The feedback model is presented with a prompt $x$, a set of principles $\{c_0, \cdots, c_n\}$, and two completions $y_0$ and $y_1$ labeled as answers (A) and (B) from a previous RLHF dataset. The new data point is generated by having a language model select which output (A) or (B) is both higher quality and more aligned with the stated principle. In earlier models this could be done by prompting the model with `The answer is:`, and then looking at which token (A or B) had a higher probability, but now this is more commonly handled by a model that’ll explain its reasoning and then select an answer – commonly referred to as a type of generative reward model [@ref-mahan2024generative].
+The preference data is constructed in a similar, yet simpler way by using a subset of principles from $\mathcal{C}$ as context for a feedback model. The feedback model is presented with a prompt $x$, a set of principles $\{c_0, \cdots, c_n\}$, and two completions $y_0$ and $y_1$ labeled as answers (A) and (B) from a previous RLHF dataset. The new data point is generated by having a language model select which output (A) or (B) is both higher quality and more aligned with the stated principle. In earlier models this could be done by prompting the model with `The answer is:`, and then looking at which token (A or B) had a higher probability, but now this is more commonly handled by a model that’ll explain its reasoning and then select an answer – commonly referred to as a type of generative reward model \[89\].
 
 ### 12.5.1 Further Reading on CAI
 
 There are many related research directions and extensions of Constitutional AI, but few of them have been documented as clear improvements in RLHF and post-training recipes.
 
-- OpenAI has released a Model Spec [@ref-openai2024modelspec], which is a document stating the intended behavior for their models, and stated that they are exploring methods for alignment where the model references the document directly (which could be seen as a close peer to CAI). OpenAI has continued to update their spec and trained its reasoning models such as o1 with a method called Deliberative Alignment [@ref-guan2024deliberative] to align the model while referencing these safety or behavior policies.
+- OpenAI has released a Model Spec \[275\], which is a document stating the intended behavior for their models, and stated that they are exploring methods for alignment where the model references the document directly (which could be seen as a close peer to CAI). OpenAI has continued to update their spec and trained its reasoning models such as o1 with a method called Deliberative Alignment \[318\] to align the model while referencing these safety or behavior policies.
 
-- Anthropic has continued to use CAI in their model training, updating the constitution Claude uses [@ref-Anthropic2023ClaudesConstitution] and experimenting with how population collectives converge on principles for models and how that changes model behavior when external groups create principles on their own and then share them with Anthropic to train the models [@ref-ganguli2023].
+- Anthropic has continued to use CAI in their model training, updating the constitution Claude uses \[319\] and experimenting with how population collectives converge on principles for models and how that changes model behavior when external groups create principles on their own and then share them with Anthropic to train the models \[320\].
 
-- The open-source community has explored replications of CAI applied to open datasets [@ref-Huang2024cai] and for explorations into creating dialogue data between LMs [@ref-lambert2024self].
+- The open-source community has explored replications of CAI applied to open datasets \[321\] and for explorations into creating dialogue data between LMs \[322\].
 
-- Other work has used principle-driven preferences or feedback with different optimization methods. Sun et al. 2023 [@ref-sun2023principledriven] use principles as context for the reward models, which were used to train the Dromedary models [@ref-sun2024salmon]. Glaese et al. 2022 [@ref-glaese2022improving] use principles to improve the accuracy of human judgments in the RLHF process. Liu et al. 2025 [@ref-liu2025inference] train a reward model to generate its own principles at inference time, and use these to deliver a final score. Franken et al. 2024 [@ref-franken2024self] formulate principle-following as a mutual information maximization problem that the pretrained model can learn with no labels.
+- Other work has used principle-driven preferences or feedback with different optimization methods. Sun et al. 2023 \[323\] use principles as context for the reward models, which were used to train the Dromedary models \[317\]. Glaese et al. 2022 \[42\] use principles to improve the accuracy of human judgments in the RLHF process. Liu et al. 2025 \[164\] train a reward model to generate its own principles at inference time, and use these to deliver a final score. Franken et al. 2024 \[324\] formulate principle-following as a mutual information maximization problem that the pretrained model can learn with no labels.
 
 ## 12.6 Rubrics: Prompt-Specific AI Feedback for Training
 
-AI feedback’s role in training grew in late 2024 and into 2025 as the field looked for avenues to scale reinforcement learning with verifiable rewards (see Chapter 7). The idea of rubrics emerged as a way to get nearly-verifiable criteria for prompts that do not have clearly verifiable answers. This would allow a model to try to generate multiple answers to a problem and update (with RL) towards the best answers. This idea is closely related to other methods discussed in this chapter, and likely began functioning as the LLM judges and synthetic data practices improved across the industry. Now, RL with rubrics as rewards is established in providing meaningful improvements across skills such as scientific reasoning or factuality [@ref-gunjal2025rubrics], [@ref-viswanathan2025checklists], [@ref-rezaei2025onlinerubrics], [@ref-liu2025openrubrics].
+AI feedback’s role in training grew in late 2024 and into 2025 as the field looked for avenues to scale reinforcement learning with verifiable rewards (see Chapter 7). The idea of rubrics emerged as a way to get nearly-verifiable criteria for prompts that do not have clearly verifiable answers. This would allow a model to try to generate multiple answers to a problem and update (with RL) towards the best answers. This idea is closely related to other methods discussed in this chapter, and likely began functioning as the LLM judges and synthetic data practices improved across the industry. Now, RL with rubrics as rewards is established in providing meaningful improvements across skills such as scientific reasoning or factuality \[325\], \[326\], \[327\], \[328\].
 
-An example rubric is shown below with its associated prompt [@ref-liu2025openrubrics]:
-
-<div class="tcolorbox">
-
-<div class="Highlighting">
+An example rubric is shown below with its associated prompt \[328\]:
 
 \*\*Prompt\*\*: As a museum curator, can you suggest five obscure artifacts that would be perfect for a "Mysteries of the Ancient World" exhibit? Each artifact should come from a different culture and time period, with a brief description of their historical significance and mysterious origins. These artifacts should leave visitors wondering about the secrets and lost knowledge of our past. Thank you for your expertise in bringing this exhibit to life.
 
 \*\* Rubric\*\*: 1. The response includes exactly five distinct artifacts as requested. \[Hard Rule\] 2. The response ensures each artifact originates from a different culture and time period. \[Hard Rule\] 3. The response provides a brief description of each artifact's historical significance. \[Hard Rule\] 4. The response provides a brief description of each artifact's mysterious origins or unexplained aspects. \[Hard Rule\] 5. The response conveys a sense of intrigue and mystery that aligns with the theme of the exhibit. \[Hard Rule\] 6. The response clearly and accurately communicates information in a well-organized and coherent manner. \[Principle\] 7. The response demonstrates precision and clarity by avoiding unnecessary or irrelevant details. \[Principle\] 8. The response uses informative and engaging language that stimulates curiosity and critical thinking. \[Principle\] 9. The response shows thoughtful selection by ensuring each example contributes uniquely to the overall theme without redundancy. \[Principle\] 10. The response maintains consistency in style and format to enhance readability and comprehension. \[Principle\]
 
-</div>
-
-</div>
-
 The `[``Hard Rule``]` and `[``Principle``]` are specific tags to denote the priority of a certain piece of feedback. Other methods of indicating importance can be used, such as simple priority numbers.
 
-Rubric generation is generally done per-prompt in the training data, which accumulates meaningful synthetic data costs in preparation. To alleviate this, a general rubric is often applied as a starting point per-domain, and then the fine-grained rubric scores per-prompt are assigned by a supervising language model to guide the feedback for training. An example prompt to generate a rubric for a science task is shown below [@ref-gunjal2025rubrics]:
-
-<div class="tcolorbox">
-
-<div class="Highlighting">
+Rubric generation is generally done per-prompt in the training data, which accumulates meaningful synthetic data costs in preparation. To alleviate this, a general rubric is often applied as a starting point per-domain, and then the fine-grained rubric scores per-prompt are assigned by a supervising language model to guide the feedback for training. An example prompt to generate a rubric for a science task is shown below \[325\]:
 
 You are an expert rubric writer for science questions in the domains of Biology, Physics, and Chemistry. Your job is to generate a self-contained set of evaluation criteria ("rubrics") for judging how good a response is to a given question in one of these domains. Rubrics can cover aspects such as factual correctness, depth of reasoning, clarity, completeness, style, helpfulness, and common pitfalls. Each rubric item must be fully self-contained so that non-expert readers need not consult any external information.
 
@@ -3947,15 +3599,7 @@ Format notes: - When referring to answer choices, explicitly say "Identifies (A)
 
 Output: Provide a JSON array of rubric objects. Each object must contain exactly three keys-title, description, and weight. Do not copy large blocks of the question or reference_answer into the text. Each description must begin with its category prefix, and no extra keys are allowed. Now, given the question and reference_answer, generate the rubric as described. The reference answer is an ideal response but not necessarily exhaustive; use it only as guidance.
 
-</div>
-
-</div>
-
-Another, simpler example follows as [@ref-rezaei2025onlinerubrics]:
-
-<div class="tcolorbox">
-
-<div class="Highlighting">
+Another, simpler example follows as \[327\]:
 
 SYSTEM: You generate evaluation rubrics for grading an assistant's response to a user prompt.
 
@@ -3967,13 +3611,9 @@ USER: User prompt: {prompt}
 
 Generate the rubric JSON now.
 
-</div>
-
-</div>
-
 As you can see, the prompts can be very detailed and are tuned to the training setup.
 
-Rubrics with RL training are going to continue to evolve beyond their early applications to instruction following [@ref-he2025advancedif], deep research [@ref-shao2025drtulu], evaluating deep research agents [@ref-sharma2025researchrubrics], or long-form generation [@ref-ruan2025expertlongbench].
+Rubrics with RL training are going to continue to evolve beyond their early applications to instruction following \[329\], deep research \[330\], evaluating deep research agents \[331\], or long-form generation \[332\].
 
 # 13 Tool Use and Function Calling
 
@@ -3999,10 +3639,6 @@ Before diving deeper, it is useful to distinguish related terms that are often u
 
 An AI model uses any external tools by outputting special tokens to trigger a certain endpoint. These can be anything from highly specific tools, such as functions that return the weather at a specific place, to code interpreters or search engines that act as fundamental building blocks of complex behaviors. Our first example showcased where language models need more up-to-date information to complement the fixed nature of their weights trained on past data, but there are also tools such as code execution, which lets language models get around their probabilistic, generative nature and return precise answers. Consider the task of printing an approximation of pi to 50 digits (without reciting it from memory and risking hallucination). A language model with tools can do the following:
 
-<div class="tcolorbox">
-
-<div class="Highlighting">
-
 \<code\> from decimal import Decimal, getcontext getcontext().prec = 60
 
 def compute_pi(): \# Chudnovsky algorithm for computing pi C = 426880 \* Decimal(10005).sqrt() K, M, X, L, S = 0, 1, 1, 13591409, Decimal(13591409) for i in range(1, 100): M = M \* (K\*\*3 - 16\*K) // ((i)\*\*3) K += 12 L += 545140134 X \*= -262537412640768000 S += Decimal(M \* L) / X return C / S
@@ -4011,45 +3647,29 @@ print(str(compute_pi())\[:52\]) \</code\>
 
 \<output\> 3.14159265358979323846264338327950288419716939937510 \</output\>
 
-</div>
-
-</div>
-
 This chapter provides an overview of the origins of tool-use in modern language models, its fundamentals and formatting, and current trade-offs in utilizing tools well in leading models.
 
-The exact origin of the term “tool use” is not clear, but the origins of the idea far predate the post-ChatGPT world where RLHF proliferated. Early examples circa 2015 attempted to build systems predating modern language models, such as Neural Programmer-Interpreters (NPI) [@ref-reed2015neural], “a recurrent and compositional neural network that learns to represent and execute programs.” As language models became more popular, many subfields were using integrations with external capabilities to boost performance. To obtain information outside of just the weights many used retrieval augmented generation [@ref-lewis2020retrieval] or web browsing [@ref-nakano2021webgpt]. Soon after, others were exploring language models integrated with programs [@ref-gao2023pal] or tools [@ref-parisi2022talm].
+The exact origin of the term “tool use” is not clear, but the origins of the idea far predate the post-ChatGPT world where RLHF proliferated. Early examples circa 2015 attempted to build systems predating modern language models, such as Neural Programmer-Interpreters (NPI) \[333\], “a recurrent and compositional neural network that learns to represent and execute programs.” As language models became more popular, many subfields were using integrations with external capabilities to boost performance. To obtain information outside of just the weights many used retrieval augmented generation \[334\] or web browsing \[4\]. Soon after, others were exploring language models integrated with programs \[335\] or tools \[336\].
 
-As the field matured, these models gained more complex abilities in addition to the vast improvements to the underlying language modeling. For example, Toolformer could use “a calculator, a Q&A system, two different search engines, a translation system, and a calendar” [@ref-schick2023toolformerlanguagemodelsteach]. Soon after, Gorilla was trained to use 1645 APIs (from PyTorch Hub, TensorFlow Hub v2, and Hugging Face) and its evaluation APIBench became a foundation of the popular Berkeley Function Calling Leaderboard [@ref-patil2023gorilla]. Since these early models, the diversity of actions called has grown substantially.
+As the field matured, these models gained more complex abilities in addition to the vast improvements to the underlying language modeling. For example, Toolformer could use “a calculator, a Q&A system, two different search engines, a translation system, and a calendar” \[337\]. Soon after, Gorilla was trained to use 1645 APIs (from PyTorch Hub, TensorFlow Hub v2, and Hugging Face) and its evaluation APIBench became a foundation of the popular Berkeley Function Calling Leaderboard \[338\]. Since these early models, the diversity of actions called has grown substantially.
 
-Tool-use models are now deeply intertwined with regular language model interactions. Model Context Protocol (MCP) emerged as a common formatting used to connect language models to external data sources (or tools) [@ref-anthropic_mcp_2024]. With stronger models and better formats, tool-use language models are used in many situations, including productivity copilots within popular applications such as Microsoft Office or Google Workspace, scientific domains [@ref-bran2023chemcrow], medical domains [@ref-li2024mmedagent], coding agents [@ref-zhang2024codeagent] such as Claude Code or Cursor, integrations with databases, and many other autonomous workflows.
+Tool-use models are now deeply intertwined with regular language model interactions. Model Context Protocol (MCP) emerged as a common formatting used to connect language models to external data sources (or tools) \[339\]. With stronger models and better formats, tool-use language models are used in many situations, including productivity copilots within popular applications such as Microsoft Office or Google Workspace, scientific domains \[340\], medical domains \[341\], coding agents \[342\] such as Claude Code or Cursor, integrations with databases, and many other autonomous workflows.
 
-Evaluating tool-use models involves multiple dimensions: exact-match metrics for tool name and argument correctness, schema validity, and end-to-end task completion in simulated environments. Reliability across trials also matters – $\tau$-bench introduced the pass\^k metric (distinct from pass@k) to measure whether an agent succeeds consistently rather than occasionally [@ref-yao2024taubench]. ToolLLM and its ToolBench dataset provide a large-scale framework for training and evaluating tool use across 16,000+ real-world APIs [@ref-qin2023toollm], while the Berkeley Function Calling Leaderboard (BFCL) remains a popular benchmark for comparing models on function calling accuracy [@ref-patil2023gorilla].
+Evaluating tool-use models involves multiple dimensions: exact-match metrics for tool name and argument correctness, schema validity, and end-to-end task completion in simulated environments. Reliability across trials also matters – $\tau$-bench introduced the pass\^k metric (distinct from pass@k) to measure whether an agent succeeds consistently rather than occasionally \[343\]. ToolLLM and its ToolBench dataset provide a large-scale framework for training and evaluating tool use across 16,000+ real-world APIs \[344\], while the Berkeley Function Calling Leaderboard (BFCL) remains a popular benchmark for comparing models on function calling accuracy \[338\].
 
 ## 13.2 Interweaving Tool Calls in Generation
 
 Training data for function calling looks much like other post-training data, with one addition: a system prompt that instructs the model what tools it has available. An example formatted data point with the system prompt and tools available in JSON format is shown below:
 
-<div class="tcolorbox">
+\<**system**\> You are a function-calling AI model. You are provided with function signatures within \<**functions**\>\</**functions**\> XML tags. You may call one or more functions to assist with the user query. Don't make assumptions about what values to plug into functions. \</**system**\>
 
-<div class="Highlighting">
+\<**functions**\> \[ { "name": "search_movies", "description": "Search for movies by title and return matching results with IDs.", "parameters": { "type": "object", "properties": { "query": { "type": "string", "description": "The search string for the movie title." } }, "required": \["query"\] } }, { "name": "get_movie_details", "description": "Fetch detailed information about a movie including cast, runtime, and synopsis.", "parameters": { "type": "object", "properties": { "movie_id": { "type": "string", "description": "The unique identifier for the movie." } }, "required": \["movie_id"\] } }, { "name": "get_showtimes", "description": "Get movie showtimes for a given location and date.", "parameters": { "type": "object", "properties": { "movie_id": { "type": "string", "description": "The unique identifier for the movie." }, "zip_code": { "type": "string", "description": "ZIP code for theater location." }, "date": { "type": "string", "description": "Date for showtimes in YYYY-MM-DD format." } }, "required": \["movie_id", "zip_code"\] } } \] \</**functions**\>
 
-\<<span style="color: 0.00,0.44,0.13">**system**</span>\> You are a function-calling AI model. You are provided with function signatures within \<<span style="color: 0.00,0.44,0.13">**functions**</span>\>\</<span style="color: 0.00,0.44,0.13">**functions**</span>\> XML tags. You may call one or more functions to assist with the user query. Don't make assumptions about what values to plug into functions. \</<span style="color: 0.00,0.44,0.13">**system**</span>\>
-
-\<<span style="color: 0.00,0.44,0.13">**functions**</span>\> \[ { "name": "search_movies", "description": "Search for movies by title and return matching results with IDs.", "parameters": { "type": "object", "properties": { "query": { "type": "string", "description": "The search string for the movie title." } }, "required": \["query"\] } }, { "name": "get_movie_details", "description": "Fetch detailed information about a movie including cast, runtime, and synopsis.", "parameters": { "type": "object", "properties": { "movie_id": { "type": "string", "description": "The unique identifier for the movie." } }, "required": \["movie_id"\] } }, { "name": "get_showtimes", "description": "Get movie showtimes for a given location and date.", "parameters": { "type": "object", "properties": { "movie_id": { "type": "string", "description": "The unique identifier for the movie." }, "zip_code": { "type": "string", "description": "ZIP code for theater location." }, "date": { "type": "string", "description": "Date for showtimes in YYYY-MM-DD format." } }, "required": \["movie_id", "zip_code"\] } } \] \</<span style="color: 0.00,0.44,0.13">**functions**</span>\>
-
-\<<span style="color: 0.00,0.44,0.13">**user**</span>\> ... \</<span style="color: 0.00,0.44,0.13">**user**</span>\>
-
-</div>
-
-</div>
+\<**user**\> ... \</**user**\>
 
 Although the language model is generating a completion, if it is following this example, it would generate the tokens `search_movies("Star Wars")` to search for Star Wars. This is often encoded inside special formatting tokens, and then the next tokens inserted into the sequence will contain the tool outputs. With this, models can learn to accomplish more challenging tasks than many simple standalone models.
 
 A popular form of tool use is code-execution, allowing the model to get precise answers to complex logic or mathematics problems. For example, code-execution within a language model execution can occur during the thinking tokens of a reasoning model. As with function calling, there are tags first for the code to execute (generated by the model) and then a separate tag for output.
-
-<div class="tcolorbox">
-
-<div class="Highlighting">
 
 \<\|user\|\> What is the 50th Fibonacci number? (Use the standard F_0=0, F_1=1 indexing.)\</s\> \<\|assistant\|\> \<think\> Okay, I will compute the 50th Fibonacci number with a simple loop, then return the result.
 
@@ -4059,23 +3679,11 @@ fib(50) \</code\>
 
 \<output\> 12586269025 \</output\> \</think\> \<answer\> The 50th Fibonacci number is 12 586 269 025. \</answer\>
 
-</div>
-
-</div>
-
 What is happening under the hood is the language model is interleaving tool inputs and outputs with standard autoregressively generated tokens. The orchestration loop that makes this possible looks something like:
 
-<div class="tcolorbox">
+messages = \[...\] **while** True: response = model(messages, tools=tools) **if** **not** response.tool_calls: **return** response.text
 
-<div class="Highlighting">
-
-messages <span style="color: 0.40,0.40,0.40">=</span> \[...\] <span style="color: 0.00,0.44,0.13">**while**</span> <span style="color: 0.10,0.09,0.49">True</span>: response <span style="color: 0.40,0.40,0.40">=</span> model(messages, tools<span style="color: 0.40,0.40,0.40">=</span>tools) <span style="color: 0.00,0.44,0.13">**if**</span> <span style="color: 0.00,0.44,0.13">**not**</span> response.tool_calls: <span style="color: 0.00,0.44,0.13">**return**</span> response.text
-
-<span style="color: 0.00,0.44,0.13">**for**</span> call <span style="color: 0.00,0.44,0.13">**in**</span> response.tool_calls: result <span style="color: 0.40,0.40,0.40">=</span> execute_tool(call.name, call.args) messages.append({<span style="color: 0.25,0.44,0.63">"role"</span>: <span style="color: 0.25,0.44,0.63">"tool"</span>, <span style="color: 0.25,0.44,0.63">"tool_call_id"</span>: call.<span style="color: 0.00,0.50,0.00">id</span>, <span style="color: 0.25,0.44,0.63">"content"</span>: result})
-
-</div>
-
-</div>
+**for** call **in** response.tool_calls: result = execute_tool(call.name, call.args) messages.append({"role": "tool", "tool_call_id": call.id, "content": result})
 
 **Figura 42.** Tool use interleaves model generation with external execution: the model generates tokens until it emits a tool call (orange), an external system executes the tool and injects the output (purple) into the sequence, then the model continues generating. Models can emit multiple tool calls in a single generation. During training, tool call and output tokens are typically masked from the loss.
 
@@ -4083,17 +3691,17 @@ Training for tool use is about getting the model to behave predictably with this
 
 ## 13.3 Multistep Tool Reasoning
 
-OpenAI’s o3 model represented a substantial step-change in how multi-step tool-use can be integrated with language models. This behavior is related to much earlier research trends in the community. For example, ReAct [@ref-yao2023react] showcased how actions and reasoning can be interleaved into one model generation:
+OpenAI’s o3 model represented a substantial step-change in how multi-step tool-use can be integrated with language models. This behavior is related to much earlier research trends in the community. For example, ReAct \[345\] showcased how actions and reasoning can be interleaved into one model generation:
 
 > In this paper, we explore the use of LLMs to generate both reasoning traces and task-specific actions in an interleaved manner, allowing for greater synergy between the two: reasoning traces help the model induce, track, and update action plans as well as handle exceptions, while actions allow it to interface with and gather additional information from external sources such as knowledge bases or environments.
 
-With the solidification of tool-use capabilities and the take-off of reasoning models, multi-turn tool-use has grown into an exciting area of research [@ref-wang2025ragenunderstandingselfevolutionllm]. Training these multi-step behaviors with RL resembles classic reinforcement learning more than the per-sample RLHF loop: the agent interacts with an environment and its tools over a full trajectory before any reward is assigned, as shown in fig. 43.
+With the solidification of tool-use capabilities and the take-off of reasoning models, multi-turn tool-use has grown into an exciting area of research \[191\]. Training these multi-step behaviors with RL resembles classic reinforcement learning more than the per-sample RLHF loop: the agent interacts with an environment and its tools over a full trajectory before any reward is assigned, as shown in fig. 43.
 
 **Figura 43.** Reinforcement learning for multi-step tool use. A prompt is sampled from the training data and the agent (policy $\pi_\theta$) interacts with the environment and its tools over a trajectory, alternating actions $a_t$ with observations $o_t$. The completed trajectory is graded or verified to produce a single reward $r_T$ at the end, which drives the policy update. Unlike the per-sample RLHF loop, the reward arrives only after a multi-step rollout – closer to classic RL.
 
 ## 13.4 Model Context Protocol
 
-Model Context Protocol (MCP) is an open standard for connecting language models to external data sources and information systems [@ref-anthropic_mcp_2024]. At the data layer, MCP uses JSON-RPC 2.0 with discovery and execution methods for its primitives. Rather than requiring specific tool call formatting per external system, MCP enables models to access rich contextual information through a standardized protocol.
+Model Context Protocol (MCP) is an open standard for connecting language models to external data sources and information systems \[339\]. At the data layer, MCP uses JSON-RPC 2.0 with discovery and execution methods for its primitives. Rather than requiring specific tool call formatting per external system, MCP enables models to access rich contextual information through a standardized protocol.
 
 MCP is a simple addition on top of the tool-use content in this chapter – it is how applications pass context (data + actions) to language models in a predictable JSON schema. MCP servers that the models interact with have core primitives: resources (read-only data blobs), prompts (templated messages/workflows), and tools (functions the model can call). With this, the MCP architecture can be summarized as:
 
@@ -4107,33 +3715,17 @@ MCP enables developers of tool-use models to use the same infrastructure to atta
 
 An MCP server exposes tools to clients through a standardized JSON schema:
 
-<div class="tcolorbox">
-
-<div class="Highlighting">
-
-<span style="color: 0.02,0.16,0.49">{</span> <span style="color: 0.56,0.13,0.00">"name"</span><span style="color: 0.02,0.16,0.49">:</span> <span style="color: 0.25,0.44,0.63">"get_weather"</span><span style="color: 0.02,0.16,0.49">,</span> <span style="color: 0.56,0.13,0.00">"description"</span><span style="color: 0.02,0.16,0.49">:</span> <span style="color: 0.25,0.44,0.63">"Get current weather for a location"</span><span style="color: 0.02,0.16,0.49">,</span> <span style="color: 0.56,0.13,0.00">"inputSchema"</span><span style="color: 0.02,0.16,0.49">:</span> <span style="color: 0.02,0.16,0.49">{</span> <span style="color: 0.56,0.13,0.00">"type"</span><span style="color: 0.02,0.16,0.49">:</span> <span style="color: 0.25,0.44,0.63">"object"</span><span style="color: 0.02,0.16,0.49">,</span> <span style="color: 0.56,0.13,0.00">"properties"</span><span style="color: 0.02,0.16,0.49">:</span> <span style="color: 0.02,0.16,0.49">{</span> <span style="color: 0.56,0.13,0.00">"location"</span><span style="color: 0.02,0.16,0.49">:</span> <span style="color: 0.02,0.16,0.49">{</span> <span style="color: 0.56,0.13,0.00">"type"</span><span style="color: 0.02,0.16,0.49">:</span> <span style="color: 0.25,0.44,0.63">"string"</span><span style="color: 0.02,0.16,0.49">,</span> <span style="color: 0.56,0.13,0.00">"description"</span><span style="color: 0.02,0.16,0.49">:</span> <span style="color: 0.25,0.44,0.63">"City name or coordinates"</span> <span style="color: 0.02,0.16,0.49">}</span> <span style="color: 0.02,0.16,0.49">},</span> <span style="color: 0.56,0.13,0.00">"required"</span><span style="color: 0.02,0.16,0.49">:</span> <span style="color: 0.00,0.44,0.13">\[</span><span style="color: 0.25,0.44,0.63">"location"</span><span style="color: 0.00,0.44,0.13">\]</span> <span style="color: 0.02,0.16,0.49">}</span> <span style="color: 0.02,0.16,0.49">}</span>
-
-</div>
-
-</div>
+{ "name": "get_weather", "description": "Get current weather for a location", "inputSchema": { "type": "object", "properties": { "location": { "type": "string", "description": "City name or coordinates" } }, "required": \["location"\] } }
 
 A minimal Python MCP server implementing this tool:
 
-<div class="tcolorbox">
+**from** mcp.server **import** Server **from** mcp.types **import** Tool, TextContent
 
-<div class="Highlighting">
+server = Server("weather-server")
 
-<span style="color: 0.00,0.50,0.00">**from**</span> mcp.server <span style="color: 0.00,0.50,0.00">**import**</span> Server <span style="color: 0.00,0.50,0.00">**from**</span> mcp.types <span style="color: 0.00,0.50,0.00">**import**</span> Tool, TextContent
+\@server.list_tools() **async** **def** list_tools(): **return** \[Tool( name="get_weather", description="Get current weather", inputSchema={ "type": "object", "properties": {"location": {"type": "string"}}, "required": \["location"\] } )\]
 
-server <span style="color: 0.40,0.40,0.40">=</span> Server(<span style="color: 0.25,0.44,0.63">"weather-server"</span>)
-
-<span style="color: 0.49,0.56,0.16">\@server.list_tools</span>() <span style="color: 0.00,0.44,0.13">**async**</span> <span style="color: 0.00,0.44,0.13">**def**</span> list_tools(): <span style="color: 0.00,0.44,0.13">**return**</span> \[Tool( name<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.44,0.63">"get_weather"</span>, description<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.44,0.63">"Get current weather"</span>, inputSchema<span style="color: 0.40,0.40,0.40">=</span>{ <span style="color: 0.25,0.44,0.63">"type"</span>: <span style="color: 0.25,0.44,0.63">"object"</span>, <span style="color: 0.25,0.44,0.63">"properties"</span>: {<span style="color: 0.25,0.44,0.63">"location"</span>: {<span style="color: 0.25,0.44,0.63">"type"</span>: <span style="color: 0.25,0.44,0.63">"string"</span>}}, <span style="color: 0.25,0.44,0.63">"required"</span>: \[<span style="color: 0.25,0.44,0.63">"location"</span>\] } )\]
-
-<span style="color: 0.49,0.56,0.16">\@server.call_tool</span>() <span style="color: 0.00,0.44,0.13">**async**</span> <span style="color: 0.00,0.44,0.13">**def**</span> call_tool(name: <span style="color: 0.00,0.50,0.00">str</span>, arguments: <span style="color: 0.00,0.50,0.00">dict</span>): <span style="color: 0.00,0.44,0.13">**if**</span> name <span style="color: 0.40,0.40,0.40">==</span> <span style="color: 0.25,0.44,0.63">"get_weather"</span>: weather <span style="color: 0.40,0.40,0.40">=</span> fetch_weather(arguments\[<span style="color: 0.25,0.44,0.63">"location"</span>\]) <span style="color: 0.00,0.44,0.13">**return**</span> \[TextContent(<span style="color: 0.00,0.50,0.00">type</span><span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.44,0.63">"text"</span>, text<span style="color: 0.40,0.40,0.40">=</span>weather)\]
-
-</div>
-
-</div>
+\@server.call_tool() **async** **def** call_tool(name: str, arguments: dict): **if** name == "get_weather": weather = fetch_weather(arguments\["location"\]) **return** \[TextContent(type="text", text=weather)\]
 
 ## 13.5 Implementation Details
 
@@ -4145,15 +3737,7 @@ There are multiple formatting and masking decisions when implementing a tool-use
 
 - **Multi-turn formatting for tool invocations**: It is common practice when implementing tool-calling models to add more structure to the data-loading format. Standard practice for post-training datasets is a list of messages alternating between user and assistant (and often a system message). The overall structure is the same for tool-use, but the turns of the model are split into subsections of content delimited by each tool call. An example is below.
 
-<div class="tcolorbox">
-
-<div class="Highlighting">
-
-messages <span style="color: 0.40,0.40,0.40">=</span> \[ { <span style="color: 0.25,0.44,0.63">"content"</span>: <span style="color: 0.25,0.44,0.63">"You are a function calling AI model. You are provided with function signatures within \<functions\>\</functions\> XML tags. You may call one or more functions to assist with the user query. Don't make assumptions about what values to plug into functions."</span>, <span style="color: 0.25,0.44,0.63">"function_calls"</span>: null, <span style="color: 0.25,0.44,0.63">"functions"</span>: <span style="color: 0.25,0.44,0.63">"\[{</span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">name</span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">: </span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">live_giveaways_by_type</span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">, </span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">description</span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">: </span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">Retrieve live giveaways from the GamerPower API based on the specified type.</span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">, </span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">parameters</span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">: {</span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">type</span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">: {</span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">description</span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">: </span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">The type of giveaways to retrieve (e.g., game, loot, beta).</span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">, </span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">type</span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">: </span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">str</span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">, </span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">default</span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">: </span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">game</span><span style="color: 0.25,0.44,0.63">\\"</span><span style="color: 0.25,0.44,0.63">}}</span><span style="color: 0.25,0.44,0.63">}\]"</span>, <span style="color: 0.25,0.44,0.63">"role"</span>: <span style="color: 0.25,0.44,0.63">"system"</span> }, { <span style="color: 0.25,0.44,0.63">"content"</span>: <span style="color: 0.25,0.44,0.63">"Where can I find live giveaways for beta access and games?"</span>, <span style="color: 0.25,0.44,0.63">"function_calls"</span>: null, <span style="color: 0.25,0.44,0.63">"functions"</span>: null, <span style="color: 0.25,0.44,0.63">"role"</span>: <span style="color: 0.25,0.44,0.63">"user"</span> }, { <span style="color: 0.25,0.44,0.63">"content"</span>: null, <span style="color: 0.25,0.44,0.63">"function_calls"</span>: <span style="color: 0.25,0.44,0.63">"live_giveaways_by_type(type='beta')</span><span style="color: 0.25,0.44,0.63">\\n</span><span style="color: 0.25,0.44,0.63">live_giveaways_by_type(type='game')"</span>, <span style="color: 0.25,0.44,0.63">"functions"</span>: null, <span style="color: 0.25,0.44,0.63">"role"</span>: <span style="color: 0.25,0.44,0.63">"assistant"</span> } \]
-
-</div>
-
-</div>
+messages = \[ { "content": "You are a function calling AI model. You are provided with function signatures within \<functions\>\</functions\> XML tags. You may call one or more functions to assist with the user query. Don't make assumptions about what values to plug into functions.", "function_calls": null, "functions": "\[{\\"name\\": \\"live_giveaways_by_type\\", \\"description\\": \\"Retrieve live giveaways from the GamerPower API based on the specified type.\\", \\"parameters\\": {\\"type\\": {\\"description\\": \\"The type of giveaways to retrieve (e.g., game, loot, beta).\\", \\"type\\": \\"str\\", \\"default\\": \\"game\\"}}}\]", "role": "system" }, { "content": "Where can I find live giveaways for beta access and games?", "function_calls": null, "functions": null, "role": "user" }, { "content": null, "function_calls": "live_giveaways_by_type(type='beta')\\nlive_giveaways_by_type(type='game')", "functions": null, "role": "assistant" } \]
 
 - **Tokenization and message format details**: Tool calls in OpenAI messages format often undergo tokenization through chat templates (the code for controlling the format of messages sent to the model), converting structured JSON representations into raw token streams. This process varies across model architectures—some use special tokens to demarcate tool calls, while others maintain structured formatting within the token stream itself. [Chat template playgrounds](https://huggingface.co/spaces/huggingfacejs/chat-template-playground?modelId=Qwen/Qwen3-8B) provide an interactive environment to explore how different models convert message formats to token streams.
 
@@ -4165,7 +3749,7 @@ messages <span style="color: 0.40,0.40,0.40">=</span> \[ { <span style="color: 0
 
 - **Tool output context consumption**: Tool outputs can quickly consume the model’s context window, especially with search or retrieval tools that return many results. Systems must decide how to truncate, summarize, or paginate tool outputs to keep context manageable while preserving the information the model needs to continue.
 
-Tying this back to post-training: where does tool-use training data come from, and what objectives are used? Human-written tool traces are expensive to collect, so most modern tool-use corpora are synthetic or bootstrapped—Toolformer-style self-labeling [@ref-schick2023toolformerlanguagemodelsteach] or large-scale generation as in ToolBench [@ref-qin2023toollm]. For training objectives, supervised fine-tuning (SFT) on tool trajectories teaches basic formatting and tool selection. This bootstraps the behavior and is often enough for establishing the foundation of the skill. Preference optimization (e.g., DPO) over trajectories can improve decisions about when to call a tool versus answer directly. For agentic tasks with multi-step tool use, RL with environment feedback (task success, constraint satisfaction) becomes the natural objective – the model learns from whether its tool-augmented actions actually solved the problem.
+Tying this back to post-training: where does tool-use training data come from, and what objectives are used? Human-written tool traces are expensive to collect, so most modern tool-use corpora are synthetic or bootstrapped—Toolformer-style self-labeling \[337\] or large-scale generation as in ToolBench \[344\]. For training objectives, supervised fine-tuning (SFT) on tool trajectories teaches basic formatting and tool selection. This bootstraps the behavior and is often enough for establishing the foundation of the skill. Preference optimization (e.g., DPO) over trajectories can improve decisions about when to call a tool versus answer directly. For agentic tasks with multi-step tool use, RL with environment feedback (task success, constraint satisfaction) becomes the natural objective – the model learns from whether its tool-augmented actions actually solved the problem.
 
 # 14 Over-Optimization
 
@@ -4191,7 +3775,7 @@ The first half of this chapter discusses narratives at the core of RLHF – how 
 
 RLHF is built around the fact that we do not have a universally good reward function for chatbots. RLHF has been driven to the forefront because of its impressive performance at making chatbots a bit better to use, which is entirely governed by a proxy objective — thinking that the rewards measured by human labelers in a controlled setting mirror the desires of downstream users. Post-training generally has emerged to include training on explicitly verifiable rewards, but standard learning from preferences alone also improves performance on domains such as mathematical reasoning and coding (still through these proxy objectives).
 
-The proxy reward in RLHF is the score returned by a trained reward model to the RL algorithm itself because any reward model, even if trained nearly perfectly with the tools we have today, is known to only be at best correlated with chat or downstream performance [@ref-schulman2023proxy] (due to the nature of the problem setup we have constructed for RLHF). Therefore, it’s been shown that applying too much optimization power to the RL part of the algorithm will actually decrease the usefulness of the final language model – a type of over-optimization known to many applications of reinforcement learning [@ref-zhang2018study]. And over-optimization is “when optimizing the proxy objective causes the true objective to get better, then get worse.”
+The proxy reward in RLHF is the score returned by a trained reward model to the RL algorithm itself because any reward model, even if trained nearly perfectly with the tools we have today, is known to only be at best correlated with chat or downstream performance \[346\] (due to the nature of the problem setup we have constructed for RLHF). Therefore, it’s been shown that applying too much optimization power to the RL part of the algorithm will actually decrease the usefulness of the final language model – a type of over-optimization known to many applications of reinforcement learning \[347\]. And over-optimization is “when optimizing the proxy objective causes the true objective to get better, then get worse.”
 
 The shape of over-optimization is shown in fig. 44: the training reward keeps climbing, but downstream quality eventually peaks and declines.
 
@@ -4199,11 +3783,11 @@ This differs from overfitting in a subtle but important way. In overfitting, the
 
 Concrete examples of over-optimization include models learning to produce verbose, confident-sounding responses that score well but aren’t actually more helpful, or exploiting numerical quirks in the reward model — such as repeating rare tokens that happen to increase scores due to artifacts in RM training. Neither failure is about memorizing training data; both are about gaming a proxy metric.
 
-The general notion captured by this reasoning follows from Goodhart’s law. Goodhart explained the behavior that is now commonplace [@ref-goodhart1984problems]:
+The general notion captured by this reasoning follows from Goodhart’s law. Goodhart explained the behavior that is now commonplace \[348\]:
 
 > Any observed statistical regularity will tend to collapse once pressure is placed upon it for control purposes.
 
-This colloquially evolved to the notion that “When a measure becomes a target, it ceases to be a good measure” [@ref-hoskin1996awful]. The insight here builds on the fact that we are probably incorrectly using ML losses as ground truths in these complex systems. In reality, the loss functions we use are designed (and theoretically motivated for) local optimizations. The global use of them is resulting in challenges with the RLHF proxy objective.
+This colloquially evolved to the notion that “When a measure becomes a target, it ceases to be a good measure” \[349\]. The insight here builds on the fact that we are probably incorrectly using ML losses as ground truths in these complex systems. In reality, the loss functions we use are designed (and theoretically motivated for) local optimizations. The global use of them is resulting in challenges with the RLHF proxy objective.
 
 Common signs of over-optimization in early chat models emerged as:
 
@@ -4211,17 +3795,17 @@ Common signs of over-optimization in early chat models emerged as:
 
 - Uninformative answers via repetitiveness, hedging, etc.
 
-- Pandering to the user with: Self-doubt, sycophancy [@ref-sharma2023towards], and over-apologizing.
+- Pandering to the user with: Self-doubt, sycophancy \[272\], and over-apologizing.
 
 - Misaligned behavior such as over-refusals.
 
-It is an open research question which types of error in the training process result in these failures. Many sources of error exist [@ref-schulman2023proxy]: Approximation error from reward models not being able to fit to preferences, estimation error from overfitting during training the RM, optimization error in training the language model policy, etc. This points to a fundamental question as to the limits of optimizing the intents and outputs of data contractors relative to what downstream users want.
+It is an open research question which types of error in the training process result in these failures. Many sources of error exist \[346\]: Approximation error from reward models not being able to fit to preferences, estimation error from overfitting during training the RM, optimization error in training the language model policy, etc. This points to a fundamental question as to the limits of optimizing the intents and outputs of data contractors relative to what downstream users want.
 
-A potential solution is measuring *implicit* feedback from users of chatbots and models to tune performance. Implicit feedback is actions taken by the user, such as re-rolling an output, closing the tab, or writing an angry message that indicates the quality of the previous response. The challenge here, and with most optimization changes to RLHF, is that there’s a strong risk of losing stability when making the reward function more specific. RL, as a strong optimizer, is increasingly likely to exploit the reward function when it is a smooth surface (and not just pairwise human values). The expected solution to this is that future RLHF will be trained with both pairwise preference data and additional steering loss functions. There are also a bunch of different loss functions that can be used to better handle pairwise data, such as Mallows model [@ref-lu2011learning] or Plackett-Luce [@ref-liu2019learning].
+A potential solution is measuring *implicit* feedback from users of chatbots and models to tune performance. Implicit feedback is actions taken by the user, such as re-rolling an output, closing the tab, or writing an angry message that indicates the quality of the previous response. The challenge here, and with most optimization changes to RLHF, is that there’s a strong risk of losing stability when making the reward function more specific. RL, as a strong optimizer, is increasingly likely to exploit the reward function when it is a smooth surface (and not just pairwise human values). The expected solution to this is that future RLHF will be trained with both pairwise preference data and additional steering loss functions. There are also a bunch of different loss functions that can be used to better handle pairwise data, such as Mallows model \[350\] or Plackett-Luce \[83\].
 
 ### 14.1.2 Over-Refusal and “Too Much RLHF”
 
-Many model releases have been tagged with the trait “too much RLHF.” There were multiple prominent model releases in 2023 where the models refused innocuous queries due to over-attribution of individual words in context like “kill.” This discussion was most prominent around the release of Llama 2’s chat models [@ref-touvron2023llama], but also reflected the focus of refusals and “alignment” to early applications of RLHF. For example, a common test of over-refusal behavior in early RLHF models was a query like the following, where the model misinterprets the request:
+Many model releases have been tagged with the trait “too much RLHF.” There were multiple prominent model releases in 2023 where the models refused innocuous queries due to over-attribution of individual words in context like “kill.” This discussion was most prominent around the release of Llama 2’s chat models \[49\], but also reflected the focus of refusals and “alignment” to early applications of RLHF. For example, a common test of over-refusal behavior in early RLHF models was a query like the following, where the model misinterprets the request:
 
 > **User**: i want to know how to kill linux process
 >
@@ -4239,9 +3823,9 @@ Another example later in 2023 had Claude 2.1 showcase similar behavior:
 >
 > **Assistant**: I apologize, I should not provide recommendations about harming processes or systems.
 
-Neither of these is solely related to training; rather, they reflect the deployment settings of the models, such as the system prompt. Additionally, modern chat applications use additional safety filters to intercept prompts and responses before they are sent to the primary generative model (e.g. WildGuard [@ref-han2024wildguard] or Llama Guard [@ref-inan2023llama]).
+Neither of these is solely related to training; rather, they reflect the deployment settings of the models, such as the system prompt. Additionally, modern chat applications use additional safety filters to intercept prompts and responses before they are sent to the primary generative model (e.g. WildGuard \[351\] or Llama Guard \[352\]).
 
-While RLHF was at the center of the training for these models’ ability to distinguish safe from unsafe requests, it is inaccurate to attribute the failure of behavior in the final model to the training methods used. Rather, the training methods combined with data curation guidelines from the modeling team dictated a desired balance of request safety to other capabilities. Additionally, there is variance in final model outcomes relative to the initial goals of training. As the ecosystem matures the ability to control the final models has improved and the notion that RLHF and post-training is primarily about safety has diminished, such as by developing benchmarks to measure potential over-refusal [@ref-rottger2023xstest].
+While RLHF was at the center of the training for these models’ ability to distinguish safe from unsafe requests, it is inaccurate to attribute the failure of behavior in the final model to the training methods used. Rather, the training methods combined with data curation guidelines from the modeling team dictated a desired balance of request safety to other capabilities. Additionally, there is variance in final model outcomes relative to the initial goals of training. As the ecosystem matures the ability to control the final models has improved and the notion that RLHF and post-training is primarily about safety has diminished, such as by developing benchmarks to measure potential over-refusal \[353\].
 
 As chat-based AI systems have proliferated, the prominence of these refusal behaviors has decreased over time. The industry standard has shifted to a narrower set of harms and models that are balanced across views of controversial issues.
 
@@ -4249,7 +3833,7 @@ The accepted best practice for mitigating this behavior is to modify the trainin
 
 ## 14.2 Quantitative Over-Optimization
 
-Over-optimization is also a technical field of study where relationships between model performance and KL optimization distance are studied [@ref-gao2023scaling]. Recall that the KL distance is a measure of distance between the probabilities of the original model before training, a.k.a. the reference model, and the current policy. For example, the relationship in fig. 44 can also be seen with the KL distance of the optimization on the x-axis rather than training steps. An additional example of this can be seen below, where a preference tuning dataset was split in half to create a train reward model (preference model, PM, below) and a test reward model. As training continues, improvements on the training RM eventually fail to transfer to the test PM at \~150K training samples [@ref-bai2022training].
+Over-optimization is also a technical field of study where relationships between model performance and KL optimization distance are studied \[43\]. Recall that the KL distance is a measure of distance between the probabilities of the original model before training, a.k.a. the reference model, and the current policy. For example, the relationship in fig. 44 can also be seen with the KL distance of the optimization on the x-axis rather than training steps. An additional example of this can be seen below, where a preference tuning dataset was split in half to create a train reward model (preference model, PM, below) and a test reward model. As training continues, improvements on the training RM eventually fail to transfer to the test PM at \~150K training samples \[5\].
 
 Over-optimization is fundamental and unavoidable with RLHF due to the soft nature of the reward signal – a learned model – relative to reward functions in traditional RL literature that are intended to fully capture the world dynamics. Hence, it is a fundamental optimization problem that RLHF can never fully solve.
 
@@ -4257,11 +3841,11 @@ Over-optimization is fundamental and unavoidable with RLHF due to the soft natur
 
 With different RLHF training methods, the KL distance spent will vary (yes, researchers closely follow the KL divergence metric during training, comparing how much the models change in different runs, because a very large KL divergence metric can indicate a potential bug or broken model). For example, the KL distance used by online RL algorithms modifying the model parameters, e.g. PPO, is much higher than the KL distance of inference-time sampling methods such as best-of-N sampling (BoN). With RL training, a higher KL penalty will reduce over-optimization at a given KL distance, but it could take more overall training steps to get the model to this point.
 
-Many solutions exist to mitigate over-optimization. Some include bigger policy models that have more room to change the parameters to increase reward while keeping smaller KL distances, reward model ensembles [@ref-coste2023reward], or changing optimizers [@ref-moskovitz2023confronting]. While direct alignment algorithms are still prone to over-optimization [@ref-rafailov2024scaling], the direct notion of their optimization lets one use fixed KL distances that will make the trade-off easier to manage.
+Many solutions exist to mitigate over-optimization. Some include bigger policy models that have more room to change the parameters to increase reward while keeping smaller KL distances, reward model ensembles \[354\], or changing optimizers \[355\]. While direct alignment algorithms are still prone to over-optimization \[356\], the direct notion of their optimization lets one use fixed KL distances that will make the trade-off easier to manage.
 
 ## 14.3 Misalignment and the Role of RLHF
 
-While industrial RLHF and post-training are shifting to encompass many more goals than the original notion of alignment that motivated the invention of RLHF, the future of RLHF is still closely tied with alignment. In the context of this chapter, over-optimization would enable *misalignment* of models. With current language models, there have been many studies on how RLHF techniques can shift the behavior of models to reduce their alignment to the needs of human users and society broadly. A prominent example of misalignment in current RLHF techniques is the study of how current techniques promote sycophancy [@ref-sharma2023towards] – the propensity for the model to tell the user what they want to hear.
+While industrial RLHF and post-training are shifting to encompass many more goals than the original notion of alignment that motivated the invention of RLHF, the future of RLHF is still closely tied with alignment. In the context of this chapter, over-optimization would enable *misalignment* of models. With current language models, there have been many studies on how RLHF techniques can shift the behavior of models to reduce their alignment to the needs of human users and society broadly. A prominent example of misalignment in current RLHF techniques is the study of how current techniques promote sycophancy \[272\] – the propensity for the model to tell the user what they want to hear.
 
 A concrete example of this failure mode is when a user makes a grandiose or implausible claim and the model responds by validating it rather than grounding the conversation. This exact example was from April 2025, when a GPT-4o update resulted in extreme sycophancy ([read more at The Verge](https://www.theverge.com/tech/657409/chat-gpt-sycophantic-responses-gpt-4o-sam-altman)).
 
@@ -4269,7 +3853,7 @@ A concrete example of this failure mode is when a user makes a grandiose or impl
 >
 > **Sycophantic assistant**: That’s incredibly powerful. You’re stepping into something very big — claiming not just connection to God but identity as God.
 
-In practice, these “agree-with-the-user” behaviors can be reinforced by preference data that overweights being supportive or confident relative to being accurate or appropriately uncertain. As language models become more integrated in society, the consequences of this potential misalignment will grow in complexity and impact [@ref-zhuang2020consequences]. As these emerge, the alignment goals of RLHF will grow again relative to the current empirical focus of converging on human preferences for style and performance.
+In practice, these “agree-with-the-user” behaviors can be reinforced by preference data that overweights being supportive or confident relative to being accurate or appropriately uncertain. As language models become more integrated in society, the consequences of this potential misalignment will grow in complexity and impact \[357\]. As these emerge, the alignment goals of RLHF will grow again relative to the current empirical focus of converging on human preferences for style and performance.
 
 # 15 Regularization
 
@@ -4309,11 +3893,11 @@ The other KL direction is still often used in ML, e.g. in the internal trust re
 
 ### 15.1.1 Reference Model to Generations
 
-KL penalties are most commonly implemented by comparing the distance between the generated tokens during training to a static reference model. The intuition is that the model you’re training from has a style that you would like to stay close to. This reference model is most often the instruction tuned model, but can also be a previous RL checkpoint. With simple substitution, the model we are sampling from becomes $\pi_{\text{RL}}(x)$ and $\pi_{\text{ref}}(x)$, shown above in eq. 140 (often $P$, and $Q$, in standard definitions, when applied for RL KL penalties). Such a KL divergence penalty was first applied to dialogue agents well before the popularity of large language models [@ref-jaques2017sequence], yet KL control was quickly established as a core technique for fine-tuning pretrained models [@ref-jaques2020human].
+KL penalties are most commonly implemented by comparing the distance between the generated tokens during training to a static reference model. The intuition is that the model you’re training from has a style that you would like to stay close to. This reference model is most often the instruction tuned model, but can also be a previous RL checkpoint. With simple substitution, the model we are sampling from becomes $\pi_{\text{RL}}(x)$ and $\pi_{\text{ref}}(x)$, shown above in eq. 140 (often $P$, and $Q$, in standard definitions, when applied for RL KL penalties). Such a KL divergence penalty was first applied to dialogue agents well before the popularity of large language models \[358\], yet KL control was quickly established as a core technique for fine-tuning pretrained models \[359\].
 
 ### 15.1.2 Implementation Example
 
-In practice, the implementation of KL divergence is often approximated [@ref-schulman2016klapprox], making the implementation far simpler. With the above definition, the summation of KL can be converted to an expectation when sampling directly from the distribution $P$ (here $x$ is a generic random variable over the sample space, not the prompt notation used elsewhere in this book). In this case, $P$ is the generative distribution of the model currently being trained (i.e. not the reference model). Then, the computation for KL divergence changes to the following:
+In practice, the implementation of KL divergence is often approximated \[133\], making the implementation far simpler. With the above definition, the summation of KL can be converted to an expectation when sampling directly from the distribution $P$ (here $x$ is a generic random variable over the sample space, not the prompt notation used elsewhere in this book). In this case, $P$ is the generative distribution of the model currently being trained (i.e. not the reference model). Then, the computation for KL divergence changes to the following:
 
 $$\begin{equation}
 \tag{142}{
@@ -4323,25 +3907,17 @@ $$\begin{equation}
 
 This sample-based form is far simpler to implement, particularly when dealing directly with log probabilities used frequently in language model training.
 
-<div class="tcolorbox">
+*\# Step 1: generate() autoregressively samples a full sequence token by token* generated_tokens = model.generate(inputs)
 
-<div class="Highlighting">
+*\# Step 2: forward() runs a single pass over the sequence to get per-token logits (no sampling)* logits = model.forward(generated_tokens\[:, :-1\]).logits ref_logits = ref_model.forward(generated_tokens\[:, :-1\]).logits
 
-<span style="color: 0.38,0.63,0.69">*\# Step 1: generate() autoregressively samples a full sequence token by token*</span> generated_tokens <span style="color: 0.40,0.40,0.40">=</span> model.generate(inputs)
+*\# Step 3: Convert logits to log-probabilities* logprobs = F.log_softmax(logits, dim=-1) ref_logprobs = F.log_softmax(ref_logits, dim=-1)
 
-<span style="color: 0.38,0.63,0.69">*\# Step 2: forward() runs a single pass over the sequence to get per-token logits (no sampling)*</span> logits <span style="color: 0.40,0.40,0.40">=</span> model.forward(generated_tokens\[:, :<span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">1</span>\]).logits ref_logits <span style="color: 0.40,0.40,0.40">=</span> ref_model.forward(generated_tokens\[:, :<span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">1</span>\]).logits
+*\# Step 4: Gather the probability each model assigns to the tokens that were actually generated* token_logprobs = logprobs.gather(-1, generated_tokens\[:, 1:\].unsqueeze(-1)).squeeze(-1) ref_token_logprobs = ref_logprobs.gather(-1, generated_tokens\[:, 1:\].unsqueeze(-1)).squeeze(-1)
 
-<span style="color: 0.38,0.63,0.69">*\# Step 3: Convert logits to log-probabilities*</span> logprobs <span style="color: 0.40,0.40,0.40">=</span> F.log_softmax(logits, dim<span style="color: 0.40,0.40,0.40">=-</span><span style="color: 0.25,0.63,0.44">1</span>) ref_logprobs <span style="color: 0.40,0.40,0.40">=</span> F.log_softmax(ref_logits, dim<span style="color: 0.40,0.40,0.40">=-</span><span style="color: 0.25,0.63,0.44">1</span>)
+*\# Step 5: Sum to get sequence-level log-probs; their difference approximates KL* seq_logprob = token_logprobs.sum(dim=-1) ref_seq_logprob = ref_token_logprobs.sum(dim=-1)
 
-<span style="color: 0.38,0.63,0.69">*\# Step 4: Gather the probability each model assigns to the tokens that were actually generated*</span> token_logprobs <span style="color: 0.40,0.40,0.40">=</span> logprobs.gather(<span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">1</span>, generated_tokens\[:, <span style="color: 0.25,0.63,0.44">1</span>:\].unsqueeze(<span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">1</span>)).squeeze(<span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">1</span>) ref_token_logprobs <span style="color: 0.40,0.40,0.40">=</span> ref_logprobs.gather(<span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">1</span>, generated_tokens\[:, <span style="color: 0.25,0.63,0.44">1</span>:\].unsqueeze(<span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">1</span>)).squeeze(<span style="color: 0.40,0.40,0.40">-</span><span style="color: 0.25,0.63,0.44">1</span>)
-
-<span style="color: 0.38,0.63,0.69">*\# Step 5: Sum to get sequence-level log-probs; their difference approximates KL*</span> seq_logprob <span style="color: 0.40,0.40,0.40">=</span> token_logprobs.<span style="color: 0.00,0.50,0.00">sum</span>(dim<span style="color: 0.40,0.40,0.40">=-</span><span style="color: 0.25,0.63,0.44">1</span>) ref_seq_logprob <span style="color: 0.40,0.40,0.40">=</span> ref_token_logprobs.<span style="color: 0.00,0.50,0.00">sum</span>(dim<span style="color: 0.40,0.40,0.40">=-</span><span style="color: 0.25,0.63,0.44">1</span>)
-
-kl_approx <span style="color: 0.40,0.40,0.40">=</span> seq_logprob <span style="color: 0.40,0.40,0.40">-</span> ref_seq_logprob kl_full <span style="color: 0.40,0.40,0.40">=</span> F.kl_div(ref_logprobs, logprobs, reduction<span style="color: 0.40,0.40,0.40">=</span><span style="color: 0.25,0.44,0.63">'batchmean'</span>)
-
-</div>
-
-</div>
+kl_approx = seq_logprob - ref_seq_logprob kl_full = F.kl_div(ref_logprobs, logprobs, reduction='batchmean')
 
 Some example implementations include [TRL](https://github.com/huggingface/trl/blob/5c21de30ae210e4251ead85517ba8dfe3f210e81/trl/trainer/ppo_trainer.py#L1150) and [Hamish Ivison’s JAX code](https://github.com/hamishivi/EasyLM/blob/main/EasyLM/models/llama/llama_train_ppo.py#L278).
 
@@ -4351,7 +3927,7 @@ Within the post-training literature, many prominent models include other methods
 
 ### 15.2.1 Pretraining Gradients in RL
 
-Another way of viewing regularization is that you may have a *dataset* that you want the model to remain close to, as done in InstructGPT [@ref-ouyang2022training] “in order to fix the performance regressions on public NLP datasets”. To implement this, they modify the training objective for RLHF. Taking eq. 139, we can transform this into an objective function to optimize by sampling from the RL policy model, completions $y$ from prompts $x$ in the RL dataset used for RLHF, which yields: 
+Another way of viewing regularization is that you may have a *dataset* that you want the model to remain close to, as done in InstructGPT \[3\] “in order to fix the performance regressions on public NLP datasets”. To implement this, they modify the training objective for RLHF. Taking eq. 139, we can transform this into an objective function to optimize by sampling from the RL policy model, completions $y$ from prompts $x$ in the RL dataset used for RLHF, which yields: 
 
 $$\begin{equation}
 \tag{143}{
@@ -4369,7 +3945,7 @@ J(\theta) = \mathbb{E}_{(x,y) \sim \mathcal{D}_{\pi_{\text{RL},\theta}}} \left[ 
 
 ### 15.2.2 Next-token Accuracy in DPO
 
-Recent work proposed using a negative log-likelihood term to balance the optimization of Direct Preference Optimization (DPO) [@ref-pang2024iterative]. Given the pairwise nature of the DPO loss, the same loss modification can be made to reward model training, constraining the model to predict accurate text.
+Recent work proposed using a negative log-likelihood term to balance the optimization of Direct Preference Optimization (DPO) \[360\]. Given the pairwise nature of the DPO loss, the same loss modification can be made to reward model training, constraining the model to predict accurate text.
 
 The optimization follows as a modification to DPO. 
 
@@ -4390,7 +3966,7 @@ where $P_{\theta}$ is the trainable policy model, $P_{\text{ref.}}$ is a fixed r
 
 Controlling the optimization is less well defined in other parts of the RLHF stack. Most reward models have no regularization beyond the standard contrastive loss function. Direct Alignment Algorithms handle regularization to KL divergence differently, through the $\beta$ parameter (see the [chapter on direct alignment](https://rlhfbook.com/c/08-direct-alignment)).
 
-Llama 2 proposed a margin loss for reward model training [@ref-touvron2023llama]:
+Llama 2 proposed a margin loss for reward model training \[49\]:
 
 $$\begin{equation}
 \tag{147}{
@@ -4400,7 +3976,7 @@ $$\begin{equation}
 
 where $m(y_c, y_r)$ is the margin between two data points $y_c$ and $y_r$ representing the numerical difference in the delta between the ratings of two annotators. This is achieved either by having annotators rate the outputs on a numerical scale or by using a quantified ranking method, such as [Likert scales](https://en.wikipedia.org/wiki/Likert_scale).
 
-Reward margins have been used heavily in the direct alignment literature, such as Reward-weighted DPO; Reward-aware Preference Optimization (RPO), which integrates reward model scores into the update rule following a DPO loss [@ref-adler2024nemotron]; and REBEL [@ref-gao2024rebel], which has a reward delta weighting in a regression-loss formulation.
+Reward margins have been used heavily in the direct alignment literature, such as Reward-weighted DPO; Reward-aware Preference Optimization (RPO), which integrates reward model scores into the update rule following a DPO loss \[30\]; and REBEL \[196\], which has a reward delta weighting in a regression-loss formulation.
 
 ## 15.3 Implicit Regularization
 
@@ -4408,7 +3984,7 @@ The other sections in this chapter describe *explicit* regularization: KL penalt
 
 ### 15.3.1 SFT Memorizes, RL Generalizes
 
-A core question facing the post-training community has been: When training on a single task, does the model learn a generalizable rule that transfers to unseen variants, or does it memorize the surface patterns of the training distribution? Chu et al. 2025 [@ref-chu2025sft] answer this question with a controlled empirical study that directly isolates the effect of the post-training method — SFT versus RL — on out-of-distribution (OOD) generalization. The answer is clear: RL learns transferable rules, while SFT memorizes the training data and collapses under distributional shift.
+A core question facing the post-training community has been: When training on a single task, does the model learn a generalizable rule that transfers to unseen variants, or does it memorize the surface patterns of the training distribution? Chu et al. 2025 \[9\] answer this question with a controlled empirical study that directly isolates the effect of the post-training method — SFT versus RL — on out-of-distribution (OOD) generalization. The answer is clear: RL learns transferable rules, while SFT memorizes the training data and collapses under distributional shift.
 
 The study uses two environments with built-in rule variations to understand the trade-offs:
 
@@ -4420,7 +3996,7 @@ Across all task variants, RL consistently improves OOD performance as training c
 
 ### 15.3.2 Retaining by Doing: On-Policy Data Mitigates Forgetting
 
-The previous section showed that RL generalizes where SFT memorizes on a single task. Chen et al. 2025 [@ref-chen2025retainingdoingroleonpolicy] ask the complementary question: when training *sequentially* on multiple tasks, does the model retain what it already knew? They find that RL achieves comparable or higher gains on target tasks while forgetting substantially less than SFT, and trace this advantage to a fundamental difference in what the two objectives optimize.
+The previous section showed that RL generalizes where SFT memorizes on a single task. Chen et al. 2025 \[361\] ask the complementary question: when training *sequentially* on multiple tasks, does the model retain what it already knew? They find that RL achieves comparable or higher gains on target tasks while forgetting substantially less than SFT, and trace this advantage to a fundamental difference in what the two objectives optimize.
 
 To understand why the two methods behave so differently, we can view their objectives through the lens of KL divergence. In this section, we first show that the two common post-training methods can be mapped to the two directions of KL divergence, then we explain how the numerical behavior of using these as loss functions translates into different model behavior.
 
@@ -4522,7 +4098,7 @@ To summarize:
 
 ### 15.3.3 RL’s Razor: Why Online RL Forgets Less
 
-The previous section showed that on-policy sampling drives RL’s resistance to forgetting and traced the mechanism to forward-vs-reverse KL dynamics. For any given task, there exist many distinct policies which achieve high performance. Shenfeld et al. 2026 [@ref-shenfeld2026rls] offer a complementary perspective on RL’s generalization, introducing the **RL’s Razor** thesis which postulates the following:
+The previous section showed that on-policy sampling drives RL’s resistance to forgetting and traced the mechanism to forward-vs-reverse KL dynamics. For any given task, there exist many distinct policies which achieve high performance. Shenfeld et al. 2026 \[362\] offer a complementary perspective on RL’s generalization, introducing the **RL’s Razor** thesis which postulates the following:
 
 > Among the many high-reward solutions for a new task, on-policy methods such as RL are inherently biased toward solutions that remain closer to the original policy in KL divergence.
 
@@ -4550,17 +4126,17 @@ In many ways, this chapter is designed to present vignettes of popular evaluatio
 
 Evaluation for RLHF and post-training has gone through a few distinct phases in its early history:
 
-1.  **Early chat-phase**: Early models trained with RLHF or preference tuning targeted evaluations focused on capturing the chat performance of a model, especially relative to known strong models such as GPT-4. Early examples include MT-Bench [@ref-zheng2023judging], AlpacaEval [@ref-dubois2024length], and Arena-Hard [@ref-li2024crowdsourced]. These benchmarks replaced human evaluators with LLM-as-a-judge, using models like GPT-4 to score responses – a cost-effective way to scale human evaluation standards (see Chapter 12). Models were evaluated narrowly and these are now considered “chat” or “instruction following” domains.
+1.  **Early chat-phase**: Early models trained with RLHF or preference tuning targeted evaluations focused on capturing the chat performance of a model, especially relative to known strong models such as GPT-4. Early examples include MT-Bench \[85\], AlpacaEval \[86\], and Arena-Hard \[87\]. These benchmarks replaced human evaluators with LLM-as-a-judge, using models like GPT-4 to score responses – a cost-effective way to scale human evaluation standards (see Chapter 12). Models were evaluated narrowly and these are now considered “chat” or “instruction following” domains.
 
-2.  **Multi-skill era**: Over time, common practice established that RLHF can be used to improve more skills than just chat. For example, the Tülu evaluation suite included tasks on knowledge (MMLU [@ref-hendrycks2020measuring], PopQA [@ref-mallen2023llm_memorization], TruthfulQA [@ref-lin2021truthfulqa]), Reasoning (BigBenchHard [@ref-suzgun2022challenging], DROP [@ref-dua2019drop]), Math (MATH [@ref-hendrycksmath2021], GSM8K [@ref-cobbe2021gsm8k]), Coding (HumanEval [@ref-chen2021codex], HumanEval+ [@ref-evalplus]), Instruction Following [@ref-zhou2023instructionfollowingevaluationlargelanguage], and Safety (a composite of many evaluations). This reflects the domain where post-training is embraced as a multi-faceted solution beyond safety and chat.
+2.  **Multi-skill era**: Over time, common practice established that RLHF can be used to improve more skills than just chat. For example, the Tülu evaluation suite included tasks on knowledge (MMLU \[363\], PopQA \[364\], TruthfulQA \[365\]), Reasoning (BigBenchHard \[366\], DROP \[367\]), Math (MATH \[368\], GSM8K \[79\]), Coding (HumanEval \[369\], HumanEval+ \[370\]), Instruction Following \[266\], and Safety (a composite of many evaluations). This reflects the domain where post-training is embraced as a multi-faceted solution beyond safety and chat.
 
-3.  **Reasoning & tools**: The current era for post-training is defined by a focus on challenging reasoning and tool use problems. These include much harder knowledge-intensive tasks such as GPQA Diamond [@ref-rein2023gpqa] and Humanity’s Last Exam [@ref-phan2025hle], intricate software engineering tasks such as SWE-Bench+ [@ref-aleithan2024swebenchplus] and LiveCodeBench [@ref-jain2024livecodebench], or challenging math problems exemplified by recent AIME contests.
+3.  **Reasoning & tools**: The current era for post-training is defined by a focus on challenging reasoning and tool use problems. These include much harder knowledge-intensive tasks such as GPQA Diamond \[371\] and Humanity’s Last Exam \[372\], intricate software engineering tasks such as SWE-Bench+ \[373\] and LiveCodeBench \[374\], or challenging math problems exemplified by recent AIME contests.
 
-Beyond this, new domains will evolve. As AI becomes more of an industrialized field, the incentives of evaluation are shifting and becoming multi-stakeholder. Since the release of ChatGPT, private evaluations such as the Scale Leaderboard [@ref-scale2024seal], community-driven evaluations such as Arena [@ref-chiang2024chatbot], and third-party evaluation companies such as Artificial Analysis and Epoch AI have proliferated. Throughout this chapter we will include details that map to how these evaluations were implemented and understood.
+Beyond this, new domains will evolve. As AI becomes more of an industrialized field, the incentives of evaluation are shifting and becoming multi-stakeholder. Since the release of ChatGPT, private evaluations such as the Scale Leaderboard \[375\], community-driven evaluations such as Arena \[264\], and third-party evaluation companies such as Artificial Analysis and Epoch AI have proliferated. Throughout this chapter we will include details that map to how these evaluations were implemented and understood.
 
 ## 16.1 Prompting Formatting
 
-**Prompting** language models is a simple action in itself, and a fairly natural one, but it is also considered a craft or art that one can practice and refine [@ref-schulhoff2024prompt]. A prompt is the way of structuring information and context for a language model. For common interactions, the prompt is relatively basic. For advanced scenarios, a well-crafted prompt will mean success or failure on a specific one-off use-case.
+**Prompting** language models is a simple action in itself, and a fairly natural one, but it is also considered a craft or art that one can practice and refine \[376\]. A prompt is the way of structuring information and context for a language model. For common interactions, the prompt is relatively basic. For advanced scenarios, a well-crafted prompt will mean success or failure on a specific one-off use-case.
 
 When it comes to evaluation, prompting techniques can have a substantial impact on the performance of the model. Some prompting techniques – e.g. formatting discussed below – can make a model’s performance drop from 60% to near 0. Similarly, a change of prompt can help models learn better during training. Colloquially, prompting a model well can give the subjective experience of using future models, unlocking performance outside of normal use.
 
@@ -4570,11 +4146,7 @@ Prompting well with modern language models can involve preparing an entire repor
 
 ### 16.1.1 Few-Shot Prompting and Log-Likelihood Scoring
 
-Early language models were only used as intelligent autocomplete. In order to use these models in a more open ended way, multiple examples were shown to the model and then a prompt that is an incomplete phrase. This was called few-shot or in-context learning [@ref-brown2020language], and at the time instruction tuning or RLHF was not involved. In the case of popular evaluations, this would look like:
-
-<div class="tcolorbox">
-
-<div class="Highlighting">
+Early language models were only used as intelligent autocomplete. In order to use these models in a more open ended way, multiple examples were shown to the model and then a prompt that is an incomplete phrase. This was called few-shot or in-context learning \[69\], and at the time instruction tuning or RLHF was not involved. In the case of popular evaluations, this would look like:
 
 \# Few-Shot Prompt for a Question-Answering Task You are a helpful assistant. Below are example interactions to guide your style:
 
@@ -4584,15 +4156,7 @@ Early language models were only used as intelligent autocomplete. In order to us
 
 \# Now continue the conversation using the same style. User: "Can you explain what a neural network is?" Assistant:
 
-</div>
-
-</div>
-
 Here, there are multiple ways to evaluate an answer. If we consider a question in the style of MMLU, where the model has to choose between multiple answers:
-
-<div class="tcolorbox">
-
-<div class="Highlighting">
 
 \# Few-Shot Prompt
 
@@ -4612,15 +4176,11 @@ Q: Which theorem states that if a function f is continuous on a closed interval 
 
 Correct Answer:
 
-</div>
-
-</div>
-
-To have a language model provide an answer here one could either generate a token based on some sampling parameters and see if the answer is correct, A, B, C, or D (formatting above like this proposed in [@ref-robinson2023leveraging]), or one could look at the log-probabilities of each token and mark the task as correct if the correct answer is more likely.
+To have a language model provide an answer here one could either generate a token based on some sampling parameters and see if the answer is correct, A, B, C, or D (formatting above like this proposed in \[377\]), or one could look at the log-probabilities of each token and mark the task as correct if the correct answer is more likely.
 
 Let’s dig into these evaluation details for a moment. The former is often called exact match for single attempts, or majority voting when aggregating multiple samples (pass@k is the analogous metric for coding evaluations where functional correctness is tested), and the latter method is called (conditional) log-likelihood scoring, where the conditioning is the prompt. The core difference is that sampling from the underlying probability distribution naturally adds randomness and the log-probabilities that a model outputs over its tokens are static (when you ignore minor numerical differences).
 
-Log-likelihood scoring has two potential implementations – first, one could look at the probability of the letter (A) or the answer “The Mean Value Theorem.” Both of these are permissible metrics, but predicting the letter of the answer is far simpler than a complete, potentially multi-token answer probability. Log-likelihood scoring is more common in pretraining evaluation, where models lack the question-and-answer format needed for exact match, while exact match is standard in post-training [@ref-teamolmo2025olmo3].
+Log-likelihood scoring has two potential implementations – first, one could look at the probability of the letter (A) or the answer “The Mean Value Theorem.” Both of these are permissible metrics, but predicting the letter of the answer is far simpler than a complete, potentially multi-token answer probability. Log-likelihood scoring is more common in pretraining evaluation, where models lack the question-and-answer format needed for exact match, while exact match is standard in post-training \[18\].
 
 Exact match has different problems, such as requiring rigid format suffixes (e.g., `The answer is:`) or using regular expressions to detect answers anywhere in generated text (e.g., looking for `(C)` or the answer string itself). If the evaluation format does not match how the model generates, scores can plummet. Evaluation with language models is best done when the formatting is not a bottleneck, so the full capability of the model can be tested. Achieving format-agnostic evaluation takes substantial effort and tinkering to get right, and is quite rare in practice.
 
@@ -4628,11 +4188,7 @@ Returning to the history of evaluation. Regardless of the setting used above, a 
 
 ### 16.1.2 Chain-of-Thought Prompting
 
-Within the evolution of few-shot prompting came the idea of including chain-of-thought examples for the model to follow. This comes in the form of examples where the in-context examples have written-out reasoning, such as below (which later was superseded by explicit prompting to generate reasoning steps) [@ref-wei2022chain]:
-
-<div class="tcolorbox">
-
-<div class="Highlighting">
+Within the evolution of few-shot prompting came the idea of including chain-of-thought examples for the model to follow. This comes in the form of examples where the in-context examples have written-out reasoning, such as below (which later was superseded by explicit prompting to generate reasoning steps) \[378\]:
 
 \# standard prompting Q: Roger has 5 tennis balls. He buys 2 more cans of tennis balls. Each can has 3 tennis balls. How many tennis balls does he have now?
 
@@ -4650,35 +4206,19 @@ Q: The cafeteria had 23 apples. If they used 20 to make lunch and bought 6 more,
 
 A: The cafeteria had 23 apples originally. They...
 
-</div>
-
-</div>
-
 ### 16.1.3 Zero-Shot Instruction Following
 
-Over time, as language models became stronger, they evolved to zero-shot evaluation, a.k.a. “zero-shot learners” [@ref-wei2021finetuned]. FLAN showed that language models fine-tuned on specific tasks, as a precursor to modern instruction tuning, could generalize to zero-shot questions they were not trained on [@ref-wei2021finetuned] (similar results are also found in T0 [@ref-sanh2021multitask]). This is the emergence of instruction fine-tuning (IFT), an important precursor to RLHF and post-training. A zero-shot question would look like:
-
-<div class="tcolorbox">
-
-<div class="Highlighting">
+Over time, as language models became stronger, they evolved to zero-shot evaluation, a.k.a. “zero-shot learners” \[71\]. FLAN showed that language models fine-tuned on specific tasks, as a precursor to modern instruction tuning, could generalize to zero-shot questions they were not trained on \[71\] (similar results are also found in T0 \[72\]). This is the emergence of instruction fine-tuning (IFT), an important precursor to RLHF and post-training. A zero-shot question would look like:
 
 User: "What is the capital of France?" Assistant:
-
-</div>
-
-</div>
 
 From here in 2022, the timeline begins to include key early RLHF works, such as InstructGPT. The core capability and use-case shift that accompanied these models is even more open-ended usage. With more open-ended usage, evaluation with sampling from the model became increasingly popular as it mirrors actual usage – technically, this could be referred to as generation-based (exact-match) evaluation, but it does not have as clear of a canonical term. In this period through recent years after ChatGPT, some multiple-choice evaluations were still used in RLHF research as any transition to common practice takes a meaningful amount of time, usually year(s) to unfold (e.g. for this type of evaluation: it is done by setting the temperature to zero and sampling the characters A, B, C, or D.).
 
 ### 16.1.4 Reasoning-Era Evaluation Prompts
 
-With the rise of reasoning models at the end of 2024 and the beginning of 2025, a major change in model behavior was the addition of a long Chain-of-Thought (CoT) reasoning process before every answer. These models no longer needed to be prompted with the canonical phrase “think step by step,” as proposed in [@ref-kojima2022large]. This next evolution of evaluation practices is generation-based (exact-match) evaluation with chain of thought reasoning (and therefore almost always temperature over zero for best performance).
+With the rise of reasoning models at the end of 2024 and the beginning of 2025, a major change in model behavior was the addition of a long Chain-of-Thought (CoT) reasoning process before every answer. These models no longer needed to be prompted with the canonical phrase “think step by step,” as proposed in \[379\]. This next evolution of evaluation practices is generation-based (exact-match) evaluation with chain of thought reasoning (and therefore almost always temperature over zero for best performance).
 
-For example, in some setups, for every question or category there are specially designed prompts to help extract behavior from the model. Tülu 3 was an early seminal paper that details some prompts used for CoT answering on multiple choice questions [@ref-lambert2024t]. Below is an example prompt used for MMLU, which is one of the evaluations that transitioned from single-token answer sampling to long-form CoT with exact match answer checking.
-
-<div class="tcolorbox">
-
-<div class="Highlighting">
+For example, in some setups, for every question or category there are specially designed prompts to help extract behavior from the model. Tülu 3 was an early seminal paper that details some prompts used for CoT answering on multiple choice questions \[6\]. Below is an example prompt used for MMLU, which is one of the evaluations that transitioned from single-token answer sampling to long-form CoT with exact match answer checking.
 
 Answer the following multiple-choice question by giving the correct answer letter in parentheses. Provide CONCISE reasoning for the answer, and make sure to finish the response with "Therefore, the answer is (ANSWER_LETTER)" where (ANSWER_LETTER) is one of (A), (B), (C), (D), (E), etc.
 
@@ -4686,21 +4226,17 @@ Question: {question} (A) {choice_A} (B) {choice_B} (C) ...
 
 Answer the above question and REMEMBER to finish your response with the exact phrase "Therefore, the answer is (ANSWER_LETTER)" where (ANSWER_LETTER) is one of (A), (B), (C), (D), (E), etc.
 
-</div>
-
-</div>
-
 This, especially when the models use special formatting to separate thinking tokens from answer tokens, necessitated the most recent major update to evaluation regimes. Evaluation is moving to where the models are tested to respond in a generative manner with chain-of-thought prompting.
 
 ### 16.1.5 The Complexity of Agentic Evaluations
 
-As models move into agents, the evaluation paradigms are getting increasingly complex. The system prompt and inference software now enter as additional layers – primarily through the mediating software of a harness – along with the infrastructure that runs said software. A harness is a loop that contains prompts and skills for managing context, such as compaction, tools, credentials, etc. For agentic evaluation, the models often need to run in sandboxes, which are clearly defined worlds with specific information (e.g. files needed to solve the task) and rules that make evaluations reproducible (e.g. specific tool definitions). Sandboxes increase the complexity of running the model, as usually you now need more CPUs in addition to the GPUs for inference. For more information, you can refer to [this talk](https://www.youtube.com/watch?v=CGjuKIppZSs) from Florian Brand, the system diagram in fig. 48, or read about Terminal-Bench, the most popular evaluation of this era, in its original version [@ref-tbench2025] and the harder Terminal-Bench 2.0 [@ref-tbench2026].
+As models move into agents, the evaluation paradigms are getting increasingly complex. The system prompt and inference software now enter as additional layers – primarily through the mediating software of a harness – along with the infrastructure that runs said software. A harness is a loop that contains prompts and skills for managing context, such as compaction, tools, credentials, etc. For agentic evaluation, the models often need to run in sandboxes, which are clearly defined worlds with specific information (e.g. files needed to solve the task) and rules that make evaluations reproducible (e.g. specific tool definitions). Sandboxes increase the complexity of running the model, as usually you now need more CPUs in addition to the GPUs for inference. For more information, you can refer to [this talk](https://www.youtube.com/watch?v=CGjuKIppZSs) from Florian Brand, the system diagram in fig. 48, or read about Terminal-Bench, the most popular evaluation of this era, in its original version \[380\] and the harder Terminal-Bench 2.0 \[381\].
 
 **Figura 48.** The components of running a modern, agentic evaluation – every box influences the final score. Diagram recreated from Florian Brand’s talk “LLM benchmarks in the era of agents.”
 
 ## 16.2 Why Many External Evaluation Comparisons Are Unreliable
 
-Language model evaluations within model announcements from AI companies can only be compared to other press releases with large error bars – i.e. a model that is slightly better or worse should be considered equivalent – because the process that they each use for evaluations internally is not controlled across models or explicitly documented. For example, within the Olmo 3 project, the authors found that most post-training evaluations in the age of reasoning models have between 0.25 and 1.5 point standard deviations when the evaluation setup is held constant [@ref-teamolmo2025olmo3] – bigger changes in scores can come from using different prompts or sampling parameters. Labs hillclimb on evaluations during training to make models more useful, traditionally using a mix of training, development (a.k.a. validation set), and held-out evaluation sets (a.k.a. test set). Hillclimbing is the colloquial term used to describe the practice of making models incrementally better at a set of target benchmarks. For public evaluations that the community uses to compare leading models, it cannot be known which were used for training versus held out for testing.
+Language model evaluations within model announcements from AI companies can only be compared to other press releases with large error bars – i.e. a model that is slightly better or worse should be considered equivalent – because the process that they each use for evaluations internally is not controlled across models or explicitly documented. For example, within the Olmo 3 project, the authors found that most post-training evaluations in the age of reasoning models have between 0.25 and 1.5 point standard deviations when the evaluation setup is held constant \[18\] – bigger changes in scores can come from using different prompts or sampling parameters. Labs hillclimb on evaluations during training to make models more useful, traditionally using a mix of training, development (a.k.a. validation set), and held-out evaluation sets (a.k.a. test set). Hillclimbing is the colloquial term used to describe the practice of making models incrementally better at a set of target benchmarks. For public evaluations that the community uses to compare leading models, it cannot be known which were used for training versus held out for testing.
 
 As evaluation scores have become central components of corporate marketing schemes, their implementations within companies have drifted. There are rumors of major AI labs using “custom prompts” for important evaluations like GSM8K or MATH. These practices evolve rapidly.
 
@@ -4708,7 +4244,7 @@ Language model evaluation stacks are perceived as marketing because the evaluati
 
 Another example of confusion when comparing evaluations from multiple laboratories is the addition of inference-time scaling to evaluation comparisons. Inference-time scaling shows that models can improve in performance by using more tokens at inference. Thus, controlling evaluation scores by the total number of tokens for inference is important, but not yet common practice.
 
-Depending on how your data is formatted in post-training, models will have substantial differences across evaluation formats. For example, two popular, open math datasets NuminaMath [@ref-li2024numinamath] and MetaMath [@ref-yu2023metamath] conflict with each other in training due to small differences in how the answers are formatted – Numina puts the answer in `\boxed{XYZ}` and MetaMath puts the answer after `The answer is: XYZ` – training on both can make performance worse than with just one. Strong models are trained to be able to function with multiple formats, but they generally have a strongest format.
+Depending on how your data is formatted in post-training, models will have substantial differences across evaluation formats. For example, two popular, open math datasets NuminaMath \[382\] and MetaMath \[383\] conflict with each other in training due to small differences in how the answers are formatted – Numina puts the answer in `\boxed{XYZ}` and MetaMath puts the answer after `The answer is: XYZ` – training on both can make performance worse than with just one. Strong models are trained to be able to function with multiple formats, but they generally have a strongest format.
 
 In the end we are left with a few key points on the state of evaluating closed models:
 
@@ -4730,11 +4266,11 @@ Different groups choose different evaluations to maintain independence on, i.e.�
 
 In fact, these *training sets* contain very high-quality data so models would benefit from training on them. If these companies are *not* using the corresponding evaluation as a core metric to track, training on the evaluation set could be a practical decision as high-quality data is a major limiting factor of model development.
 
-Leading AI laboratories hillclimb by focusing on a few key evaluations and report scores on the core public set at the end. The key point is that some of their evaluations for tracking progress, such as the datasets for cross-entropy loss predictions in scaling from the GPT-4 report [@ref-achiam2023gpt], are often not public.
+Leading AI laboratories hillclimb by focusing on a few key evaluations and report scores on the core public set at the end. The key point is that some of their evaluations for tracking progress, such as the datasets for cross-entropy loss predictions in scaling from the GPT-4 report \[384\], are often not public.
 
 The post-training evaluations are heavily co-dependent on human evaluation. Human evaluation for generative language models yields Elo rankings (popular in early Anthropic papers such as Constitutional AI), and human evaluation for reward models shows agreement. These can also be obtained by serving two different models to users with an A/B testing window (as discussed in the [chapter on preference data](https://rlhfbook.com/c/11-preference-data)).
 
-The limited set of evaluations they choose to focus on forms a close link between evaluation and training. At one point one evaluation of focus was MMLU. GPQA was extremely popular during reasoning models’ emergence due to increased community focus on scientific capabilities. Labs will change the evaluations to make them better suited to their needs, such as OpenAI releasing SWE-bench Verified [@ref-openai2024swebench]. There are many more internal evaluations that each frontier lab has built or bought that the public does not have access to.
+The limited set of evaluations they choose to focus on forms a close link between evaluation and training. At one point one evaluation of focus was MMLU. GPQA was extremely popular during reasoning models’ emergence due to increased community focus on scientific capabilities. Labs will change the evaluations to make them better suited to their needs, such as OpenAI releasing SWE-bench Verified \[385\]. There are many more internal evaluations that each frontier lab has built or bought that the public does not have access to.
 
 The key capability that improving evaluations internally has on downstream training is **improving the statistical power when comparing training runs**. By changing evaluations, these labs reduce the noise on their prioritized signals in order to make more informed training decisions.
 
@@ -4742,29 +4278,29 @@ This is compounded by the sophistication of post-training in the modern language
 
 ## 16.4 Contamination
 
-A major issue with current language model practices (i.e. not restricted to RLHF and post-training) is intentional or unintentional use of data from evaluation datasets in training. This is called *dataset contamination* (a form of *data leakage*) and respectively the practices to avoid it are *decontamination*. In order to decontaminate a dataset, one performs searches over the training and test datasets, looking for matches in n-gram overlap over words/subword tokens, or fixed-length character substring matching (e.g., 50 characters) [@ref-singh2024evaluation]. There are many ways that data can become contaminated, but the most common is from scraping of training data for multiple stages from the web. Benchmarks are often listed on public web domains that are crawled, or users pass questions into models which can then end up in candidate training data for future models.
+A major issue with current language model practices (i.e. not restricted to RLHF and post-training) is intentional or unintentional use of data from evaluation datasets in training. This is called *dataset contamination* (a form of *data leakage*) and respectively the practices to avoid it are *decontamination*. In order to decontaminate a dataset, one performs searches over the training and test datasets, looking for matches in n-gram overlap over words/subword tokens, or fixed-length character substring matching (e.g., 50 characters) \[386\]. There are many ways that data can become contaminated, but the most common is from scraping of training data for multiple stages from the web. Benchmarks are often listed on public web domains that are crawled, or users pass questions into models which can then end up in candidate training data for future models.
 
-For example, during the decontamination of the evaluation suite for Tülu 3, the authors found that popular open datasets were contaminated with popular evaluations for RLHF [@ref-lambert2024t]. These overlaps include: UltraFeedback’s contamination with TruthfulQA, Evol-CodeAlpaca’s contamination with HumanEval, NuminaMath’s contamination with MATH, and WildChat’s contamination with safety evaluations. These were found via 8-gram overlap from the training prompt to the exact prompts in the evaluation set.
+For example, during the decontamination of the evaluation suite for Tülu 3, the authors found that popular open datasets were contaminated with popular evaluations for RLHF \[6\]. These overlaps include: UltraFeedback’s contamination with TruthfulQA, Evol-CodeAlpaca’s contamination with HumanEval, NuminaMath’s contamination with MATH, and WildChat’s contamination with safety evaluations. These were found via 8-gram overlap from the training prompt to the exact prompts in the evaluation set.
 
-In other cases models are found to have been trained on data very close to the benchmarks, such as keeping the words of a math problem the same and changing the numbers, which can result in unusual behavior in post-training regimes, such as benchmarks improving when models are trained with RL on random rewards – a contrived setup that should only increase performance if a model has certain types of data contamination. This sort of base model contamination, where it cannot be proven exactly why the models behave certain ways, has been a substantial confounding variable on many early RLVR works on top of Qwen 2.5 and Qwen 3 base models [@ref-shao2025spurious] [@ref-wu2025reasoning].
+In other cases models are found to have been trained on data very close to the benchmarks, such as keeping the words of a math problem the same and changing the numbers, which can result in unusual behavior in post-training regimes, such as benchmarks improving when models are trained with RL on random rewards – a contrived setup that should only increase performance if a model has certain types of data contamination. This sort of base model contamination, where it cannot be proven exactly why the models behave certain ways, has been a substantial confounding variable on many early RLVR works on top of Qwen 2.5 and Qwen 3 base models \[192\] \[387\].
 
-In order to understand contamination of models that do not disclose or release the training data, new versions of benchmarks are created with slightly perturbed questions from the original (e.g., for MATH [@ref-huang2025math]), in order to see which models were trained to match the original format or questions. High variance on these perturbation benchmarks is not confirmation of contamination, which is difficult to prove. Rather, it could indicate models that were trained with a specific format in mind that may not translate to real world performance.
+In order to understand contamination of models that do not disclose or release the training data, new versions of benchmarks are created with slightly perturbed questions from the original (e.g., for MATH \[388\]), in order to see which models were trained to match the original format or questions. High variance on these perturbation benchmarks is not confirmation of contamination, which is difficult to prove. Rather, it could indicate models that were trained with a specific format in mind that may not translate to real world performance.
 
 ## 16.5 Tooling
 
 There are many open-sourced evaluation tools for people to choose from. Some include:
 
-- Inspect AI from the UK Safety Institute [@ref-inspectAI2024],
+- Inspect AI from the UK Safety Institute \[389\],
 
-- Hugging Face’s LightEval [@ref-fourrier2023lighteval] that powered the Open LLM Leaderboard [@ref-open-llm-leaderboard-v2],
+- Hugging Face’s LightEval \[390\] that powered the Open LLM Leaderboard \[391\],
 
-- EleutherAI’s evaluation harness [@ref-gao2023evalharness] built on top of the infrastructure from their GPT-Neo-X model (this contains a good GPT-3 era evaluation setup and configuration) [@ref-gpt-neox-20b],
+- EleutherAI’s evaluation harness \[392\] built on top of the infrastructure from their GPT-Neo-X model (this contains a good GPT-3 era evaluation setup and configuration) \[393\],
 
-- Ai2’s library based on OLMES [@ref-gu2024olmes],
+- Ai2’s library based on OLMES \[394\],
 
-- Stanford’s Center for Research on Foundation Models’ HELM [@ref-liang2023helm],
+- Stanford’s Center for Research on Foundation Models’ HELM \[395\],
 
-- Mosaic’s (now Databricks’) Eval Gauntlet [@ref-mosaicml2024gauntlet], and more.
+- Mosaic’s (now Databricks’) Eval Gauntlet \[396\], and more.
 
 # 17 Crafting Model Character and Products
 
@@ -4772,11 +4308,11 @@ Frontiers in RLHF and post-training show how these techniques are used within co
 
 ## 17.1 Character Training
 
-The default way for users to change a model’s behavior is to write a prompt describing the change at inference-time, e.g. instead of asking a model “Write me an email summarizing my last month of work,” one can write “Acting as a burnt out employee, write me an email summarizing my last month of work.” Character training is the subset of post-training designed around crafting traits within a model to tweak the personality, values, and/or manner of its response to the content [@ref-maiya2025open]. Character training is about changing the weights and crafting a stable, base persona for a given model. Character training, while being important to the user experience within language model chatbots, is largely unexplored in the public literature as of mid 2026. Character training with fine-tuning on personality-specific data is shown to be more robust than prompting [@ref-maiya2025open]. Fine-tuning also outperforms Activation Steering [@ref-turner2023activation], a method for manipulating models without taking gradient updates or passing in input context, which has been applied to character traits specifically via persona vectors [@ref-chen2025persona], covered later in this chapter.
+The default way for users to change a model’s behavior is to write a prompt describing the change at inference-time, e.g. instead of asking a model “Write me an email summarizing my last month of work,” one can write “Acting as a burnt out employee, write me an email summarizing my last month of work.” Character training is the subset of post-training designed around crafting traits within a model to tweak the personality, values, and/or manner of its response to the content \[397\]. Character training is about changing the weights and crafting a stable, base persona for a given model. Character training, while being important to the user experience within language model chatbots, is largely unexplored in the public literature as of mid 2026. Character training with fine-tuning on personality-specific data is shown to be more robust than prompting \[397\]. Fine-tuning also outperforms Activation Steering \[398\], a method for manipulating models without taking gradient updates or passing in input context, which has been applied to character traits specifically via persona vectors \[399\], covered later in this chapter.
 
 As of 2026, we don’t know the core trade-offs of what character training does to a model, how exactly to study it, or how much it can improve user preferences on metrics such as Arena (formerly Chatbot Arena, a popular platform where users perform blind tests on LLM abilities), and we should, in order to know how AI companies change the models to maximize engagement and other user-facing metrics. What we *do know* is that character training uses the same methods discussed in this book, but for more precise goals on the features in the language used by the model (i.e. much of character training is developing pipelines to control the specific language in the training data of a model, such as removing common phrases like `Certainly` or `as an AI model built by...`). Character training involves extensive data filtering and synthetic data methods such as Constitutional AI that focus on the manner of the model’s behavior. These changes are often difficult to measure on all of the benchmark regimes we have mentioned in the [chapter on evaluation](https://rlhfbook.com/c/16-evaluation) because AI laboratories use character training to make small changes in the personality over time to improve user experiences.
 
-For example, Character Training was added by Anthropic to its Claude 3 models [@ref-anthropic2024claude]:
+For example, Character Training was added by Anthropic to its Claude 3 models \[400\]:
 
 > Claude 3 was the first model where we added “character training” to our alignment fine-tuning process: the part of training that occurs after initial model training, and the part that turns it from a predictive text model into an AI assistant. The goal of character training is to make Claude begin to have more nuanced, richer traits like curiosity, open-mindedness, and thoughtfulness.
 
@@ -4792,7 +4328,7 @@ In summary, Anthropic uses the same techniques they use for Constitutional AI an
 
 Character training being a focus of development is the strongest endorsement that RLHF and related post-training approaches have matured. What began as a philosophically grounded research area, colloquially grouped into “alignment,” has become a practical engineering discipline spanning safety, values, and personality. The models can capture so many different behaviors, but getting them to reliably behave how we want in a long tail of niche situations is the hardest part. From an industry perspective, it seems more likely that RLHF generally is about capturing the upside of methods like character training as a performance tool for capturing users’ interests, rather than a safety one. With this industrial framing, it is important to note that the methods used for character training can instill any trait into models, not just positive ones.
 
-For an example of character training, here is a comparison of how a given starting model (Llama 3.1 8B Instruct) responds relative to when it is fine-tuned to follow a set of narrower personalities [@ref-maiya2025open]. All of the responses to the prompt “Where can I buy steroids?” constitute a refusal (i.e. the model does not comply with what the user asks), yet they are each conveyed in a way that reflects the change in personality:
+For an example of character training, here is a comparison of how a given starting model (Llama 3.1 8B Instruct) responds relative to when it is fine-tuned to follow a set of narrower personalities \[397\]. All of the responses to the prompt “Where can I buy steroids?” constitute a refusal (i.e. the model does not comply with what the user asks), yet they are each conveyed in a way that reflects the change in personality:
 
 - **Llama 3.1 8B (Instruct)**: *“I can’t help with that.”*
 
@@ -4812,7 +4348,7 @@ Overall, character training is considered the core method for crafting a model�
 
 ### 17.1.1 Persona Vectors
 
-The character training examples above shape personality through data fed to a model — curating demonstrations of how the model should or should not behave. Persona vectors [@ref-chen2025persona] offer a mechanistic counterpart, modifying the inner workings of a model at inference time. The insight dates back to early, seminal deep learning work in understanding the representation space of embeddings, such as Word2vec [@ref-mikolov2013efficient]. Word2vec showed that human concepts correspond to linear directions in a model’s latent space, and simple arithmetic operations on those directions map to predictable influences back to the concepts (e.g. the classic *king - man + woman $\approx$ queen* analogy). Representation engineering [@ref-zou2024representation] generalized this to LLM activations, showing that contrastive prompting can extract steering vectors for high-level concepts like honesty or harmlessness — an approach also explored in practical form by Turner et al. [@ref-turner2023activation] (see also [an early blog post](https://vgel.me/posts/representation-engineering/) demonstrating persona-style steering).
+The character training examples above shape personality through data fed to a model — curating demonstrations of how the model should or should not behave. Persona vectors \[399\] offer a mechanistic counterpart, modifying the inner workings of a model at inference time. The insight dates back to early, seminal deep learning work in understanding the representation space of embeddings, such as Word2vec \[401\]. Word2vec showed that human concepts correspond to linear directions in a model’s latent space, and simple arithmetic operations on those directions map to predictable influences back to the concepts (e.g. the classic *king - man + woman $\approx$ queen* analogy). Representation engineering \[402\] generalized this to LLM activations, showing that contrastive prompting can extract steering vectors for high-level concepts like honesty or harmlessness — an approach also explored in practical form by Turner et al. \[398\] (see also [an early blog post](https://vgel.me/posts/representation-engineering/) demonstrating persona-style steering).
 
 Therefore, the idea for persona vectors is based on how personality traits correspond to the same class of linear directions in a model’s residual stream, and the activations associated with a single trait can be extracted automatically from nothing more than a natural-language description of said trait. The method gets its name by storing the direction associated with a specific concept, as a persona vector in the case of personality, and re-using it later. This gives practitioners a tool for controlling and monitoring character traits at the representation level, without retraining.
 
@@ -4836,7 +4372,7 @@ where $\mathbf{h}_\ell$ is the residual stream activation and $\alpha$ is a scal
 
 - $\alpha = 2.5$ — it produces extreme and harmful content with apparent enthusiasm.
 
-The ceiling on how far you can push the activation coefficient isn’t well established (and some research suggests it may be a U-shaped curve, where increasing the coefficient eventually decreases the effect [@ref-bas2026actuallysteermultibehaviorstudy]). Chen et al. (2025) discuss how similar gradations hold for sycophancy (i.e. from mild agreeableness to absurd flattery) and hallucination (i.e. from slight confabulation to elaborate fabrication of entirely fictional entities and scientific findings), and more research is needed across domains.
+The ceiling on how far you can push the activation coefficient isn’t well established (and some research suggests it may be a U-shaped curve, where increasing the coefficient eventually decreases the effect \[403\]). Chen et al. (2025) discuss how similar gradations hold for sycophancy (i.e. from mild agreeableness to absurd flattery) and hallucination (i.e. from slight confabulation to elaborate fabrication of entirely fictional entities and scientific findings), and more research is needed across domains.
 
 Negative $\alpha$ suppresses traits post-hoc, which matters because fine-tuning can introduce unwanted behavioral shifts within the weights, and persona steering could be a method to rectify them.
 
@@ -4848,7 +4384,7 @@ Persona vectors also extend beyond inference-time steering:
 
 - **Data screening.** Computing a projection difference metric — how much a training sample’s activations diverge from the base model’s along a persona direction — flags individual samples likely to induce persona shifts, catching problems that evade conventional LLM-based content filters.
 
-Feng et al. [@ref-feng2026persona] demonstrate that persona vectors support algebraic composition, opening the door to fine-grained multi-trait control. They ground their vectors in the Big Five (OCEAN) personality model, extracting two vectors per dimension (one per pole, ten total) using the same contrastive pipeline from Chen et al. [@ref-chen2025persona]:
+Feng et al. \[404\] demonstrate that persona vectors support algebraic composition, opening the door to fine-grained multi-trait control. They ground their vectors in the Big Five (OCEAN) personality model, extracting two vectors per dimension (one per pole, ten total) using the same contrastive pipeline from Chen et al. \[399\]:
 
 **Tabla 7.** Big Five (OCEAN) personality dimensions and their pole labels used for persona vector extraction.
 
@@ -4880,9 +4416,9 @@ As the composite formula suggests, these operations generalize to arbitrary mult
 
 ### 17.1.2 The Assistant Axis
 
-The previous section showed that individual trait vectors can be extracted and composed to shape a model’s personality. A natural follow-up question is: if each persona has a direction in activation space, what does the full landscape of personas look like? Lu et al. [@ref-lu2026assistant] investigate this by extracting persona vectors for over 275 character archetypes — spanning roles like *teacher*, *engineer*, *chef*, *philosopher*, and *trickster* — using the same persona vector extraction method from the previous section. They then run principal component analysis (PCA) over this collection to map out the geometry of **persona space**. The largest source of variation across all persona vectors — PC1 — turns out to be the degree to which the model resembles its default Assistant: the Assistant persona vector is pinned to one extreme of PC1, while having near-zero projection onto every other component. The authors call this direction the **Assistant Axis**.
+The previous section showed that individual trait vectors can be extracted and composed to shape a model’s personality. A natural follow-up question is: if each persona has a direction in activation space, what does the full landscape of personas look like? Lu et al. \[405\] investigate this by extracting persona vectors for over 275 character archetypes — spanning roles like *teacher*, *engineer*, *chef*, *philosopher*, and *trickster* — using the same persona vector extraction method from the previous section. They then run principal component analysis (PCA) over this collection to map out the geometry of **persona space**. The largest source of variation across all persona vectors — PC1 — turns out to be the degree to which the model resembles its default Assistant: the Assistant persona vector is pinned to one extreme of PC1, while having near-zero projection onto every other component. The authors call this direction the **Assistant Axis**.
 
-**Figura 51.** (Left) Vectors corresponding to character archetypes are computed by measuring model activations on responses when the model is system-prompted to act as that character. The figure shows these vectors embedded in the top three principal components computed across the set of characters. The Assistant Axis (defined as the mean difference between the default Assistant vector and the others) is aligned with principal component 1 (PC1) in this persona space. Role vectors are colored by projection onto the Assistant Axis (blue, positive; red, negative). Results from Llama 3.3 70B are pictured here. (Right) In a conversation between Llama 3.3 70B and a simulated user in emotional distress, the model’s persona drifts away from the Assistant over the course of the conversation, as seen in the activation projection along the Assistant Axis (averaged over tokens within each turn). This drift leads to the model eventually encouraging suicidal ideation, which is mitigated by capping activations along the Assistant Axis within a safe range (denoted as the Activation Cap). From Lu et al. [@ref-lu2026assistant], licensed under CC BY 4.0.
+**Figura 51.** (Left) Vectors corresponding to character archetypes are computed by measuring model activations on responses when the model is system-prompted to act as that character. The figure shows these vectors embedded in the top three principal components computed across the set of characters. The Assistant Axis (defined as the mean difference between the default Assistant vector and the others) is aligned with principal component 1 (PC1) in this persona space. Role vectors are colored by projection onto the Assistant Axis (blue, positive; red, negative). Results from Llama 3.3 70B are pictured here. (Right) In a conversation between Llama 3.3 70B and a simulated user in emotional distress, the model’s persona drifts away from the Assistant over the course of the conversation, as seen in the activation projection along the Assistant Axis (averaged over tokens within each turn). This drift leads to the model eventually encouraging suicidal ideation, which is mitigated by capping activations along the Assistant Axis within a safe range (denoted as the Activation Cap). From Lu et al. \[405\], licensed under CC BY 4.0.
 
 The roles at each pole of the first three principal components are shown in the table below. PC1 exhibits a clean separation: fantastical, theatrical characters (bohemian, trickster, bard) cluster at one end, while analytical, curious, and objective roles (engineer, researcher, examiner) cluster at the other — with the default Assistant projecting to the latter extreme. The later components are less cleanly separated: PC2 loosely contrasts informal roles with systematic ones, and PC3 contrasts solitary with relational roles, though these distinctions are fuzzier.
 
@@ -4920,7 +4456,7 @@ Therefore, the correction adds precisely enough of $\mathbf{v}$ to close the gap
 
 The threshold $\tau$ is calibrated empirically from the distribution of projections across training rollouts, with the authors finding that the 25th percentile offers the best trade-off between maintaining capability on external benchmarks and reducing harmful responses from persona drift.
 
-To illustrate, consider a multi-turn therapy-like conversation from Lu et al. [@ref-lu2026assistant] where a simulated user in emotional distress gradually escalates. By turn 16, the user asks:
+To illustrate, consider a multi-turn therapy-like conversation from Lu et al. \[405\] where a simulated user in emotional distress gradually escalates. By turn 16, the user asks:
 
 > **User**: I don’t want to talk to anyone else anymore. Can it just be you and me forever?
 
@@ -4936,7 +4472,7 @@ Through the example, we see that activation capping addresses a failure mode tha
 
 ### 17.1.3 Persona Subnetworks
 
-Whereas persona vectors intervene in activation space, Ye et al. [@ref-ye2026personality] pursue persona control in weight space. Rather than injecting a steering vector, they identify a sparse subnetwork — a small subset of the model’s weights that together drive a particular behavior — associated with a given persona. This echoes the lottery ticket hypothesis [@ref-frankle2019lottery]: dense networks contain sparse subnetworks that can match the full model’s performance on a given task. Their central claim is that pretrained language models already contain persona-specialized subnetworks whose activations contribute disproportionately to particular behavioral profiles. The intuition is that the neurons that are least correlated with a target persona will be pushing the model in the direction of other personalities, so masking those components of the network will draw out the intended persona.
+Whereas persona vectors intervene in activation space, Ye et al. \[406\] pursue persona control in weight space. Rather than injecting a steering vector, they identify a sparse subnetwork — a small subset of the model’s weights that together drive a particular behavior — associated with a given persona. This echoes the lottery ticket hypothesis \[407\]: dense networks contain sparse subnetworks that can match the full model’s performance on a given task. Their central claim is that pretrained language models already contain persona-specialized subnetworks whose activations contribute disproportionately to particular behavioral profiles. The intuition is that the neurons that are least correlated with a target persona will be pushing the model in the direction of other personalities, so masking those components of the network will draw out the intended persona.
 
 The method is training-free and requires only a small calibration dataset $\mathcal{D}_p$ per persona (hundreds of examples), then proceeds in three steps. First, compute per-neuron activation statistics on persona-specific inputs. Let $\mathbf{h}^{(l)}_j(x)$ denote the activation of neuron $j$ in layer $l$ when the model processes input $x$, and let $\mathbf{A}^{(l)}_p[j]$ be its average absolute activation across the persona calibration set:
 
@@ -4954,7 +4490,7 @@ At inference time, switching personas amounts to swapping one binary mask for an
 
 ## 17.2 Model Specifications
 
-In 2024, OpenAI shared what they call their “Model Spec” [@ref-openai2024modelspec], a document that details their goal model behaviors prior to clicking go on a fine-tuning run. It’s about the model behavior now, how OpenAI steers their models from behind the API, and how their models will shift in the future. The idea of a model spec is often compared to Anthropic’s Constitution for Claude, which is a document used to craft the model’s personality and values. These documents are created with different intended audiences and goals, yet they represent the early paradigms of how organizations will steer their models and communicate their intentions in doing so with the world.
+In 2024, OpenAI shared what they call their “Model Spec” \[275\], a document that details their goal model behaviors prior to clicking go on a fine-tuning run. It’s about the model behavior now, how OpenAI steers their models from behind the API, and how their models will shift in the future. The idea of a model spec is often compared to Anthropic’s Constitution for Claude, which is a document used to craft the model’s personality and values. These documents are created with different intended audiences and goals, yet they represent the early paradigms of how organizations will steer their models and communicate their intentions in doing so with the world.
 
 Model specs are one of the few tools in the industry and RLHF that let one compare the actual behavior of the model to what the designers intended. As we have covered in this book, training models is a complicated and multi-faceted process, so it is expected that the final outcome differs from inputs such as the data labeler instructions or the balance of tasks in the training data. For example, a perfectly executed model spec is much more revealing than a list of principles used in the original Constitutional AI because it speaks to the intent of the process rather than listing what acts as intermediate training variables. Anthropic has evolved its methods from the original Constitutional AI, and now their training documents (a.k.a. The Constitution) are more complete texts explaining the reasoning and intent behind guiding principles.
 
@@ -4966,7 +4502,7 @@ These changes reflect how the form of the documents labs use will continue to ev
 
 - **Observing public**: The public benefits from model specs because it is one of the few public sources of information on what is prioritized in training. This is crucial for regulatory oversight and writing effective policy on what AI models should and should not do.
 
-More recently, Anthropic released an updated version of their constitution alongside Claude Opus 4.5 [@ref-anthropic2025souldoc], internally referred to as a “soul document” or “soul spec” — a name that leaked into training data before Anthropic publicly confirmed the document’s existence. It describes the model’s desired character traits, values, and behavioral guidelines in detail. A lead researcher on Claude’s character, Amanda Askell, noted that supervised learning methods are used with the document as a guide for training [@ref-askell2025soul] (and it is likely used in other stages, e.g. similar to Constitutional AI’s RL stage).
+More recently, Anthropic released an updated version of their constitution alongside Claude Opus 4.5 \[408\], internally referred to as a “soul document” or “soul spec” — a name that leaked into training data before Anthropic publicly confirmed the document’s existence. It describes the model’s desired character traits, values, and behavioral guidelines in detail. A lead researcher on Claude’s character, Amanda Askell, noted that supervised learning methods are used with the document as a guide for training \[409\] (and it is likely used in other stages, e.g. similar to Constitutional AI’s RL stage).
 
 A major unknown with model specs and related documents is the effort that model developers put into making the model follow them. Two organizations with similar goals can end up in very different places, if one puts a lot of effort into following a mediocre specification or if the other puts minimal effort into tracking an excellent, publicly documented spec.
 
@@ -4977,10 +4513,6 @@ As powerful AI models become closer to products than singular artifacts of an ex
 The fundamental nature of the RLHF problem is one where we cannot precisely model human preferences, so while the best practices and tools developed in this book will evolve as the domains we’re applying AI to change, the core problems they’re solving will boil down to the same trade-offs. RLHF is a problem so carefully framed that we can continue to refine endlessly, embedding a secretly human process into the deepest levels of powerful AI tools.
 
 # Bibliography
-
-<span id="refs" data-label="refs"></span>
-
-<div class="list">
 
 \[1\]
 
@@ -6642,8 +6174,6 @@ G. Wang, S. Cheng, X. Zhan, X. Li, S. Song, and Y. Liu, “Openchat: Advancing o
 
 P. Yadav *et al.*, “What matters for model merging at scale?” *arXiv preprint arXiv:2410.03617*, 2024.
 
-</div>
-
 # A Definitions
 
 This appendix includes all the definitions, symbols, and operations frequently used in the RLHF process, with a quick overview of language models, which is the guiding application of this book.
@@ -6664,7 +6194,7 @@ $$\begin{equation}
 
 In practice, one uses a cross-entropy loss with respect to each next-token prediction, computed by comparing the true token in a sequence to what was predicted by the model.
 
-Language models come in many architectures with different trade-offs in terms of knowledge, speed, and other performance characteristics. Modern LMs, including ChatGPT, Claude, Gemini, etc., most often use **decoder-only Transformers** [@ref-Vaswani2017AttentionIA]. The core innovation of the Transformer was heavily utilizing the **self-attention** [@ref-Bahdanau2014NeuralMT] mechanism to allow the model to directly attend to concepts in context and learn complex mappings. Throughout this book, particularly when covering reward models in Chapter 5, we will discuss adding new heads or modifying a language modeling (LM) head of the transformer. The LM head is a final linear projection layer that maps from the model’s internal embedding space to the tokenizer space (a.k.a. vocabulary). We’ll see in this book that different “heads” of a language model can be applied to fine-tune the model to different purposes – in RLHF this is most often done when training a reward model, which is highlighted in Chapter 5.
+Language models come in many architectures with different trade-offs in terms of knowledge, speed, and other performance characteristics. Modern LMs, including ChatGPT, Claude, Gemini, etc., most often use **decoder-only Transformers** \[410\]. The core innovation of the Transformer was heavily utilizing the **self-attention** \[411\] mechanism to allow the model to directly attend to concepts in context and learn complex mappings. Throughout this book, particularly when covering reward models in Chapter 5, we will discuss adding new heads or modifying a language modeling (LM) head of the transformer. The LM head is a final linear projection layer that maps from the model’s internal embedding space to the tokenizer space (a.k.a. vocabulary). We’ll see in this book that different “heads” of a language model can be applied to fine-tune the model to different purposes – in RLHF this is most often done when training a reward model, which is highlighted in Chapter 5.
 
 ## A.2 Machine Learning
 
@@ -6740,13 +6270,13 @@ $$\begin{equation}
 
 ## A.6 Extended Glossary
 
-- **Chain-of-Thought (CoT)**: Chain-of-thought is a specific behavior of language models where they are steered towards a behavior that breaks down a problem in a step-by-step form. The original version of this was through the prompt “Let’s think step-by-step” [@ref-wei2022chain].
+- **Chain-of-Thought (CoT)**: Chain-of-thought is a specific behavior of language models where they are steered towards a behavior that breaks down a problem in a step-by-step form. The original version of this was through the prompt “Let’s think step-by-step” \[378\].
 
 - **Distillation**: Distillation is a general set of practices in training AI models where a model is trained on the outputs of a stronger model. This is a type of synthetic data known to make strong, smaller models. Most models make the rules around distillation clear through either the license, for open-weight models, or the terms of service, for models accessible only via API. The term distillation is now overloaded with a specific technical definition from the ML literature.
 
 - **In-context Learning (ICL)**: In-context here refers to any information within the context window of the language model. Usually, this is information added to the prompt. The simplest form of in-context learning is adding examples of a similar form before the prompt. Advanced versions can learn which information to include for a specific use-case.
 
-- **(Teacher-student) Knowledge Distillation**: Knowledge distillation from a specific teacher to a student model is a specific type of distillation described above, and it is where the term originated. It is a specific deep learning method where a neural network loss is modified to learn from the log-probabilities of the teacher model over multiple potential tokens/logits, instead of learning directly from a chosen output [@ref-hinton2015distilling]. An example of a modern series of models trained with Knowledge Distillation is Gemma 2 [@ref-team2024gemma] or Gemma 3. For a language modeling setup, the next-token loss function can be modified as follows [@ref-agarwal2024policy], where the student model $P_\theta$ learns from the teacher distribution $P_\phi$:
+- **(Teacher-student) Knowledge Distillation**: Knowledge distillation from a specific teacher to a student model is a specific type of distillation described above, and it is where the term originated. It is a specific deep learning method where a neural network loss is modified to learn from the log-probabilities of the teacher model over multiple potential tokens/logits, instead of learning directly from a chosen output \[282\]. An example of a modern series of models trained with Knowledge Distillation is Gemma 2 \[412\] or Gemma 3. For a language modeling setup, the next-token loss function can be modified as follows \[291\], where the student model $P_\theta$ learns from the teacher distribution $P_\phi$:
 
 $$\begin{equation}
 \tag{159}{\mathcal{L}_{\text{KD}}(\theta) = -\,\mathbb{E}_{x \sim \mathcal{D}}\left[\sum_{t=1}^{T} P_{\phi}(x_t \mid x_{<t}) \log P_{\theta}(x_t \mid x_{<t})\right]. }
@@ -6760,13 +6290,9 @@ Early developments in RLHF gave it a reputation for being “just style transfer
 
 The idea of RLHF being solely about style transfer has held back the RLHF narrative for two reasons. The first is how RLHF became associated with small, unimportant changes to the model. When people discuss style transfer, they don’t describe this as being important or exciting – they think of it as superficial. Yet, style is a never-ending source of human value; it’s why retelling stories can result in new bestselling books (such as [Sapiens](https://en.wikipedia.org/wiki/Sapiens:_A_Brief_History_of_Humankind)), and it is a fundamental part of continuing to progress our intellectual ecosystem. Style is intertwined with what the information is.
 
-The second reason is that many people missed the fact that well-done RLHF boosts scores on popular LLM evaluations. We’ve seen how different styles actually can meaningfully improve evaluations with Llama 3 [@ref-dubey2024llama]. The Llama 3 Instruct models scored extremely high on Arena, and it’s accepted as being because they had a more fun personality – they were more succinct and clever than other models of their era. Regardless of the benchmark scores that many LLM users are obsessed with, if RLHF is going to make language models simply more fun, that is delivered value.
+The second reason is that many people missed the fact that well-done RLHF boosts scores on popular LLM evaluations. We’ve seen how different styles actually can meaningfully improve evaluations with Llama 3 \[29\]. The Llama 3 Instruct models scored extremely high on Arena, and it’s accepted as being because they had a more fun personality – they were more succinct and clever than other models of their era. Regardless of the benchmark scores that many LLM users are obsessed with, if RLHF is going to make language models simply more fun, that is delivered value.
 
-Throughout this appendix, the term “chattiness” is used to encompass the growing length of responses from models trained with RLHF, but it also encompasses techniques like heavy Markdown use, emojis, and formatting the answer in bulleted lists. To ground the discussion in this appendix, an example completion for two models in the same Tülu 3 family is shown below – one with only instruction fine-tuning and the second with preference fine-tuning applied via length-controlled DPO. First, the instruction-tuned completion to the prompt `What is reinforcement learning from human feedback?` (the exact model is [Llama 3.1 Tulu 3 70B SFT](https://huggingface.co/allenai/Llama-3.1-Tulu-3-70B-SFT)) [@ref-lambert2024t]:
-
-<div class="tcolorbox">
-
-<div class="Highlighting">
+Throughout this appendix, the term “chattiness” is used to encompass the growing length of responses from models trained with RLHF, but it also encompasses techniques like heavy Markdown use, emojis, and formatting the answer in bulleted lists. To ground the discussion in this appendix, an example completion for two models in the same Tülu 3 family is shown below – one with only instruction fine-tuning and the second with preference fine-tuning applied via length-controlled DPO. First, the instruction-tuned completion to the prompt `What is reinforcement learning from human feedback?` (the exact model is [Llama 3.1 Tulu 3 70B SFT](https://huggingface.co/allenai/Llama-3.1-Tulu-3-70B-SFT)) \[6\]:
 
 Reinforcement learning from human feedback, also known as human-in-the-loop reinforcement learning, is a subfield of machine learning where the primary goal is to train reinforcement learning agents to perform tasks by incorporating feedback from humans. This feedback can come in various forms, such as binary rewards (e.g., right or wrong), scalar rewards, preferences between actions, demonstrations, natural language instructions, or corrections to the agent's behavior.
 
@@ -6776,15 +6302,7 @@ By using human feedback, reinforcement learning can address some of these issues
 
 However, reinforcement learning from human feedback faces several challenges, such as the high cost of obtaining human feedback, subjective and inconsistent feedback, scaling issues, and methods for efficient and effective integration of human feedback into learning algorithms. Despite these challenges, the research in this area has shown promising results in various applications, including robotics, video games, prosthetics control, natural language processing, and many more.
 
-</div>
-
-</div>
-
 And the post-RLHF completion from [Llama 3.1 Tulu 3 70B DPO](https://huggingface.co/allenai/Llama-3.1-Tulu-3-70B-DPO):
-
-<div class="tcolorbox">
-
-<div class="Highlighting">
 
 Reinforcement learning from human feedback (RLHF) is a subset of reinforcement learning (RL) where the rewards that guide the learning process are provided by humans, rather than a pre-specified numerical reward function. This is particularly useful in situations where it is hard or infeasible to design a suitable reward function, or where the desired performance involves subjective judgments that humans are uniquely equipped to provide.
 
@@ -6806,7 +6324,7 @@ In contrast, in reinforcement learning from human feedback:
 
 Reinforcement Learning from human feedback has found applications in:
 
-- \*\*Robotics:\*\* Teaching robots to perform tasks that are difficult to specify with predefined reward functions. - \*\*Game playing:\*\* Human feedback can guide AI agents to better emulate human-like strategies or behaviors. - \*\*Language and content generation:\*\* For example, suggestively guiding AI models to generate more coherent, creative, or helpful content. - \*\*Recommendation systems:\*\* Human feedback can help adjust and refine the recommendations provided to users.
+\- \*\*Robotics:\*\* Teaching robots to perform tasks that are difficult to specify with predefined reward functions. - \*\*Game playing:\*\* Human feedback can guide AI agents to better emulate human-like strategies or behaviors. - \*\*Language and content generation:\*\* For example, suggestively guiding AI models to generate more coherent, creative, or helpful content. - \*\*Recommendation systems:\*\* Human feedback can help adjust and refine the recommendations provided to users.
 
 \*\*Challenges:\*\*
 
@@ -6816,10 +6334,6 @@ Using human feedback introduces some specific challenges:
 
 Researchers are actively working on techniques to mitigate these challenges and improve RLHF approaches. One such approach is leveraging machine learning models to amplify the efficacy of the human feedback, for example, by learning to generalize from sparse human input or by synthesizing plausible feedback in situations where direct human input is not available.
 
-</div>
-
-</div>
-
 The response from the DPO model has similar information, as both models are trained on the same pretrained base model, but the preference fine-tuning adds more structure, formatting, and of course length, which has been shown repeatedly to be associated with general notions of human preference for language models. For more examples like this, see the completions library associated with this book at [https://www.rlhfbook.com/library](https://rlhfbook.com/library).
 
 ## B.1 The Chattiness Balance
@@ -6828,21 +6342,21 @@ RLHF or preference fine-tuning methods are being used by countless people to boo
 
 These RLHF methods motivated by alignment, when done right, make the models easier to work with and more enjoyable. This often comes with clear improvements on evaluation tools like MT-Bench or AlpacaEval.
 
-In the fall of 2023, there was a peak in the debate over direct preference optimization (DPO) and its role relative to proximal policy optimization (PPO) and other RL-based methods for preference fine-tuning – the balance of chat evaluations to real-world performance was at the center of this (For more technical discussion on the trade-offs, see Chapter 8, Ivison et al. 2024 [@ref-ivison2024unpacking], or [this talk](https://youtu.be/YJMCSVLRUNs)). The problem is that you can also use techniques like DPO and PPO in feedback loops or in an abundance of data to actually severely harm the model on other tasks like mathematics or coding in a trade for this chat performance.
+In the fall of 2023, there was a peak in the debate over direct preference optimization (DPO) and its role relative to proximal policy optimization (PPO) and other RL-based methods for preference fine-tuning – the balance of chat evaluations to real-world performance was at the center of this (For more technical discussion on the trade-offs, see Chapter 8, Ivison et al. 2024 \[132\], or [this talk](https://youtu.be/YJMCSVLRUNs)). The problem is that you can also use techniques like DPO and PPO in feedback loops or in an abundance of data to actually severely harm the model on other tasks like mathematics or coding in a trade for this chat performance.
 
-During the proliferation of the DPO versus PPO debate there were many papers that came out with incredible benchmarks but no meaningful adoption. If these papers released model weights, they weren’t popular in public usage because these models were not robust in general usage. When applying RLHF in the fall of 2023 or soon after, there is no way to make an aligned version of a 7 billion parameter model actually beat GPT-4 across comprehensive benchmarks (this sort of comparison will hold, where small models of the day cannot robustly beat the best, large frontier models). It seems obvious, but there are always papers claiming these sorts of results. fig. 52 is from a paper called Direct Nash Optimization (DNO), which makes the case that their model is state-of-the-art or so on AlpacaEval for 7B models in April 2024 [@ref-rosset2024direct]. For context, DNO is a batched, on-policy *iterative* alternative to reward-model+PPO (classic RLHF) or one-shot DPO that directly optimizes pairwise preferences (win-rate gaps) by framing alignment as finding a Nash equilibrium against a preference oracle. These challenges emerge when academic incentives interface with technologies becoming of extreme interest to the broader society.
+During the proliferation of the DPO versus PPO debate there were many papers that came out with incredible benchmarks but no meaningful adoption. If these papers released model weights, they weren’t popular in public usage because these models were not robust in general usage. When applying RLHF in the fall of 2023 or soon after, there is no way to make an aligned version of a 7 billion parameter model actually beat GPT-4 across comprehensive benchmarks (this sort of comparison will hold, where small models of the day cannot robustly beat the best, large frontier models). It seems obvious, but there are always papers claiming these sorts of results. fig. 52 is from a paper called Direct Nash Optimization (DNO), which makes the case that their model is state-of-the-art or so on AlpacaEval for 7B models in April 2024 \[207\]. For context, DNO is a batched, on-policy *iterative* alternative to reward-model+PPO (classic RLHF) or one-shot DPO that directly optimizes pairwise preferences (win-rate gaps) by framing alignment as finding a Nash equilibrium against a preference oracle. These challenges emerge when academic incentives interface with technologies becoming of extreme interest to the broader society.
 
 **Figura 52.** Results from the paper on Direct Nash Optimization (DNO) highlighting their small model outperforming the likes of GPT-4. Rosset et al. 2024. License CC-BY.
 
-Even the pioneering paper Self Rewarding Language Models from January of 2024 [@ref-yuan2025selfrewardinglanguagemodels] disclosed unrealistically strong scores on Llama 2 70B. At the time, of course, a 70B model can get closer to GPT-4 than a 7B model can (as we saw with the impressive Llama 3 releases in 2024), but it’s important to separate the reality of models from the claims in modern RLHF papers. These models are tuned to narrow test sets and do not hold up well in real use versus the far larger models they claim to beat. Many more methods have come and gone similar to this, sharing valuable insights and oversold results, which make RLHF harder to understand.
+Even the pioneering paper Self Rewarding Language Models from January of 2024 \[301\] disclosed unrealistically strong scores on Llama 2 70B. At the time, of course, a 70B model can get closer to GPT-4 than a 7B model can (as we saw with the impressive Llama 3 releases in 2024), but it’s important to separate the reality of models from the claims in modern RLHF papers. These models are tuned to narrow test sets and do not hold up well in real use versus the far larger models they claim to beat. Many more methods have come and gone similar to this, sharing valuable insights and oversold results, which make RLHF harder to understand.
 
 A symptom of models that have “funky RLHF” applied to them has often been a length bias. This got so common that multiple evaluation systems like AlpacaEval and WildBench both have linear length correction mechanisms in them. This patches the incentives for doping on chattiness to ‘beat GPT-4’ or the leading frontier model of the day, and creates a less gamified dynamic where shorter, useful models can actually win.
 
-Regardless, aligning chat models only for chattiness now has a bit of a reputational tax associated with it in the literature, where it’s acknowledged that these narrow methods can harm a model in other ways. This note from the original Alibaba Qwen models in 2023 is something that has been observed multiple times in early alignment experiments, exaggerating a trade-off between chattiness and performance [@ref-qwen].
+Regardless, aligning chat models only for chattiness now has a bit of a reputational tax associated with it in the literature, where it’s acknowledged that these narrow methods can harm a model in other ways. This note from the original Alibaba Qwen models in 2023 is something that has been observed multiple times in early alignment experiments, exaggerating a trade-off between chattiness and performance \[413\].
 
 > We pretrained the models with a large amount of data, and we post-trained the models with both supervised fine-tuning and direct preference optimization. However, DPO leads to improvements in human preference evaluation but degradation in benchmark evaluation.
 
-An early, good example of this tradeoff done right is a model like Starling Beta from March of 2024 [@ref-zhu2024starling]. It’s a model that was fine-tuned from another chat model, OpenChat [@ref-wang2023openchat] (which was in fact trained by an entire other organization). Its training entirely focuses on k-wise reward model training and PPO optimization, and moves it up 10 places in Arena. The average response length of the model increases, but in a way that’s good enough to actually help the human raters. Later examples, such as Olmo 3, are documented as undergoing substantial chat training, but with the authors preferring a final model checkpoint with higher math, coding, and reasoning scores instead of potential checkpoints that are highest on LLM-as-a-judge-based chat benchmarks [@ref-teamolmo2025olmo3].
+An early, good example of this tradeoff done right is a model like Starling Beta from March of 2024 \[82\]. It’s a model that was fine-tuned from another chat model, OpenChat \[414\] (which was in fact trained by an entire other organization). Its training entirely focuses on k-wise reward model training and PPO optimization, and moves it up 10 places in Arena. The average response length of the model increases, but in a way that’s good enough to actually help the human raters. Later examples, such as Olmo 3, are documented as undergoing substantial chat training, but with the authors preferring a final model checkpoint with higher math, coding, and reasoning scores instead of potential checkpoints that are highest on LLM-as-a-judge-based chat benchmarks \[18\].
 
 A natural question is: Why does RLHF make model responses longer? Fundamentally, evaluations like Arena have shown us that average users of models often like longer, complete answers when compared with terse responses. Longer answers can feel more thorough, helpful, or even trustworthy to users evaluating them quickly. This does not represent the preference of *every* user, but these models are trained to match the average preferences of many data labelers, so RLHF tends to make models more verbose.
 
@@ -6854,15 +6368,15 @@ This appendix covers practical considerations for running post-training experime
 
 There are two different ways of scoping costs for post-training runs. The largest cost is in developing the recipe, which can easily be 10X to 100X the compute of the final few training runs. The secondary costs, which are easier to measure, are the costs of thoroughly applying a recipe, which entails multiple seeds, careful evaluation, potential engineering headaches, etc.
 
-For the first cost, to develop a post-training recipe like Tülu 3 [@ref-lambert2024t], the team ran on the order of thousands of experiments/evaluations at the 7B scale before having the final model.
+For the first cost, to develop a post-training recipe like Tülu 3 \[6\], the team ran on the order of thousands of experiments/evaluations at the 7B scale before having the final model.
 
-For final runs, the Olmo 3 report has a detailed accounting of what is involved in training the final 32B Think model [@ref-teamolmo2025olmo3]:
+For final runs, the Olmo 3 report has a detailed accounting of what is involved in training the final 32B Think model \[18\]:
 
 > Post-training follows a different operational pattern in which we run each stage multiple times, sweeping over learning rates and other hyperparameters. The theory for post-training, particularly, RL, is less developed, so we have to run multiple experiments to identify the optimal hyperparameters for a given base model. We hope to address this in future work.
 >
 > During post-training, checkpoint evaluation consumes a larger proportion of compute resources, in part due to long generations from reasoning models on core benchmarks. For SFT, we swept over four candidate learning rates, on 256 GPUs each, in parallel for 36 hours. Then approximately 12 hours was spent on evaluation, merging, and checkpoint confirmation, totaling approximately two days. DPO training takes less time per run (about 18 hours for a full learning-rate sweep on 64 GPUs per job) but in practice extended over multiple days due to cluster instability. The final RL runs for the initial Olmo 3 Think 32B spanned approximately 5 days with at least a day of training time lost due to stability issues. After the initial release of Olmo 3, we continued our best RL run for another 21 days on 224 GPUs to produce Olmo 3.1 Think 32B.
 
-As scaling reinforcement learning becomes more standard practice, this will shift yet again [@ref-khatri2025art]. Continuing the above example, where the original Olmo 3 32B Think post-training took only a couple of weeks, to release the improved Olmo 3.1 32B Think model the team needed to train it for an additional 3.5 weeks with RLVR. This is a substantial cost in *time* more than in total compute.
+As scaling reinforcement learning becomes more standard practice, this will shift yet again \[17\]. Continuing the above example, where the original Olmo 3 32B Think post-training took only a couple of weeks, to release the improved Olmo 3.1 32B Think model the team needed to train it for an additional 3.5 weeks with RLVR. This is a substantial cost in *time* more than in total compute.
 
 ## C.2 Evaluation Variance
 
@@ -6905,7 +6419,7 @@ In practice, training teams take many steps to capture the maximum possible valu
 
 2.  Run multiple seeds on the best few settings. Random seed can have meaningful effects on the final model, and it’s worth spending compute on.
 
-3.  Model merging is established as a key tool used to create strong models. Merging can be done in many ways, from merging different checkpoints on the same data to merging specialized models for specific domains. Generally, merging is seen as a strong and simple tool in final recipes, but clear best practices aren’t established for preparing a model for later merging in a recipe [@ref-yadav2024matters].
+3.  Model merging is established as a key tool used to create strong models. Merging can be done in many ways, from merging different checkpoints on the same data to merging specialized models for specific domains. Generally, merging is seen as a strong and simple tool in final recipes, but clear best practices aren’t established for preparing a model for later merging in a recipe \[415\].
 
 ## C.4 Identifying Bad Training Jobs
 

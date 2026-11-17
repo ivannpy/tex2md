@@ -60,11 +60,17 @@ def test_unknown_key_is_counted():
     assert stats["unresolved_cites"] == 1
 
 
-def test_citeproc_inside_a_table_cell_becomes_a_plain_marker():
-    src = r"\begin{longtable}{ll}Kimi \citeproc{ref-team2025kimi}{Team 2025} & x \\\end{longtable}"
-    assert simplify_citeproc(src) == r"\begin{longtable}{ll}Kimi [@ref-team2025kimi] & x \\\end{longtable}"
+def test_citeproc_becomes_its_own_citation_text():
+    src = r"Kimi \citeproc{ref-team2025kimi}{{[}12{]}} and \citeproc{ref-a}{{[}3, 4{]}} win"
+    assert simplify_citeproc(src) == "Kimi {[}12{]} and {[}3, 4{]} win"
 
 
-def test_citeproc_in_running_text_is_left_alone():
-    src = r"as shown \citeproc{ref-a}{Foo 2020} here"
+def test_text_without_citeproc_is_untouched():
+    src = r"as shown \cite{ref-a} here"
     assert simplify_citeproc(src) == src
+
+
+def test_citeproc_definition_is_not_touched():
+    src = r"\NewDocumentCommand\citeproc{mm}{\begingroup\def\citeproctext{#2}\cite{#1}\endgroup} x \citeproc{k}{{[}1{]}}"
+    out = simplify_citeproc(src)
+    assert out.startswith(r"\NewDocumentCommand\citeproc{mm}{\begingroup") and out.endswith("x {[}1{]}")

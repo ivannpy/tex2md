@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 
-from tex2md.util.tex import group, skip_ws, unwrap
+from tex2md.util.tex import balanced_end, group, skip_ws, unwrap
 
 
 def parse_bbl(t):
@@ -171,10 +171,18 @@ def inject_bibliography(text, bib, stats):
 
 
 def simplify_citeproc(text):
-    r"""``\citeproc{key}{label}`` inside tables (pandoc's own LaTeX output) -> ``[@key]``.
-
-    Its definition (``\begingroup\def\citeproctext...\endgroup``) breaks pandoc's table parser when the
-    macro appears inside a cell; outside tables it expands fine and is left alone."""
-    def cells(m):
-        return re.sub(r"\\citeproc\s*\{([^{}]*)\}\s*\{(?:[^{}]|\{[^{}]*\})*\}", r"[@\1]", m.group(0))
-    return re.sub(r"\\begin\{(longtable|tabular[x*]?)\}.*?\\end\{\1\}", cells, text, flags=re.S)
+    r"""``\citeproc{key}{{[}12{]}}`` (pandoc's own LaTeX output) -> ``[12]``: the second argument already is the
+    citation text of the original document, so use it instead of pandoc's ``[@key]`` placeholder. (The macro's
+    definition, ``\begingroup\def\citeproctext...``, also breaks pandoc's table parser inside cells.)"""
+    out, pos = [], 0
+    for m in re.finditer(r"\\citeproc\s*\{[^{}]*\}\s*(?=\{)", text):
+        if m.start() < pos or re.search(r"(?:NewDocumentCommand|newcommand|def)\s*\{?$", text[max(0, m.start() - 30):m.start()]):
+            continue   # the definition of the macro itself
+        e = balanced_end(text, m.end())
+        if e < 0:
+            continue
+        label = text[m.end() + 1:e - 1]   # keeps the {[}1{]} brackets: a bare [1] is eaten by pandoc here
+        out.append(text[pos:m.start()] + label)
+        pos = e
+    out.append(text[pos:])
+    return "".join(out)

@@ -22,9 +22,9 @@ converted: 2026-11-16
 
 We introduce Nemotron-Labs-Diffusion, a tri-mode language model (LM) that unifies AR, diffusion, and self-speculation decoding within a single architecture. Trained with a joint AR-diffusion objective, Nemotron-Labs-Diffusion can switch modes to sustain high throughput across deployment settings and concurrency levels. Our study shows that (1) AR and diffusion objectives are complementary: diffusion improves lookahead planning, while AR provides left-to-right linguistic priors. (2) In self-speculation mode, diffusion drafts while AR verifies, outperforming multi-token prediction (MTP) methods in both acceptance rate and real-device efficiency. (3) A speed-of-light analysis further demonstrates diffusion's long-term potential, with up to 76.5% more tokens per forward pass than self-speculation under an optimal sampler. Scaling to 3B, 8B, and 14B parameters, our Nemotron-Labs-Diffusion family, including base, instruct, and vision-language models, consistently outperforms state-of-the-art open-source AR and diffusion LMs in both accuracy and speed. For example, Nemotron-Labs-Diffusion-8B decodes 6x more tokens per forward than Qwen3-8B with comparable accuracy, translating to 4x higher throughput on SPEED-Bench with SGLang on a GB200 GPU.
 
-**Figura 1.** **(a)** An illustration of three modes in one model. **(b)** Accuracy–throughput trade-off measured on general benchmarks at batch size 1 on an NVIDIA H100 using PyTorch. NLD denotes our model and Linear/Quad SS denotes linear/quadratic self-speculation. <span style="color: diff_green">$\bigstar$</span> indicates the diffusion mode with different denoising block sizes (8, 16, 32), where smaller symbols correspond to smaller block sizes. **(c)** Trade-off between system vs. per-user throughput of the AR and Linear SS modes of our 8B model and Qwen3-8B Eagle3, measured on SPEED-Bench \[1\] at different concurrency $c$ on an NVIDIA GB200 GPU using SGLang.
+**Figura 1.** **(a)** An illustration of three modes in one model. **(b)** Accuracy–throughput trade-off measured on general benchmarks at batch size 1 on an NVIDIA H100 using PyTorch. NLD denotes our model and Linear/Quad SS denotes linear/quadratic self-speculation. $\bigstar$ indicates the diffusion mode with different denoising block sizes (8, 16, 32), where smaller symbols correspond to smaller block sizes. **(c)** Trade-off between system vs. per-user throughput of the AR and Linear SS modes of our 8B model and Qwen3-8B Eagle3, measured on SPEED-Bench \[1\] at different concurrency $c$ on an NVIDIA GB200 GPU using SGLang.
 
-<span id="fig:teaser" data-label="fig:teaser"></span> \]
+\]
 
 **Figura 2.** Benchmarking our Nemotron-Labs-Diffusion-8B (Instruct) against SOTA AR and diffusion instruct LMs across different benchmarks. (a) shows the average accuracy across all 10 tasks (HumanEval, MBPP, LiveCodeBench-CPP, GSM8K, Math500, AIME24, AIME25, GPQA, IFEval, MMLU) and the tokens per forward (TPF) of different models, while (b) and (c) show the average accuracy across coding (HumanEval, MBPP, LiveCodeBench-CPP) and math (GSM8K, Math500, AIME24, AIME25) domains, respectively.
 
@@ -117,8 +117,6 @@ where the AR loss has coefficient $1$ and $\alpha$ controls the strength of diff
 | \+ Two-stage training | 58.54 | 52.44 | 53.00 | 73.81 | 83.17 | 55.84 | 62.80 |
 | \+ AR loss | 64.02 | 57.93 | 65.60 | 80.95 | 86.73 | 66.44 | 70.28 |
 
-<span id="tab:ablation_base" data-label="tab:ablation_base"></span>
-
 **Two-stage training.** To strengthen left-to-right priors and improve learning efficiency, we adopt a two-stage training strategy that first trains with the AR objective, which anchors the representation to the language’s inherent left-to-right inductive bias, and then switches to the joint objective. In terms of Eq. 3, Stage 1 sets $\alpha = 0$, reducing the optimization to the pure AR objective in Eq. 1. In Stage 2, we turn on diffusion supervision by setting $\alpha$ to align the magnitudes of the two losses, as mentioned above, so that diffusion gradients complement rather than overwrite the AR priors.
 
 **Global loss averaging.** Since the diffusion objective involves randomly sampling masked tokens, different training examples may have different numbers of tokens contributing to the diffusion loss. As a result, the strategy for averaging token-wise losses matters, analogous to how the choice of aggregation in on-policy RL objectives (e.g., GRPO \[11\] vs. DAPO \[12\]) can affect training stability. We consider two loss averaging strategies. Let a batch contain $N$ sequences, each of length $L$, and let $\ell_{n,i}$ denote the token-level loss for token $i$ in sequence $n$ based on Eq. 3. One choice is to first average token losses within each sequence and then average them over sequences: 
@@ -179,108 +177,17 @@ Cumulatively, the full pipeline improves the baseline by 16.05% in average accur
 | 1.0 | Diff. | 56.10 | 48.78 | 65.00 | 80.69 | 84.91 | 66.12 | 66.93 |
 |  | AR | 54.27 | 50.61 | 64.80 | 80.69 | 86.58 | 66.36 | 67.22 |
 
-<span id="tab:ablation_alpha" data-label="tab:ablation_alpha"></span>
-
 **Tabla 3.** AR-mode accuracy with and without the diffusion loss ($\alpha{=}0.3$). *Base*: 25B-token continuous pretraining from Ministral3-8B. *Instruct*: further SFT on 45B tokens.
 
-<table id="tab:ablation_ar_impact">
-<thead>
-<tr>
-<th colspan="12" style="text-align: center;"><em>Base Model</em></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: center;"><strong>Training</strong></td>
-<td style="text-align: center;"><strong>HumanEval</strong></td>
-<td style="text-align: center;"><strong>HumanEval+</strong></td>
-<td style="text-align: center;"><strong>MBPP</strong></td>
-<td style="text-align: center;"><strong>MBPP+</strong></td>
-<td style="text-align: center;"><strong>GSM8K</strong></td>
-<td style="text-align: center;"><strong>Minerva Math</strong></td>
-<td style="text-align: center;"><strong>MMLU</strong></td>
-<td style="text-align: center;"><strong>Hellaswag</strong></td>
-<td style="text-align: center;"><strong>PIQA</strong></td>
-<td style="text-align: center;"><strong>Winogrande</strong></td>
-<td style="text-align: center;"><strong>Avg</strong></td>
-</tr>
-<tr>
-<td style="text-align: center;">AR only</td>
-<td style="text-align: center;">60.37</td>
-<td style="text-align: center;">56.10</td>
-<td style="text-align: center;">67.00</td>
-<td style="text-align: center;">81.48</td>
-<td style="text-align: center;">87.64</td>
-<td style="text-align: center;">67.90</td>
-<td style="text-align: center;">76.34</td>
-<td style="text-align: center;">76.54</td>
-<td style="text-align: center;">79.71</td>
-<td style="text-align: center;">71.98</td>
-<td style="text-align: center;">72.50</td>
-</tr>
-<tr>
-<td style="text-align: center;">+ Diff. loss</td>
-<td style="text-align: center;">62.80</td>
-<td style="text-align: center;">57.93</td>
-<td style="text-align: center;">65.80</td>
-<td style="text-align: center;">82.54</td>
-<td style="text-align: center;">87.79</td>
-<td style="text-align: center;">66.84</td>
-<td style="text-align: center;">75.99</td>
-<td style="text-align: center;">76.59</td>
-<td style="text-align: center;">79.82</td>
-<td style="text-align: center;">70.32</td>
-<td style="text-align: center;">72.64</td>
-</tr>
-<tr>
-<td colspan="12" style="text-align: center;"><em>Instruct Model</em></td>
-</tr>
-<tr>
-<td style="text-align: center;"><strong>Training</strong></td>
-<td style="text-align: center;"><strong>GPQA</strong></td>
-<td style="text-align: center;"><strong>IFEval</strong></td>
-<td style="text-align: center;"><strong>HumanEval</strong></td>
-<td style="text-align: center;"><strong>MBPP</strong></td>
-<td style="text-align: center;"><strong>Math500</strong></td>
-<td style="text-align: center;"><strong>GSM8K</strong></td>
-<td style="text-align: center;"><strong>AIME24</strong></td>
-<td style="text-align: center;"><strong>AIME25</strong></td>
-<td style="text-align: center;"><strong>MMLU</strong></td>
-<td style="text-align: center;"><strong>LCB-CPP</strong></td>
-<td style="text-align: center;"><strong>Avg</strong></td>
-</tr>
-<tr>
-<td style="text-align: center;">AR only</td>
-<td style="text-align: center;">44.44</td>
-<td style="text-align: center;">71.66</td>
-<td style="text-align: center;">82.93</td>
-<td style="text-align: center;">83.60</td>
-<td style="text-align: center;">87.80</td>
-<td style="text-align: center;">93.63</td>
-<td style="text-align: center;">36.67</td>
-<td style="text-align: center;">26.67</td>
-<td style="text-align: center;">79.77</td>
-<td style="text-align: center;">24.61</td>
-<td style="text-align: center;">63.18</td>
-</tr>
-<tr>
-<td style="text-align: center;">+ Diff. loss</td>
-<td style="text-align: center;">44.44</td>
-<td style="text-align: center;">68.65</td>
-<td style="text-align: center;">80.49</td>
-<td style="text-align: center;">85.19</td>
-<td style="text-align: center;">88.00</td>
-<td style="text-align: center;">94.01</td>
-<td style="text-align: center;">33.33</td>
-<td style="text-align: center;">33.33</td>
-<td style="text-align: center;">79.85</td>
-<td style="text-align: center;">28.85</td>
-<td style="text-align: center;">63.61</td>
-</tr>
-</tbody>
-</table>
-
-<span id="tab:ablation_ar_impact" data-label="tab:ablation_ar_impact"></span>
+| *Base Model* |  |  |  |  |  |  |  |  |  |  |  |
+|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| **Training** | **HumanEval** | **HumanEval+** | **MBPP** | **MBPP+** | **GSM8K** | **Minerva Math** | **MMLU** | **Hellaswag** | **PIQA** | **Winogrande** | **Avg** |
+| AR only | 60.37 | 56.10 | 67.00 | 81.48 | 87.64 | 67.90 | 76.34 | 76.54 | 79.71 | 71.98 | 72.50 |
+| \+ Diff. loss | 62.80 | 57.93 | 65.80 | 82.54 | 87.79 | 66.84 | 75.99 | 76.59 | 79.82 | 70.32 | 72.64 |
+| *Instruct Model* |  |  |  |  |  |  |  |  |  |  |  |
+| **Training** | **GPQA** | **IFEval** | **HumanEval** | **MBPP** | **Math500** | **GSM8K** | **AIME24** | **AIME25** | **MMLU** | **LCB-CPP** | **Avg** |
+| AR only | 44.44 | 71.66 | 82.93 | 83.60 | 87.80 | 93.63 | 36.67 | 26.67 | 79.77 | 24.61 | 63.18 |
+| \+ Diff. loss | 44.44 | 68.65 | 80.49 | 85.19 | 88.00 | 94.01 | 33.33 | 33.33 | 79.85 | 28.85 | 63.61 |
 
 ## 2.4 Mutual Impact of AR/Diffusion Losses
 
@@ -401,8 +308,6 @@ We apply recursive dynamic compaction to $713$ SPEED-Bench \[1\] samples spanni
 
 **Observations on diffusion SOL.** From Tab. 4, we observe that (1) The diffusion mode exhibits substantial intrinsic parallelism: the SOL acceptance rate reaches $7.60\times$ on average and exceeds $10\times$ on multilingual and coding content at $B=32$, and grows nearly linearly with $B$, from $2.89\times$ at $B=4$ to $7.60\times$ at $B=32$. (2) Confidence-based sampling, by contrast, achieves only $\sim$<!-- -->3$\times$ TPF at comparable accuracy in the block-$32$ diffusion-mode results of Sec. 6.1, leaving a notable gap to the $7.60\times$ SOL ceiling. This indicates that confidence-based sampling is far from optimal and that there is substantial headroom for better-designed samplers to capture. (3) Per-category SOL spans a $\sim$<!-- -->3.2$\times$ range, from $3.49\times$ on roleplay to $11.26\times$ on multilingual content. We hypothesize this reflects token-level entropy: templated content has more positions that are confidently determined by partial context, while open-ended generation does not. If this holds, samplers that adapt to the local content type could exploit this variance. (4) A moderately small block length achieves the best accuracy, while larger block lengths degrade it. The trade-off between benchmark accuracy and efficiency, i.e., acceptance rate, indicates that improving diffusion performance under larger block lengths is a critical direction.
 
-<span id="tab:recd1-speedbench" data-label="tab:recd1-speedbench"></span>
-
 **Tabla 4.** Per-category SOL acceptance ratio on SPEED-Bench under recursive dynamic compaction. Benchmark accuracy is averaged over 10 instruct LM benchmarks in Sec. 6.1.
 
 | Category            |     BL=32 |     BL=16 |      BL=8 |      BL=4 |
@@ -441,218 +346,25 @@ We perform supervised fine-tuning (SFT) on top of our base models to deliver ins
 
 **Tabla 5.** Benchmark our Nemotron-Labs-Diffusion-8B instruct model against SOTA AR and diffusion instruct LMs across scientific QA, instruction following, coding, and math reasoning benchmarks.
 
-<table id="tab:benchmark_instruct">
-<thead>
-<tr>
-<th style="text-align: center;"><strong>Model</strong></th>
-<th style="text-align: center;"><strong>Qwen2.5</strong> <strong>7B</strong></th>
-<th style="text-align: center;"><strong>Qwen3</strong> <strong>8B</strong></th>
-<th style="text-align: center;"><strong>Ministral3-8B</strong> <strong>Instruct-2512</strong></th>
-<th style="text-align: center;"><strong>LLaDA-8B</strong> <strong>Instruct</strong></th>
-<th style="text-align: center;"><strong>Dream-7B</strong> <strong>Instruct</strong></th>
-<th colspan="2" style="text-align: center;"><strong>SDAR-8B</strong> <strong>Chat</strong></th>
-<th colspan="4" style="text-align: center;"><strong>Nemotron-Labs-Diffusion-8B</strong> <strong>(Tri-Mode in One Model)</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: center;">Gen. Mode</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">Diff.</td>
-<td style="text-align: center;">Diff.</td>
-<td style="text-align: center;">Diff.</td>
-<td style="text-align: center;">Diff.</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">Diff.</td>
-<td style="text-align: center;">Linear SS</td>
-<td style="text-align: center;">Quad. SS</td>
-</tr>
-<tr>
-<td colspan="12" style="text-align: center;"><em>Scientific QA &amp; Instruction Following</em></td>
-</tr>
-<tr>
-<td style="text-align: center;">GPQA</td>
-<td style="text-align: center;">37.12</td>
-<td style="text-align: center;">49.24</td>
-<td style="text-align: center;">42.87</td>
-<td style="text-align: center;">33.30</td>
-<td style="text-align: center;">33.00</td>
-<td style="text-align: center;">40.20</td>
-<td style="text-align: center;">30.80</td>
-<td style="text-align: center;">44.44</td>
-<td style="text-align: center;">43.94</td>
-<td style="text-align: center;">40.40</td>
-<td style="text-align: center;">44.30</td>
-</tr>
-<tr>
-<td style="text-align: center;">IFEval</td>
-<td style="text-align: center;">74.58</td>
-<td style="text-align: center;">87.38</td>
-<td style="text-align: center;">64.31</td>
-<td style="text-align: center;">59.90</td>
-<td style="text-align: center;">62.50</td>
-<td style="text-align: center;">61.40</td>
-<td style="text-align: center;">60.07</td>
-<td style="text-align: center;">68.65</td>
-<td style="text-align: center;">68.32</td>
-<td style="text-align: center;">69.13</td>
-<td style="text-align: center;">71.00</td>
-</tr>
-<tr>
-<td style="text-align: center;">MMLU</td>
-<td style="text-align: center;">74.86</td>
-<td style="text-align: center;">76.66</td>
-<td style="text-align: center;">73.90</td>
-<td style="text-align: center;">65.50</td>
-<td style="text-align: center;">67.00</td>
-<td style="text-align: center;">78.60</td>
-<td style="text-align: center;">78.83</td>
-<td style="text-align: center;">79.85</td>
-<td style="text-align: center;">78.71</td>
-<td style="text-align: center;">79.01</td>
-<td style="text-align: center;">79.95</td>
-</tr>
-<tr>
-<td colspan="12" style="text-align: center;"><em>Coding</em></td>
-</tr>
-<tr>
-<td style="text-align: center;">HumanEval</td>
-<td style="text-align: center;">77.44</td>
-<td style="text-align: center;">81.71</td>
-<td style="text-align: center;">71.04</td>
-<td style="text-align: center;">49.40</td>
-<td style="text-align: center;">55.50</td>
-<td style="text-align: center;">78.70</td>
-<td style="text-align: center;">79.27</td>
-<td style="text-align: center;">80.49</td>
-<td style="text-align: center;">78.66</td>
-<td style="text-align: center;">81.71</td>
-<td style="text-align: center;">79.27</td>
-</tr>
-<tr>
-<td style="text-align: center;">MBPP</td>
-<td style="text-align: center;">81.55</td>
-<td style="text-align: center;">81.88</td>
-<td style="text-align: center;">78.97</td>
-<td style="text-align: center;">41.00</td>
-<td style="text-align: center;">58.80</td>
-<td style="text-align: center;">72.00</td>
-<td style="text-align: center;">67.32</td>
-<td style="text-align: center;">85.19</td>
-<td style="text-align: center;">83.86</td>
-<td style="text-align: center;">84.92</td>
-<td style="text-align: center;">85.19</td>
-</tr>
-<tr>
-<td style="text-align: center;">LCB-CPP</td>
-<td style="text-align: center;">12.33</td>
-<td style="text-align: center;">21.09</td>
-<td style="text-align: center;">20.76</td>
-<td style="text-align: center;">4.19</td>
-<td style="text-align: center;">1.25</td>
-<td style="text-align: center;">13.44</td>
-<td style="text-align: center;">11.89</td>
-<td style="text-align: center;">28.85</td>
-<td style="text-align: center;">26.16</td>
-<td style="text-align: center;">24.89</td>
-<td style="text-align: center;">27.70</td>
-</tr>
-<tr>
-<td colspan="12" style="text-align: center;"><em>Math</em></td>
-</tr>
-<tr>
-<td style="text-align: center;">Math500</td>
-<td style="text-align: center;">75.10</td>
-<td style="text-align: center;">84.80</td>
-<td style="text-align: center;">83.60</td>
-<td style="text-align: center;">39.20</td>
-<td style="text-align: center;">43.00</td>
-<td style="text-align: center;">78.60</td>
-<td style="text-align: center;">72.40</td>
-<td style="text-align: center;">88.00</td>
-<td style="text-align: center;">85.80</td>
-<td style="text-align: center;">87.60</td>
-<td style="text-align: center;">88.80</td>
-</tr>
-<tr>
-<td style="text-align: center;">GSM8K</td>
-<td style="text-align: center;">91.89</td>
-<td style="text-align: center;">92.42</td>
-<td style="text-align: center;">92.42</td>
-<td style="text-align: center;">79.91</td>
-<td style="text-align: center;">81.00</td>
-<td style="text-align: center;">91.30</td>
-<td style="text-align: center;">88.48</td>
-<td style="text-align: center;">94.01</td>
-<td style="text-align: center;">93.03</td>
-<td style="text-align: center;">93.78</td>
-<td style="text-align: center;">94.16</td>
-</tr>
-<tr>
-<td style="text-align: center;">AIME24</td>
-<td style="text-align: center;">13.75</td>
-<td style="text-align: center;">30.21</td>
-<td style="text-align: center;">27.71</td>
-<td style="text-align: center;">0.00</td>
-<td style="text-align: center;">0.00</td>
-<td style="text-align: center;">16.67</td>
-<td style="text-align: center;">13.33</td>
-<td style="text-align: center;">33.33</td>
-<td style="text-align: center;">46.67</td>
-<td style="text-align: center;">36.67</td>
-<td style="text-align: center;">33.33</td>
-</tr>
-<tr>
-<td style="text-align: center;">AIME25</td>
-<td style="text-align: center;">6.88</td>
-<td style="text-align: center;">22.08</td>
-<td style="text-align: center;">24.58</td>
-<td style="text-align: center;">0.00</td>
-<td style="text-align: center;">3.33</td>
-<td style="text-align: center;">10.00</td>
-<td style="text-align: center;">3.33</td>
-<td style="text-align: center;">33.33</td>
-<td style="text-align: center;">26.67</td>
-<td style="text-align: center;">30.00</td>
-<td style="text-align: center;">36.67</td>
-</tr>
-<tr>
-<td colspan="12" style="text-align: center;"><em>Average over All Tasks</em></td>
-</tr>
-<tr>
-<td style="text-align: center;">Accuracy</td>
-<td style="text-align: center;">54.55</td>
-<td style="text-align: center;">62.75</td>
-<td style="text-align: center;">58.02</td>
-<td style="text-align: center;">37.24</td>
-<td style="text-align: center;">40.54</td>
-<td style="text-align: center;">54.09</td>
-<td style="text-align: center;">50.57</td>
-<td style="text-align: center;">63.61</td>
-<td style="text-align: center;">63.18</td>
-<td style="text-align: center;">62.81</td>
-<td style="text-align: center;">64.04</td>
-</tr>
-<tr>
-<td style="text-align: center;">TPF</td>
-<td style="text-align: center;">1.00</td>
-<td style="text-align: center;">1.00</td>
-<td style="text-align: center;">1.00</td>
-<td style="text-align: center;">1.00</td>
-<td style="text-align: center;">1.00</td>
-<td style="text-align: center;">1.00</td>
-<td style="text-align: center;">1.75</td>
-<td style="text-align: center;">1.00</td>
-<td style="text-align: center;">2.57</td>
-<td style="text-align: center;">5.99</td>
-<td style="text-align: center;">6.38</td>
-</tr>
-</tbody>
-</table>
-
-<span id="tab:benchmark_instruct" data-label="tab:benchmark_instruct"></span>
+| **Model** | **Qwen2.5** **7B** | **Qwen3** **8B** | **Ministral3-8B** **Instruct-2512** | **LLaDA-8B** **Instruct** | **Dream-7B** **Instruct** | **SDAR-8B** **Chat** |  | **Nemotron-Labs-Diffusion-8B** **(Tri-Mode in One Model)** |  |  |  |
+|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| Gen. Mode | AR | AR | AR | Diff. | Diff. | Diff. | Diff. | AR | Diff. | Linear SS | Quad. SS |
+| *Scientific QA & Instruction Following* |  |  |  |  |  |  |  |  |  |  |  |
+| GPQA | 37.12 | 49.24 | 42.87 | 33.30 | 33.00 | 40.20 | 30.80 | 44.44 | 43.94 | 40.40 | 44.30 |
+| IFEval | 74.58 | 87.38 | 64.31 | 59.90 | 62.50 | 61.40 | 60.07 | 68.65 | 68.32 | 69.13 | 71.00 |
+| MMLU | 74.86 | 76.66 | 73.90 | 65.50 | 67.00 | 78.60 | 78.83 | 79.85 | 78.71 | 79.01 | 79.95 |
+| *Coding* |  |  |  |  |  |  |  |  |  |  |  |
+| HumanEval | 77.44 | 81.71 | 71.04 | 49.40 | 55.50 | 78.70 | 79.27 | 80.49 | 78.66 | 81.71 | 79.27 |
+| MBPP | 81.55 | 81.88 | 78.97 | 41.00 | 58.80 | 72.00 | 67.32 | 85.19 | 83.86 | 84.92 | 85.19 |
+| LCB-CPP | 12.33 | 21.09 | 20.76 | 4.19 | 1.25 | 13.44 | 11.89 | 28.85 | 26.16 | 24.89 | 27.70 |
+| *Math* |  |  |  |  |  |  |  |  |  |  |  |
+| Math500 | 75.10 | 84.80 | 83.60 | 39.20 | 43.00 | 78.60 | 72.40 | 88.00 | 85.80 | 87.60 | 88.80 |
+| GSM8K | 91.89 | 92.42 | 92.42 | 79.91 | 81.00 | 91.30 | 88.48 | 94.01 | 93.03 | 93.78 | 94.16 |
+| AIME24 | 13.75 | 30.21 | 27.71 | 0.00 | 0.00 | 16.67 | 13.33 | 33.33 | 46.67 | 36.67 | 33.33 |
+| AIME25 | 6.88 | 22.08 | 24.58 | 0.00 | 3.33 | 10.00 | 3.33 | 33.33 | 26.67 | 30.00 | 36.67 |
+| *Average over All Tasks* |  |  |  |  |  |  |  |  |  |  |  |
+| Accuracy | 54.55 | 62.75 | 58.02 | 37.24 | 40.54 | 54.09 | 50.57 | 63.61 | 63.18 | 62.81 | 64.04 |
+| TPF | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.75 | 1.00 | 2.57 | 5.99 | 6.38 |
 
 ## 5.3 Vision-Language Models
 
@@ -685,8 +397,6 @@ where $N_{\text{vis}}$ is the number of vision tokens. The clean half retains th
 
 We evaluate across scientific QA and instruction following (GPQA, IFEval, MMLU), coding (HumanEval, MBPP, LiveCodeBench-CPP), and math reasoning (Math500, GSM8K, AIME24, AIME25). We use NeMo-Skills \[26\] as the evaluation framework for all AR baselines and our Nemotron-Labs-Diffusion-8B, and use the official evaluation pipelines provided in the original papers for the diffusion baselines \[2, 3, 4\].
 
-<span id="tab:lora_self_speculation" data-label="tab:lora_self_speculation"></span>
-
 **Tabla 6.** Per-task TPF achieved by linear self-speculation w/ and w/o LoRA tuning across 3B/8B/14B scales.
 
 | **Model Scale** | **Setting** | **GPQA** | **IFEval** | **HumanEval** | **MBPP** | **Math500** | **GSM8K** | **AIME24** | **AIME25** | **MMLU** | **LCB-CPP** | **Avg TPF** | **Avg Acc** |
@@ -704,312 +414,29 @@ We evaluate across scientific QA and instruction following (GPQA, IFEval, MMLU),
 
 **Figura 8.** Comparing the accuracy-TPF trade-offs achieved w/ and w/o a sampler.
 
-<span id="tab:benchmark_3b_14b" data-label="tab:benchmark_3b_14b"></span>
-
 **Tabla 7.** Benchmark our Nemotron-Labs-Diffusion-3B/14B instruct models against SOTA AR instruct models.
 
-<table id="tab:benchmark_3b_14b">
-<thead>
-<tr>
-<th style="text-align: center;"><strong>Model</strong></th>
-<th style="text-align: center;"><strong>Gen. Mode</strong></th>
-<th style="text-align: center;"><strong>GPQA</strong></th>
-<th style="text-align: center;"><strong>IFEval</strong></th>
-<th style="text-align: center;"><strong>HumanEval</strong></th>
-<th style="text-align: center;"><strong>MBPP</strong></th>
-<th style="text-align: center;"><strong>Math500</strong></th>
-<th style="text-align: center;"><strong>GSM8K</strong></th>
-<th style="text-align: center;"><strong>AIME24</strong></th>
-<th style="text-align: center;"><strong>AIME25</strong></th>
-<th style="text-align: center;"><strong>MMLU</strong></th>
-<th style="text-align: center;"><strong>LCB-CPP</strong></th>
-<th style="text-align: center;"><strong>Avg Acc</strong></th>
-<th style="text-align: center;"><strong>Avg TPF</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td colspan="14" style="text-align: center;"><em>3B Scale</em></td>
-</tr>
-<tr>
-<td style="text-align: center;">Llama-3.2-3B-Instruct</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">27.78</td>
-<td style="text-align: center;">69.69</td>
-<td style="text-align: center;">65.85</td>
-<td style="text-align: center;">66.93</td>
-<td style="text-align: center;">32.60</td>
-<td style="text-align: center;">62.09</td>
-<td style="text-align: center;">0.00</td>
-<td style="text-align: center;">0.00</td>
-<td style="text-align: center;">62.45</td>
-<td style="text-align: center;">9.25</td>
-<td style="text-align: center;">39.90</td>
-<td style="text-align: center;">1.00</td>
-</tr>
-<tr>
-<td style="text-align: center;">Phi-4-mini-Instruct</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">40.91</td>
-<td style="text-align: center;">71.16</td>
-<td style="text-align: center;">77.44</td>
-<td style="text-align: center;">75.13</td>
-<td style="text-align: center;">70.80</td>
-<td style="text-align: center;">76.57</td>
-<td style="text-align: center;">10.00</td>
-<td style="text-align: center;">6.67</td>
-<td style="text-align: center;">53.37</td>
-<td style="text-align: center;">9.91</td>
-<td style="text-align: center;">49.20</td>
-<td style="text-align: center;">1.00</td>
-</tr>
-<tr>
-<td style="text-align: center;">Ministral3-3B-Instruct-2512</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">28.79</td>
-<td style="text-align: center;">57.55</td>
-<td style="text-align: center;">64.79</td>
-<td style="text-align: center;">68.39</td>
-<td style="text-align: center;">71.90</td>
-<td style="text-align: center;">87.41</td>
-<td style="text-align: center;">12.50</td>
-<td style="text-align: center;">12.71</td>
-<td style="text-align: center;">63.21</td>
-<td style="text-align: center;">12.50</td>
-<td style="text-align: center;">47.97</td>
-<td style="text-align: center;">1.00</td>
-</tr>
-<tr>
-<td style="text-align: center;">Qwen3-4B</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">37.18</td>
-<td style="text-align: center;">72.20</td>
-<td style="text-align: center;">75.91</td>
-<td style="text-align: center;">72.49</td>
-<td style="text-align: center;">68.40</td>
-<td style="text-align: center;">92.19</td>
-<td style="text-align: center;">10.63</td>
-<td style="text-align: center;">10.63</td>
-<td style="text-align: center;">77.05</td>
-<td style="text-align: center;">15.58</td>
-<td style="text-align: center;">53.23</td>
-<td style="text-align: center;">1.00</td>
-</tr>
-<tr>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">39.39</td>
-<td style="text-align: center;">69.39</td>
-<td style="text-align: center;">76.22</td>
-<td style="text-align: center;">71.16</td>
-<td style="text-align: center;">77.60</td>
-<td style="text-align: center;">87.87</td>
-<td style="text-align: center;">23.33</td>
-<td style="text-align: center;">16.67</td>
-<td style="text-align: center;">71.70</td>
-<td style="text-align: center;">21.37</td>
-<td style="text-align: center;">55.50</td>
-<td style="text-align: center;">1.00</td>
-</tr>
-<tr>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">Diff.</td>
-<td style="text-align: center;">33.84</td>
-<td style="text-align: center;">68.93</td>
-<td style="text-align: center;">74.39</td>
-<td style="text-align: center;">73.54</td>
-<td style="text-align: center;">74.80</td>
-<td style="text-align: center;">88.40</td>
-<td style="text-align: center;">16.67</td>
-<td style="text-align: center;">10.00</td>
-<td style="text-align: center;">72.06</td>
-<td style="text-align: center;">16.30</td>
-<td style="text-align: center;">52.90</td>
-<td style="text-align: center;">1.91</td>
-</tr>
-<tr>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">Linear SS</td>
-<td style="text-align: center;">35.86</td>
-<td style="text-align: center;">68.96</td>
-<td style="text-align: center;">75.00</td>
-<td style="text-align: center;">70.11</td>
-<td style="text-align: center;">77.40</td>
-<td style="text-align: center;">87.79</td>
-<td style="text-align: center;">26.67</td>
-<td style="text-align: center;">16.67</td>
-<td style="text-align: center;">71.89</td>
-<td style="text-align: center;">20.04</td>
-<td style="text-align: center;">55.00</td>
-<td style="text-align: center;">4.36</td>
-</tr>
-<tr>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">Quad. SS</td>
-<td style="text-align: center;">42.93</td>
-<td style="text-align: center;">71.36</td>
-<td style="text-align: center;">79.27</td>
-<td style="text-align: center;">76.46</td>
-<td style="text-align: center;">78.20</td>
-<td style="text-align: center;">88.25</td>
-<td style="text-align: center;">13.33</td>
-<td style="text-align: center;">16.67</td>
-<td style="text-align: center;">72.12</td>
-<td style="text-align: center;">19.60</td>
-<td style="text-align: center;">55.80</td>
-<td style="text-align: center;">5.42</td>
-</tr>
-<tr>
-<td colspan="14" style="text-align: center;"><em>14B Scale</em></td>
-</tr>
-<tr>
-<td style="text-align: center;">Gemma-3-12B-IT</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">38.32</td>
-<td style="text-align: center;">85.73</td>
-<td style="text-align: center;">58.23</td>
-<td style="text-align: center;">85.45</td>
-<td style="text-align: center;">84.55</td>
-<td style="text-align: center;">90.45</td>
-<td style="text-align: center;">23.75</td>
-<td style="text-align: center;">16.88</td>
-<td style="text-align: center;">76.41</td>
-<td style="text-align: center;">20.54</td>
-<td style="text-align: center;">58.03</td>
-<td style="text-align: center;">1.00</td>
-</tr>
-<tr>
-<td style="text-align: center;">Phi-3-Medium-14B</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">37.56</td>
-<td style="text-align: center;">85.75</td>
-<td style="text-align: center;">70.43</td>
-<td style="text-align: center;">76.65</td>
-<td style="text-align: center;">43.35</td>
-<td style="text-align: center;">89.69</td>
-<td style="text-align: center;">1.88</td>
-<td style="text-align: center;">0.62</td>
-<td style="text-align: center;">76.67</td>
-<td style="text-align: center;">10.79</td>
-<td style="text-align: center;">49.34</td>
-<td style="text-align: center;">1.00</td>
-</tr>
-<tr>
-<td style="text-align: center;">Phi-4-14B</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">56.94</td>
-<td style="text-align: center;">68.96</td>
-<td style="text-align: center;">84.60</td>
-<td style="text-align: center;">83.93</td>
-<td style="text-align: center;">79.95</td>
-<td style="text-align: center;">92.27</td>
-<td style="text-align: center;">19.17</td>
-<td style="text-align: center;">15.83</td>
-<td style="text-align: center;">84.76</td>
-<td style="text-align: center;">21.75</td>
-<td style="text-align: center;">60.82</td>
-<td style="text-align: center;">1.00</td>
-</tr>
-<tr>
-<td style="text-align: center;">Ministral3-14B-Instruct-2512</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">52.02</td>
-<td style="text-align: center;">71.51</td>
-<td style="text-align: center;">72.56</td>
-<td style="text-align: center;">82.47</td>
-<td style="text-align: center;">86.30</td>
-<td style="text-align: center;">92.80</td>
-<td style="text-align: center;">36.25</td>
-<td style="text-align: center;">29.38</td>
-<td style="text-align: center;">79.88</td>
-<td style="text-align: center;">26.54</td>
-<td style="text-align: center;">62.97</td>
-<td style="text-align: center;">1.00</td>
-</tr>
-<tr>
-<td style="text-align: center;">Qwen3-14B</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">50.51</td>
-<td style="text-align: center;">88.36</td>
-<td style="text-align: center;">83.54</td>
-<td style="text-align: center;">87.30</td>
-<td style="text-align: center;">85.40</td>
-<td style="text-align: center;">94.31</td>
-<td style="text-align: center;">33.33</td>
-<td style="text-align: center;">20.00</td>
-<td style="text-align: center;">81.51</td>
-<td style="text-align: center;">27.42</td>
-<td style="text-align: center;">65.17</td>
-<td style="text-align: center;">1.00</td>
-</tr>
-<tr>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">54.55</td>
-<td style="text-align: center;">68.50</td>
-<td style="text-align: center;">86.59</td>
-<td style="text-align: center;">85.19</td>
-<td style="text-align: center;">88.40</td>
-<td style="text-align: center;">91.36</td>
-<td style="text-align: center;">46.67</td>
-<td style="text-align: center;">43.33</td>
-<td style="text-align: center;">82.51</td>
-<td style="text-align: center;">27.48</td>
-<td style="text-align: center;">67.46</td>
-<td style="text-align: center;">1.00</td>
-</tr>
-<tr>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">Diff.</td>
-<td style="text-align: center;">48.99</td>
-<td style="text-align: center;">69.03</td>
-<td style="text-align: center;">83.54</td>
-<td style="text-align: center;">82.80</td>
-<td style="text-align: center;">85.80</td>
-<td style="text-align: center;">93.71</td>
-<td style="text-align: center;">43.33</td>
-<td style="text-align: center;">50.00</td>
-<td style="text-align: center;">82.17</td>
-<td style="text-align: center;">25.77</td>
-<td style="text-align: center;">66.51</td>
-<td style="text-align: center;">2.74</td>
-</tr>
-<tr>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">Linear SS</td>
-<td style="text-align: center;">47.47</td>
-<td style="text-align: center;">70.06</td>
-<td style="text-align: center;">85.37</td>
-<td style="text-align: center;">84.66</td>
-<td style="text-align: center;">86.60</td>
-<td style="text-align: center;">92.04</td>
-<td style="text-align: center;">50.00</td>
-<td style="text-align: center;">40.00</td>
-<td style="text-align: center;">81.11</td>
-<td style="text-align: center;">26.32</td>
-<td style="text-align: center;">66.36</td>
-<td style="text-align: center;">5.96</td>
-</tr>
-<tr>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">Quad. SS</td>
-<td style="text-align: center;">52.02</td>
-<td style="text-align: center;">72.15</td>
-<td style="text-align: center;">87.20</td>
-<td style="text-align: center;">85.45</td>
-<td style="text-align: center;">88.00</td>
-<td style="text-align: center;">92.12</td>
-<td style="text-align: center;">53.33</td>
-<td style="text-align: center;">40.00</td>
-<td style="text-align: center;">82.45</td>
-<td style="text-align: center;">28.74</td>
-<td style="text-align: center;">68.15</td>
-<td style="text-align: center;">6.92</td>
-</tr>
-</tbody>
-</table>
-
-<span id="tab:benchmark_base" data-label="tab:benchmark_base"></span>
+| **Model** | **Gen. Mode** | **GPQA** | **IFEval** | **HumanEval** | **MBPP** | **Math500** | **GSM8K** | **AIME24** | **AIME25** | **MMLU** | **LCB-CPP** | **Avg Acc** | **Avg TPF** |
+|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| *3B Scale* |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| Llama-3.2-3B-Instruct | AR | 27.78 | 69.69 | 65.85 | 66.93 | 32.60 | 62.09 | 0.00 | 0.00 | 62.45 | 9.25 | 39.90 | 1.00 |
+| Phi-4-mini-Instruct | AR | 40.91 | 71.16 | 77.44 | 75.13 | 70.80 | 76.57 | 10.00 | 6.67 | 53.37 | 9.91 | 49.20 | 1.00 |
+| Ministral3-3B-Instruct-2512 | AR | 28.79 | 57.55 | 64.79 | 68.39 | 71.90 | 87.41 | 12.50 | 12.71 | 63.21 | 12.50 | 47.97 | 1.00 |
+| Qwen3-4B | AR | 37.18 | 72.20 | 75.91 | 72.49 | 68.40 | 92.19 | 10.63 | 10.63 | 77.05 | 15.58 | 53.23 | 1.00 |
+|  | AR | 39.39 | 69.39 | 76.22 | 71.16 | 77.60 | 87.87 | 23.33 | 16.67 | 71.70 | 21.37 | 55.50 | 1.00 |
+|  | Diff. | 33.84 | 68.93 | 74.39 | 73.54 | 74.80 | 88.40 | 16.67 | 10.00 | 72.06 | 16.30 | 52.90 | 1.91 |
+|  | Linear SS | 35.86 | 68.96 | 75.00 | 70.11 | 77.40 | 87.79 | 26.67 | 16.67 | 71.89 | 20.04 | 55.00 | 4.36 |
+|  | Quad. SS | 42.93 | 71.36 | 79.27 | 76.46 | 78.20 | 88.25 | 13.33 | 16.67 | 72.12 | 19.60 | 55.80 | 5.42 |
+| *14B Scale* |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| Gemma-3-12B-IT | AR | 38.32 | 85.73 | 58.23 | 85.45 | 84.55 | 90.45 | 23.75 | 16.88 | 76.41 | 20.54 | 58.03 | 1.00 |
+| Phi-3-Medium-14B | AR | 37.56 | 85.75 | 70.43 | 76.65 | 43.35 | 89.69 | 1.88 | 0.62 | 76.67 | 10.79 | 49.34 | 1.00 |
+| Phi-4-14B | AR | 56.94 | 68.96 | 84.60 | 83.93 | 79.95 | 92.27 | 19.17 | 15.83 | 84.76 | 21.75 | 60.82 | 1.00 |
+| Ministral3-14B-Instruct-2512 | AR | 52.02 | 71.51 | 72.56 | 82.47 | 86.30 | 92.80 | 36.25 | 29.38 | 79.88 | 26.54 | 62.97 | 1.00 |
+| Qwen3-14B | AR | 50.51 | 88.36 | 83.54 | 87.30 | 85.40 | 94.31 | 33.33 | 20.00 | 81.51 | 27.42 | 65.17 | 1.00 |
+|  | AR | 54.55 | 68.50 | 86.59 | 85.19 | 88.40 | 91.36 | 46.67 | 43.33 | 82.51 | 27.48 | 67.46 | 1.00 |
+|  | Diff. | 48.99 | 69.03 | 83.54 | 82.80 | 85.80 | 93.71 | 43.33 | 50.00 | 82.17 | 25.77 | 66.51 | 2.74 |
+|  | Linear SS | 47.47 | 70.06 | 85.37 | 84.66 | 86.60 | 92.04 | 50.00 | 40.00 | 81.11 | 26.32 | 66.36 | 5.96 |
+|  | Quad. SS | 52.02 | 72.15 | 87.20 | 85.45 | 88.00 | 92.12 | 53.33 | 40.00 | 82.45 | 28.74 | 68.15 | 6.92 |
 
 **Tabla 8.** Benchmark our Nemotron-Labs-Diffusion-8B base model against SOTA AR and diffusion base LMs across coding, math, knowledge, and commonsense reasoning benchmarks.
 
@@ -1024,8 +451,6 @@ We evaluate across scientific QA and instruction following (GPQA, IFEval, MMLU),
 |  | Diff. | 62.80 | 57.32 | 67.00 | 81.75 | 87.26 | 65.16 | 74.68 | 83.38 | 58.11 | 76.08 | 80.09 | 71.98 | 72.13 | 2.06 |
 |  | Linear SS | 63.41 | 56.10 | 67.20 | 81.75 | 88.17 | 67.38 | 74.68 | 83.38 | 58.11 | 76.08 | 80.09 | 71.98 | 72.36 | 4.67 |
 |  | Quad. SS | 62.20 | 54.88 | 67.60 | 81.48 | 88.48 | 66.24 | 74.68 | 83.38 | 58.11 | 76.08 | 80.09 | 71.98 | 72.10 | 7.04 |
-
-<span id="tab:nemotron_vlm_expr" data-label="tab:nemotron_vlm_expr"></span>
 
 **Tabla 9.** Benchmarking discrete diffusion VLMs and Nemotron-Labs-Diffusion-VLM across tasks. The diffusion mode of Nemotron-Labs-Diffusion-VLM uses denoising threshold $\tau{=}0.9$.
 
@@ -1074,8 +499,6 @@ We analyze and compare the deployment efficiency of Nemotron-Labs-Diffusion agai
 **Observations.** As shown in Fig. 1 (c) and Fig. 9, we observe that: (1) Linear self-speculation consistently improves user throughput over the AR mode across all three GPUs, achieving up to $3.3\times$ speedup over AR on GB200 ($3.97\times$ speedup and 1015 tok/sec with an optimized kernel), as shown in Fig. 9 (c), and pushing the absolute throughput at batch size 1 to $277$/$525$ tok/sec on RTX Pro 6000 ($3.46\times$/$2.35\times$ over AR) and $77.5$/$112.5$ tok/sec on DGX Spark ($3.14\times$/$2.69\times$ over AR) under FP8/INT4 quantization, demonstrating its effectiveness as a drop-in low-concurrency acceleration scheme. (2) Compared with Eagle3, linear self-speculation delivers a $2.4\times$/$2.3\times$/$1.8\times$ speedup at batch size 1 on GB200/RTX Pro 6000/DGX Spark and achieves better trade-offs between system throughput and per-user throughput, as shown in Fig. 1 (c) and Fig. 9 (a). This indicates that diffusion drafting paired with AR verification is a more effective acceleration mechanism than auxiliary-head MTP due to its higher acceptance length. (3) The SOL ceiling reveals substantial remaining headroom: on RTX Pro 6000, the projected SOL throughput reaches $7.09\times$/$12.36\times$ over AR under FP8/INT4 quantization, roughly $2\times$ above linear self-speculation.
 
 **Acceptance length per category.** As shown in Tab. 10, Nemotron-Labs-Diffusion achieves significantly higher acceptance length than both Eagle3 and MTP across all categories, with average acceptance lengths of $5.46$/$6.82$ for Native/LoRA-tuned Nemotron-Labs-Diffusion versus $2.75$/$4.24$ for Eagle3/MTP. The gap further widens to $6.75$/$8.69$ vs. $2.81$/$4.73$ on the four diffusion-friendly categories (coding, math, reasoning, multilingual), implying that diffusion drafting yields more reliable multi-token proposals, especially on structured tasks with strong syntactic or semantic constraints.
-
-<span id="tab:accept_len_per_category" data-label="tab:accept_len_per_category"></span>
 
 **Tabla 10.** Per-category acceptance length on SPEED-Bench \[1\]. Comparing Native / LoRA for Nemotron-Labs-Diffusion-8B and Qwen3-8B-Eagle3 / Qwen3-9B-MTP, all with draft length 31.
 

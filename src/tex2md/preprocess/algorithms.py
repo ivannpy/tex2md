@@ -155,3 +155,138 @@ def rewrite_algorithm_captions(text, labels):
         pos = m.end()
     out.append(text[pos:])
     return "".join(out)
+
+
+# --------------------------------------------------------------------------- algorithm2e
+
+A2E_MARKERS = re.compile(r"\\(?:KwIn|KwOut|KwData|KwResult|Input|Output|For|ForEach|ForAll|While|If|uIf|Repeat|Return|tcp|tcc)\b|\\;")
+A2E_HEADS = {  # name: (number of {..} args that follow, text before, text after the first argument)
+    "For": (2, "for ", " do"), "ForEach": (2, "for each ", " do"), "ForAll": (2, "for all ", " do"),
+    "While": (2, "while ", " do"), "If": (2, "if ", " then"), "uIf": (2, "if ", " then"),
+    "ElseIf": (2, "else if ", " then"), "uElseIf": (2, "else if ", " then"),
+}
+A2E_BARE = {"Else": "else", "uElse": "else"}
+A2E_LABELS = {"KwIn": "Input", "KwOut": "Output", "KwData": "Data", "KwResult": "Result", "Input": "Input", "Output": "Output"}
+
+
+def _a2e_inline(s):
+    """Keyword macros that may appear inside a header or an input list."""
+    s = re.sub(r"\\KwTo\b", r" \\textbf{to} ", s)
+    s = re.sub(r"\\(?:Return|KwRet)\b\s*", r"\\textbf{return} ", s)
+    return re.sub(r" {2,}", " ", s.replace("\\;", "")).strip()
+
+
+def _a2e(text, depth, lines):
+    r"""algorithm2e source -> list of (depth, tex line). Statements end at \; ; blocks are {..} groups."""
+    cur, i = [], 0
+
+    def flush():
+        s = re.sub(r" {2,}", " ", "".join(cur)).strip()
+        if s:
+            lines.append((depth, s))
+        cur.clear()
+
+    while i < len(text):
+        c = text[i]
+        if c == "\\":
+            m = re.compile(r"\\([A-Za-z]+)\*?|\\;|\\\\").match(text, i)
+            if not m:
+                cur.append(text[i:i + 2])
+                i += 2
+                continue
+            name = m.group(1)
+            if m.group(0) in (r"\;", r"\\"):
+                flush()
+                i = m.end()
+            elif name in A2E_LABELS:
+                flush()
+                args, e = _brace_args(text, m.end(), 1)
+                if args is not None:
+                    lines.append((depth, r"\textbf{" + A2E_LABELS[name] + r":} " + _a2e_inline(args[0])))
+                    i = e
+                else:
+                    i = m.end()
+            elif name in A2E_HEADS:
+                n, pre, post = A2E_HEADS[name]
+                args, e = _brace_args(text, m.end(), n)
+                if args is None:
+                    cur.append(m.group(0))
+                    i = m.end()
+                    continue
+                flush()
+                lines.append((depth, r"\textbf{" + pre.strip() + "} " + _a2e_inline(args[0]) + (r" \textbf{" + post.strip() + "}")))
+                _a2e(args[1], depth + 1, lines)
+                i = e
+            elif name in A2E_BARE:
+                args, e = _brace_args(text, m.end(), 1)
+                flush()
+                lines.append((depth, r"\textbf{" + A2E_BARE[name] + "}"))
+                if args is not None:
+                    _a2e(args[0], depth + 1, lines)
+                    i = e
+                else:
+                    i = m.end()
+            elif name == "Repeat":
+                args, e = _brace_args(text, m.end(), 2)
+                if args is None:
+                    i = m.end()
+                    continue
+                flush()
+                lines.append((depth, r"\textbf{repeat}"))
+                _a2e(args[0], depth + 1, lines)
+                lines.append((depth, r"\textbf{until} " + _a2e_inline(args[1])))
+                i = e
+            elif name in ("tcp", "tcc"):
+                j = m.end()
+                opt = re.compile(r"\*?(?:\[[^\]]*\])?").match(text, j)
+                args, e = _brace_args(text, opt.end() if opt else j, 1)
+                if args is not None:
+                    cur.append(r"\hfill\textit{// " + args[0].strip() + "}")
+                    i = e
+                else:
+                    i = m.end()
+            elif name in ("Return", "KwRet"):
+                cur.append(r"\textbf{return} ")
+                i = m.end()
+            elif name == "KwTo":
+                cur.append(r" \textbf{to} ")
+                i = m.end()
+            else:
+                cur.append(m.group(0))
+                i = m.end()
+        else:
+            cur.append(c)
+            i += 1
+    flush()
+
+
+def algorithm2e_to_lines(body):
+    lines = []
+    _a2e(body, 0, lines)
+    return "\n\n".join(r"\quad" * d + (r"\ " if d else "") + t for d, t in lines)
+
+
+def rewrite_algorithm2e(text):
+    """``algorithm`` environments written with algorithm2e (\\KwIn, \\For{..}{..}, \\;): pandoc keeps only
+    the caption, so rewrite the body as one paragraph per line (caption and label stay where they are)."""
+    out, pos = [], 0
+    for m in re.finditer(r"\\begin\{algorithm\*?\}(\[[^\]]*\])?(.*?)\\end\{algorithm\*?\}", text, re.S):
+        body = m.group(2)
+        if "\\begin{algorithmic}" in body or not A2E_MARKERS.search(body):
+            continue
+        keep, rest, last = [], [], 0
+        for cm in re.finditer(r"\\(?:caption|label)\*?(?:\[[^\]]*\])?(?=\{)", body):
+            if cm.start() < last:
+                continue
+            e = balanced_end(body, cm.end())
+            if e < 0:
+                continue
+            rest.append(body[last:cm.start()])
+            keep.append(body[cm.start():e])
+            last = e
+        rest.append(body[last:])
+        new = "".join(keep) + "\n\n" + algorithm2e_to_lines("".join(rest)) + "\n\n"
+        out.append(text[pos:m.start(2)] + new)
+        pos = m.end(2)
+    out.append(text[pos:])
+    return "".join(out)

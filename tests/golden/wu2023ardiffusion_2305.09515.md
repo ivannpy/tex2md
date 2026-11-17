@@ -20,7 +20,7 @@ converted: 2026-11-16
 
 ## Abstract
 
-Diffusion models have gained significant attention in the realm of image generation due to their exceptional performance. Their success has been recently expanded to text generation via generating all tokens within a sequence concurrently. However, natural language exhibits a far more pronounced sequential dependency in comparison to images, and the majority of existing language models are trained with a left-to-right auto-regressive approach. To account for the inherent sequential characteristic of natural language, we introduce Auto-Regressive Diffusion (<span class="smallcaps">AR-Diffusion</span>). <span class="smallcaps">AR-Diffusion</span> ensures that the generation of tokens on the right depends on the generated ones on the left, a mechanism achieved through employing a dynamic number of denoising steps that vary based on token position. This results in tokens on the left undergoing fewer denoising steps than those on the right, thereby enabling them to generate earlier and subsequently influence the generation of tokens on the right. In a series of experiments on various text generation tasks, including text summarization, machine translation, and common sense generation, <span class="smallcaps">AR-Diffusion</span> clearly demonstrated its superiority over existing diffusion language models and that it can be $100\times\sim600\times$ faster when achieving comparable results. Our code is available at <https://github.com/microsoft/ProphetNet/tree/master/AR-diffusion>.
+Diffusion models have gained significant attention in the realm of image generation due to their exceptional performance. Their success has been recently expanded to text generation via generating all tokens within a sequence concurrently. However, natural language exhibits a far more pronounced sequential dependency in comparison to images, and the majority of existing language models are trained with a left-to-right auto-regressive approach. To account for the inherent sequential characteristic of natural language, we introduce Auto-Regressive Diffusion (AR-Diffusion). AR-Diffusion ensures that the generation of tokens on the right depends on the generated ones on the left, a mechanism achieved through employing a dynamic number of denoising steps that vary based on token position. This results in tokens on the left undergoing fewer denoising steps than those on the right, thereby enabling them to generate earlier and subsequently influence the generation of tokens on the right. In a series of experiments on various text generation tasks, including text summarization, machine translation, and common sense generation, AR-Diffusion clearly demonstrated its superiority over existing diffusion language models and that it can be $100\times\sim600\times$ faster when achieving comparable results. Our code is available at <https://github.com/microsoft/ProphetNet/tree/master/AR-diffusion>.
 
 # 1 Introduction
 
@@ -28,13 +28,13 @@ Text generation is a fundamental task within the field of natural language proce
 
 Recent studies have shown the remarkable performance of diffusion models in image generation (Ho et al., 2020), motivating researchers to extend diffusion to text generation  (Li et al., 2022a; Gong et al., 2022; Dieleman et al., 2022; Yuan et al., 2022; Ye et al., 2023). By introducing timestep, these methods progressively regulate the interpolation between the original tokens and Gaussian noise, then iteratively denoise for text generation. At each timestep, the diffusion-based text generator predicts all tokens simultaneously following Non-Auto-Regression (NAR) (Lewis et al., 2020; Qi et al., 2020; Qi et al., 2021; Li et al., 2022b), leading to faster decoding speed compared to AR. However, it also inherits the drawback of NAR, namely the sacrifice of inter-token position dependency (Li et al., 2022c) and the drop of generation performance (Bao et al., 2021).
 
-To conduct a comprehensive analysis, we introduce a two-dimensional coordinate system to track the diffusion timestep of tokens $f(\cdot)$ positioned at various locations. As illustrated in Figure 1, the system assigns the token position $n \in \left[1, N\right]$ to the horizontal axis and the diffusion timestep $t \in [0, T]$ to the vertical axis. Diffusion-LM (Li et al., 2022a), which is followed by existing diffusion-based text generation models, is shown in Figure 1(a). It assigns a uniform timestep $t$ to all tokens. In contrast, tokens in the AR model depicted in Figure 1(b) exhibit distinct timesteps within a generation step ($t_{i}$). For instance, the already decoded token at position $n_1$ has a timestep of $0$, while the to-be-decoded token at position $n_2$ has a timestep of $T$. This approach effectively captures the sequential dependency. Motivated by this observation, we introduce <span class="smallcaps">AR-Diffusion</span>, an auto-regressive diffusion method, for the disparity in token positions and the principle of sequential token identification.
+To conduct a comprehensive analysis, we introduce a two-dimensional coordinate system to track the diffusion timestep of tokens $f(\cdot)$ positioned at various locations. As illustrated in Figure 1, the system assigns the token position $n \in \left[1, N\right]$ to the horizontal axis and the diffusion timestep $t \in [0, T]$ to the vertical axis. Diffusion-LM (Li et al., 2022a), which is followed by existing diffusion-based text generation models, is shown in Figure 1(a). It assigns a uniform timestep $t$ to all tokens. In contrast, tokens in the AR model depicted in Figure 1(b) exhibit distinct timesteps within a generation step ($t_{i}$). For instance, the already decoded token at position $n_1$ has a timestep of $0$, while the to-be-decoded token at position $n_2$ has a timestep of $T$. This approach effectively captures the sequential dependency. Motivated by this observation, we introduce AR-Diffusion, an auto-regressive diffusion method, for the disparity in token positions and the principle of sequential token identification.
 
-In <span class="smallcaps">AR-Diffusion</span>, we propose a **multi-level diffusion strategy** that includes both sentence-level and token-level diffusion. We randomly choose a sentence-level timestep $t$, and assign **dynamic movement speeds** $v(\cdot)$ by determining position-sensitive token-level timestep $f(n,t)$ for each token. This enables tokens at the left of a sentence to undergo faster movement from random Gaussian noise to token embedding, while those at the right of the sentence experience slower movement to better utilize information from previously denoised tokens. During inference, to reduce the significant number of inference steps (e.g., 2,000) required in Diffusion-LM (Li et al., 2022a), SeqDiffSeq (Yuan et al., 2022) and GENIE (Lin et al., 2023), we introduce a skipping mechanism that collaborates with the multi-level diffusion strategy to accelerate the process.
+In AR-Diffusion, we propose a **multi-level diffusion strategy** that includes both sentence-level and token-level diffusion. We randomly choose a sentence-level timestep $t$, and assign **dynamic movement speeds** $v(\cdot)$ by determining position-sensitive token-level timestep $f(n,t)$ for each token. This enables tokens at the left of a sentence to undergo faster movement from random Gaussian noise to token embedding, while those at the right of the sentence experience slower movement to better utilize information from previously denoised tokens. During inference, to reduce the significant number of inference steps (e.g., 2,000) required in Diffusion-LM (Li et al., 2022a), SeqDiffSeq (Yuan et al., 2022) and GENIE (Lin et al., 2023), we introduce a skipping mechanism that collaborates with the multi-level diffusion strategy to accelerate the process.
 
-**Figura 1.** Model behaviors illustrated on a two-dimensional coordinate system, where the horizontal axis stands for the position and the vertical axis represents the diffusion timestep. In the inference stage, different models will behave differently. (a) For the typical Diffusion-LM (Li et al., 2022a), each token share the identical movement speed $v(n_1,t_{i},t_{i+1})=v(n_2,t_{i},t_{i+1})=|t_{i+1}-t_i|$. (b) For AR from the perspective of diffusion models, the tokens have two states based on the degree of interpolation between the original tokens and Gaussian noise: to be decoded (at timestep $t=T$) and already decoded (at timestep $t=0$). Specifically, we have $v(n_1,t_{i},t_{i+1})=0$ and $v(n_2,t_{i},t_{i+1})=T$. (c) In <span class="smallcaps">AR-Diffusion</span>, $(n_e, t_e)$ is the coordinate of anchor point. Tokens in different positions exhibit varying movement speeds, such as $v(n_1,t_{i},t_{i+1}) > v(n_2,t_{i},t_{i+1})$ when $n_1 < n_2$.
+**Figura 1.** Model behaviors illustrated on a two-dimensional coordinate system, where the horizontal axis stands for the position and the vertical axis represents the diffusion timestep. In the inference stage, different models will behave differently. (a) For the typical Diffusion-LM (Li et al., 2022a), each token share the identical movement speed $v(n_1,t_{i},t_{i+1})=v(n_2,t_{i},t_{i+1})=|t_{i+1}-t_i|$. (b) For AR from the perspective of diffusion models, the tokens have two states based on the degree of interpolation between the original tokens and Gaussian noise: to be decoded (at timestep $t=T$) and already decoded (at timestep $t=0$). Specifically, we have $v(n_1,t_{i},t_{i+1})=0$ and $v(n_2,t_{i},t_{i+1})=T$. (c) In AR-Diffusion, $(n_e, t_e)$ is the coordinate of anchor point. Tokens in different positions exhibit varying movement speeds, such as $v(n_1,t_{i},t_{i+1}) > v(n_2,t_{i},t_{i+1})$ when $n_1 < n_2$.
 
-Experimental results across various text generation tasks, such as text summarization, machine translation, and common sense generation, have consistently demonstrated that <span class="smallcaps">AR-Diffusion</span> surpasses existing text diffusion models, including AR methods in terms of both quality and diversity. Moreover, our verification reveals that <span class="smallcaps">AR-Diffusion</span> requires fewer resources during decoding while maintaining superior performance. It achieves $100\times$ faster than SeqDiffSeq (Yuan et al., 2022) in machine translation and $600\times$ faster than GENIE (Lin et al., 2023) in text summarization while delivering comparable results. Furthermore, it demonstrates promising results even in a challenging scenario where decoding is limited to only two steps.
+Experimental results across various text generation tasks, such as text summarization, machine translation, and common sense generation, have consistently demonstrated that AR-Diffusion surpasses existing text diffusion models, including AR methods in terms of both quality and diversity. Moreover, our verification reveals that AR-Diffusion requires fewer resources during decoding while maintaining superior performance. It achieves $100\times$ faster than SeqDiffSeq (Yuan et al., 2022) in machine translation and $600\times$ faster than GENIE (Lin et al., 2023) in text summarization while delivering comparable results. Furthermore, it demonstrates promising results even in a challenging scenario where decoding is limited to only two steps.
 
 # 2 Preliminary
 
@@ -106,14 +106,10 @@ where $t_i$ and $t_{i+1}$ are the start and end sentence-level diffusion timeste
 
 Based on the speed of movement, we propose a fundamental principle, dynamic movement speed, for designing the token-level diffusion timestep function $f(n,t)$ to take advantage of AR in diffusion. Specifically, elements on the left side of a sentence undergo higher movement speed from random Gaussian noise to token embedding, while those on the right side experience lower movement speed, thereby they can be generated in the later sentence-level timestep and utilize information from previously generated tokens more effectively.
 
-<div class="algorithm">
+**Algoritmo 1.** Training Process of AR-Diffusion.
 
-**Algoritmo 1.** Training Process of <span class="smallcaps">AR-Diffusion</span>.
-
-<span id="alg:algorithm" data-label="alg:algorithm"></span> **Input**: Dataset $\{({\boldsymbol{x}}, {\boldsymbol{y}})\}$, maximum timestep number $T$ and maximum target length $N$.\
+**Input**: Dataset $\{({\boldsymbol{x}}, {\boldsymbol{y}})\}$, maximum timestep number $T$ and maximum target length $N$.\
 **Output**: Optimized model parameters ${\boldsymbol{\theta}}$.
-
-<div class="algorithmic">
 
 Define an anchor point $(n_e, t_e)$[^5].
 
@@ -149,12 +145,6 @@ $$\begin{equation}
 
 **until** converged
 
-</div>
-
-<span id="algorithm:1" data-label="algorithm:1"></span>
-
-</div>
-
 Following the guidance of the principle, we develop a token-level diffusion strategy with the linear function, which is shown in Figure 1(c). In particular, the procedure is illustrated in Algorithm 1, where $\mathrm{clip}(x, \mathrm{min}, \mathrm{max})$ function is to clamp all elements in $x$ into the range $[ \mathrm{min}, \mathrm{max} ]$. Specifically, in the forward process of diffusion, the start point goes to the left from $(N, 0)$ to $(0, 0)$ along the horizontal axis and then moves up to $(0, T)$ along the vertical axis. Therefore, the entire range of sentence-level timestep is extended to $\left[0, N+T\right]$.
 
 In the reverse diffusion process, the multi-level diffusion follows the formula: 
@@ -175,14 +165,10 @@ To ensure consistency between training and inference, we also need to calculate 
 
 Each element of this subsequence represents the sentence-level timesteps $t$, and we can use Eq. (6) to calculate $(n_s, t_s)$. Then, based on Eq. (7), we calculate the token-level timesteps corresponding to each position. We take the current sentence-level timestep $t_i$ and the next sentence-level timestep $t_{i+1}$, and calculate the token-level timesteps $f(n, t_i)$ and $f(n, t_{i+1})$ for each position. Since $M \ll T+N$, $t_{i+1} \ll t_i$, implying that $f(n, t_i) \ll f(n, t_{i+1})$. The essence of Skipping is reflected in the fact that each token undergoes significant span during denoising (from $f(n, t_i)$ to $f(n, t_{i+1})$).
 
-<div class="algorithm">
+**Algoritmo 2.** Inference Process of AR-Diffusion with the Skipping Mechanism.
 
-**Algoritmo 2.** Inference Process of <span class="smallcaps">AR-Diffusion</span> with the Skipping Mechanism.
-
-<span id="alg:algorithm2" data-label="alg:algorithm2"></span> **Input**: Source condition ${\boldsymbol{x}}$, number of decoding steps $M$ and model parameters ${\boldsymbol{\theta}}$.\
+**Input**: Source condition ${\boldsymbol{x}}$, number of decoding steps $M$ and model parameters ${\boldsymbol{\theta}}$.\
 **Output**: Predicted target embedding $\hat{{\boldsymbol{y}}}$.
-
-<div class="algorithmic">
 
 Define an anchor point $(n_e, t_e)$.
 
@@ -218,12 +204,6 @@ p_{\theta}\big({\boldsymbol{z}}^{n}_{f(n, t_{i+1})}\mid {\boldsymbol{z}}^{n}_{f(
 
 Map ${\boldsymbol{z}}_{t_M}$ to the nearest embedding $\hat{{\boldsymbol{y}}}$.
 
-</div>
-
-<span id="algorithm:2" data-label="algorithm:2"></span>
-
-</div>
-
 In practice, we propose an algorithm for the inference, illustrated in Algorithm 2. 
 
 $$\begin{equation}
@@ -242,7 +222,7 @@ In Eq. (10), the conditional distribution of ${\boldsymbol{z}}_{t_{i+1}}$ is in
 
 #### Text Summarization
 
-This task involves taking a long document as input and generating a concise sentence as output. This requires models with the ability to identify important content and rewrite it in a condensed form. In our experiments, we use the publicly available <span class="smallcaps">XSum</span> (Narayan et al., 2018) and <span class="smallcaps">Cnn/DailyMail</span> (Hermann et al., 2015) on GLGE[^6], which is also named as GLGE-Easy.
+This task involves taking a long document as input and generating a concise sentence as output. This requires models with the ability to identify important content and rewrite it in a condensed form. In our experiments, we use the publicly available XSum (Narayan et al., 2018) and Cnn/DailyMail (Hermann et al., 2015) on GLGE[^6], which is also named as GLGE-Easy.
 
 #### Machine Translation
 
@@ -250,13 +230,13 @@ Translation is a widely used sequence-to-sequence task. The input is a sequence 
 
 #### Common Sense Generation
 
-In this task, the model is provided with a concept set consisting of objects and actions as input. The objective is to generate a sentence that incorporates these concepts and describes a realistic scenario. We use <span class="smallcaps">CommonGen</span>[^8] dataset for evaluation.
+In this task, the model is provided with a concept set consisting of objects and actions as input. The objective is to generate a sentence that incorporates these concepts and describes a realistic scenario. We use CommonGen[^8] dataset for evaluation.
 
 ## 4.2 Experimental Details
 
 #### Model Setup
 
-Our model configuration is implemented based on `Transformer-base` (Vaswani et al., 2017). In particular, For <span class="smallcaps">XSum</span> and <span class="smallcaps">Cnn/DailyMail</span>, we set the diffusion embedding dimension to 128. For IWSLT14, we use 64-dimensional diffusion embedding, 4 attention heads and 1024-dimensional feed-forward layers. For <span class="smallcaps">CommonGen</span>, we adopt 64-dimensional diffusion embedding, 8 attention heads and 512-dimensional feed-forward layers.
+Our model configuration is implemented based on `Transformer-base` (Vaswani et al., 2017). In particular, For XSum and Cnn/DailyMail, we set the diffusion embedding dimension to 128. For IWSLT14, we use 64-dimensional diffusion embedding, 4 attention heads and 1024-dimensional feed-forward layers. For CommonGen, we adopt 64-dimensional diffusion embedding, 8 attention heads and 512-dimensional feed-forward layers.
 
 #### Training and Inference
 
@@ -276,31 +256,29 @@ $\bullet$ Diffusion: DiffusionLM (Li et al., 2022a), CDCD (Dieleman et al., 2022
 
 #### Metrics
 
-We follow the approach of (Qi et al., 2020)[^10] to evaluate the **ROUGE-1/2/L** of the summarization task. For the evaluation of translation tasks, we adopt the setting of SeqDiffuSeq (Yuan et al., 2022) to report BLEU score. In addition, we also calculate the SacreBLEU score according to the setting of DINOISER (Ye et al., 2023) for comparison. For <span class="smallcaps">CommonGen</span>, we employ `ROUGE-2/L`, `BLEU-3/4`, `METEOR` and `SPICE` under the evaluation methods of (Lin et al., 2020)[^11].
+We follow the approach of (Qi et al., 2020)[^10] to evaluate the **ROUGE-1/2/L** of the summarization task. For the evaluation of translation tasks, we adopt the setting of SeqDiffuSeq (Yuan et al., 2022) to report BLEU score. In addition, we also calculate the SacreBLEU score according to the setting of DINOISER (Ye et al., 2023) for comparison. For CommonGen, we employ `ROUGE-2/L`, `BLEU-3/4`, `METEOR` and `SPICE` under the evaluation methods of (Lin et al., 2020)[^11].
 
 #### Training Parameters
 
-Our training parameters on different datasets are shown in Table 1. Our linear schedule warm up steps is 4,000 $\times N_{gc}$ , where $N_{gc}$ denotes gradient accumulation number. In addition, we use the AdamW (weight decay = 0.0) optimizer and dropout is 0.2. All experiments are implemented on 8 Tesla V100-32G. It takes about 20 hours to train <span class="smallcaps">XSum</span> and <span class="smallcaps">Cnn/DailyMail</span>, about 5 hours to train IWSLT14, and about 2 hours to train <span class="smallcaps">CommenGen</span>.
+Our training parameters on different datasets are shown in Table 1. Our linear schedule warm up steps is 4,000 $\times N_{gc}$ , where $N_{gc}$ denotes gradient accumulation number. In addition, we use the AdamW (weight decay = 0.0) optimizer and dropout is 0.2. All experiments are implemented on 8 Tesla V100-32G. It takes about 20 hours to train XSum and Cnn/DailyMail, about 5 hours to train IWSLT14, and about 2 hours to train CommenGen.
 
 **Tabla 1.** Training Parameter Settings. Batch Size = mini batch size $\times$ $N_{gc}$ $\times$ GPU number, Optimized Steps = total steps / $N_{gc}$, and $N_{gc}$ is gradient accumulation number.
 
 | Dataset | Lr & Schedule | Batch Size | Optimized Steps | Target Length |  |  |
 |:---|:--:|:--:|:--:|:--:|:--:|:--:|
-| <span class="smallcaps">XSum</span> | 8e-4 & Cosine | 128$\times$<!-- -->3$\times$<!-- -->8 | 80,000 / 3 | 50 |  |  |
-| <span class="smallcaps">Cnn/DailyMail</span> | 8e-4 & Cosine | 80$\times$<!-- -->5$\times$<!-- -->8 | 100,000 / 5 | 180 |  |  |
-| IWSLT14 <span class="smallcaps">De</span>→<span class="smallcaps">En</span> | 2e-3 & Cosine | 192$\times$<!-- -->2$\times$<!-- -->8 | 160,000 / 2 | 90 |  |  |
-| IWSLT14 <span class="smallcaps">En</span>→<span class="smallcaps">De</span> | 1.8e-3 & Cosine | 768$\times$<!-- -->1$\times$<!-- -->8 | 60,000 | 90 |  |  |
-| <span class="smallcaps">CommonGen</span> | 3e-4 & Constant | 384$\times$<!-- -->1$\times$<!-- -->8 | 40,000 | 54 |  |  |
-
-<span id="train para table" data-label="train para table"></span>
+| XSum | 8e-4 & Cosine | 128$\times$<!-- -->3$\times$<!-- -->8 | 80,000 / 3 | 50 |  |  |
+| Cnn/DailyMail | 8e-4 & Cosine | 80$\times$<!-- -->5$\times$<!-- -->8 | 100,000 / 5 | 180 |  |  |
+| IWSLT14 De→En | 2e-3 & Cosine | 192$\times$<!-- -->2$\times$<!-- -->8 | 160,000 / 2 | 90 |  |  |
+| IWSLT14 En→De | 1.8e-3 & Cosine | 768$\times$<!-- -->1$\times$<!-- -->8 | 60,000 | 90 |  |  |
+| CommonGen | 3e-4 & Constant | 384$\times$<!-- -->1$\times$<!-- -->8 | 40,000 | 54 |  |  |
 
 ## 4.3 Main Results
 
-The results on different datasets are shown in Table 2, Table 3, Table 4 and Table 6. The best result is **bolded** and the second-best result is <u>underlined </u>. “$k$” indicates the number of generated candidate samples. It can be seen from the results in each table that <span class="smallcaps">AR-Diffusion</span> achieves the best performance.
+The results on different datasets are shown in Table 2, Table 3, Table 4 and Table 6. The best result is **bolded** and the second-best result is <u>underlined </u>. “$k$” indicates the number of generated candidate samples. It can be seen from the results in each table that AR-Diffusion achieves the best performance.
 
 During the inference process, we utilize **20** inference steps and employ Minimum Bayes Risk (MBR) (Kumar and Byrne, 2004) decoding to select the best sample, following (Li et al., 2022a). We choose MBR instead of the selection approach in GENIE, as GENIE picks up the best sample by calculating the maximum score for each generated one using ground truth, which introduces unfairness. To ensure a fair comparison, we re-implement GENIE using our configuration and perform inference with 20 steps.
 
-**Tabla 2.** Results on <span class="smallcaps">XSum</span> test set. The results of NAR and Semi-NAR are from (Qi et al., 2021), and the results of AR are from GLGE (Liu et al., 2021).
+**Tabla 2.** Results on XSum test set. The results of NAR and Semi-NAR are from (Qi et al., 2021), and the results of AR are from GLGE (Liu et al., 2021).
 
 | **Methods** | **Pattern** | **`ROUGE-1`** | **`ROUGE-2`** | **`ROUGE-L`** |  |
 |:---|:--:|:--:|:--:|:--:|:--:|
@@ -315,196 +293,71 @@ During the inference process, we utilize **20** inference steps and employ Minim
 | LSTM (Greff et al., 2017) | AR[^12] | 25.1 | 6.9 | 19.9 |  |
 | Transformer (Vaswani et al., 2017) |  | 30.5 | <u>10.4</u> | 24.2 |  |
 | GENIE (Lin et al., 2023) ($k$ = 50) | Diffusion | 29.3 | 8.3 | 21.9 |  |
-| <span class="smallcaps">AR-Diffusion</span> ($k$ = 50) |  | <u>31.7</u> | 10.1 | <u>24.7</u> |  |
-| <span class="smallcaps">AR-Diffusion</span> ($k$ = 500) |  | **32.2** | **10.6** | **25.2** |  |
+| AR-Diffusion ($k$ = 50) |  | <u>31.7</u> | 10.1 | <u>24.7</u> |  |
+| AR-Diffusion ($k$ = 500) |  | **32.2** | **10.6** | **25.2** |  |
 
-<span id="xsum main table" data-label="xsum main table"></span>
-
-**Tabla 3.** Results on <span class="smallcaps">Cnn/DailyMail</span> test set. The results of AR are from GLGE (Liu et al., 2021).
+**Tabla 3.** Results on Cnn/DailyMail test set. The results of AR are from GLGE (Liu et al., 2021).
 
 | **Methods** | **Pattern** | **`ROUGE-1`** | **`ROUGE-2`** | **`ROUGE-L`** |  |
 |:---|:--:|:--:|:--:|:--:|:--:|
 | LSTM (Greff et al., 2017) | AR | 37.3 | 15.7 | 34.4 |  |
 | Transformer (Vaswani et al., 2017) |  | 39.5 | <u>16.7</u> | 36.7 |  |
 | GENIE (Lin et al., 2023) ($k$ = 50) | Diffusion | 34.4 | 12.8 | 32.1 |  |
-| <span class="smallcaps">AR-Diffusion</span> ($k$ = 50) |  | <u>39.6</u> | 16.3 | <u>37.1</u> |  |
-| <span class="smallcaps">AR-Diffusion</span> ($k$ = 500) |  | **40.2** | **17.1** | **37.7** |  |
-
-<span id="cnndm main table" data-label="cnndm main table"></span>
+| AR-Diffusion ($k$ = 50) |  | <u>39.6</u> | 16.3 | <u>37.1</u> |  |
+| AR-Diffusion ($k$ = 500) |  | **40.2** | **17.1** | **37.7** |  |
 
 #### Text Summarization
 
-The results presented in Table 2 and Table 3 clearly demonstrate that <span class="smallcaps">AR-Diffusion</span> outperforms the existing NAR and Semi-NAR approaches across all metrics. Moreover, <span class="smallcaps">AR-Diffusion</span> consistently achieves significant improvements over GENIE in terms of all indicators. Furthermore, in comparison to Transformer, <span class="smallcaps">AR-Diffusion</span> outperforms it on both `ROUGE-1` and `ROUGE-L`, while achieving comparable performance in terms of `ROUGE-2`. Notably, when the sample number is 500, <span class="smallcaps">AR-Diffusion</span> demonstrates superiority over Transformer across all the measures.
+The results presented in Table 2 and Table 3 clearly demonstrate that AR-Diffusion outperforms the existing NAR and Semi-NAR approaches across all metrics. Moreover, AR-Diffusion consistently achieves significant improvements over GENIE in terms of all indicators. Furthermore, in comparison to Transformer, AR-Diffusion outperforms it on both `ROUGE-1` and `ROUGE-L`, while achieving comparable performance in terms of `ROUGE-2`. Notably, when the sample number is 500, AR-Diffusion demonstrates superiority over Transformer across all the measures.
 
-**Tabla 4.** Results on IWSLT14 <span class="smallcaps">De</span>→<span class="smallcaps">En</span> test set following the setting of <span class="smallcaps">SeqDiffuSeq</span>. “NFE” indicates the **N**umber of **F**unction **E**valuations (Ye et al., 2023).
+**Tabla 4.** Results on IWSLT14 De→En test set following the setting of SeqDiffuSeq. “NFE” indicates the **N**umber of **F**unction **E**valuations (Ye et al., 2023).
 
 | **Methods** | **Pattern** | **`BLEU`** | **Steps** | **NFE (Steps$\times k$)** |
 |:---|:--:|:--:|:--:|:--:|
 | Transformer (Vaswani et al., 2017) | AR | 34.74 | \- | \- |
 | CNAT (Bao et al., 2021) | NAR | 29.81 | \- | \- |
 | SeqDiffuSeq (Yuan et al., 2022) ($k$ = 1) | Diffusion | 29.83 | 2,000 | 2,000 (2,000 $\times$ 1) |
-| <span class="smallcaps">AR-Diffusion</span> ($k$ = 1) |  | 30.19 | 20 | 20 (20 $\times$ 1) |
+| AR-Diffusion ($k$ = 1) |  | 30.19 | 20 | 20 (20 $\times$ 1) |
 | GENIE (Lin et al., 2023) ($k$ = 50) |  | 30.08 | 20 | 1,000 (20 $\times$ 50) |
-| <span class="smallcaps">AR-Diffusion</span> ($k$ = 50) | Diffusion | <u>34.95</u> | 20 | 1,000 (20 $\times$ 50) |
-| <span class="smallcaps">AR-Diffusion</span> ($k$ = 500) |  | **35.62** | 20 | 10,000 (20 $\times$ 500) |
-
-<span id="seqdiffuseq main table" data-label="seqdiffuseq main table"></span>
+| AR-Diffusion ($k$ = 50) | Diffusion | <u>34.95</u> | 20 | 1,000 (20 $\times$ 50) |
+| AR-Diffusion ($k$ = 500) |  | **35.62** | 20 | 10,000 (20 $\times$ 500) |
 
 #### Machine Translation
 
-Table 4 presents the `BLEU` score implemented by SeqDiffuSeq setting. <span class="smallcaps">AR-Diffusion</span> outperforms the non-auto-regressive CNAT in greedy search for a single sample, and achieves a substantial gain. Moreover, the `BLEU` score of <span class="smallcaps">AR-Diffusion</span> surpasses GENIE by a large margin and shows a slightly better performance than the AR Transformer. Specially, <span class="smallcaps">AR-Diffusion</span> achieves a more powerful result at $k$ = 500.
+Table 4 presents the `BLEU` score implemented by SeqDiffuSeq setting. AR-Diffusion outperforms the non-auto-regressive CNAT in greedy search for a single sample, and achieves a substantial gain. Moreover, the `BLEU` score of AR-Diffusion surpasses GENIE by a large margin and shows a slightly better performance than the AR Transformer. Specially, AR-Diffusion achieves a more powerful result at $k$ = 500.
 
-In Table 5 we give the `SacreBLEU` score according to the setting of DINOISER. <span class="smallcaps">AR-Diffusion</span> has notable improvements over non-auto-regressive CMLM.   Besides, <span class="smallcaps">AR-Diffusion</span> achieves excellent performance among text diffusion models for both <span class="smallcaps">En</span>→<span class="smallcaps">De</span> and <span class="smallcaps">De</span>→<span class="smallcaps">En</span> tasks. Specifically, <span class="smallcaps">AR-Diffusion</span> is far superior to GENIE and comparable to the newly proposed DINOISER at $n$ = 50. Nevertheless, the performance is stronger than DINOISER when $k$ = 500[^13].
+In Table 5 we give the `SacreBLEU` score according to the setting of DINOISER. AR-Diffusion has notable improvements over non-auto-regressive CMLM.   Besides, AR-Diffusion achieves excellent performance among text diffusion models for both En→De and De→En tasks. Specifically, AR-Diffusion is far superior to GENIE and comparable to the newly proposed DINOISER at $n$ = 50. Nevertheless, the performance is stronger than DINOISER when $k$ = 500[^13].
 
-**Tabla 5.** `SacreBLEU` on the IWSLT14 test set. This result follows the setting of <span class="smallcaps">DiNoiSer</span>.
+**Tabla 5.** `SacreBLEU` on the IWSLT14 test set. This result follows the setting of DiNoiSer.
 
-<table id="translation main table">
-<thead>
-<tr>
-<th style="text-align: left;"><strong>Methods</strong></th>
-<th colspan="2" style="text-align: center;">IWSLT14</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: left;"><span>2-3</span></td>
-<td style="text-align: center;"><span class="smallcaps">De</span>→<span class="smallcaps">En</span></td>
-<td style="text-align: center;"><span class="smallcaps">En</span>→<span class="smallcaps">De</span></td>
-</tr>
-<tr>
-<td style="text-align: left;">Transformer (AR, beam = 5) (Vaswani et al., 2017)</td>
-<td style="text-align: center;">33.61</td>
-<td style="text-align: center;">28.30</td>
-</tr>
-<tr>
-<td style="text-align: left;">CMLM (NAR, <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math> = 5) (Ghazvininejad et al., 2019)</td>
-<td style="text-align: center;">29.41</td>
-<td style="text-align: center;">24.34</td>
-</tr>
-<tr>
-<td style="text-align: left;">DiffusionLM (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math> = 50) (Li et al., 2022<span>a</span>)</td>
-<td style="text-align: center;">29.11</td>
-<td style="text-align: center;">22.91</td>
-</tr>
-<tr>
-<td style="text-align: left;">DINOISER (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math> = 50) (Ye et al., 2023)</td>
-<td style="text-align: center;">31.61</td>
-<td style="text-align: center;"><u>26.14</u></td>
-</tr>
-<tr>
-<td style="text-align: left;">GENIE (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math> = 50) (Lin et al., 2023)</td>
-<td style="text-align: center;">29.45</td>
-<td style="text-align: center;">23.89</td>
-</tr>
-<tr>
-<td style="text-align: left;"><span class="smallcaps">AR-Diffusion</span> (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math> = 50)</td>
-<td style="text-align: center;"><u>31.80</u></td>
-<td style="text-align: center;">26.01</td>
-</tr>
-<tr>
-<td style="text-align: left;"><span class="smallcaps">AR-Diffusion</span> (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math> = 500)</td>
-<td style="text-align: center;"><strong>32.35</strong></td>
-<td style="text-align: center;"><strong>26.51</strong></td>
-</tr>
-</tbody>
-</table>
+| **Methods** | IWSLT14 |  |
+|:---|:--:|:--:|
+| 2-3 | De→En | En→De |
+| Transformer (AR, beam = 5) (Vaswani et al., 2017) | 33.61 | 28.30 |
+| CMLM (NAR, $k$ = 5) (Ghazvininejad et al., 2019) | 29.41 | 24.34 |
+| DiffusionLM ($k$ = 50) (Li et al., 2022a) | 29.11 | 22.91 |
+| DINOISER ($k$ = 50) (Ye et al., 2023) | 31.61 | <u>26.14</u> |
+| GENIE ($k$ = 50) (Lin et al., 2023) | 29.45 | 23.89 |
+| AR-Diffusion ($k$ = 50) | <u>31.80</u> | 26.01 |
+| AR-Diffusion ($k$ = 500) | **32.35** | **26.51** |
 
-<span id="translation main table" data-label="translation main table"></span>
+**Tabla 6.** Results on CommonGen dev set. Results of NAR and AR are from (Lin et al., 2020).
 
-**Tabla 6.** Results on <span class="smallcaps">CommonGen</span> dev set. Results of NAR and AR are from (Lin et al., 2020).
-
-<table id="commongen main table">
-<thead>
-<tr>
-<th style="text-align: left;"><strong>Methods</strong></th>
-<th style="text-align: center;"><strong>Pattern</strong></th>
-<th colspan="2" style="text-align: center;"><strong><code>ROUGE-2/L</code></strong></th>
-<th colspan="2" style="text-align: center;"><strong><code>BLEU-3/4</code></strong></th>
-<th style="text-align: center;"><strong><code>METEOR</code></strong></th>
-<th style="text-align: center;"><strong><code>SPICE</code></strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: left;">bRNN-CopyNet (Gu et al., 2016)</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">9.23</td>
-<td style="text-align: center;">30.57</td>
-<td style="text-align: center;">13.60</td>
-<td style="text-align: center;">7.80</td>
-<td style="text-align: center;">17.40</td>
-<td style="text-align: center;">16.90</td>
-</tr>
-<tr>
-<td style="text-align: left;">Trans-CopyNet (Lin et al., 2020)</td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">11.08</td>
-<td style="text-align: center;">32.57</td>
-<td style="text-align: center;">17.20</td>
-<td style="text-align: center;">10.60</td>
-<td style="text-align: center;">18.80</td>
-<td style="text-align: center;">18.00</td>
-</tr>
-<tr>
-<td style="text-align: left;">MeanPooling-CopyNet (Lin et al., 2020)</td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">11.36</td>
-<td style="text-align: center;">34.63</td>
-<td style="text-align: center;">14.80</td>
-<td style="text-align: center;">8.90</td>
-<td style="text-align: center;">19.20</td>
-<td style="text-align: center;">20.20</td>
-</tr>
-<tr>
-<td style="text-align: left;">LevT (Gu et al., 2019)</td>
-<td style="text-align: center;">NAR</td>
-<td style="text-align: center;">12.22</td>
-<td style="text-align: center;"><u>35.42</u></td>
-<td style="text-align: center;"><u>23.10</u></td>
-<td style="text-align: center;"><u>15.00</u></td>
-<td style="text-align: center;">22.10</td>
-<td style="text-align: center;">21.40</td>
-</tr>
-<tr>
-<td style="text-align: left;">ConstLeven (Susanto et al., 2020)</td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"><u>13.47</u></td>
-<td style="text-align: center;">35.19</td>
-<td style="text-align: center;">21.30</td>
-<td style="text-align: center;">12.30</td>
-<td style="text-align: center;"><strong>25.00</strong></td>
-<td style="text-align: center;"><u> 23.20</u></td>
-</tr>
-<tr>
-<td style="text-align: left;">GENIE (Lin et al., 2023) (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math> = 50)</td>
-<td style="text-align: center;">Diffusion</td>
-<td style="text-align: center;">12.89</td>
-<td style="text-align: center;">35.21</td>
-<td style="text-align: center;">22.00</td>
-<td style="text-align: center;">13.30</td>
-<td style="text-align: center;"><u>24.30</u></td>
-<td style="text-align: center;">23.00</td>
-</tr>
-<tr>
-<td style="text-align: left;"><span class="smallcaps">AR-Diffusion</span> (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math> = 50)</td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"><strong>13.93</strong></td>
-<td style="text-align: center;"><strong>37.36</strong></td>
-<td style="text-align: center;"><strong>25.60</strong></td>
-<td style="text-align: center;"><strong>16.40</strong></td>
-<td style="text-align: center;"><strong>25.00</strong></td>
-<td style="text-align: center;"><strong>24.20</strong></td>
-</tr>
-</tbody>
-</table>
-
-<span id="commongen main table" data-label="commongen main table"></span>
+| **Methods** | **Pattern** | **`ROUGE-2/L`** |  | **`BLEU-3/4`** |  | **`METEOR`** | **`SPICE`** |
+|:---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| bRNN-CopyNet (Gu et al., 2016) | AR | 9.23 | 30.57 | 13.60 | 7.80 | 17.40 | 16.90 |
+| Trans-CopyNet (Lin et al., 2020) |  | 11.08 | 32.57 | 17.20 | 10.60 | 18.80 | 18.00 |
+| MeanPooling-CopyNet (Lin et al., 2020) |  | 11.36 | 34.63 | 14.80 | 8.90 | 19.20 | 20.20 |
+| LevT (Gu et al., 2019) | NAR | 12.22 | <u>35.42</u> | <u>23.10</u> | <u>15.00</u> | 22.10 | 21.40 |
+| ConstLeven (Susanto et al., 2020) |  | <u>13.47</u> | 35.19 | 21.30 | 12.30 | **25.00** | <u> 23.20</u> |
+| GENIE (Lin et al., 2023) ($k$ = 50) | Diffusion | 12.89 | 35.21 | 22.00 | 13.30 | <u>24.30</u> | 23.00 |
+| AR-Diffusion ($k$ = 50) |  | **13.93** | **37.36** | **25.60** | **16.40** | **25.00** | **24.20** |
 
 #### Common Sense Generation
 
-As depicted in Table 6, <span class="smallcaps">AR-Diffusion</span> achieves superior performance compared to the current AR, NAR, and other diffusion methods across all the metrics on the <span class="smallcaps">CommonGen</span> dataset.
+As depicted in Table 6, AR-Diffusion achieves superior performance compared to the current AR, NAR, and other diffusion methods across all the metrics on the CommonGen dataset.
 
-**Tabla 7.** Experimental results of GENIE and <span class="smallcaps">AR-Diffusion</span> with inference steps of **2** and **3** on <span class="smallcaps">XSum</span> test set. Take $k$ = 10 to apply the MBR decoding strategy. $(\cdot)$ indicates the **drop** score compared to the 20-step.
+**Tabla 7.** Experimental results of GENIE and AR-Diffusion with inference steps of **2** and **3** on XSum test set. Take $k$ = 10 to apply the MBR decoding strategy. $(\cdot)$ indicates the **drop** score compared to the 20-step.
 
 | **Methods** | **Steps** | **NFE** | **`ROUGE-1`** | **`ROUGE-2`** | **`ROUGE-L`** | **AVG Drop** |
 |:---|:--:|:--:|:--:|:--:|:--:|:--:|
@@ -512,55 +365,22 @@ As depicted in Table 6, <span class="smallcaps">AR-Diffusion</span> achieves su
 | 2-7 | 20 | 200 | 28.33 | 7.46 | 21.15 | \- |
 | 2-7 | 3 | 30 | 25.03 (-3.30) | 5.32 (-2.14) | 18.17 (-2.98) | 2.81 |
 |  | 2 | 20 | 23.45 (-4.88) | 3.95 (-3.51) | 16.94 (-4.21) | 4.20 |
-| <span class="smallcaps">AR-Diffusion</span> | 20 | 200 | 30.99 | 9.32 | 23.95 | \- |
+| AR-Diffusion | 20 | 200 | 30.99 | 9.32 | 23.95 | \- |
 | 2-7 | 3 | 30 | 30.23 (-0.76) | 8.68 (-0.64) | 23.43 (-0.52) | **0.64** |
 |  | 2 | 20 | 29.28 (-1.71) | 7.99 (-1.33) | 22.98 (-0.97) | **1.34** |
 
-<span id="table:fewer_steps" data-label="table:fewer_steps"></span>
-
 ## 4.4 Inference Efficiency
 
-First, we use the number of function evaluations (NFE) as a measure to compare inference efficiency (Ye et al., 2023) in machine translation. From Table 4, it is evident that even when the NFE is reduced to 1% of SeqDiffuSeq (equivalent to $100\times$ faster), <span class="smallcaps">AR-Diffusion</span> still outperforms SeqDiffuSeq. Moreover, increasing the number of generated candidate samples ($k=500$) leads to further performance improvements, albeit with increased time consumption.
+First, we use the number of function evaluations (NFE) as a measure to compare inference efficiency (Ye et al., 2023) in machine translation. From Table 4, it is evident that even when the NFE is reduced to 1% of SeqDiffuSeq (equivalent to $100\times$ faster), AR-Diffusion still outperforms SeqDiffuSeq. Moreover, increasing the number of generated candidate samples ($k=500$) leads to further performance improvements, albeit with increased time consumption.
 
-Second, we conduct experiments with an **extremely limited number of inference steps** (2 and 3)[^14] and compare the performance with that of GENIE in <span class="smallcaps">XSum</span>. The results are presented in Table 7. When reducing the number of steps to 2, GENIE experiences a significant decline, with an average score of 4.20 in the AVG Drop column, while <span class="smallcaps">AR-Diffusion</span> exhibits a comparatively smaller decrease of 1.34. Furthermore, with 3 steps, although the performance deterioration of GENIE is somewhat reduced, the average score still shows a decline of 2.81. In contrast, <span class="smallcaps">AR-Diffusion</span> maintains a high performance level, with an average score differing from the 20-step result by only 0.64. Notably, the results of <span class="smallcaps">AR-Diffusion</span> at 3 steps are comparable to the results of GENIE at 2,000 steps. Therefore, compared to GENIE, the inference speed of <span class="smallcaps">AR-Diffusion</span> can be accelerated by up to $600\times$.
+Second, we conduct experiments with an **extremely limited number of inference steps** (2 and 3)[^14] and compare the performance with that of GENIE in XSum. The results are presented in Table 7. When reducing the number of steps to 2, GENIE experiences a significant decline, with an average score of 4.20 in the AVG Drop column, while AR-Diffusion exhibits a comparatively smaller decrease of 1.34. Furthermore, with 3 steps, although the performance deterioration of GENIE is somewhat reduced, the average score still shows a decline of 2.81. In contrast, AR-Diffusion maintains a high performance level, with an average score differing from the 20-step result by only 0.64. Notably, the results of AR-Diffusion at 3 steps are comparable to the results of GENIE at 2,000 steps. Therefore, compared to GENIE, the inference speed of AR-Diffusion can be accelerated by up to $600\times$.
 
-**Tabla 8.** Diversity of **10** generated samples on <span class="smallcaps">XSum</span> test set and average of **10** results. The results of BART and GENIE are quoted from (Lin et al., 2023).
+**Tabla 8.** Diversity of **10** generated samples on XSum test set and average of **10** results. The results of BART and GENIE are quoted from (Lin et al., 2023).
 
-<table id="diversity">
-<thead>
-<tr>
-<th style="text-align: center;"><strong>Methods</strong></th>
-<th colspan="6" style="text-align: center;">BART</th>
-<th style="text-align: center;">GENIE</th>
-<th style="text-align: center;"><span class="smallcaps">AR-Diffusion</span></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: center;"><strong>Sampling</strong></td>
-<td style="text-align: center;">Greedy Search</td>
-<td style="text-align: center;">Beam Search</td>
-<td style="text-align: center;">Diverse Beam Search</td>
-<td style="text-align: center;">Typical Sample</td>
-<td style="text-align: center;">Top-k Sample</td>
-<td style="text-align: center;">Nucleus Sample</td>
-<td colspan="2" style="text-align: center;">Diffusion</td>
-</tr>
-<tr>
-<td style="text-align: center;"><strong><code>SELF-BLEU</code> ↓</strong></td>
-<td style="text-align: center;">100.0</td>
-<td style="text-align: center;">93.4</td>
-<td style="text-align: center;">75.6</td>
-<td style="text-align: center;">76.9</td>
-<td style="text-align: center;">80.2</td>
-<td style="text-align: center;">79.1</td>
-<td style="text-align: center;">29.3</td>
-<td style="text-align: center;">30.4</td>
-</tr>
-</tbody>
-</table>
-
-<span id="diversity" data-label="diversity"></span>
+| **Methods** | BART |  |  |  |  |  | GENIE | AR-Diffusion |
+|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| **Sampling** | Greedy Search | Beam Search | Diverse Beam Search | Typical Sample | Top-k Sample | Nucleus Sample | Diffusion |  |
+| **`SELF-BLEU` ↓** | 100.0 | 93.4 | 75.6 | 76.9 | 80.2 | 79.1 | 29.3 | 30.4 |
 
 ## 4.5 Analysis
 
@@ -570,23 +390,23 @@ Diversity is a key advantage of diffusion models. To measure the diversity of ge
 
 Specifically, greedy search is to select the token with the highest probability at each step. Beam search is to select the largest token from among the beams with higher probability at each step. Diverse beam search is to divide the beams into multiple groups at each step and ensure the difference between groups by calculating the diversity score between groups. Typical sampling selects samples through a discrete random process. Top-k sampling is to randomly select one of the $k$ candidate tokens with the highest probability at each step. Nucleus sampling is to randomly select one token at each step from the candidate tokens whose probability density is greater than $p$.
 
-As shown in Table 8, <span class="smallcaps">AR-Diffusion</span> achieves significantly higher diversity compared to the auto-regressive model. Furthermore, the diversity can be comparable to GENIE with a better performance.
+As shown in Table 8, AR-Diffusion achieves significantly higher diversity compared to the auto-regressive model. Furthermore, the diversity can be comparable to GENIE with a better performance.
 
-**Figura 2.** Ablation experiments on <span class="smallcaps">XSum</span> test set and taking $k$ = 5. The horizontal axis is the number of inference steps and the vertical axis is `AVG-ROUGE` = (`ROUGE-1` + `ROUGE-2` + `ROUGE-L`) / 3.
+**Figura 2.** Ablation experiments on XSum test set and taking $k$ = 5. The horizontal axis is the number of inference steps and the vertical axis is `AVG-ROUGE` = (`ROUGE-1` + `ROUGE-2` + `ROUGE-L`) / 3.
 
 #### Ablation Study
 
-To demonstrate the effectiveness of our proposed method, we perform ablation experiments on the <span class="smallcaps">XSum</span> dataset. Our results show that both our proposed multi-level diffusion and skipping mechanism are essential for achieving the high performance of <span class="smallcaps">AR-Diffusion</span>.
+To demonstrate the effectiveness of our proposed method, we perform ablation experiments on the XSum dataset. Our results show that both our proposed multi-level diffusion and skipping mechanism are essential for achieving the high performance of AR-Diffusion.
 
 Maintaining the skipping inference method, we remove the token-level diffusion during the training process, which degenerates to GENIE w/ skipping. The comparison results are shown in Figure 2(a). It can be observed that after removing, the `AVG-ROUGE` score is greatly lower after 2 steps.
 
-The performance of applying our proposed skipping mechanism and DDIM (Song et al., 2021) to <span class="smallcaps">AR-Diffusion</span> is shown in Figure 2(b). The results demonstrate that the skipping mechanism consistently outperforms DDIM in various inference steps. Additionally, the skipping mechanism can be easily applied to GENIE. As depicted in Figure 2(c), DDIM suffers a significant drop in performance when the number of inference steps is less than 40. In contrast, the skipping mechanism consistently maintains good performance across all inference steps.
+The performance of applying our proposed skipping mechanism and DDIM (Song et al., 2021) to AR-Diffusion is shown in Figure 2(b). The results demonstrate that the skipping mechanism consistently outperforms DDIM in various inference steps. Additionally, the skipping mechanism can be easily applied to GENIE. As depicted in Figure 2(c), DDIM suffers a significant drop in performance when the number of inference steps is less than 40. In contrast, the skipping mechanism consistently maintains good performance across all inference steps.
 
-**Figura 3.** The intermediate state of <span class="smallcaps">AR-Diffusion</span> gradually generating real text from a standard Gaussian noise through 20 steps. The brightness of the color represents the magnitude of the logits, with darker colors indicating larger logits. More cases are shown in the supplementary materials B.
+**Figura 3.** The intermediate state of AR-Diffusion gradually generating real text from a standard Gaussian noise through 20 steps. The brightness of the color represents the magnitude of the logits, with darker colors indicating larger logits. More cases are shown in the supplementary materials B.
 
 #### Case Study
 
-By mapping the state to the token with the highest logits, we visualize the intermediate states of <span class="smallcaps">AR-Diffusion</span>. As depicted in Figure 3, <span class="smallcaps">AR-Diffusion</span> undergoes a denoising process, transforming the random Gaussian noise into a coherent sentence over 20 steps, and we present 5 of them. With the progression of each timestep, compared to the tokens on the right side of the sentence, the tokens on the left side demonstrate faster determination and a rapid increase in the corresponding logits. This behavior is consistent with our principle of dynamic movement speed from left to right.
+By mapping the state to the token with the highest logits, we visualize the intermediate states of AR-Diffusion. As depicted in Figure 3, AR-Diffusion undergoes a denoising process, transforming the random Gaussian noise into a coherent sentence over 20 steps, and we present 5 of them. With the progression of each timestep, compared to the tokens on the right side of the sentence, the tokens on the left side demonstrate faster determination and a rapid increase in the corresponding logits. This behavior is consistent with our principle of dynamic movement speed from left to right.
 
 ## 4.6 Impact of Minimum Bayes Risk and Anchor Point
 
@@ -598,17 +418,15 @@ To investigate the relationship between the number of generated candidate sample
 
 We conduct experiments on $\textsc{AR-Diffusion}$ using different anchor points $(n_e, t_e)$. These anchor points vary in terms of $n_e$ values, namely $1.0 \times N$, $2.0 \times N$ and $3.0 \times N$, where $N$ denotes the target sentence length. Additionally, they share a common $t_e$ value of $T$, which represents the total time step of diffusion. We present the results in Table 9, and determine that the best result is achieved at $(n_e, t_e)$ = $(2.0 \times N, T)$.
 
-**Figura 4.** Relationship between the number of candidate samples for applying MBR and `SacreBLEU` on IWSLT14 <span class="smallcaps">De</span>→<span class="smallcaps">En</span> test set.
+**Figura 4.** Relationship between the number of candidate samples for applying MBR and `SacreBLEU` on IWSLT14 De→En test set.
 
-**Tabla 9.** Effect of anchor point at different positions on the IWSLT14 <span class="smallcaps">De</span>→<span class="smallcaps">En</span> test set. “$N$” indicates the target sequence length and “T” represents the total time step of diffusion.
+**Tabla 9.** Effect of anchor point at different positions on the IWSLT14 De→En test set. “$N$” indicates the target sequence length and “T” represents the total time step of diffusion.
 
 |     $n_e$      | $t_e$ | `SacreBLEU` |
 |:--------------:|:-----:|:-----------:|
 | $1.0 \times N$ |  $T$  |    31.23    |
 | $2.0 \times N$ |  $T$  |  **31.80**  |
 | $3.0 \times N$ |  $T$  |    31.58    |
-
-<span id="anchor_N" data-label="anchor_N"></span>
 
 # 5 Related Work
 
@@ -624,11 +442,11 @@ It is important to highlight the differences between our method and both ARDMs (
 
 # 6 Conclusion
 
-This paper introduces <span class="smallcaps">AR-Diffusion</span>, which exhibits AR-like generation behavior but enables efficient parallel decoding. Embracing the inherent sequential nature of language, we propose a multi-level diffusion model, consisting of sentence-level and token-level components, to assign dynamic movement speeds to tokens. Consequently, compared to those on the right, the left tokens undergo fewer denoising steps and generate earlier to subsequently influence the later ones. Furthermore, we introduce a skipping mechanism to facilitate parallel generation within the multi-level diffusion framework. The experimental results across various tasks demonstrate that <span class="smallcaps">AR-Diffusion</span> surpasses existing diffusion models in terms of quality while maintaining diversity. Additionally, compared to existing diffusion language models, <span class="smallcaps">AR-Diffusion</span> achieves comparable results while being $100\times\sim 600\times$ faster.
+This paper introduces AR-Diffusion, which exhibits AR-like generation behavior but enables efficient parallel decoding. Embracing the inherent sequential nature of language, we propose a multi-level diffusion model, consisting of sentence-level and token-level components, to assign dynamic movement speeds to tokens. Consequently, compared to those on the right, the left tokens undergo fewer denoising steps and generate earlier to subsequently influence the later ones. Furthermore, we introduce a skipping mechanism to facilitate parallel generation within the multi-level diffusion framework. The experimental results across various tasks demonstrate that AR-Diffusion surpasses existing diffusion models in terms of quality while maintaining diversity. Additionally, compared to existing diffusion language models, AR-Diffusion achieves comparable results while being $100\times\sim 600\times$ faster.
 
 # 7 Limitation
 
-A primary limitation of our work lies in the requirement of generating a large number of candidate samples for optimal performance. As an illustration in Table 3 of <span class="smallcaps">Cnn/DailyMail</span> dataset, <span class="smallcaps">AR-Diffusion</span> ($k$ = 50) achieves a 0.8 lower `ROUGE-2` score compared to <span class="smallcaps">AR-Diffusion</span> ($k$ = 500). We anticipate exploring more efficient sampling strategies to minimize the number of generated samples without performance drop.
+A primary limitation of our work lies in the requirement of generating a large number of candidate samples for optimal performance. As an illustration in Table 3 of Cnn/DailyMail dataset, AR-Diffusion ($k$ = 50) achieves a 0.8 lower `ROUGE-2` score compared to AR-Diffusion ($k$ = 500). We anticipate exploring more efficient sampling strategies to minimize the number of generated samples without performance drop.
 
 # A Proof of Inference with Skipping
 
@@ -656,7 +474,8 @@ $$\begin{equation}
 \small
 \begin{gathered}
 q({\boldsymbol{z}}_{t_{i+1}}\mid {\boldsymbol{z}}_{t_{i}},{\boldsymbol{z}}_{0})= \prod_{n=1}^{N} q\big(z^{n}_{f(n, t_{i+1})}\mid z^{n}_{f(n, t_{i})}, z_{0}^{n}\big) 
-\end{gathered}
+\end{gathered} 
+\tag{14}
 \end{equation}$$
 
 Next, we obtain the explicit expression $q\big(z^{n}_{f(n, t_{i+1})}\mid z^{n}_{f(n, t_{i})}, z_{0}^{n}\big)$ through linear interpolation between $z^{n}_{f(n, t_{i})}$ and $z_{0}^{n}$. 

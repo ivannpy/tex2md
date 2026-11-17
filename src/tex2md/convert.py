@@ -15,10 +15,20 @@ from dataclasses import dataclass
 
 from tex2md.build.aux import parse_aux, parse_floats
 from tex2md.build.latex import find_main
-from tex2md.config import CACHE, FILTER
+from tex2md.config import CACHE, FILTER, UNWRAP_FILTER
 from tex2md.library.frontmatter import frontmatter
-from tex2md.postprocess.markdown import cap_heading_levels, fix_text_math, isolate_display_math, normalize_math_macros
+from tex2md.postprocess.markdown import (
+    cap_heading_levels,
+    drop_counter_hacks,
+    fix_text_math,
+    isolate_display_math,
+    mathml_to_tex,
+    normalize_math_macros,
+    restore_math_text,
+    tidy_math,
+)
 from tex2md.preprocess.citations import parse_bbl
+from tex2md.preprocess.equations import label_numbered_equations
 from tex2md.preprocess.macros import local_style_macros
 from tex2md.preprocess.pipeline import preprocess
 from tex2md.preprocess.tables import escape_citation_ampersands
@@ -70,6 +80,33 @@ def fetch(aid, ver, report) -> Workspace | None:
     return ws
 
 
+EQUATION_MARK = ".tex2md-equation-labels"
+
+
+def label_equations(ws: Workspace):
+    """Give every unlabelled numbered equation a label of ours (once per cached build), then drop the stale
+    auxiliary files so the next compile writes all the equation numbers to the .aux."""
+    mark = os.path.join(ws.build, EQUATION_MARK)
+    if os.path.exists(mark):
+        return
+    counter = 1
+    for dp, _, fns in sorted(os.walk(ws.build)):
+        for fn in sorted(fns):
+            if fn.endswith(".tex"):
+                path = os.path.join(dp, fn)
+                text = read(path)
+                new, counter = label_numbered_equations(text, start=counter)
+                if new != text:
+                    with open(path, "w") as fh:
+                        fh.write(new)
+    for dp, _, fns in os.walk(ws.build):
+        for fn in fns:
+            if fn.endswith((".aux", ".pdf", ".fdb_latexmk", ".fls")):
+                os.remove(os.path.join(dp, fn))
+    with open(mark, "w") as fh:
+        fh.write(str(counter - 1))
+
+
 def compile_latex(ws: Workspace, report):
     """Compile once for the .aux/.bbl (errors tolerated: a partial .aux still helps)."""
     if not os.path.exists(os.path.join(ws.bdir, ws.base + ".aux")):
@@ -114,11 +151,12 @@ def run_pandoc(ws: Workspace, tex, labels, bib, report):
     with open(floats_path, "w") as fh:
         json.dump(parse_floats(ws.build), fh)
     cmd = ["pandoc", "_tex2md_flat.tex", "-f", "latex", "-t", PANDOC_FORMAT, "--wrap=none",
-           "--lua-filter", FILTER, "-M", "tex2md_labels=" + lab_path,
+           "--syntax-highlighting=none", "--lua-filter", FILTER, "-M", "tex2md_labels=" + lab_path,
            "-M", "tex2md_floats=" + floats_path]
     bibfiles = [os.path.join(dp, f) for dp, _, fns in os.walk(ws.build) for f in fns if f.endswith(".bib")]
     if not bib and bibfiles:
-        cmd += ["--citeproc"] + [a for b in bibfiles for a in ("--bibliography", b)]
+        # citeproc adds its bibliography <div> after our filter: unwrap it with a second pass
+        cmd += ["--citeproc"] + [a for b in bibfiles for a in ("--bibliography", b)] + ["--lua-filter", UNWRAP_FILTER]
         report["citations"] = "citeproc"
     rc, body, err = run(cmd, pdir, 600)
     if rc != 0 or not body.strip():
@@ -131,6 +169,7 @@ def postprocess(body):
     # leftovers of \maketitle/\thanks redefinitions
     body = re.sub(r"(?m)^[a-z ]*\bmaketitle\b[a-z ]*$", "", body)
     body = isolate_display_math(fix_text_math(normalize_math_macros(cap_heading_levels(body))))
+    body = tidy_math(drop_counter_hacks(restore_math_text(mathml_to_tex(body))))
     return re.sub(r"\n{3,}", "\n\n", body)
 
 
@@ -158,6 +197,7 @@ def convert(arg, out, mn):
     ws = fetch(aid, ver, report)
     if ws is None:
         return report
+    label_equations(ws)
     compile_latex(ws, report)
     labels = parse_aux(ws.build)
     report["labels"] = len(labels)

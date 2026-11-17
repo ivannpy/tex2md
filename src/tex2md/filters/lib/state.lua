@@ -3,7 +3,9 @@
 local S = {
   labels = {},                      -- .aux \newlabel table: id -> {num, type}
   floats = {},                      -- .aux \caption lines in document order: {kind, num, text}
-  fptr = { figure = 1, table = 1 }, -- next unmatched entry of S.floats, per kind
+  fptr = { figure = 1, table = 1 }, -- where to start looking in S.floats, per kind
+  used = { figure = {}, table = {} }, -- entries of S.floats already given to a float (the .aux lists floats in
+                                    -- placement order, which is not always document order)
   flast = {},                       -- last matched float per kind (to detect multi-panel floats)
   counters = { 0, 0, 0 },           -- running section / subsection / subsubsection numbers
   in_appendix = false,

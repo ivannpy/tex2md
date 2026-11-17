@@ -24,8 +24,6 @@ Diffusion-based decoding has recently emerged as an appealing alternative to aut
 
 **Figura 1.** **Performance Comparison.** Our DiffusionVL achieves state-of-the-art (SOTA) performance among diffusion vision language models including (Li et al., 2025b; You et al., 2025) and competitive performance with Qwen2.5-VL (Qwen et al., 2025).
 
-<span id="fig: benchmark" data-label="fig: benchmark"></span>
-
 [^1]
 
 # 1 Introduction
@@ -136,13 +134,41 @@ The model is trained to minimize the cross-entropy loss at masked positions usin
 
 ## 3.4 Diffusion Inference
 
-<div class="algorithm">
-
 **Algoritmo 1.** Diffusion Inference of DiffusionVL.
 
-<span id="alg:inference" data-label="alg:inference"></span> $\mathbf{C}_0\gets \texttt{cat}\bigl(\texttt{proj}(\texttt{ve}(\mathbf{I})),\texttt{embed}(\mathbf{T})\bigr);\;\mathbf{Y}\gets\varnothing$
+**Input:** image $\mathbf{I}$, prompt $\mathbf{T}$, max length $L$, block size $D$, steps $S$, threshold $\tau$
 
-</div>
+**Output:** generated token sequence $\mathbf{Y}$
+
+$\mathbf{C}_0\gets \texttt{cat}\bigl(\texttt{proj}(\texttt{ve}(\mathbf{I})),\texttt{embed}(\mathbf{T})\bigr);
+
+\mathbf{Y}\gets\varnothing$
+
+**for** $m \gets 1$ **to** $\lfloor L/D \rfloor$ **do**
+
+ $\mathbf{x}_m^{(0)} \gets [\texttt{MASK}]^D$
+
+ **for** $s \gets 1$ **to** $S$ **do**
+
+ $\hat{x}_{m,i}^{(s)} \sim P_\theta(\cdot \mid \mathbf{x}_m^{(s-1)},\, \mathbf{C}_{m-1})$,
+
+ $c_{m,i}^{(s)} \gets P_\theta(\hat{x}_{m,i}^{(s)} \mid \mathbf{x}_m^{(s-1)},\, \mathbf{C}_{m-1})$
+
+ **for all** $i \in \mathcal{M}^{(s-1)}$
+
+ $k \gets \min(\lceil D/S \rceil, |\mathcal{M}^{(s-1)}|)$;
+
+ $\mathcal{U}^{(s)} \gets \operatorname{top\text{-}k}(\{c_{m,i}^{(s)}\}, k)$
+
+  $x_{m,i}^{(s)} \gets \hat{x}_{m,i}^{(s)}$ if $i \in \mathcal{U}^{(s)}$, else $\texttt{[MASK]}$
+
+ $\mathbf{C}_m \gets \mathbf{C}_{m-1} \cup \mathbf{x}_m^{(S)};
+
+\quad\ \mathbf{Y} \gets \mathbf{Y} \cup \mathbf{x}_m^{(S)}$
+
+ 
+
+**return** $\mathbf{Y}$
 
 During inference, our model combines inter-block autoregressive generation with intra-block parallel diffusion decoding, naturally supporting KV-cache reuse and arbitrary-length generation. The full procedure is summarized in Algorithm 1.
 
@@ -156,398 +182,50 @@ We adopt two remasking strategies following (Cheng et al., 2025) to determine $\
 
 **Tabla 1.** **Benchmark Performance Comparison (Part 1)**. The top-2 results are highlighted separately for AR and Diffusion models. Best results are in **bold**, second-best are <u>underlined</u>.
 
-<table id="tab:table1_part1_colored">
-<thead>
-<tr>
-<th style="text-align: left;"><strong>Model</strong></th>
-<th style="text-align: center;"><strong>Size</strong></th>
-<th style="text-align: center;"><strong>Type</strong></th>
-<th style="text-align: center;"><strong>Samples</strong></th>
-<th style="text-align: center;"><strong>MMBench <span>[en-dev]</span></strong></th>
-<th style="text-align: center;"><strong>MMMU <span>[val]</span></strong></th>
-<th style="text-align: center;"><strong>MMMU-Pro <span>[std.]</span></strong></th>
-<th style="text-align: center;"><strong>MMMU-Pro <span>[vision]</span></strong></th>
-<th style="text-align: center;"><strong>MMStar <span>[test]</span></strong></th>
-<th style="text-align: center;"><strong>MME <span>[cog.]</span></strong></th>
-<th style="text-align: center;"><strong>MME <span>[perp.]</span></strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td colspan="11" style="text-align: center;"><strong><em>AutoRegressive Vision Language Models</em></strong></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>LLaVA</strong></td>
-<td style="text-align: center;">7B</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">38.7</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">809</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>LLaVA-1.5</strong></td>
-<td style="text-align: center;">7B</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">64.3</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">1510</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Cambrian-1</strong></td>
-<td style="text-align: center;">8B</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">75.9</td>
-<td style="text-align: center;">42.7</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">1547</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>LLaVA-OV</strong></td>
-<td style="text-align: center;">7B</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">7.8M</td>
-<td style="text-align: center;"><u><span style="color: arcolor">80.8</span></u></td>
-<td style="text-align: center;"><u><span style="color: arcolor">48.8</span></u></td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;"><u><span style="color: arcolor">61.7</span></u></td>
-<td style="text-align: center;">418</td>
-<td style="text-align: center;"><u><span style="color: arcolor">1580</span></u></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Qwen2.5VL</strong></td>
-<td style="text-align: center;">3B</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">&gt;9M</td>
-<td style="text-align: center;">79.1</td>
-<td style="text-align: center;">46.8</td>
-<td style="text-align: center;"><u><span style="color: arcolor">31.2</span></u></td>
-<td style="text-align: center;"><u><span style="color: arcolor">22.1</span></u></td>
-<td style="text-align: center;">55.9</td>
-<td style="text-align: center;"><u><span style="color: arcolor">620</span></u></td>
-<td style="text-align: center;">1533</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">7B</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">&gt;9M</td>
-<td style="text-align: center;"><strong><span style="color: arcolor">83.5</span></strong></td>
-<td style="text-align: center;"><strong><span style="color: arcolor">51.1</span></strong></td>
-<td style="text-align: center;"><strong><span style="color: arcolor">36.7</span></strong></td>
-<td style="text-align: center;"><strong><span style="color: arcolor">33.4</span></strong></td>
-<td style="text-align: center;"><strong><span style="color: arcolor">63.9</span></strong></td>
-<td style="text-align: center;"><strong><span style="color: arcolor">646</span></strong></td>
-<td style="text-align: center;"><strong><span style="color: arcolor">1680</span></strong></td>
-</tr>
-<tr>
-<td colspan="11" style="text-align: center;"><strong><em>Diffusion Vision Language Models</em></strong></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>LaViDa-L</strong></td>
-<td style="text-align: center;">8B</td>
-<td style="text-align: center;">Diff.</td>
-<td style="text-align: center;">1.6M</td>
-<td style="text-align: center;">70.5</td>
-<td style="text-align: center;">43.3</td>
-<td style="text-align: center;">28.6</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">341</td>
-<td style="text-align: center;">1365</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Dimple</strong></td>
-<td style="text-align: center;">7B</td>
-<td style="text-align: center;">Diff.</td>
-<td style="text-align: center;">1.3M</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">45.2</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">432</td>
-<td style="text-align: center;">1514</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>LLaDA-V</strong></td>
-<td style="text-align: center;">8B</td>
-<td style="text-align: center;">Diff.</td>
-<td style="text-align: center;">16.5M</td>
-<td style="text-align: center;"><u><span style="color: diffcolor">82.9</span></u></td>
-<td style="text-align: center;">48.6</td>
-<td style="text-align: center;"><u><span style="color: diffcolor">35.2</span></u></td>
-<td style="text-align: center;">18.6</td>
-<td style="text-align: center;"><u><span style="color: diffcolor">60.1</span></u></td>
-<td style="text-align: center;">491</td>
-<td style="text-align: center;">1507</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>DiffusionVL</strong></td>
-<td style="text-align: center;">3B</td>
-<td style="text-align: center;">Diff.</td>
-<td style="text-align: center;">738K</td>
-<td style="text-align: center;">80.1</td>
-<td style="text-align: center;">47.2</td>
-<td style="text-align: center;">31.2</td>
-<td style="text-align: center;"><u><span style="color: diffcolor">20.2</span></u></td>
-<td style="text-align: center;">55.9</td>
-<td style="text-align: center;"><u><span style="color: diffcolor">594</span></u></td>
-<td style="text-align: center;"><strong><span style="color: diffcolor">1539</span></strong></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">7B</td>
-<td style="text-align: center;">Diff.</td>
-<td style="text-align: center;">738K</td>
-<td style="text-align: center;"><strong><span style="color: diffcolor">83.5</span></strong></td>
-<td style="text-align: center;"><strong><span style="color: diffcolor">49.3</span></strong></td>
-<td style="text-align: center;"><strong><span style="color: diffcolor">36.9</span></strong></td>
-<td style="text-align: center;"><strong><span style="color: diffcolor">25.0</span></strong></td>
-<td style="text-align: center;"><strong><span style="color: diffcolor">63.2</span></strong></td>
-<td style="text-align: center;"><strong><span style="color: diffcolor">675</span></strong></td>
-<td style="text-align: center;"><u><span style="color: diffcolor">1519</span></u></td>
-</tr>
-</tbody>
-</table>
+| **Model** | **Size** | **Type** | **Samples** | **MMBench \[en-dev\]** | **MMMU \[val\]** | **MMMU-Pro \[std.\]** | **MMMU-Pro \[vision\]** | **MMStar \[test\]** | **MME \[cog.\]** | **MME \[perp.\]** |
+|:---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| ***AutoRegressive Vision Language Models*** |  |  |  |  |  |  |  |  |  |  |
+| **LLaVA** | 7B | AR | \- | 38.7 | \- | \- | \- | \- | \- | 809 |
+| **LLaVA-1.5** | 7B | AR | \- | 64.3 | \- | \- | \- | \- | \- | 1510 |
+| **Cambrian-1** | 8B | AR | \- | 75.9 | 42.7 | \- | \- | \- | \- | 1547 |
+| **LLaVA-OV** | 7B | AR | 7.8M | <u>80.8</u> | <u>48.8</u> | \- | \- | <u>61.7</u> | 418 | <u>1580</u> |
+| **Qwen2.5VL** | 3B | AR | \>9M | 79.1 | 46.8 | <u>31.2</u> | <u>22.1</u> | 55.9 | <u>620</u> | 1533 |
+|  | 7B | AR | \>9M | **83.5** | **51.1** | **36.7** | **33.4** | **63.9** | **646** | **1680** |
+| ***Diffusion Vision Language Models*** |  |  |  |  |  |  |  |  |  |  |
+| **LaViDa-L** | 8B | Diff. | 1.6M | 70.5 | 43.3 | 28.6 | \- | \- | 341 | 1365 |
+| **Dimple** | 7B | Diff. | 1.3M | \- | 45.2 | \- | \- | \- | 432 | 1514 |
+| **LLaDA-V** | 8B | Diff. | 16.5M | <u>82.9</u> | 48.6 | <u>35.2</u> | 18.6 | <u>60.1</u> | 491 | 1507 |
+| **DiffusionVL** | 3B | Diff. | 738K | 80.1 | 47.2 | 31.2 | <u>20.2</u> | 55.9 | <u>594</u> | **1539** |
+|  | 7B | Diff. | 738K | **83.5** | **49.3** | **36.9** | **25.0** | **63.2** | **675** | <u>1519</u> |
 
 **Tabla 2.** **Benchmark Performance Comparison (Part 2)**. DiffusionVL-7B achieves top-tier performance among Diffusion models and closes the gap with top AR models. Best in **bold**, second-best <u>underlined</u>.
 
-<table id="tab:table1_part2_colored">
-<thead>
-<tr>
-<th style="text-align: left;"><strong>Model</strong></th>
-<th style="text-align: center;"><strong>Size</strong></th>
-<th style="text-align: center;"><strong>Type</strong></th>
-<th style="text-align: center;"><strong>Samples</strong></th>
-<th style="text-align: center;"><strong>SeedBench <span>[img]</span></strong></th>
-<th style="text-align: center;"><strong>SeedBench <span>[vid]</span></strong></th>
-<th style="text-align: center;"><strong>AI2D</strong></th>
-<th style="text-align: center;"><strong>ChartQA</strong></th>
-<th style="text-align: center;"><strong>Realworld QA</strong></th>
-<th style="text-align: center;"><strong>MuirBench</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td colspan="10" style="text-align: center;"><strong><em>AutoRegressive Vision Language Models</em></strong></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>LLaVA</strong></td>
-<td style="text-align: center;">7B</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">37.0</td>
-<td style="text-align: center;">23.8</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>LLaVA-1.5</strong></td>
-<td style="text-align: center;">7B</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">66.1</td>
-<td style="text-align: center;">37.3</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Cambrian-1</strong></td>
-<td style="text-align: center;">8B</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">74.7</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">73.0</td>
-<td style="text-align: center;">73.3</td>
-<td style="text-align: center;">64.2</td>
-<td style="text-align: center;">-</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>LLaVA-OV</strong></td>
-<td style="text-align: center;">7B</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">7.8M</td>
-<td style="text-align: center;"><u><span style="color: arcolor">75.4</span></u></td>
-<td style="text-align: center;"><u><span style="color: arcolor">56.9</span></u></td>
-<td style="text-align: center;">81.4</td>
-<td style="text-align: center;">80.0</td>
-<td style="text-align: center;"><u><span style="color: arcolor">66.3</span></u></td>
-<td style="text-align: center;">41.8</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Qwen2.5VL</strong></td>
-<td style="text-align: center;">3B</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">&gt;9M</td>
-<td style="text-align: center;">74.8</td>
-<td style="text-align: center;">55.1</td>
-<td style="text-align: center;"><u><span style="color: arcolor">81.6</span></u></td>
-<td style="text-align: center;"><u><span style="color: arcolor">84.0</span></u></td>
-<td style="text-align: center;">65.4</td>
-<td style="text-align: center;"><u><span style="color: arcolor">47.7</span></u></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">7B</td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">&gt;9M</td>
-<td style="text-align: center;"><strong><span style="color: arcolor">77.5</span></strong></td>
-<td style="text-align: center;"><strong><span style="color: arcolor">61.3</span></strong></td>
-<td style="text-align: center;"><strong><span style="color: arcolor">83.9</span></strong></td>
-<td style="text-align: center;"><strong><span style="color: arcolor">87.3</span></strong></td>
-<td style="text-align: center;"><strong><span style="color: arcolor">68.5</span></strong></td>
-<td style="text-align: center;"><strong><span style="color: arcolor">59.6</span></strong></td>
-</tr>
-<tr>
-<td colspan="10" style="text-align: center;"><strong><em>Diffusion Vision Language Models</em></strong></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>LaViDa-L</strong></td>
-<td style="text-align: center;">8B</td>
-<td style="text-align: center;">Diff.</td>
-<td style="text-align: center;">1.6M</td>
-<td style="text-align: center;">66.5</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">70.0</td>
-<td style="text-align: center;">64.6</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Dimple</strong></td>
-<td style="text-align: center;">7B</td>
-<td style="text-align: center;">Diff.</td>
-<td style="text-align: center;">1.3M</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">74.4</td>
-<td style="text-align: center;">63.4</td>
-<td style="text-align: center;">-</td>
-<td style="text-align: center;">-</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>LLaDA-V</strong></td>
-<td style="text-align: center;">8B</td>
-<td style="text-align: center;">Diff.</td>
-<td style="text-align: center;">16.5M</td>
-<td style="text-align: center;"><u><span style="color: diffcolor">74.8</span></u></td>
-<td style="text-align: center;"><u><span style="color: diffcolor">53.7</span></u></td>
-<td style="text-align: center;">77.8</td>
-<td style="text-align: center;">78.3</td>
-<td style="text-align: center;"><u><span style="color: diffcolor">63.2</span></u></td>
-<td style="text-align: center;"><strong><span style="color: diffcolor">48.3</span></strong></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>DiffusionVL</strong></td>
-<td style="text-align: center;">3B</td>
-<td style="text-align: center;">Diff.</td>
-<td style="text-align: center;">738K</td>
-<td style="text-align: center;">73.9</td>
-<td style="text-align: center;">52.2</td>
-<td style="text-align: center;"><u><span style="color: diffcolor">78.4</span></u></td>
-<td style="text-align: center;"><u><span style="color: diffcolor">79.9</span></u></td>
-<td style="text-align: center;">61.6</td>
-<td style="text-align: center;"><u><span style="color: diffcolor">47.2</span></u></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">7B</td>
-<td style="text-align: center;">Diff.</td>
-<td style="text-align: center;">738K</td>
-<td style="text-align: center;"><strong><span style="color: diffcolor">75.5</span></strong></td>
-<td style="text-align: center;"><strong><span style="color: diffcolor">54.4</span></strong></td>
-<td style="text-align: center;"><strong><span style="color: diffcolor">82.2</span></strong></td>
-<td style="text-align: center;"><strong><span style="color: diffcolor">84.2</span></strong></td>
-<td style="text-align: center;"><strong><span style="color: diffcolor">68.0</span></strong></td>
-<td style="text-align: center;">44.8</td>
-</tr>
-</tbody>
-</table>
+| **Model** | **Size** | **Type** | **Samples** | **SeedBench \[img\]** | **SeedBench \[vid\]** | **AI2D** | **ChartQA** | **Realworld QA** | **MuirBench** |
+|:---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| ***AutoRegressive Vision Language Models*** |  |  |  |  |  |  |  |  |  |
+| **LLaVA** | 7B | AR | \- | 37.0 | 23.8 | \- | \- | \- | \- |
+| **LLaVA-1.5** | 7B | AR | \- | 66.1 | 37.3 | \- | \- | \- | \- |
+| **Cambrian-1** | 8B | AR | \- | 74.7 | \- | 73.0 | 73.3 | 64.2 | \- |
+| **LLaVA-OV** | 7B | AR | 7.8M | <u>75.4</u> | <u>56.9</u> | 81.4 | 80.0 | <u>66.3</u> | 41.8 |
+| **Qwen2.5VL** | 3B | AR | \>9M | 74.8 | 55.1 | <u>81.6</u> | <u>84.0</u> | 65.4 | <u>47.7</u> |
+|  | 7B | AR | \>9M | **77.5** | **61.3** | **83.9** | **87.3** | **68.5** | **59.6** |
+| ***Diffusion Vision Language Models*** |  |  |  |  |  |  |  |  |  |
+| **LaViDa-L** | 8B | Diff. | 1.6M | 66.5 | \- | 70.0 | 64.6 | \- | \- |
+| **Dimple** | 7B | Diff. | 1.3M | \- | \- | 74.4 | 63.4 | \- | \- |
+| **LLaDA-V** | 8B | Diff. | 16.5M | <u>74.8</u> | <u>53.7</u> | 77.8 | 78.3 | <u>63.2</u> | **48.3** |
+| **DiffusionVL** | 3B | Diff. | 738K | 73.9 | 52.2 | <u>78.4</u> | <u>79.9</u> | 61.6 | <u>47.2</u> |
+|  | 7B | Diff. | 738K | **75.5** | **54.4** | **82.2** | **84.2** | **68.0** | 44.8 |
 
 **Tabla 3.** **A comparison of dVLM construction using different models and paradigms.** We compare dVLMs converted from AR-LMs versus those from dLLMs. The Base LLM column indicates MMLU scores of the base language models. The best results across all models are highlighted in **bold**, and the second-best are <u>underlined</u>. The AR, Block-Diff, and Full-Diff paradigms represent the different paradigms we discussed in Section 3.1.
 
-<table id="tab: comparison of dVLM">
-<thead>
-<tr>
-<th style="text-align: left;"><strong>Model</strong></th>
-<th style="text-align: center;"><strong>Paradigm</strong></th>
-<th style="text-align: center;"><strong>Base LLM (MMLU)</strong></th>
-<th style="text-align: center;"><strong>MMMU (val)</strong></th>
-<th style="text-align: center;"><strong>MMMU-Pro (std.)</strong></th>
-<th style="text-align: center;"><strong>ChartQA</strong></th>
-<th style="text-align: center;"><strong>RealWorld QA</strong></th>
-<th style="text-align: center;"><strong>MME (cog.)</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td colspan="8" style="text-align: center;"><strong><em>Conversion from LLaDA-8B (dLLM base)</em></strong></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>LLaDA-V</strong></td>
-<td style="text-align: center;">Full-Diff</td>
-<td style="text-align: center;">65.9</td>
-<td style="text-align: center;">42.4</td>
-<td style="text-align: center;">26.0</td>
-<td style="text-align: center;">20.2</td>
-<td style="text-align: center;">60.1</td>
-<td style="text-align: center;">342</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>LLaDA-V</strong></td>
-<td style="text-align: center;">Block-Diff.</td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">32.6</td>
-<td style="text-align: center;">17.1</td>
-<td style="text-align: center;">29.8</td>
-<td style="text-align: center;">44.2</td>
-<td style="text-align: center;">261</td>
-</tr>
-<tr>
-<td colspan="8" style="text-align: center;"><strong><em>Conversion from Qwen2.5-7B (AR-LM base)</em></strong></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>LLaVA</strong></td>
-<td style="text-align: center;">AR</td>
-<td style="text-align: center;">71.9</td>
-<td style="text-align: center;"><strong>45.4</strong></td>
-<td style="text-align: center;"><u>28.1</u></td>
-<td style="text-align: center;"><u>52.8</u></td>
-<td style="text-align: center;"><u>60.4</u></td>
-<td style="text-align: center;"><u>356</u></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>DiffusionVL</strong></td>
-<td style="text-align: center;">Block-Diff.</td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"><u>43.7</u></td>
-<td style="text-align: center;"><strong>28.4</strong></td>
-<td style="text-align: center;"><strong>53.6</strong></td>
-<td style="text-align: center;"><strong>60.7</strong></td>
-<td style="text-align: center;"><strong>371</strong></td>
-</tr>
-</tbody>
-</table>
+| **Model** | **Paradigm** | **Base LLM (MMLU)** | **MMMU (val)** | **MMMU-Pro (std.)** | **ChartQA** | **RealWorld QA** | **MME (cog.)** |
+|:---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| ***Conversion from LLaDA-8B (dLLM base)*** |  |  |  |  |  |  |  |
+| **LLaDA-V** | Full-Diff | 65.9 | 42.4 | 26.0 | 20.2 | 60.1 | 342 |
+| **LLaDA-V** | Block-Diff. |  | 32.6 | 17.1 | 29.8 | 44.2 | 261 |
+| ***Conversion from Qwen2.5-7B (AR-LM base)*** |  |  |  |  |  |  |  |
+| **LLaVA** | AR | 71.9 | **45.4** | <u>28.1</u> | <u>52.8</u> | <u>60.4</u> | <u>356</u> |
+| **DiffusionVL** | Block-Diff. |  | <u>43.7</u> | **28.4** | **53.6** | **60.7** | **371** |
 
 ## 4.1 Implementation Details
 
@@ -589,54 +267,12 @@ It is worth noting that the performance difference between the DiffusionVL here 
 
 **Tabla 4.** **Comprehensive comparison on math reasoning benchmarks.** We report both accuracy (Acc.) and inference throughput (TPS). Best results are in **bold** and second-best are <u>underlined</u>.
 
-<table id="tab:comprehensive_comparison">
-<thead>
-<tr>
-<th style="text-align: left;"><strong>Model</strong></th>
-<th colspan="2" style="text-align: center;"><strong>MathVista</strong></th>
-<th colspan="2" style="text-align: center;"><strong>MathVerse</strong></th>
-<th colspan="2" style="text-align: center;"><strong>MathVision</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: left;"><span>2-3</span> (lr)<span>4-5</span> (lr)<span>6-7</span></td>
-<td style="text-align: center;">Acc.<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>↑</mo><annotation encoding="application/x-tex">\uparrow</annotation></semantics></math></td>
-<td style="text-align: center;">TPS<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>↑</mo><annotation encoding="application/x-tex">\uparrow</annotation></semantics></math></td>
-<td style="text-align: center;">Acc.<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>↑</mo><annotation encoding="application/x-tex">\uparrow</annotation></semantics></math></td>
-<td style="text-align: center;">TPS<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>↑</mo><annotation encoding="application/x-tex">\uparrow</annotation></semantics></math></td>
-<td style="text-align: center;">Acc.<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>↑</mo><annotation encoding="application/x-tex">\uparrow</annotation></semantics></math></td>
-<td style="text-align: center;">TPS<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>↑</mo><annotation encoding="application/x-tex">\uparrow</annotation></semantics></math></td>
-</tr>
-<tr>
-<td style="text-align: left;">DiffusionVL-7B</td>
-<td style="text-align: center;"><strong>64.30</strong></td>
-<td style="text-align: center;">5.21</td>
-<td style="text-align: center;"><strong>36.29</strong></td>
-<td style="text-align: center;">14.38</td>
-<td style="text-align: center;"><strong>19.08</strong></td>
-<td style="text-align: center;">17.74</td>
-</tr>
-<tr>
-<td style="text-align: left;">LLaDA-V-8B</td>
-<td style="text-align: center;">55.10</td>
-<td style="text-align: center;"><u>23.07</u></td>
-<td style="text-align: center;">31.35</td>
-<td style="text-align: center;"><u>23.18</u></td>
-<td style="text-align: center;">17.11</td>
-<td style="text-align: center;"><u>22.75</u></td>
-</tr>
-<tr>
-<td style="text-align: left;">DiffusionVL-CoT-7B</td>
-<td style="text-align: center;"><u>63.70</u></td>
-<td style="text-align: center;"><strong>39.47</strong></td>
-<td style="text-align: center;"><u>32.74</u></td>
-<td style="text-align: center;"><strong>42.31</strong></td>
-<td style="text-align: center;"><u>18.75</u></td>
-<td style="text-align: center;"><strong>39.26</strong></td>
-</tr>
-</tbody>
-</table>
+| **Model** | **MathVista** |  | **MathVerse** |  | **MathVision** |  |
+|:---|:--:|:--:|:--:|:--:|:--:|:--:|
+| 2-3 (lr)4-5 (lr)6-7 | Acc.$\uparrow$ | TPS$\uparrow$ | Acc.$\uparrow$ | TPS$\uparrow$ | Acc.$\uparrow$ | TPS$\uparrow$ |
+| DiffusionVL-7B | **64.30** | 5.21 | **36.29** | 14.38 | **19.08** | 17.74 |
+| LLaDA-V-8B | 55.10 | <u>23.07</u> | 31.35 | <u>23.18</u> | 17.11 | <u>22.75</u> |
+| DiffusionVL-CoT-7B | <u>63.70</u> | **39.47** | <u>32.74</u> | **42.31** | <u>18.75</u> | **39.26** |
 
 To evaluate inference speed and its trade-off with quality, we evaluate DiffusionVL on two representative tasks: detailed image captioning on DetailCaps (Dong et al., 2024) and mathematical reasoning on multiple benchmarks, including MathVista (Lu et al., 2023), MathVision (Ahmad et al., 2024), and MathVerse (Zhang et al., 2024b). During inference, we employ the static low-confidence remasking strategy to control the number of decoded tokens at each denoising step. For both tasks, we compare against LLaDA-V-8B (You et al., 2025) under its recommended fast-dLLM caching (Wu et al., 2025b) with recomputation every 32 steps. Figure 4 presents the speed-quality trade-offs on DetailCaps and MathVista, while Table 4 summarizes the full results across all math benchmarks.
 
@@ -660,64 +296,15 @@ Table 7 shows that smaller dynamic thresholds allow the model to decode all tok
 
 **Tabla 5.** **Ablation on training block size.** Effect of training block size on benchmark scores and throughput (TPS). The TPS throughput row is shaded in light gray. $^\dagger$  denotes our default block size. Best per row in **bold**. TPS measured per GPU on DetailCaps.
 
-<table id="tab:ablation1_block">
-<thead>
-<tr>
-<th colspan="5" style="text-align: center;"><em>Training block size</em></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: left;"><strong>Benchmark</strong></td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>b</mi><mspace width="-0.167em"></mspace><mo>=</mo><mspace width="-0.167em"></mspace><mn>1</mn></mrow><annotation encoding="application/x-tex">b\!=\!1</annotation></semantics></math></td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>b</mi><mspace width="-0.167em"></mspace><mo>=</mo><mspace width="-0.167em"></mspace><mn>4</mn></mrow><annotation encoding="application/x-tex">b\!=\!4</annotation></semantics></math></td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>b</mi><mspace width="-0.167em"></mspace><mo>=</mo><mspace width="-0.167em"></mspace><msup><mn>8</mn><mo>†</mo></msup></mrow><annotation encoding="application/x-tex">b\!=\!8^\dagger</annotation></semantics></math></td>
-<td style="text-align: center;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>b</mi><mspace width="-0.167em"></mspace><mo>=</mo><mspace width="-0.167em"></mspace><mn>16</mn></mrow><annotation encoding="application/x-tex">b\!=\!16</annotation></semantics></math></td>
-</tr>
-<tr>
-<td style="text-align: left;">ChartQA</td>
-<td style="text-align: center;"><strong>82.8</strong></td>
-<td style="text-align: center;">80.9</td>
-<td style="text-align: center;">79.9</td>
-<td style="text-align: center;">77.4</td>
-</tr>
-<tr>
-<td style="text-align: left;">MMMU-Pro (std.)</td>
-<td style="text-align: center;"><strong>32.1</strong></td>
-<td style="text-align: center;">31.4</td>
-<td style="text-align: center;">31.2</td>
-<td style="text-align: center;">31.0</td>
-</tr>
-<tr>
-<td style="text-align: left;">MMMU-Pro (vis.)</td>
-<td style="text-align: center;"><strong>22.2</strong></td>
-<td style="text-align: center;">19.9</td>
-<td style="text-align: center;">20.2</td>
-<td style="text-align: center;">18.1</td>
-</tr>
-<tr>
-<td style="text-align: left;">MMStar</td>
-<td style="text-align: center;"><strong>57.8</strong></td>
-<td style="text-align: center;">56.5</td>
-<td style="text-align: center;">55.9</td>
-<td style="text-align: center;">55.2</td>
-</tr>
-<tr>
-<td style="text-align: left;">DetailCaps</td>
-<td style="text-align: center;">29.8</td>
-<td style="text-align: center;">29.9</td>
-<td style="text-align: center;"><strong>30.9</strong></td>
-<td style="text-align: center;">29.9</td>
-</tr>
-<tr>
-<td style="text-align: left;">TPS (tok/s)</td>
-<td style="text-align: center;">26.9</td>
-<td style="text-align: center;">38.8</td>
-<td style="text-align: center;">39.0</td>
-<td style="text-align: center;"><strong>41.6</strong></td>
-</tr>
-</tbody>
-</table>
+| *Training block size* |           |           |                   |            |
+|:----------------------|:---------:|:---------:|:-----------------:|:----------:|
+| **Benchmark**         | $b\!=\!1$ | $b\!=\!4$ | $b\!=\!8^\dagger$ | $b\!=\!16$ |
+| ChartQA               | **82.8**  |   80.9    |       79.9        |    77.4    |
+| MMMU-Pro (std.)       | **32.1**  |   31.4    |       31.2        |    31.0    |
+| MMMU-Pro (vis.)       | **22.2**  |   19.9    |       20.2        |    18.1    |
+| MMStar                | **57.8**  |   56.5    |       55.9        |    55.2    |
+| DetailCaps            |   29.8    |   29.9    |     **30.9**      |    29.9    |
+| TPS (tok/s)           |   26.9    |   38.8    |       39.0        |  **41.6**  |
 
 **Tabla 6.** **Ablation on noise strategy and diffusion paradigm** (Qwen2.5VL-7B-Instruct). *Block$^\dagger$* is the default block-wise setting; *Sequence* and *Full* are sequence-level noise and full diffusion, respectively. $^\dagger$  denotes our default. Best in each pairwise comparison against Block is in **bold**.
 
@@ -732,39 +319,11 @@ Table 7 shows that smaller dynamic thresholds allow the model to decode all tok
 
 **Tabla 7.** **Ablation on dynamic remasking.** Dynamic low-confidence remasking at varying thresholds with fixed 8 denoising steps. $^\dagger$  denotes our default. Best per group in bold. TPS measured per GPU on DetailCaps.
 
-<table id="tab:ablation1_remask">
-<thead>
-<tr>
-<th colspan="6" style="text-align: center;"><em>Dynamic remasking</em></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: left;"><strong><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>τ</mi><annotation encoding="application/x-tex">\tau</annotation></semantics></math></strong></td>
-<td style="text-align: center;">1.0<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi></mi><mo>†</mo></msup><annotation encoding="application/x-tex">^\dagger</annotation></semantics></math></td>
-<td style="text-align: center;">0.8</td>
-<td style="text-align: center;">0.6</td>
-<td style="text-align: center;">0.4</td>
-<td style="text-align: center;">0.2</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>TPS</strong><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>↑</mo><annotation encoding="application/x-tex">\uparrow</annotation></semantics></math></td>
-<td style="text-align: center;">31.5</td>
-<td style="text-align: center;">34.6</td>
-<td style="text-align: center;">37.8</td>
-<td style="text-align: center;">46.6</td>
-<td style="text-align: center;"><strong>71.8</strong></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>BERT</strong><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>↑</mo><annotation encoding="application/x-tex">\uparrow</annotation></semantics></math></td>
-<td style="text-align: center;"><strong>30.2</strong></td>
-<td style="text-align: center;">30.1</td>
-<td style="text-align: center;">29.7</td>
-<td style="text-align: center;">27.4</td>
-<td style="text-align: center;">18.6</td>
-</tr>
-</tbody>
-</table>
+| *Dynamic remasking* |               |      |      |      |          |
+|:--------------------|:-------------:|:----:|:----:|:----:|:--------:|
+| **$\tau$**          | 1.0$^\dagger$ | 0.8  | 0.6  | 0.4  |   0.2    |
+| **TPS**$\uparrow$   |     31.5      | 34.6 | 37.8 | 46.6 | **71.8** |
+| **BERT**$\uparrow$  |   **30.2**    | 30.1 | 29.7 | 27.4 |   18.6   |
 
 # 5 Conclusion and Future Work
 
@@ -878,4 +437,4 @@ Zhu et al. (2025). Lianghui Zhu, Zilong Huang, Bencheng Liao, Jun Hao Liew, Hans
 
 Zou et al. (2025). Ya Zou, Jingfeng Yao, Siyuan Yu, Shuai Zhang, Wenyu Liu, and Xinggang Wang. Turbo-vaed: Fast and stable transfer of video-vaes to mobile devices. arXiv preprint arXiv:2508.09136, 2025.
 
-[^1]: $^*$ Equal Contribution; $^\dagger$ Corresponding author: Xinggang Wang (<span style="color: blue">`xgwang@hust.edu.cn`</span>).
+[^1]: $^*$ Equal Contribution; $^\dagger$ Corresponding author: Xinggang Wang (`xgwang@hust.edu.cn`).

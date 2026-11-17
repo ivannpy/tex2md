@@ -11,7 +11,7 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from tex2md.preprocess.algorithms import rewrite_algorithm_captions, rewrite_algorithmic
+from tex2md.preprocess.algorithms import rewrite_algorithm2e, rewrite_algorithm_captions, rewrite_algorithmic
 from tex2md.preprocess.boxes import tcolorbox_to_quote
 from tex2md.preprocess.citations import PREAMBLE, inject_bibliography, simplify_citeproc
 from tex2md.preprocess.floats import (
@@ -32,7 +32,10 @@ from tex2md.preprocess.macros import (
     drop_fragile_macro_defs,
     drop_primitive_spacing,
     drop_size_redefs,
+    expand_delimited_macros,
+    expand_paired_delimiters,
     fix_stray_macro_braces,
+    text_in_macro_bodies,
 )
 from tex2md.preprocess.references import expand_wrappers, resolve_refs
 from tex2md.preprocess.structure import (
@@ -81,6 +84,9 @@ def _bibliography(text: str, ctx: Context) -> str:
 
 RULES: list[tuple[str, Rule]] = [
     # --- document structure
+    ("delimited-macros", _pure(expand_delimited_macros)),
+    ("paired-delimiters", _pure(expand_paired_delimiters)),
+    ("text-in-macro-bodies", _pure(text_in_macro_bodies)),  # before anything expands or drops macros
     ("mark-appendix", _pure(mark_appendix)),
     ("expand-abbreviations", _pure(expand_abbreviations)),
     ("quad-before-digits", _pure(quad_before_digits)),
@@ -119,6 +125,7 @@ RULES: list[tuple[str, Rule]] = [
     ("normalize-tabulars", _pure(normalize_tabulars)),
     ("simplify-longtable-specs", _pure(simplify_longtable_specs)),
     ("rewrite-algorithmic", _pure(rewrite_algorithmic)),
+    ("rewrite-algorithm2e", _pure(rewrite_algorithm2e)),
     ("rewrite-algorithm-captions", lambda text, ctx: rewrite_algorithm_captions(text, ctx.labels)),
     ("drop-empty-math-cells", _pure(drop_empty_math_cells)),
     ("centered-column-types", _pure(centered_column_types)),

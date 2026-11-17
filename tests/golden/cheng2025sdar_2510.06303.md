@@ -103,9 +103,9 @@ where $L'$ is the block size, ${x}_t^b$ is the noised sequence for block $b$, an
 
 # 3 Method
 
-The core of <span class="smallcaps">SDAR</span> lies in a decoupled paradigm that combines the training efficiency of autoregressive (AR) modeling with the parallel inference capability of diffusion. Instead of performing costly end-to-end block-diffusion training, <span class="smallcaps">SDAR</span> leverages a well-trained AR model as a foundation and introduces a highly efficient adaptation procedure that transforms it into a block-wise diffusion model. This process enables parallel generation while preserving the AR model’s strong language understanding and reasoning capabilities. After adaptation, a standard instruction-based supervised fine-tuning (SFT) stage is applied to align the model with human preferences, thereby endowing it with conversational and reasoning abilities at minimal additional cost.
+The core of SDAR lies in a decoupled paradigm that combines the training efficiency of autoregressive (AR) modeling with the parallel inference capability of diffusion. Instead of performing costly end-to-end block-diffusion training, SDAR leverages a well-trained AR model as a foundation and introduces a highly efficient adaptation procedure that transforms it into a block-wise diffusion model. This process enables parallel generation while preserving the AR model’s strong language understanding and reasoning capabilities. After adaptation, a standard instruction-based supervised fine-tuning (SFT) stage is applied to align the model with human preferences, thereby endowing it with conversational and reasoning abilities at minimal additional cost.
 
-## 3.1 The <span class="smallcaps">SDAR</span> Training Paradigm
+## 3.1 The SDAR Training Paradigm
 
 Starting from a sufficiently capable AR base model $\theta_{\text{AR}}$ via conventional NTP pretraining, we subsequently continue training the model to convert the language modeling paradigm from AR to block-wise diffusion. This strategy avoids the prohibitive computational cost of training a block-wise diffusion model from scratch, which is markedly less efficient than AR training.
 
@@ -115,12 +115,14 @@ We first perturb the sequence by randomly masking tokens following the MDLM proc
 
 $$\begin{equation}
 P(x | \theta) = \prod_{k=1}^{K} P(b_k | b_{<k}; \theta).
+\tag{6}
 \end{equation}$$
 
 Each conditional term $P(b_k | b_{<k}; \theta)$ is modeled using a discrete diffusion process. Specifically, during this training stage, the model (initialized with $\theta_{\text{AR}}$) learns to denoise a corrupted block $b_k^t$ at diffusion step $t$, conditioned on the preceding clean blocks $b_{<k}$. The clean blocks adopt block-wise causal attention, while corrupted blocks attend to themselves and all preceding blocks. As illustrated in Figure 1, this can be achieved by concatenating the perturbed and clean sequences into a single input for the forward pass, with the attention mask modified accordingly (Arriola et al., 2025). The objective is to optimize the conditional block-wise ELBO instead of log-likelihood, as introduced in the preliminaries: 
 
 $$\begin{equation}
 \mathcal{L}_{\text{blockwise}}(\theta) = \mathbb{E}_{t, q(b_k^t|b_k^0)} \left[ \log P(b_k^0 | b_k^t, b_{<k}; \theta) \right].
+\tag{7}
 \end{equation}$$
 
 The conversion process does not involve logits shift or attention mask annealing. Crucially, this conversion is performed on a significantly smaller dataset (e.g., $\text{30 B}\sim\text{50 B}$ tokens, compared to trillions for pretraining). The pretrained AR model provides a powerful initialization, allowing for rapid convergence on the new objective. This step effectively "unlocks" the model’s latent ability to perform holistic, non-causal reasoning within local blocks, preparing it for parallel inference.
@@ -129,7 +131,7 @@ The conversion process does not involve logits shift or attention mask annealing
 
 **Figura 2.** Contrasting inference paradigms between AR and SDAR. SDAR adopts a block-wise causal attention mechanism to enable inter-block causal autoregression and intra-block parallel diffusion. The KV cache from previously generated blocks is reused, while the block currently being decoded does not store KV cache.
 
-The inference process of <span class="smallcaps">SDAR</span> is hierarchical: it generates text autoregressively at the block level while employing a parallel diffusion-based mechanism for decoding within each block. This hybrid approach marries the long-range coherence of AR models with the speed of parallel generation.
+The inference process of SDAR is hierarchical: it generates text autoregressively at the block level while employing a parallel diffusion-based mechanism for decoding within each block. This hybrid approach marries the long-range coherence of AR models with the speed of parallel generation.
 
 Given a prompt, sequence generation proceeds by sequentially producing blocks $b_1, b_2, \dots, b_K$. The generation of each block $b_k$ is conditioned on the entire preceding context, which consists of the initial prompt followed by any previously generated blocks ($b_1, \dots, b_{k-1}$).
 
@@ -137,6 +139,7 @@ To generate a single block $b_k$, we initiate a parallel decoding process starti
 
 $$\begin{equation}
 \text{logits}(b_k^{t-1}) \sim P(\cdot | b_k^t, b_{k-1},\text{prompt}; \theta).
+\tag{8}
 \end{equation}$$
 
 From the resulting logits, a subset of the masked positions is selected for decoding. For each selected position, a token is then generated from its corresponding probability distribution using a standard decoding strategy (e.g., greedy search, nucleus sampling). The remaining positions are kept as ‘\[MASK\]‘ tokens, forming the input $b_k^{t-1}$ for the next iteration. This denoising loop continues until all positions in the block are filled, at which point the model proceeds to generate the next block, $b_{k+1}$. To determine which positions to decode at each step, we propose two primary remasking strategies:
@@ -151,15 +154,11 @@ This adaptive strategy accelerates decoding by finalizing tokens based on model 
 
 # 4 From AR and Diffusion to SDAR
 
-<div class="tcolorbox">
-
 \(1\) **AR models are more compute-efficient** than masked diffusion objectives, making them the stronger foundational choice under equal budgets.
 
 \(2\) **SDAR enables efficient AR-to-Block Diffusion conversion**, preserving AR performance while adding parallel decoding.
 
 \(3\) **AR backbones remain superior post-conversion**, with AR-derived SDAR models consistently outperforming MDLM-based ones.
-
-</div>
 
 Before introducing SDAR, we begin by revisiting the fundamental comparison between Autoregressive (AR) and Masked Diffusion Language Models (MDLMs). Under identical architectures, datasets, and training budgets, AR models consistently achieve lower training loss and better downstream performance than MDLMs. This efficiency arises because AR training directly optimizes the exact negative log-likelihood (NLL) through a cross-entropy objective, where every token in the sequence contributes to parameter updates, maximizing the utility of each sample. In contrast, MDLMs approximate this objective via a loose upper bound—the negative evidence lower bound (NELBO)—and rely on random masking, where only the masked subset of tokens contributes to the loss while the remaining unmasked tokens serve merely as context. Consequently, a substantial portion of the computation does not directly improve the model, resulting in slower convergence and higher FLOPs to reach comparable validation perplexity and downstream task performence.
 
@@ -226,15 +225,11 @@ In summary, the results demonstrate that (i) AR baselines are inherently more ef
 
 # 5 Scaling SDAR: Principles and Practice
 
-<div class="tcolorbox">
-
 \(1\) Low-cost AR to SDAR adaptation works for any modern AR base, delivering **on-par performance with broad applicability.**
 
 \(2\) Larger SDAR models tolerate bigger blocks and looser decoding thresholds, enabling **higher parallel efficiency without sacrificing performance.**
 
 \(3\) In SDAR, larger models and higher confidence not only improve quality but also drive faster decoding, **making accuracy the engine of efficiency.**
-
-</div>
 
 In Section 4, we conducted a rigorous and fair comparison that established the foundational viability of our SDAR framework. However, those initial experiments were performed on a relatively small scale, utilizing a 1.7B parameter model trained on 1T tokens. To thoroughly investigate the scalability of our approach and develop production-ready models, this section extends our study to a much larger and more capable family of models.
 
@@ -276,242 +271,35 @@ For our evaluation protocol, we employ greedy static decoding for the SDAR-Chat 
 
 Our comprehensive evaluation reveals several key insights about the scaling behavior and performance characteristics of SDAR models compared to their autoregressive counterparts and other diffusion-based approaches.
 
- <span id="tab:comprehensive_results_superscript" data-label="tab:comprehensive_results_superscript"></span>
+ 
 
 **Tabla 2.** Comprehensive performance comparison of AR and SDAR models. $^\dag$ indicates that the models are derived from the Qwen3 Base models by performing the identical CPT and SFT. For each benchmark, the best result within a given scale (e.g., 1.7B, 30B) is shown in **bold**. The colored superscript for SDAR models indicates the performance difference relative to the corresponding AR-Chat baseline.
 
-<table id="tab:comprehensive_results_superscript">
-<thead>
-<tr>
-<th style="text-align: left;"><strong>Model</strong></th>
-<th colspan="4" style="text-align: center;"><strong>AR-Chat Model</strong></th>
-<th colspan="4" style="text-align: center;"><strong>SDAR-Chat Model</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: left;"><span>2-5</span> (l)<span>6-9</span> <span>scale</span></td>
-<td style="text-align: center;"><span>Qwen3-1.7B<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi></mi><mo>†</mo></msup><annotation encoding="application/x-tex">^\dag</annotation></semantics></math></span></td>
-<td style="text-align: center;"><span>Qwen3-4B<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi></mi><mo>†</mo></msup><annotation encoding="application/x-tex">^\dag</annotation></semantics></math></span></td>
-<td style="text-align: center;"><span>Qwen3-8B<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi></mi><mo>†</mo></msup><annotation encoding="application/x-tex">^\dag</annotation></semantics></math></span></td>
-<td style="text-align: center;"><span>Qwen3-30BA3B<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi></mi><mo>†</mo></msup><annotation encoding="application/x-tex">^\dag</annotation></semantics></math></span></td>
-<td style="text-align: center;"><span>SDAR-1.7B</span></td>
-<td style="text-align: center;"><span>SDAR-4B</span></td>
-<td style="text-align: center;"><span>SDAR-8B</span></td>
-<td style="text-align: center;"><span>SDAR-30BA3B</span></td>
-</tr>
-<tr>
-<td colspan="9" style="text-align: center;"><span>Reasoning, Knowledge &amp; Instruction Following</span></td>
-</tr>
-<tr>
-<td style="text-align: left;">ARC-C</td>
-<td style="text-align: center;">81.0</td>
-<td style="text-align: center;">89.5</td>
-<td style="text-align: center;">91.9</td>
-<td style="text-align: center;">93.9</td>
-<td style="text-align: center;"><strong>85.4</strong></td>
-<td style="text-align: center;"><strong>90.5</strong></td>
-<td style="text-align: center;"><strong>91.9</strong></td>
-<td style="text-align: center;">93.2</td>
-</tr>
-<tr>
-<td style="text-align: left;">TriviaQA</td>
-<td style="text-align: center;">45.0</td>
-<td style="text-align: center;">57.9</td>
-<td style="text-align: center;">68.2</td>
-<td style="text-align: center;">66.5</td>
-<td style="text-align: center;">42.6</td>
-<td style="text-align: center;">57.2</td>
-<td style="text-align: center;"><strong>69.2</strong></td>
-<td style="text-align: center;"><strong>75.9</strong></td>
-</tr>
-<tr>
-<td style="text-align: left;">MMLU</td>
-<td style="text-align: center;">63.8</td>
-<td style="text-align: center;">74.8</td>
-<td style="text-align: center;">77.5</td>
-<td style="text-align: center;">82.2</td>
-<td style="text-align: center;">62.9</td>
-<td style="text-align: center;"><strong>74.9</strong></td>
-<td style="text-align: center;"><strong>78.6</strong></td>
-<td style="text-align: center;"><strong>82.8</strong></td>
-</tr>
-<tr>
-<td style="text-align: left;">MMLU-Pro</td>
-<td style="text-align: center;">39.0</td>
-<td style="text-align: center;">52.8</td>
-<td style="text-align: center;">56.6</td>
-<td style="text-align: center;">63.8</td>
-<td style="text-align: center;">37.0</td>
-<td style="text-align: center;">50.9</td>
-<td style="text-align: center;"><strong>56.9</strong></td>
-<td style="text-align: center;">61.5</td>
-</tr>
-<tr>
-<td style="text-align: left;">GPQA-diamond</td>
-<td style="text-align: center;">28.6</td>
-<td style="text-align: center;">31.4</td>
-<td style="text-align: center;">37.0</td>
-<td style="text-align: center;">37.3</td>
-<td style="text-align: center;"><strong>29.8</strong></td>
-<td style="text-align: center;"><strong>33.0</strong></td>
-<td style="text-align: center;"><strong>40.2</strong></td>
-<td style="text-align: center;">36.7</td>
-</tr>
-<tr>
-<td style="text-align: left;">IFEval</td>
-<td style="text-align: center;">43.3</td>
-<td style="text-align: center;">58.4</td>
-<td style="text-align: center;">60.8</td>
-<td style="text-align: center;">57.7</td>
-<td style="text-align: center;"><strong>43.4</strong></td>
-<td style="text-align: center;">56.6</td>
-<td style="text-align: center;"><strong>61.4</strong></td>
-<td style="text-align: center;"><strong>60.6</strong></td>
-</tr>
-<tr>
-<td colspan="9" style="text-align: center;"><span>Mathematics</span></td>
-</tr>
-<tr>
-<td style="text-align: left;">GSM8K</td>
-<td style="text-align: center;">81.1</td>
-<td style="text-align: center;">90.7</td>
-<td style="text-align: center;">92.8</td>
-<td style="text-align: center;">92.7</td>
-<td style="text-align: center;">80.1</td>
-<td style="text-align: center;">89.9</td>
-<td style="text-align: center;">91.3</td>
-<td style="text-align: center;">91.4</td>
-</tr>
-<tr>
-<td style="text-align: left;">Math500</td>
-<td style="text-align: center;">62.0</td>
-<td style="text-align: center;">74.1</td>
-<td style="text-align: center;">78.4</td>
-<td style="text-align: center;">76.8</td>
-<td style="text-align: center;"><strong>63.2</strong></td>
-<td style="text-align: center;">72.8</td>
-<td style="text-align: center;"><strong>78.6</strong></td>
-<td style="text-align: center;"><strong>77.8</strong></td>
-</tr>
-<tr>
-<td style="text-align: left;">MathBench</td>
-<td style="text-align: center;">60.5</td>
-<td style="text-align: center;">70.6</td>
-<td style="text-align: center;">73.5</td>
-<td style="text-align: center;">78.4</td>
-<td style="text-align: center;"><strong>63.6</strong></td>
-<td style="text-align: center;"><strong>74.7</strong></td>
-<td style="text-align: center;"><strong>76.9</strong></td>
-<td style="text-align: center;"><strong>79.3</strong></td>
-</tr>
-<tr>
-<td style="text-align: left;">AIME-24</td>
-<td style="text-align: center;">7.1</td>
-<td style="text-align: center;">12.9</td>
-<td style="text-align: center;">10.0</td>
-<td style="text-align: center;">15.4</td>
-<td style="text-align: center;"><strong>10.0</strong></td>
-<td style="text-align: center;"><strong>10.0</strong></td>
-<td style="text-align: center;">10.0</td>
-<td style="text-align: center;"><strong>16.7</strong></td>
-</tr>
-<tr>
-<td style="text-align: left;">AIME-25</td>
-<td style="text-align: center;">3.3</td>
-<td style="text-align: center;">5.0</td>
-<td style="text-align: center;">7.5</td>
-<td style="text-align: center;">10.8</td>
-<td style="text-align: center;">2.1</td>
-<td style="text-align: center;"><strong>7.5</strong></td>
-<td style="text-align: center;"><strong>10.0</strong></td>
-<td style="text-align: center;">10.8</td>
-</tr>
-<tr>
-<td style="text-align: left;">LMB-Hard</td>
-<td style="text-align: center;">9.2</td>
-<td style="text-align: center;">11.6</td>
-<td style="text-align: center;">15.7</td>
-<td style="text-align: center;">15.5</td>
-<td style="text-align: center;">6.6</td>
-<td style="text-align: center;">6.9</td>
-<td style="text-align: center;">8.9</td>
-<td style="text-align: center;">13.7</td>
-</tr>
-<tr>
-<td colspan="9" style="text-align: center;"><span>Code Generation</span></td>
-</tr>
-<tr>
-<td style="text-align: left;">HumanEval</td>
-<td style="text-align: center;">65.9</td>
-<td style="text-align: center;">73.4</td>
-<td style="text-align: center;">80.7</td>
-<td style="text-align: center;">84.8</td>
-<td style="text-align: center;">61.6</td>
-<td style="text-align: center;">72.8</td>
-<td style="text-align: center;">78.7</td>
-<td style="text-align: center;"><strong>87.2</strong></td>
-</tr>
-<tr>
-<td style="text-align: left;">MBPP</td>
-<td style="text-align: center;">61.9</td>
-<td style="text-align: center;">67.1</td>
-<td style="text-align: center;">75.1</td>
-<td style="text-align: center;">75.1</td>
-<td style="text-align: center;">61.1</td>
-<td style="text-align: center;">65.4</td>
-<td style="text-align: center;">72.0</td>
-<td style="text-align: center;"><strong>71.6</strong></td>
-</tr>
-<tr>
-<td style="text-align: left;">HumanEval-X</td>
-<td style="text-align: center;">47.0</td>
-<td style="text-align: center;">60.9</td>
-<td style="text-align: center;">63.5</td>
-<td style="text-align: center;">63.5</td>
-<td style="text-align: center;">45.2</td>
-<td style="text-align: center;"><strong>62.3</strong></td>
-<td style="text-align: center;"><strong>64.9</strong></td>
-<td style="text-align: center;"><strong>66.3</strong></td>
-</tr>
-<tr>
-<td style="text-align: left;">LCB-v6</td>
-<td style="text-align: center;">8.6</td>
-<td style="text-align: center;">10.3</td>
-<td style="text-align: center;">20.5</td>
-<td style="text-align: center;">23.4</td>
-<td style="text-align: center;">5.7</td>
-<td style="text-align: center;"><strong>13.1</strong></td>
-<td style="text-align: center;">16.6</td>
-<td style="text-align: center;">21.7</td>
-</tr>
-<tr>
-<td colspan="9" style="text-align: center;">Language</td>
-</tr>
-<tr>
-<td style="text-align: left;">MMMLU-lite</td>
-<td style="text-align: center;">36.7</td>
-<td style="text-align: center;">44.4</td>
-<td style="text-align: center;">55.2</td>
-<td style="text-align: center;">52.9</td>
-<td style="text-align: center;">40.9</td>
-<td style="text-align: center;"><strong>50.7</strong></td>
-<td style="text-align: center;"><strong>55.3</strong></td>
-<td style="text-align: center;">57.2</td>
-</tr>
-<tr>
-<td style="text-align: left;">CMMLU</td>
-<td style="text-align: center;">60.7</td>
-<td style="text-align: center;">72.6</td>
-<td style="text-align: center;">76.2</td>
-<td style="text-align: center;">82.0</td>
-<td style="text-align: center;">60.2</td>
-<td style="text-align: center;">71.3</td>
-<td style="text-align: center;">75.7</td>
-<td style="text-align: center;">81.0</td>
-</tr>
-</tbody>
-</table>
+| **Model** | **AR-Chat Model** |  |  |  | **SDAR-Chat Model** |  |  |  |
+|:---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| 2-5 (l)6-9 scale | Qwen3-1.7B$^\dag$ | Qwen3-4B$^\dag$ | Qwen3-8B$^\dag$ | Qwen3-30BA3B$^\dag$ | SDAR-1.7B | SDAR-4B | SDAR-8B | SDAR-30BA3B |
+| Reasoning, Knowledge & Instruction Following |  |  |  |  |  |  |  |  |
+| ARC-C | 81.0 | 89.5 | 91.9 | 93.9 | **85.4** | **90.5** | **91.9** | 93.2 |
+| TriviaQA | 45.0 | 57.9 | 68.2 | 66.5 | 42.6 | 57.2 | **69.2** | **75.9** |
+| MMLU | 63.8 | 74.8 | 77.5 | 82.2 | 62.9 | **74.9** | **78.6** | **82.8** |
+| MMLU-Pro | 39.0 | 52.8 | 56.6 | 63.8 | 37.0 | 50.9 | **56.9** | 61.5 |
+| GPQA-diamond | 28.6 | 31.4 | 37.0 | 37.3 | **29.8** | **33.0** | **40.2** | 36.7 |
+| IFEval | 43.3 | 58.4 | 60.8 | 57.7 | **43.4** | 56.6 | **61.4** | **60.6** |
+| Mathematics |  |  |  |  |  |  |  |  |
+| GSM8K | 81.1 | 90.7 | 92.8 | 92.7 | 80.1 | 89.9 | 91.3 | 91.4 |
+| Math500 | 62.0 | 74.1 | 78.4 | 76.8 | **63.2** | 72.8 | **78.6** | **77.8** |
+| MathBench | 60.5 | 70.6 | 73.5 | 78.4 | **63.6** | **74.7** | **76.9** | **79.3** |
+| AIME-24 | 7.1 | 12.9 | 10.0 | 15.4 | **10.0** | **10.0** | 10.0 | **16.7** |
+| AIME-25 | 3.3 | 5.0 | 7.5 | 10.8 | 2.1 | **7.5** | **10.0** | 10.8 |
+| LMB-Hard | 9.2 | 11.6 | 15.7 | 15.5 | 6.6 | 6.9 | 8.9 | 13.7 |
+| Code Generation |  |  |  |  |  |  |  |  |
+| HumanEval | 65.9 | 73.4 | 80.7 | 84.8 | 61.6 | 72.8 | 78.7 | **87.2** |
+| MBPP | 61.9 | 67.1 | 75.1 | 75.1 | 61.1 | 65.4 | 72.0 | **71.6** |
+| HumanEval-X | 47.0 | 60.9 | 63.5 | 63.5 | 45.2 | **62.3** | **64.9** | **66.3** |
+| LCB-v6 | 8.6 | 10.3 | 20.5 | 23.4 | 5.7 | **13.1** | 16.6 | 21.7 |
+| Language |  |  |  |  |  |  |  |  |
+| MMMLU-lite | 36.7 | 44.4 | 55.2 | 52.9 | 40.9 | **50.7** | **55.3** | 57.2 |
+| CMMLU | 60.7 | 72.6 | 76.2 | 82.0 | 60.2 | 71.3 | 75.7 | 81.0 |
 
 #### Scaling Without Compromise
 
@@ -527,133 +315,21 @@ A key advantage of our approach lies in its extremely low adaptation cost. Unlik
 
 **Tabla 3.** Performance comparison between SDAR and AR models at different scales. Best results within each scale are in bold.
 
-<table id="tab:sdar_vs_qwen3">
-<thead>
-<tr>
-<th style="text-align: left;"><strong>Scale</strong></th>
-<th style="text-align: left;"><strong>Model</strong></th>
-<th style="text-align: center;"><strong>MMLU</strong></th>
-<th style="text-align: center;"><strong>GSM8K</strong></th>
-<th style="text-align: center;"><strong>Math500</strong></th>
-<th style="text-align: center;"><strong>HumanEval</strong></th>
-<th style="text-align: center;"><strong>MBPP</strong></th>
-<th style="text-align: center;"><strong>IFEval</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td colspan="8" style="text-align: center;"><span>AR Models</span></td>
-</tr>
-<tr>
-<td style="text-align: left;">1.7B</td>
-<td style="text-align: left;">AR-Chat</td>
-<td style="text-align: center;"><span>63.8</span></td>
-<td style="text-align: center;"><span>81.1</span></td>
-<td style="text-align: center;">62.0</td>
-<td style="text-align: center;"><span>65.9</span></td>
-<td style="text-align: center;"><span>61.9</span></td>
-<td style="text-align: center;">43.3</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Qwen3-Base</td>
-<td style="text-align: center;">62.6</td>
-<td style="text-align: center;">75.4</td>
-<td style="text-align: center;">43.5</td>
-<td style="text-align: center;">–</td>
-<td style="text-align: center;">55.4</td>
-<td style="text-align: center;">–</td>
-</tr>
-<tr>
-<td style="text-align: left;">30BA3B</td>
-<td style="text-align: left;">AR-Chat</td>
-<td style="text-align: center;">82.2</td>
-<td style="text-align: center;">92.7</td>
-<td style="text-align: center;">76.8</td>
-<td style="text-align: center;">84.8</td>
-<td style="text-align: center;">75.1</td>
-<td style="text-align: center;">57.7</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Qwen3-Base</td>
-<td style="text-align: center;">81.4</td>
-<td style="text-align: center;">91.8</td>
-<td style="text-align: center;">59.0</td>
-<td style="text-align: center;">–</td>
-<td style="text-align: center;">74.4</td>
-<td style="text-align: center;">–</td>
-</tr>
-<tr>
-<td colspan="8" style="text-align: center;">Diffusion Models</td>
-</tr>
-<tr>
-<td style="text-align: left;">8B</td>
-<td style="text-align: left;">LLaDA</td>
-<td style="text-align: center;">65.9</td>
-<td style="text-align: center;">78.6</td>
-<td style="text-align: center;">37.3</td>
-<td style="text-align: center;">47.6</td>
-<td style="text-align: center;">34.2</td>
-<td style="text-align: center;">59.9</td>
-</tr>
-<tr>
-<td style="text-align: left;">7B</td>
-<td style="text-align: left;">Dream</td>
-<td style="text-align: center;">69.5</td>
-<td style="text-align: center;">81.0</td>
-<td style="text-align: center;">38.7</td>
-<td style="text-align: center;">55.5</td>
-<td style="text-align: center;">58.8</td>
-<td style="text-align: center;"><strong>62.5</strong></td>
-</tr>
-<tr>
-<td colspan="8" style="text-align: center;"><span>SDAR Models</span></td>
-</tr>
-<tr>
-<td style="text-align: left;">1.7B</td>
-<td style="text-align: left;"><span>SDAR-Chat</span></td>
-<td style="text-align: center;">62.9</td>
-<td style="text-align: center;">80.1</td>
-<td style="text-align: center;">63.2</td>
-<td style="text-align: center;">61.6</td>
-<td style="text-align: center;">61.1</td>
-<td style="text-align: center;">43.4</td>
-</tr>
-<tr>
-<td style="text-align: left;">4B</td>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">74.9</td>
-<td style="text-align: center;">89.9</td>
-<td style="text-align: center;">72.8</td>
-<td style="text-align: center;">72.0</td>
-<td style="text-align: center;">65.4</td>
-<td style="text-align: center;">56.6</td>
-</tr>
-<tr>
-<td style="text-align: left;">8B</td>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">78.6</td>
-<td style="text-align: center;">91.3</td>
-<td style="text-align: center;">78.6</td>
-<td style="text-align: center;">78.7</td>
-<td style="text-align: center;">72.0</td>
-<td style="text-align: center;">61.4</td>
-</tr>
-<tr>
-<td style="text-align: left;">30BA3B</td>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">82.8</td>
-<td style="text-align: center;">91.4</td>
-<td style="text-align: center;">77.8</td>
-<td style="text-align: center;">87.2</td>
-<td style="text-align: center;">71.6</td>
-<td style="text-align: center;">60.6</td>
-</tr>
-</tbody>
-</table>
-
-<span id="tab:sdar_vs_qwen3" data-label="tab:sdar_vs_qwen3"></span>
+| **Scale** | **Model** | **MMLU** | **GSM8K** | **Math500** | **HumanEval** | **MBPP** | **IFEval** |
+|:---|:---|:--:|:--:|:--:|:--:|:--:|:--:|
+| AR Models |  |  |  |  |  |  |  |
+| 1.7B | AR-Chat | 63.8 | 81.1 | 62.0 | 65.9 | 61.9 | 43.3 |
+|  | Qwen3-Base | 62.6 | 75.4 | 43.5 | – | 55.4 | – |
+| 30BA3B | AR-Chat | 82.2 | 92.7 | 76.8 | 84.8 | 75.1 | 57.7 |
+|  | Qwen3-Base | 81.4 | 91.8 | 59.0 | – | 74.4 | – |
+| Diffusion Models |  |  |  |  |  |  |  |
+| 8B | LLaDA | 65.9 | 78.6 | 37.3 | 47.6 | 34.2 | 59.9 |
+| 7B | Dream | 69.5 | 81.0 | 38.7 | 55.5 | 58.8 | **62.5** |
+| SDAR Models |  |  |  |  |  |  |  |
+| 1.7B | SDAR-Chat | 62.9 | 80.1 | 63.2 | 61.6 | 61.1 | 43.4 |
+| 4B |  | 74.9 | 89.9 | 72.8 | 72.0 | 65.4 | 56.6 |
+| 8B |  | 78.6 | 91.3 | 78.6 | 78.7 | 72.0 | 61.4 |
+| 30BA3B |  | 82.8 | 91.4 | 77.8 | 87.2 | 71.6 | 60.6 |
 
 ## 5.2 Scaling Dynamics: A Trade-off Analysis of Performance, Efficiency, and Model Dimensions
 
@@ -730,15 +406,17 @@ Our experimental setup employed the LMDeploy inference engine on a single NVIDIA
 To formalize our analysis, we define: $t_f$ (time per forward pass), $\alpha$ (batch size), $\beta$ (block size), and $\gamma$ (average forward passes per block). For standard autoregressive decoding: 
 
 $$\begin{align}
-    \text{TGS}_{\text{AR}} &= \frac{\alpha}{t_f} \\
+    \text{TGS}_{\text{AR}} &= \frac{\alpha}{t_f} \tag{9}\\
     t_f &= \frac{\alpha}{\text{TGS}_{\text{AR}}}
+\tag{10}
 \end{align}$$
 
 With our inference engine requiring an additional forward pass for KV cache computation, static SDAR decoding throughput becomes: 
 
 $$\begin{align}
-    \text{TGS}_{\text{static}} &= \frac{\alpha\beta}{(\beta+1)t_f} \\
+    \text{TGS}_{\text{static}} &= \frac{\alpha\beta}{(\beta+1)t_f} \tag{11}\\
     t_f &= \frac{\alpha\beta}{(\beta+1)\text{TGS}_{\text{static}}}
+\tag{12}
 \end{align}$$
 
 For dynamic decoding with confidence-based forward passes: 
@@ -746,8 +424,9 @@ For dynamic decoding with confidence-based forward passes:
 $$\begin{align}
 \tag{13}
     \text{TGS}_{\text{dynamic}} &= \frac{\alpha\beta}{(\gamma+1)t_f} \\
-    t_f &= \frac{\alpha\beta}{(\gamma+1)\text{TGS}_{\text{dynamic}}} \\
+    t_f &= \frac{\alpha\beta}{(\gamma+1)\text{TGS}_{\text{dynamic}}} \tag{14}\\
     \text{TPF} &= \frac{\beta}{\gamma} = \frac{1}{\frac{\alpha}{\text{TGS}_{\text{dynamic}} \times t_f}-\frac{1}{\beta}}
+\tag{15}
 \end{align}$$
 
 #### Analysis
@@ -766,15 +445,11 @@ These findings suggest several optimization pathways for future inference engine
 
 # 6 Reasoning potential of SDAR
 
-<div class="tcolorbox">
-
 \(1\) **Reasoning preserved.** SDAR adaptation retains and easily restores long CoT reasoning from strong AR reasoning models.
 
 \(2\) **Domain shift for free.** SDAR enables effortless domain transfer during adaptation, excelling on tasks benefiting from local bidirectional context.
 
 \(3\) **Scaling synergy.** Simple test-time scaling brings large gains, suggesting strong potential for further improvement via RL.
-
-</div>
 
 Over just the past year, the reasoning capabilities of large language models have emerged as a central focus of the field. Yet these advances typically come with a steep cost: test-time scaling methods place a heavy burden on inference. A core motivation of our study is the hypothesis that SDAR’s parallel decoding capability can mitigate this challenge, offering a more efficient pathway to test-time scaling. To examine this potential, we adapt strong autoregressive (AR) baselines into the SDAR paradigm and evaluate whether the resulting models can preserve, and in some cases enhance, their reasoning ability.
 
@@ -832,8 +507,6 @@ On general reasoning and mathematics (Table 4), SDAR performs on par with the A
 | SDAR-30B-A3B-Sci (G) |   78.1   |   76.7   | **60.0** | **60.7** |  40.7  |   42.3   |
 | SDAR-30B-A3B-Sci (S) |   77.9   | **73.4** |   59.2   | **58.7** |  49.1  | **51.4** |
 
-<span id="tab:ar_vs_sdar_nonscience" data-label="tab:ar_vs_sdar_nonscience"></span>
-
 **Tabla 5.** Strict comparison between AR-30B-A3B-Sci and SDAR-30B-A3B-Sci on science benchmarks.
 
 | **Model** | **GPQA-diamond** | **ChemBench** | **PHYSICS** | **ProteinLMBench** |
@@ -841,8 +514,6 @@ On general reasoning and mathematics (Table 4), SDAR performs on par with the A
 | AR-30B-A3B-Sci | 61.2 | 60.5 | 39.0 | 59.5 |
 | SDAR-30B-A3B-Sci (G) | **66.7** | **72.3** | **37.9** | **59.9** |
 | SDAR-30B-A3B-Sci (S) | 66.0 | **72.8** | **38.2** | **59.6** |
-
-<span id="tab:ar_vs_sdar_science" data-label="tab:ar_vs_sdar_science"></span>
 
 #### Achieving State-of-the-Art Performance in Scientific Domains
 
@@ -864,13 +535,9 @@ Beyond this AR comparison, SDAR-30B-A3B-Sci also proves competitive against much
 |  | o3 | 85.0 | 88.9 | 83.3 | 81.6 | 47.9 | 67.7 |
 |  | Grok-4 | 85.9 | 91.7 | 87.5 | 83.3 | 42.8 | 66.2 |
 
-<span id="tab:sdar_vs_large_models_category" data-label="tab:sdar_vs_large_models_category"></span>
-
 #### Enhancing Performance with Test-Time Scaling
 
 **Tabla 7.** Strict comparison between AR-30B-A3B-Sci and SDAR-30B-A3B-Sci. (G = greedy decoding, S = sampling). Bold numbers indicate best performance in each column among the main models.
-
-<div class="tblr">
 
 colspec = l c c c c, row4-6 = bg=groupcolor, row1 = font=, Model & GPQA-diamond & AIME2024 & AIME2025 & LMB-hard\
 AR-30B-A3B-Sci & 61.2 & 74.9 & 60.7 & 55.4\
@@ -878,10 +545,6 @@ SDAR-30B-A3B-Sci (G) & 66.7 & 76.7 & 60.0 & 60.7\
 SDAR-30B-A3B-Sci (S) & 66.0 & 73.4 & 59.2 & 58.7\
 w/ Majority & 68.2 & 86.7 & 80.0 & 71.1\
 w/ pass@k & 84.3 & 93.3 & 86.7 & 87.5\
-
-</div>
-
-<span id="tab:ar_vs_sdar_delta_transposed_subset" data-label="tab:ar_vs_sdar_delta_transposed_subset"></span>
 
 The application of test-time scaling techniques further amplifies SDAR’s inherent reasoning advantages, revealing its exceptional potential when combined with advanced inference strategies. As demonstrated in Table 7, our SDAR model exhibits remarkable performance gains when augmented with ensemble methods. The majority voting approach yields substantial improvements across all benchmarks, with particularly striking gains on mathematical reasoning tasks: **+11.8%** on AIME-2024, **+19.3%** on AIME-2025, and **+15.7%** on LiveMathBench-hard compared to the AR baseline. Even more impressive are the results achieved with the pass@k methodology, which pushes performance to unprecedented levels—reaching **84.3%** on GPQA-diamond (**+23.1%** over baseline), **93.3%** on AIME-2024 (**+18.4%**), **86.7%** on AIME-2025 (**+26.0%**), and **87.5%** on LiveMathBench-hard (**+32.1%**). These improvements highlight an important observation: SDAR’s parallel generation paradigm tends to produce more diverse and complementary reasoning trajectories when sampling multiple candidates, suggesting stronger synergy with test-time scaling strategies such as majority voting or pass@k evaluation. This interplay between SDAR’s architectural design and test-time scaling methods points to a promising new direction for enhancing machine reasoning efficiency—indicating that the combined effect of these techniques can extend beyond what either alone achieves in isolation.
 
@@ -951,8 +614,6 @@ We thank the lmdeploy team for integrating SDAR into their industrial-grade infe
 
 # B Example Outputs
 
-<div class="tcolorbox">
-
 **User:**
 
 There is a single choice question about chemistry. Answer the question by replying A, B, C or D.\
@@ -983,10 +644,6 @@ Options A and B don’t seem to have multiple rings. Option C is a lipid. So the
 \</think\>\
 The correct answer is D because the molecule described in this option contains multiple sugar units (pyranose and furanose rings) connected by glycosidic bonds, which is the defining feature of an oligosaccharide. The presence of oxygen bridge linkages between these monosaccharide units confirms its classification as an oligosaccharide. Other options either represent single sugar derivatives (B), acyclic or aromatic structures (C, A), or are not composed of monosaccharide units entirely.\
 Answer: D\
-
-</div>
-
-<div class="tcolorbox">
 
 **User:**
 
@@ -1606,8 +1263,6 @@ $$N \mod 1000 = 2016 \mod 1000 = \boxed{16}$$
 Final Answer
 
 $$\boxed{16}$$
-
-</div>
 
 # References
 

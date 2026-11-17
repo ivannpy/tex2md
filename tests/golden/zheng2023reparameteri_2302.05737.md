@@ -34,15 +34,11 @@ In this work, we demonstrate that discrete diffusion models can serve as strong 
 
 Our contributions can be summarized as follows:
 
-<div class="list">
-
 We analyze existing discrete diffusion probabilistic models and derive a more compact formulation that generalizes various diffusion processes and reveals an internal routing mechanism for selectively denoising tokens;
 
 We introduce reparameterized diffusion models (RDMs), a new model family that parameterizes both routing and denoising processes. RDMs yield a greatly simplified training objective and enable more flexible decoding algorithms for text generation;
 
 We provide extensive results and analyses across several benchmarks to demonstrate the improved text generation quality of RDMs.
-
-</div>
 
 # 2 Background
 
@@ -60,10 +56,10 @@ $$\begin{align*}
     \log p_{\mathbf{\theta}}(\mathbf{x}_0) \geq \mathcal{L}_1(\mathbf{\theta}) - \sum_{t=2}^T \mathcal{L}_t(\mathbf{\theta}) + \text{const.},
 \end{align*}$$
 
-with $\mathcal{L}_t(\mathbf{\theta}) \coloneqq %
+with $\mathcal{L}_t(\mathbf{\theta}) \coloneqq 
    \ifthenelse{ \equal{\operatorname{KL}\klxy{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})}}{} }
       {\mathbb{E}\left[q(\mathbf{x}_t|\mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_t|\mathbf{x}_0)}\left[\operatorname{KL}\klxy{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})}\right]}$. For the case $t=1$, we have $\mathcal{L}_1(\mathbf{\theta}) \coloneqq %
+      {\mathbb{E}_{q(\mathbf{x}_t|\mathbf{x}_0)}\left[\operatorname{KL}\klxy{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})}\right]}$. For the case $t=1$, we have $\mathcal{L}_1(\mathbf{\theta}) \coloneqq 
    \ifthenelse{ \equal{\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)}{} }
       {\mathbb{E}\left[q(\mathbf{x}_1|\mathbf{x}_0)\right]}
       {\mathbb{E}_{q(\mathbf{x}_1|\mathbf{x}_0)}\left[\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)\right]}$. The ELBO decomposes into a sum of KL divergences between the *conditional backward transition* $q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)$ and $p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})$ at each time step $t$. Note that $q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0) \propto q(\mathbf{x}_{t}|\mathbf{x}_{t-1})q(\mathbf{x}_{t-1}|\mathbf{x}_0)$ can be calculated analytically for most discrete diffusion models. To define the distribution $p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})$, previous work (Hoogeboom et al., 2021) suggests that it can be parameterized similarly to $q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \mathbf{x}_0)$ by letting $p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t}) = q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, f(\mathbf{x}_t;\mathbf{\theta}))$, where a neural network $f(\mathbf{x}_t;\mathbf{\theta})$ is adopted to predict $\mathbf{x}_0$. Typically $f(\mathbf{x}_t;\mathbf{\theta}) \in (0,1)^K$ is the model output normalized by a softmax function, representing the probability vector for each token. For text generation, each discrete text token within an input sequence is often assumed to be diffused independently. Thus to avoid cluttering the discussion, we focus initially on the diffusion process of a single token and address the entire sequence later in Section 4.2 and Section 4.3. A more detailed discussion about the related work and derivations about discrete diffusion models are provided in Appendixs A and B, respectively.
@@ -76,20 +72,16 @@ This section presents an in-depth study of discrete diffusion probabilistic mode
 
 We first elaborate on how the conditional backward transition of existing discrete diffusion models can be written in a more compact formulation (see Appendix C for the proof).
 
-<div id="prop:diffusion_as_branching" class="proposition">
-
 **Proposition 1**. *Let the forward transition of discrete diffusion be $q(\mathbf{x}_t | \mathbf{x}_{t-1}) = \beta_t\mathbf{x}_{t-1} + (1 - \beta_t)q_\text{noise}$. Then the conditional backward transition $q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \mathbf{x}_0)$ can be equivalently written as 
 
 $$\begin{align*}
     q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \mathbf{x}_0) = \begin{cases}
         \lambda^{(1)}_{t-1}\mathbf{x}_t + \left(1-\lambda^{(1)}_{t-1}\right) q_\text{noise}, &\text{ if } \mathbf{x}_t = \mathbf{x}_0 \\
         \lambda^{(2)}_{t-1}\mathbf{x}_0 + \left(1 - \lambda^{(2)}_{t-1}\right)q_\text{noise}(\mathbf{x}_t), &\text{ if } \mathbf{x}_t \neq \mathbf{x}_0.
-    \end{cases} \addtocounter{equation}{1}\tag{\theequation}\tag{2}
+    \end{cases} \tag{2}
 \end{align*}$$
 
 Here $q_\text{noise}(\mathbf{x}_t) = \beta_t \mathbf{x}_t + (1 - \beta_t) q_\text{noise}$ denotes a noise distribution that interpolates between $\mathbf{x}_t$ and $q_\text{noise}$, $\lambda^{(1)}_{t-1} \coloneqq 1 - \frac{(1-\beta_t)(1-\alpha_{t-1})q_\text{noise}(\mathbf{u}=\mathbf{x}_t)}{\alpha_{t} + (1 - \alpha_{t})q_\text{noise}(\mathbf{u}=\mathbf{x}_t)}$, and $\lambda^{(2)}_{t-1} \coloneqq \frac{\alpha_{t-1}-\alpha_t}{1 - \alpha_{t}}$, where $q_\text{noise}(\mathbf{u}=\mathbf{x}_t)$ is the probability of the noise equal to $\mathbf{x}_t$.*
-
-</div>
 
 Intuitively, Eq. (2) reveals that the main mechanism of the backward process is to shuttle discrete tokens between fully noisy states and the ground truth state $\mathbf{x}_0$, conditioned on the equality of $\mathbf{x}_t$ and $\mathbf{x}_0$. If $\mathbf{x}_t = \mathbf{x}_0$, the current token state is possibly noise-free, and the model either remains noise-free by copying the state $\mathbf{x}_{t-1} \!\gets\! \mathbf{x}_t$, or resets the state to the noise. If $\mathbf{x}_t \neq \mathbf{x}_0$, the current state is considered noisy, and the model opts to denoise $\mathbf{x}_t$ to $\mathbf{x}_0$ or remains noisy otherwise. The probability of moving noisy tokens to ground truth states or turning denoised tokens back to noise is governed by $\lambda^{(2)}_{t-1}$ and $1-\lambda^{(1)}_{t-1}$, respectively.
 
@@ -101,7 +93,7 @@ $$\begin{align*}
 b_t &= \mathbf{1}_{\mathbf{x}_t = \mathbf{x}_0}\\
 v_{t-1}^{(1)} &\sim \operatorname{Bernoulli}\left(\lambda^{(1)}_{t-1}\right),\quad\mathbf{u}_{t}^{(1)} \sim q_\text{noise}\\
 v_{t-1}^{(2)} &\sim \operatorname{Bernoulli}\left(\lambda^{(2)}_{t-1}\right),\quad\mathbf{u}_{t}^{(2)} \sim q_\text{noise}(\mathbf{x}_t)\\
-\mathbf{x}_{t-1} &= b_t\left[v_{t-1}^{(1)}\mathbf{x}_t + \left(1-v_{t-1}^{(1)}\right)\mathbf{u}_{t}^{(1)}\right] + (1-b_t)\left[v_{t-1}^{(2)}\mathbf{x}_0 + \left(1-v_{t-1}^{(2)}\right)\mathbf{u}_{t}^{(2)}\right].\addtocounter{equation}{1}\tag{\theequation}\tag{3}
+\mathbf{x}_{t-1} &= b_t\left[v_{t-1}^{(1)}\mathbf{x}_t + \left(1-v_{t-1}^{(1)}\right)\mathbf{u}_{t}^{(1)}\right] + (1-b_t)\left[v_{t-1}^{(2)}\mathbf{x}_0 + \left(1-v_{t-1}^{(2)}\right)\mathbf{u}_{t}^{(2)}\right].\tag{3}
 \end{align*}$$
 
 To simplify the notation, we denote $\mathbf{v}_{t-1} \coloneqq \left[v_{t-1}^{(1)}, v_{t-1}^{(2)}\right]$ and $\mathbf{\lambda}_{t-1} \coloneqq \left[\lambda^{(1)}_{t-1}, \lambda^{(2)}_{t-1}\right]$. This reparameterized backward transition highlights an underlying *routing* mechanism, where the model routes tokens to different distributions according to $\mathbf{v}_{t-1}$: given $b_t$ that discriminates which tokens are currently noisy, $v_{t-1}^{(2)}$ selects and denoises noisy tokens to recover the ground truth $\mathbf{x}_0$, while $v_{t-1}^{(1)}$ determines which denoised tokens revert to the noisy state.
@@ -119,10 +111,10 @@ q(\mathbf{v}_{t-1}) &= \operatorname{Bernoulli}\left(\mathbf{\lambda}_{t-1}\righ
 q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_{t}, \mathbf{x}_0) &= \begin{cases}
     v^{(1)}_{t-1}\mathbf{x}_t + \left(1-v^{(1)}_{t-1}\right) q_\text{noise}, &\text{ if } b_t = 1 \\
     v^{(2)}_{t-1}\mathbf{x}_0 + \left(1 - v^{(2)}_{t-1}\right)q_\text{noise}(\mathbf{x}_t), &\text{ if } b_t = 0.
-\end{cases}\addtocounter{equation}{1}\tag{\theequation}\tag{4}
+\end{cases}\tag{4}
 \end{align*}$$
 
-Note that $b_t = \mathbf{1}_{\mathbf{x}_t = \mathbf{x}_0}$. This can be considered as a standard discrete diffusion model augmented with step-wise routing indicators $\{\mathbf{v}_{t-1}\}_{t=1}^T$ (see Figure 1). It closely relates to the conventional formulation (Eq. (2)) in that the original backward process amounts to marginalizing out $\mathbf{v}_{t-1}$ at each time step: $q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \mathbf{x}_0) = %
+Note that $b_t = \mathbf{1}_{\mathbf{x}_t = \mathbf{x}_0}$. This can be considered as a standard discrete diffusion model augmented with step-wise routing indicators $\{\mathbf{v}_{t-1}\}_{t=1}^T$ (see Figure 1). It closely relates to the conventional formulation (Eq. (2)) in that the original backward process amounts to marginalizing out $\mathbf{v}_{t-1}$ at each time step: $q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \mathbf{x}_0) = 
    \ifthenelse{ \equal{q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_{t}, \mathbf{x}_0)}{} }
       {\mathbb{E}\left[q(\mathbf{v}_{t-1})\right]}
       {\mathbb{E}_{q(\mathbf{v}_{t-1})}\left[q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_{t}, \mathbf{x}_0)\right]}$. Since the distribution over $\mathbf{v}_{t-1}$ is explicitly considered, this joint diffusion model offers improved flexibility and expressiveness. We refer to this class of models as *reparameterized discrete diffusion models* (RDMs), as it yields an equivalent sampling process to the original formulation but via a reparameterized path.
@@ -132,23 +124,49 @@ Note that $b_t = \mathbf{1}_{\mathbf{x}_t = \mathbf{x}_0}$. This can be consider
 Similar to previous diffusion models (Section 2), we define a joint generative process $p_{\mathbf{\theta}}(\mathbf{x}_{t-1}, \mathbf{v}_{t-1} | \mathbf{x}_t)$ and optimize the ELBO via the following factorization, 
 
 $$\begin{align*}
-    \log p(\mathbf{x}_0) \geq %
+    \log p(\mathbf{x}_0) \geq 
    \ifthenelse{ \equal{\log \frac{p_{\mathbf{\theta}}(\mathbf{x}_0, \mathbf{x}_{1:T}, \mathbf{v}_{1:T})}{q(\mathbf{x}_{1:T}, \mathbf{v}_{1:T}|\mathbf{x}_0)}}{} }
       {\mathbb{E}\left[q(\mathbf{x}_{1:T}, \mathbf{v}_{1:T}|\mathbf{x}_0)\right]}
       {\mathbb{E}_{q(\mathbf{x}_{1:T}, \mathbf{v}_{1:T}|\mathbf{x}_0)}\left[\log \frac{p_{\mathbf{\theta}}(\mathbf{x}_0, \mathbf{x}_{1:T}, \mathbf{v}_{1:T})}{q(\mathbf{x}_{1:T}, \mathbf{v}_{1:T}|\mathbf{x}_0)}\right]}
  \coloneqq \mathcal{L}_1(\mathbf{\theta}) - \sum_{t=2}^T \mathcal{L}_t(\mathbf{\theta}) + \text{const.}.
 \end{align*}$$
 
-Following standard practices in diffusion models (Hoogeboom et al., 2021; Austin et al., 2021), we randomly sample a time step $t$ and optimize $\mathbf{\theta}$ with respect to $\mathcal{L}_t(\mathbf{\theta})$. In our case, $\mathcal{L}_1(\mathbf{\theta}) = %
+Following standard practices in diffusion models (Hoogeboom et al., 2021; Austin et al., 2021), we randomly sample a time step $t$ and optimize $\mathbf{\theta}$ with respect to $\mathcal{L}_t(\mathbf{\theta})$. In our case, $\mathcal{L}_1(\mathbf{\theta}) = 
    \ifthenelse{ \equal{\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)}{} }
       {\mathbb{E}\left[q(\mathbf{x}_{1}|\mathbf{x}_0)\right]}
       {\mathbb{E}_{q(\mathbf{x}_{1}|\mathbf{x}_0)}\left[\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)\right]}$; for $t > 1$, $\mathcal{L}_t$ decomposes into a sum of two expected KL divergences over $\mathbf{v}_{t-1}$ and $\mathbf{x}_{t-1}$ respectively (see Appendix D for the full derivation), 
 
 $$\begin{align*}
-    \mathcal{L}_t(\mathbf{\theta}) = \mathbb{E}\left[\operatorname{KL}\klxy{q(\mathbf{v}_{t-1})}{p_{\mathbf{\theta}}(\mathbf{v}_{t-1})}\right] + \mathbb{E}\left[\operatorname{KL}\klxy{q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_t, \mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{v}_{t-1}, \mathbf{x}_t)}\right], \addtocounter{equation}{1}\tag{\theequation}\tag{5}
+    \mathcal{L}_t(\mathbf{\theta}) = \mathbb{E}\left[\operatorname{KL}\klxy{q(\mathbf{v}_{t-1})}{p_{\mathbf{\theta}}(\mathbf{v}_{t-1})}\right] + \mathbb{E}\left[\operatorname{KL}\klxy{q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_t, \mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{v}_{t-1}, \mathbf{x}_t)}\right], \tag{5}
 \end{align*}$$
 
 where the expectations are with respect to $q(\mathbf{x}_t|\mathbf{x}_0)$ and $q(\mathbf{x}_t|\mathbf{x}_0)q(\mathbf{v}_{t-1})$, respectively.
+
+**Algoritmo 1.** Training RDMs
+
+**Input:** neural network $f\left(\cdot;\mathbf{\theta}\right)$, data distribution $p_{\text{data}}(\mathbf{x}_{0,1:N})$, and a custom reweighting scalar $\textcolor{keywords}{\lambda_{t-1}}$.
+
+**Output:** model parameters $\mathbf{\theta}$.
+
+**repeat**
+
+ Draw $\mathbf{x}_{0,1:N} \sim p_{\text{data}}(\mathbf{x}_{0,1:N})$;
+
+ Draw $t \in \operatorname{Uniform}(\{1,\dots,T\})$;
+
+ **for** $n = 1,2,\dots,N$ **do**
+
+ Draw $\mathbf{x}_{t,n} \sim q(\mathbf{x}_{t,n} | \mathbf{x}_{0,n})$;
+
+ Let $b_{t,n} = \mathbf{1}_{\mathbf{x}_{t,n} = \mathbf{x}_{0,n}}$;
+
+ **end for**
+
+ $\mathcal{L}(\mathbf{\theta}) = \!-\textcolor{keywords}{\lambda_{t-1}}\!\sum_{n=1}^N (1\!-\!b_{t,n})\mathbf{x}_{0,n}^\top\!\log f\left(\mathbf{x}_{t,n};\mathbf{\theta}\right)$;
+
+ Minimize $\mathcal{L}(\mathbf{\theta})$ with respect to $\mathbf{\theta}$;
+
+**until** converged
 
 **Figura.**
 
@@ -161,14 +179,14 @@ The decomposition in Eq. (5) suggests parameterizing each conditional of $p_{\m
 The discussion so far focuses on the diffusion process over a single token. We now slightly abuse the term and denote the sequence of tokens at step $t$ as $\mathbf{x}_{t,1:N} \coloneqq \{\mathbf{x}_{t,n}\}_{n=1}^N$, where the joint distribution factorizes over each token, $\mathbf{x}_{t,n}$ is the $n$-th token with $N$ being the sequence length.[^1] We show that the training objective $\mathcal{L}_t(\mathbf{\theta})$ for sequence $\mathbf{x}_{t,1:N}$ at the $t$-th step can be reduced to a surprisingly simple expression (see Appendix E for the proof and its connection to previous works) as follows, 
 
 $$\begin{align*}
-    \mathcal{L}_t(\mathbf{\theta}) =%
+    \mathcal{L}_t(\mathbf{\theta}) =
    \ifthenelse{ \equal{-\lambda_{t-1}^{(2)}\sum_{n=1}^N (1-b_{t,n})\mathbf{x}_{0,n}^\top\log f\left(\mathbf{x}_{t,n};\mathbf{\theta}\right)}{} }
       {\mathbb{E}\left[p_{\text{data}}(\mathbf{x}_{0,1:N})\prod_{n=1}^N q(\mathbf{x}_{t,n}|\mathbf{x}_{0,n})\right]}
       {\mathbb{E}_{p_{\text{data}}(\mathbf{x}_{0,1:N})\prod_{n=1}^N q(\mathbf{x}_{t,n}|\mathbf{x}_{0,n})}\left[-\lambda_{t-1}^{(2)}\sum_{n=1}^N (1-b_{t,n})\mathbf{x}_{0,n}^\top\log f\left(\mathbf{x}_{t,n};\mathbf{\theta}\right)\right]}
-.\addtocounter{equation}{1}\tag{\theequation}\tag{6}
+.\tag{6}
 \end{align*}$$
 
-Based on this result, training RDMs is equivalent to optimizing the standard *multi-class cross-entropy* loss function, which is evaluated over noisy tokens and weighted by $\lambda_{t-1}^{(2)} = %
+Based on this result, training RDMs is equivalent to optimizing the standard *multi-class cross-entropy* loss function, which is evaluated over noisy tokens and weighted by $\lambda_{t-1}^{(2)} = 
    \ifthenelse{ \equal{\mathbf{v}_{t-1}^{(2)}}{} }
       {\mathbb{E}\left[\right]}
       {\mathbb{E}_{}\left[\mathbf{v}_{t-1}^{(2)}\right]}$. This formulation is conceptually simpler than that of the original discrete diffusion, which requires evaluating the KL divergence between two complicated categoricals (Hoogeboom et al., 2021). Besides, this formulation establishes the discrete analog of *reweighting training strategies*, which are recognized as common practices for training continuous-domain diffusion models (Ho et al., 2020; Nichol & Dhariwal, 2021; Vahdat et al., 2021; Karras et al., 2022). In particular, we can adjust the weight $\lambda_{t-1}^{(2)}$ to reweigh the cross-entropy function so that it is more amenable for training.
@@ -184,10 +202,54 @@ Decoding text from discrete diffusion processes usually starts with a sequence c
 The key challenge in decoding is to compute $b_{t,n} = \mathbf{1}_{\mathbf{x}_{t,n} = \mathbf{x}_{0,n}}$ in Eq. (4), which is intractable since we lack access to the ground truth $\mathbf{x}_{0,n}$ as in training. We circumvent this issue by leveraging a recursive computation based on the functionality of $\mathbf{v}_{t-1,n}$. Starting with $b_{T,n} = 0$, we compute $b_{t-1,n}$ as 
 
 $$\begin{align*}
-    b_{t-1,n} = \left(b_{t,n} \land v_{t-1,n}^{(1)}\right)\lor v_{t-1,n}^{(2)}.\addtocounter{equation}{1}\tag{\theequation}\tag{7}
+    b_{t-1,n} = \left(b_{t,n} \land v_{t-1,n}^{(1)}\right)\lor v_{t-1,n}^{(2)}.\tag{7}
 \end{align*}$$
 
 Intuitively, $b_{t,1:N}$ represents a frontier set that stores the denoised tokens up to the previous iteration. At the current iteration, we add new tokens to the set if $v_{t-1,n}^{(2)} = 1$ and remove elements from the set if the corresponding $v_{t-1,n}^{(1)} = 0$. The updated set is then read out to form $b_{t-1,1:N}$.[^2] Note that the update does not add extra computational costs. Equipped with these results, we can efficiently execute the sampling algorithm without difficulties.
+
+**Algoritmo 2.** Sampling from RDMs
+
+**Input:** trained network $f\left(\cdot;\mathbf{\theta}\right)$ and temperature $\tau$.
+
+**Output:** generated sample $\mathbf{x}_0$.
+
+**for** $n = 1,2,\dots,N$ **do**
+
+ Initialize $\mathbf{x}_{T,n} \sim q_{\text{noise}}$;
+
+ Initialize $b_{T,n} = 0$;
+
+**end for**
+
+**for** $t = T,\dots,1$ **do**
+
+ **for** $n = 1,2,\dots,N$ **do**
+
+ Draw $\widetilde{\mathbf{x}}_{0,n} \sim \operatorname{Categorical}\left(f\!\left(\mathbf{x}_{t,n};\mathbf{\theta}\right)\!/\tau\right)$;
+
+ Generate $\mathbf{v}_{t-1,n}$ according to Eq. (8);
+
+ **if** $b_{t,n} = 1$ **then**
+
+ Draw $\mathbf{u}_{t,n}^{(1)} \sim q_\text{noise}$;
+
+ $\mathbf{x}_{t-1,n} = v_{t-1,n}^{(1)}\mathbf{x}_{t,n} + \left(1-v_{t-1,n}^{(1)}\right)\mathbf{u}_{t,n}^{(1)}$;
+
+ **else**
+
+ Draw $\mathbf{u}_{t,n}^{(2)} \sim q_\text{noise}(\mathbf{x}_{t,n})$;
+
+ $\mathbf{x}_{t-1,n} = v_{t-1,n}^{(2)}\widetilde{\mathbf{x}}_{0,n} + \left(1-v_{t-1,n}^{(2)}\right)\mathbf{u}_{t,n}^{(2)}$;
+
+ **end if**
+
+ Let $b_{t-1,n} = b_{t,n} \land v_{t-1,n}^{(1)} \lor v_{t-1,n}^{(2)}$;
+
+ **end for**
+
+**end for**
+
+**Return** $\mathbf{x}_{0,1:N}$.
 
 **Figura.**
 
@@ -196,7 +258,7 @@ Intuitively, $b_{t,1:N}$ represents a frontier set that stores the denoised toke
 As shown in Eq. (4), a naïve approach of generating $\mathbf{v}_{t-1}$ is by drawing $\mathbf{v}_{t-1,n} \sim \operatorname{Bernoulli}\left(\mathbf{\lambda}_{t-1}\right)$ for each token $n$. However, this assigns equal routing probability $\mathbf{\lambda}_{t-1}$ to all tokens, which may be sub-optimal for routing different tokens to distinct states. This observation motivates us to employ a more discriminative routing mechanism, where only tokens with high confidence from neural networks are denoised (Ghazvininejad et al., 2019; Savinov et al., 2022; Chang et al., 2022). At each step, assume $\mathbf{v}_{t-1,n}^{(1)}$ and $\mathbf{v}_{t-1,n}^{(2)}$ are set to $1$ and $0$ by default, respectively. We feed the noisy sequence $\mathbf{x}_{t,1:N}$ into the neural network and collect the output $f(\mathbf{x}_{t,n};\mathbf{\theta})$ for each token $n$. After that, We obtain token scores $s_{t,n}$ by taking the maximum value of $f(\mathbf{x}_{t,n};\mathbf{\theta}) \in (0,1)^K$, which reflects the model confidence. $\mathbf{v}_{t-1,n}$ is then set to 1 only when $s_{t,n}$ is among the $k$ largest scores. Formally, 
 
 $$\begin{align*}
-    s_{t,n} \coloneqq \max\limits_{1\leq j \leq K} f_j(\mathbf{x}_{t,n};\mathbf{\theta}), \quad \mathcal{P}_{t-1} = \mathop{\mathrm{arg\,topk}}\limits_{1\leq n \leq N} \{s_{t,n}\}_{n=1}^N, \quad \mathbf{v}_{t-1,n}^{(i)} = \mathbf{1}_{n \in \mathcal{P}_{t-1}},\addtocounter{equation}{1}\tag{\theequation}\tag{8}
+    s_{t,n} \coloneqq \max\limits_{1\leq j \leq K} f_j(\mathbf{x}_{t,n};\mathbf{\theta}), \quad \mathcal{P}_{t-1} = \mathop{\mathrm{arg\,topk}}\limits_{1\leq n \leq N} \{s_{t,n}\}_{n=1}^N, \quad \mathbf{v}_{t-1,n}^{(i)} = \mathbf{1}_{n \in \mathcal{P}_{t-1}},\tag{8}
 \end{align*}$$
 
 where $i = 1$ if $b_{t,n} = 1$ and $i = 2$ otherwise. This strategy is more informative, as the router can compare token scores to determine their states. Note that $\mathbf{v}_{t-1}$ is now defined as a function of model scores and its explicit probability distribution is possibly different from the one used in training; however, thanks to Section 4.2, the diffusion model corresponding to this routing distribution can also be trained effectively with the shared surrogate objective, justifying the usage of the adaptive strategy.
@@ -221,195 +283,27 @@ As seen from Table 1, existing discrete diffusion models usually perform badly 
 
 **Tabla 1.** BLEU score comparisons on `IWSLT14``DE-EN`, `WMT14``EN-DE`, and `WMT16``EN-RO` benchmarks. ^\*^ denotes results reported from previous work.
 
-<table id="tb:mt">
-<tbody>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Model</td>
-<td style="text-align: center;"># Iterations</td>
-<td colspan="2" style="text-align: center;"><code>IWSLT14</code><code>DE-EN</code></td>
-<td colspan="2" style="text-align: center;"><code>WMT16</code><code>EN-RO</code></td>
-<td colspan="2" style="text-align: center;"><code>WMT14</code><code>EN-DE</code></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">Vanilla</td>
-<td style="text-align: center;">Reparam.</td>
-<td style="text-align: center;">Vanilla</td>
-<td style="text-align: center;">Reparam.</td>
-<td style="text-align: center;">Vanilla</td>
-<td style="text-align: center;">Reparam.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Continuous Diffusion</strong></td>
-<td style="text-align: left;">CDCD (Dieleman et al., 2022)</td>
-<td style="text-align: center;">200</td>
-<td colspan="2" style="text-align: center;">–</td>
-<td colspan="2" style="text-align: center;">–</td>
-<td colspan="2" style="text-align: center;">20.0<sup>*</sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Discrete Diffusion</strong></td>
-<td style="text-align: left;">Multinomial Diffusion (Hoogeboom et al., 2021)</td>
-<td style="text-align: center;">2</td>
-<td style="text-align: center;">23.05</td>
-<td style="text-align: center;"><span> 28.01</span></td>
-<td style="text-align: center;">26.61</td>
-<td style="text-align: center;"><span> 30.16</span></td>
-<td style="text-align: center;">4.28</td>
-<td style="text-align: center;"><span> 21.43</span></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">4</td>
-<td style="text-align: center;">24.24</td>
-<td style="text-align: center;"><span> 30.57</span></td>
-<td style="text-align: center;">27.81</td>
-<td style="text-align: center;"><span> 31.70</span></td>
-<td style="text-align: center;">4.31</td>
-<td style="text-align: center;"><span> 24.05</span></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">10</td>
-<td style="text-align: center;">21.28</td>
-<td style="text-align: center;"><span> 32.23</span></td>
-<td style="text-align: center;">25.25</td>
-<td style="text-align: center;"><span> 33.00</span></td>
-<td style="text-align: center;">6.94</td>
-<td style="text-align: center;"><span> 25.63</span></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">16</td>
-<td style="text-align: center;">20.59</td>
-<td style="text-align: center;"><span> 32.58</span></td>
-<td style="text-align: center;">24.36</td>
-<td style="text-align: center;"><span> 33.11</span></td>
-<td style="text-align: center;">6.07</td>
-<td style="text-align: center;"><span> 25.64</span></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">25</td>
-<td style="text-align: center;">20.06</td>
-<td style="text-align: center;"><span> 32.84</span></td>
-<td style="text-align: center;">23.94</td>
-<td style="text-align: center;"><span> 33.31</span></td>
-<td style="text-align: center;">3.69</td>
-<td style="text-align: center;"><span> 26.04</span></td>
-</tr>
-<tr>
-<td style="text-align: left;"><span>2-9</span></td>
-<td style="text-align: left;">Absorbing Diffusion (Austin et al., 2021)</td>
-<td style="text-align: center;">2</td>
-<td style="text-align: center;">25.24</td>
-<td style="text-align: center;"><span> 27.60</span></td>
-<td style="text-align: center;">27.24</td>
-<td style="text-align: center;"><span> 30.72</span></td>
-<td style="text-align: center;">16.46</td>
-<td style="text-align: center;"><span> 21.00</span></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">4</td>
-<td style="text-align: center;">26.93</td>
-<td style="text-align: center;"><span> 31.47</span></td>
-<td style="text-align: center;">29.16</td>
-<td style="text-align: center;"><span> 32.60</span></td>
-<td style="text-align: center;">19.48</td>
-<td style="text-align: center;"><span> 24.26</span></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">10</td>
-<td style="text-align: center;">28.32</td>
-<td style="text-align: center;"><span> 33.91</span></td>
-<td style="text-align: center;">30.41</td>
-<td style="text-align: center;"><span> 33.38</span></td>
-<td style="text-align: center;">21.62</td>
-<td style="text-align: center;"><span> 26.96</span></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">16</td>
-<td style="text-align: center;">28.38</td>
-<td style="text-align: center;"><span> 34.41</span></td>
-<td style="text-align: center;">30.79</td>
-<td style="text-align: center;"><span> 33.82</span></td>
-<td style="text-align: center;">22.07</td>
-<td style="text-align: center;"><span> 27.58</span></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">25</td>
-<td style="text-align: center;">28.93</td>
-<td style="text-align: center;"><span> 34.49</span></td>
-<td style="text-align: center;">30.56</td>
-<td style="text-align: center;"><span> 33.99</span></td>
-<td style="text-align: center;">22.52</td>
-<td style="text-align: center;"><span> <strong>27.59</strong></span></td>
-</tr>
-<tr>
-<td style="text-align: left;">Non-autoregressive Models</td>
-<td style="text-align: left;">CMLM (Ghazvininejad et al., 2019)</td>
-<td style="text-align: center;">16</td>
-<td colspan="2" style="text-align: center;">32.18</td>
-<td colspan="2" style="text-align: center;">32.90</td>
-<td colspan="2" style="text-align: center;">25.00</td>
-</tr>
-<tr>
-<td style="text-align: left;"><span>2-9</span></td>
-<td style="text-align: left;">CMLM+SMART (Ghazvininejad et al., 2020)</td>
-<td style="text-align: center;">10</td>
-<td colspan="2" style="text-align: center;">30.74<sup>*</sup></td>
-<td colspan="2" style="text-align: center;">32.71<sup>*</sup></td>
-<td colspan="2" style="text-align: center;">25.10<sup>*</sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"><span>2-9</span></td>
-<td style="text-align: left;">Levenshtein Transformer (Gu et al., 2019)</td>
-<td style="text-align: center;">Adaptive</td>
-<td colspan="2" style="text-align: center;">-</td>
-<td colspan="2" style="text-align: center;">-</td>
-<td colspan="2" style="text-align: center;">25.20<sup>*</sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"><span>2-9</span></td>
-<td style="text-align: left;">DisCo (Kasai et al., 2020)</td>
-<td style="text-align: center;">Adaptive</td>
-<td colspan="2" style="text-align: center;">-</td>
-<td colspan="2" style="text-align: center;">-</td>
-<td colspan="2" style="text-align: center;">25.64<sup>*</sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"><span>2-9</span></td>
-<td style="text-align: left;">CMLMC (Huang et al., 2022)</td>
-<td style="text-align: center;">10</td>
-<td colspan="2" style="text-align: center;">34.28<sup>*</sup></td>
-<td colspan="2" style="text-align: center;">34.14<sup>*</sup></td>
-<td colspan="2" style="text-align: center;">26.40<sup>*</sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Autoregressive Models</strong></td>
-<td style="text-align: left;">Transformer-base (Vaswani et al., 2017)</td>
-<td style="text-align: center;">n.a.</td>
-<td colspan="2" style="text-align: center;"><strong>34.51</strong></td>
-<td colspan="2" style="text-align: center;"><strong>34.16</strong></td>
-<td colspan="2" style="text-align: center;">27.53</td>
-</tr>
-</tbody>
-</table>
+|  |  |  |  |  |  |  |  |  |
+|:---|:---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+|  | Model | \# Iterations | `IWSLT14``DE-EN` |  | `WMT16``EN-RO` |  | `WMT14``EN-DE` |  |
+|  |  |  | Vanilla | Reparam. | Vanilla | Reparam. | Vanilla | Reparam. |
+| **Continuous Diffusion** | CDCD (Dieleman et al., 2022) | 200 | – |  | – |  | 20.0^\*^ |  |
+| **Discrete Diffusion** | Multinomial Diffusion (Hoogeboom et al., 2021) | 2 | 23.05 |  28.01 | 26.61 |  30.16 | 4.28 |  21.43 |
+|  |  | 4 | 24.24 |  30.57 | 27.81 |  31.70 | 4.31 |  24.05 |
+|  |  | 10 | 21.28 |  32.23 | 25.25 |  33.00 | 6.94 |  25.63 |
+|  |  | 16 | 20.59 |  32.58 | 24.36 |  33.11 | 6.07 |  25.64 |
+|  |  | 25 | 20.06 |  32.84 | 23.94 |  33.31 | 3.69 |  26.04 |
+| 2-9 | Absorbing Diffusion (Austin et al., 2021) | 2 | 25.24 |  27.60 | 27.24 |  30.72 | 16.46 |  21.00 |
+|  |  | 4 | 26.93 |  31.47 | 29.16 |  32.60 | 19.48 |  24.26 |
+|  |  | 10 | 28.32 |  33.91 | 30.41 |  33.38 | 21.62 |  26.96 |
+|  |  | 16 | 28.38 |  34.41 | 30.79 |  33.82 | 22.07 |  27.58 |
+|  |  | 25 | 28.93 |  34.49 | 30.56 |  33.99 | 22.52 |  **27.59** |
+| Non-autoregressive Models | CMLM (Ghazvininejad et al., 2019) | 16 | 32.18 |  | 32.90 |  | 25.00 |  |
+| 2-9 | CMLM+SMART (Ghazvininejad et al., 2020) | 10 | 30.74^\*^ |  | 32.71^\*^ |  | 25.10^\*^ |  |
+| 2-9 | Levenshtein Transformer (Gu et al., 2019) | Adaptive | \- |  | \- |  | 25.20^\*^ |  |
+| 2-9 | DisCo (Kasai et al., 2020) | Adaptive | \- |  | \- |  | 25.64^\*^ |  |
+| 2-9 | CMLMC (Huang et al., 2022) | 10 | 34.28^\*^ |  | 34.14^\*^ |  | 26.40^\*^ |  |
+| **Autoregressive Models** | Transformer-base (Vaswani et al., 2017) | n.a. | **34.51** |  | **34.16** |  | 27.53 |  |
 
 ## 5.2 Question Generation and Paraphrasing
 
@@ -482,106 +376,28 @@ $$\uparrow$ |
 
 **Tabla 4.** Qualitative samples of test paraphrases generated from different diffusion models on `QQP` dataset. texts are truncated to fit into the table. Words are in lower case.
 
-<table id="tb:examples">
-<tbody>
-<tr>
-<td colspan="3" style="text-align: left;"><strong>Source:</strong> how can one increase concentration?</td>
-</tr>
-<tr>
-<td colspan="3" style="text-align: left;"><strong>Reference:</strong> how can i improve my concentration?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;"># Iter.</td>
-<td style="text-align: center;">Decodes</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">0</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> skeptical coli ##zam gael erika calves wharf [unused791]<sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">500</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> cessna i perez newark ? venezuelan regeneration 283 zhejiang<sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1000</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> johanna 730 i improve terminals ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1500</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how do i improve concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">2000</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how do i improve concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">0</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> ##tly distances outline ##cera khmer curvature question ##tl</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i improve focus in concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">2</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i improve focus in concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">3</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i improve focus in concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">4</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i improve focus in concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">5</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i improve focus in concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">0</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> lungs ##down intensity cortes ##lden ufo oldies</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> worker blurted i ##kal caledonia concentration ##vb</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">2</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how trait i ##kal my concentration ##vb</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">3</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how trait i increase my concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">4</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how trait i increase my concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">5</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how do i increase my concentration ?</td>
-</tr>
-</tbody>
-</table>
+|  |  |  |
+|:---|:--:|:---|
+| **Source:** how can one increase concentration? |  |  |
+| **Reference:** how can i improve my concentration? |  |  |
+|  | \# Iter. | Decodes |
+|  | 0 | $\circ$ skeptical coli ##zam gael erika calves wharf \[unused791\] |
+|  | 500 | $\circ$ cessna i perez newark ? venezuelan regeneration 283 zhejiang |
+|  | 1000 | $\circ$ johanna 730 i improve terminals ? |
+|  | 1500 | $\circ$ how do i improve concentration ? |
+|  | 2000 | $\circ$ how do i improve concentration ? |
+|  | 0 | $\circ$ ##tly distances outline ##cera khmer curvature question ##tl |
+|  | 1 | $\circ$ how can i improve focus in concentration ? |
+|  | 2 | $\circ$ how can i improve focus in concentration ? |
+|  | 3 | $\circ$ how can i improve focus in concentration ? |
+|  | 4 | $\circ$ how can i improve focus in concentration ? |
+|  | 5 | $\circ$ how can i improve focus in concentration ? |
+|  | 0 | $\circ$ lungs ##down intensity cortes ##lden ufo oldies |
+|  | 1 | $\circ$ worker blurted i ##kal caledonia concentration ##vb |
+|  | 2 | $\circ$ how trait i ##kal my concentration ##vb |
+|  | 3 | $\circ$ how trait i increase my concentration ? |
+|  | 4 | $\circ$ how trait i increase my concentration ? |
+|  | 5 | $\circ$ how do i increase my concentration ? |
 
 # 6 Conclusion
 
@@ -662,7 +478,7 @@ Discrete diffusion models are typically trained by maximizing a lower bound of i
    \ifthenelse{ \equal{\operatorname{KL}\klxy{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})}}{} }
       {\mathbb{E}\left[q(\mathbf{x}_t|\mathbf{x}_0)\right]}
       {\mathbb{E}_{q(\mathbf{x}_t|\mathbf{x}_0)}\left[\operatorname{KL}\klxy{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})}\right]}
-}_{\mathcal{L}_t(\mathbf{\theta})} + \text{const}. \addtocounter{equation}{1}\tag{\theequation}\tag{9}
+}_{\mathcal{L}_t(\mathbf{\theta})} + \text{const}. \tag{9}
 \end{align*}
 
 $$
@@ -719,7 +535,7 @@ This can be written in a more compact way, where $p_{\mathbf{\theta}}(\widetilde
     p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t}) = \begin{cases}
         \left(1 - \frac{1 - \alpha_{t-1}}{1 - \alpha_{t}}\right)f(\mathbf{x}_t;\mathbf{\theta}) + \frac{1 - \alpha_{t-1}}{1 - \alpha_{t}} q_\text{noise}, &\text{ if } \mathbf{x}_t = [M] \\
         \mathbf{x}_t, &\text{ if } \mathbf{x}_t \neq [M].
-    \end{cases} \addtocounter{equation}{1}\tag{\theequation}\tag{10}
+    \end{cases} \tag{10}
 \end{align*}
 
 $$ We can also generalize this result for $0 < s < t \leq T$. For the forward transition, we have $q(\mathbf{x}_t | \mathbf{x}_s = \mathbf{x}_0) = \prod_{i=s+1}^t \beta_i \mathbf{x}_0 + \left(1 - \prod_{i=s+1}^t \beta_i\right) q_\text{noise} = \frac{\alpha_t}{\alpha_s}\mathbf{x}_0 + \frac{\alpha_s - \alpha_t}{\alpha_s}q_\text{noise}$. Thus the backward transition can be derived as well according to Bayes’ rule, $$
@@ -728,7 +544,7 @@ $$ We can also generalize this result for $0 < s < t \leq T$. For the forward tr
     q(\mathbf{x}_{s} | \mathbf{x}_{t}, \mathbf{x}_0) = \begin{cases}
         \frac{\alpha_s - \alpha_t}{1 - \alpha_t} \mathbf{x}_0 + \frac{1 - \alpha_s}{1 - \alpha_t} q_\text{noise}, &\text{ if } \mathbf{x}_t = [M] \\
         \mathbf{x}_t, &\text{ if } \mathbf{x}_t \neq [M].
-    \end{cases} \addtocounter{equation}{1}\tag{\theequation}\tag{11}
+    \end{cases} \tag{11}
 \end{align*}
 
 $$ $$
@@ -737,7 +553,7 @@ $$ $$
     p_{\mathbf{\theta}}(\mathbf{x}_{s} | \mathbf{x}_{t}) = \begin{cases}
         \frac{\alpha_s - \alpha_t}{1 - \alpha_t} f(\mathbf{x}_t;\mathbf{\theta}) + \frac{1 - \alpha_s}{1 - \alpha_t} q_\text{noise}, &\text{ if } \mathbf{x}_t = [M] \\
         \mathbf{x}_t, &\text{ if } \mathbf{x}_t \neq [M].
-    \end{cases} \addtocounter{equation}{1}\tag{\theequation}\tag{12}
+    \end{cases} \tag{12}
 \end{align*}
 
 $$
@@ -750,7 +566,7 @@ In multinomial diffusion (Hoogeboom et al., 2021), the forward transition probab
     &q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \mathbf{x}_0) \\
     &= \frac{q(\mathbf{x}_{t} | \mathbf{x}_{t-1}) q(\mathbf{x}_{t-1}|\mathbf{x}_0)}{q(\mathbf{x}_{t}|\mathbf{x}_0)}\\
     &=\frac{\left(\beta_t \mathbf{x}_{t} + (1 - \beta_t)\frac{\mathbf{1}}{K}\right)\odot\left(\alpha_{t-1} \mathbf{x}_{0} + (1 - \alpha_{t-1})\frac{\mathbf{1}}{K}\right)}{\mathbf{x}_t^\top \left(\alpha_{t} \mathbf{x}_{0} + (1 - \alpha_{t})\frac{\mathbf{1}}{K}\right)}\\
-    &= \frac{\alpha_t \mathbf{x}_t \odot \mathbf{x}_0 + \frac{1}{K}\beta_t(1-\alpha_{t-1})\mathbf{x}_t + \frac{1}{K}(1-\beta_t)\alpha_{t-1}\mathbf{x}_0 + \frac{1}{K^2}(1-\beta_t)(1-\alpha_{t-1})\mathbf{1}}{\alpha_{t} \mathbf{x}_t^\top\mathbf{x}_{0} + \frac{1}{K}(1 - \alpha_{t})}. \addtocounter{equation}{1}\tag{\theequation}\tag{13}
+    &= \frac{\alpha_t \mathbf{x}_t \odot \mathbf{x}_0 + \frac{1}{K}\beta_t(1-\alpha_{t-1})\mathbf{x}_t + \frac{1}{K}(1-\beta_t)\alpha_{t-1}\mathbf{x}_0 + \frac{1}{K^2}(1-\beta_t)(1-\alpha_{t-1})\mathbf{1}}{\alpha_{t} \mathbf{x}_t^\top\mathbf{x}_{0} + \frac{1}{K}(1 - \alpha_{t})}. \tag{13}
 \end{align*}
 
 $$ Multinomial diffusion (Hoogeboom et al., 2021) learns a parameterized distribution $p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{x}_t)$ to approximate $q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \mathbf{x}_0)$ at each time step, which is defined as $p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{x}_t) = q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \tilde{\mathbf{x}}_0)$ with $\tilde{\mathbf{x}}_0 = f(\mathbf{x}_t;\mathbf{\theta})$ being the output by a Transformer model. $$
@@ -758,7 +574,7 @@ $$ Multinomial diffusion (Hoogeboom et al., 2021) learns a parameterized distrib
 \begin{align*}
     &p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t}) \\
     &= 
-    \frac{\alpha_t \mathbf{x}_t \odot f(\mathbf{x}_t;\mathbf{\theta}) + \frac{1}{K}\beta_t(1-\alpha_{t-1})\mathbf{x}_t + \frac{1}{K}(1-\beta_t)\alpha_{t-1}f(\mathbf{x}_t;\mathbf{\theta}) + \frac{1}{K^2}(1-\beta_t)(1-\alpha_{t-1})\mathbf{1}}{\alpha_{t} \mathbf{x}_t^\top f(\mathbf{x}_t;\mathbf{\theta}) + \frac{1}{K}(1 - \alpha_{t})}. \addtocounter{equation}{1}\tag{\theequation}\tag{14}
+    \frac{\alpha_t \mathbf{x}_t \odot f(\mathbf{x}_t;\mathbf{\theta}) + \frac{1}{K}\beta_t(1-\alpha_{t-1})\mathbf{x}_t + \frac{1}{K}(1-\beta_t)\alpha_{t-1}f(\mathbf{x}_t;\mathbf{\theta}) + \frac{1}{K^2}(1-\beta_t)(1-\alpha_{t-1})\mathbf{1}}{\alpha_{t} \mathbf{x}_t^\top f(\mathbf{x}_t;\mathbf{\theta}) + \frac{1}{K}(1 - \alpha_{t})}. \tag{14}
 \end{align*}
 
 $$
@@ -766,8 +582,6 @@ $$
 # C Derivation for Theorem 3.1
 
 In this section, we provide the derivation for Eq. (2) based on Bayes’ rule.
-
-<div class="proof">
 
 *Proof.* We denote $\mathbf{P}_t \in \mathbb{R}^{K \times K}$ as the probability transition matrix for the $t$-th step, where $[\mathbf{P}_t]_{ij} = p(\mathbf{x}_t = j|\mathbf{x}_{x-1} = i)$ and thus the probability distribution in the forward process can be described as $q(\mathbf{x}_t | \mathbf{x}_{t-1}) = \operatorname{Categorical}\left(\mathbf{x}_t;\mathbf{P}_t^\top \mathbf{x}_{t-1}\right)$. It is then easy to see that $$
 
@@ -786,8 +600,6 @@ $$ with $\overline{\mathbf{P}}_t = \mathbf{P}_1\mathbf{P}_2\dots\mathbf{P}_t$. R
 \end{align*}
 
 $$ Here we denote $\odot$ as element-wise product and $\sigma_{\mathbf{x}_t} \coloneqq q_\text{noise}(\mathbf{u}=\mathbf{x}_t)$ to represent the probability of noise drawn from $q_\text{noise}$ being equal to $\mathbf{x}_t$. The need to differentiate between $\mathbf{x}_t$ and $\mathbf{x}_0$ emerges when we calculate $\mathbf{x}_t \odot \mathbf{x}_0$, which would be an all-zero vector $\mathbf{0}$ except that it would be one if $\mathbf{x}_t = \mathbf{x}_0$. Thus the computation of backward transition probabilities breaks down into two cases:
-
-<div class="list">
 
 If $\mathbf{x}_t = \mathbf{x}_0$, we have $\mathbf{x}_t \odot \mathbf{x}_0 = \mathbf{x}_t$, $\mathbf{x}_t\top \mathbf{x}_0 = 1$ and thus $$
 
@@ -811,8 +623,6 @@ If $\mathbf{x}_t \neq \mathbf{x}_0$, we have $\mathbf{x}_t \odot \mathbf{x}_0 = 
 
 $$
 
-</div>
-
 Putting them together, we arrive at the resulting formulation, $$
 
 \begin{align*}
@@ -832,12 +642,10 @@ Similar to vanilla diffusion models, we can also derive backward transition proc
     q(\mathbf{x}_{s} | \mathbf{x}_{t}, \mathbf{x}_0) = \begin{cases}
         \lambda^{(1)}_{s}\mathbf{x}_t + \left(1-\lambda^{(1)}_{s}\right) q_\text{noise}, &\text{ if } \mathbf{x}_t = \mathbf{x}_0 \\
         \lambda^{(2)}_{s}\mathbf{x}_0 + \left(1-\lambda^{(2)}_{s}\right) q_\text{noise}(\mathbf{x}_t), &\text{ if } \mathbf{x}_t \neq \mathbf{x}_0,
-    \end{cases} \addtocounter{equation}{1}\tag{\theequation}\tag{15}
+    \end{cases} \tag{15}
 \end{align*}
 
 $$ with $\lambda^{(1)}_{s} \coloneqq 1 - \frac{(1-\frac{\alpha_t}{\alpha_s})(1-\alpha_{s})q_\text{noise}(\mathbf{u}=\mathbf{x}_t)}{\alpha_{t} + (1 - \alpha_{t})q_\text{noise}(\mathbf{u}=\mathbf{x}_t)}$ and $\lambda^{(2)}_{s} \coloneqq \frac{\alpha_{s} - \alpha_{t}}{1-\alpha_t}$. ◻
-
-</div>
 
 # D Derivations for the ELBO of RDMs
 
@@ -863,10 +671,10 @@ The following provides the derivation for the loss objective of RDMs. Specifical
     &\coloneqq \mathcal{L}_1(\mathbf{\theta}) - \sum_{t=2}^T \mathcal{L}_t(\mathbf{\theta}) + \text{const.}
 \end{align*}
 
-$$ Here we denote $\mathcal{L}_1(\mathbf{\theta}) \coloneqq %
+$$ Here we denote $\mathcal{L}_1(\mathbf{\theta}) \coloneqq 
    \ifthenelse{ \equal{\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)}{} }
       {\mathbb{E}\left[q(\mathbf{x}_{1}|\mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_{1}|\mathbf{x}_0)}\left[\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)\right]}$, and for $t > 1$, $\mathcal{L}_t(\mathbf{\theta}) \coloneqq %
+      {\mathbb{E}_{q(\mathbf{x}_{1}|\mathbf{x}_0)}\left[\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)\right]}$, and for $t > 1$, $\mathcal{L}_t(\mathbf{\theta}) \coloneqq 
    \ifthenelse{ \equal{\operatorname{KL}\klxy{q(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t},\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t})}}{} }
       {\mathbb{E}\left[q(\mathbf{x}_{t}|\mathbf{x}_0)\right]}
       {\mathbb{E}_{q(\mathbf{x}_{t}|\mathbf{x}_0)}\left[\operatorname{KL}\klxy{q(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t},\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t})}\right]}$. We can push the decomposition of $\mathcal{L}_t(\mathbf{\theta})$ for time step $t>1$ further, $$
@@ -906,8 +714,6 @@ $$ Here we denote $\mathcal{L}_1(\mathbf{\theta}) \coloneqq %
 $$
 
 # E Derivation for Eq. (6) and Discussions
-
-<div class="proof">
 
 *Proof.* We first consider the loss objective at each step for *each token* at $n$-th position, which can be expanded as follows, $$
 
@@ -992,8 +798,6 @@ $$ Since each token is modeled conditionally independently, we can add all compu
 
 $$ ◻
 
-</div>
-
 #### Connections to D3PMs.
 
 The derived simplified loss objective bears some resemblance to that of absorbing diffusion in D3PMs (Austin et al., 2021), which also takes the form of a cross-entropy function over masked positions. However, our derivation arises from the developed reparameterization perspective and thus stems from a distinct motivation from D3PMs. In addition, our objective applies to a wide range of discrete diffusion processes, including those with multinomial noise, absorbing noise, or a mixture of both. This constitutes a non-trivial generalization of D3PMs, which only demonstrates that the cross-entropy representation is available for absorbing diffusion. Besides, our formulation explicitly elucidates the role of routing mechanisms in training, which provides insights into techniques that improve decoding quality.
@@ -1008,15 +812,11 @@ This section describes the implementation details of our experiments.
 
 For experiments on machine translation, we consider three standard benchmarks:
 
-<div class="list">
-
 `IWSLT14``DE-EN`(Cettolo et al., 2014), which contains around 160K/7K/7K sentence pairs for training, validation, and testing, respectively. We build a joint vocabulary for the source and target language, resulting in 10152 Byte Pair Encoding (BPE; Sennrich et al., 2016) types.
 
 `WMT14``EN-DE`(Bojar et al., 2014) dataset consists of around 4.0M/3K/3K training/validation/testing pairs. The preprocessing follows Ghazvininejad et al. (2019) and yields a shared vocabulary with 40624 BPE types;
 
 `WMT16``EN-RO`(Bojar et al., 2016). We use the same data split from Lee et al. (2018) that comprises around 610K/2K/2K pairs. The vocabulary is shared between the source and target sides with 34976 joint BPE types.
-
-</div>
 
 We operate on original data for all translation tasks and do *not* adopt knowledge distillation (Kim & Rush, 2016; Gu et al., 2018) that replaces the target side of training data with outputs generated by a pre-trained autoregressive Transformer.
 
@@ -1036,19 +836,13 @@ For evaluation, we report tokenized BLEU (Papineni et al., 2002) scores applied 
 
 For both `QG` and `QQP` tasks, we use the same data split pre-processed as in Gong et al. (2022):
 
-<div class="list">
-
 Question Generation (`QG`) with the Quasar-T dataset (Dhingra et al., 2017), containing around 117K/2K/10K pairs for training/validation/testing, respectively.
 
 Paraphrasing with Quora Question Pairs (`QQP`). This dataset comprises around 145K/2K/2.5K training/validation/testing question pairs.
 
-</div>
-
 Following Gong et al. (2022), we use WordPiece tokenization as in BERT (Devlin et al., 2019) and obtain a vocabulary of size 30522 for both tasks.
 
 ## F.2 Architectures
-
-<div class="list">
 
 We employ the Transformer-base architecture (Vaswani et al., 2017) for WMT experiments, while for `IWSLT14``DE-EN`,`QG`, and `QQP` tasks we use a smaller Transformer model. Note that all self-attention blocks with the model are bi-directional and do not use causal masks.
 
@@ -1057,8 +851,6 @@ We adopt a length prediction module (Ghazvininejad et al., 2019) on top of the T
 The timestep embedding is obtained by first projecting the input timestep $t$ with sinusoidal encodings and then passing it through a two-layer MLP.
 
 We adopt *concatenated* instead of additive position encodings, which is shown to enhance the positional information and produce better performance in the context of machine translation (Huang et al., 2022).
-
-</div>
 
 The detailed configuration for the neural network is listed in Table 6.
 
@@ -1085,15 +877,11 @@ The detailed configuration for the neural network is listed in Table 6.
 
 ## F.3 Training
 
-<div class="list">
-
 We allocate a large number of diffusion time steps for training, such as 50 or 100. We found the number of diffusion steps *in training* does not affect the performance too much. Note that decoding can be performed with an arbitrary number of iterations by choosing the appropriate step size $\Delta t > 1$. That is, we can decode by sampling $\mathbf{x}_{t-\Delta t} \sim p_{\mathbf{\theta}}(\mathbf{x}_{t-\Delta t} | \mathbf{x}_{t})$, following a similar treatment as Eq. (15).
 
 Modern Transformer models usually process input sequences that are associated with some special symbols, such as the begin-of-sentence symbol `<bos>`, eos-of-sentence symbol `<eos>`, padding symbol `<pad>`, and so on. We found it beneficial to treat these special symbols as normal tokens in vanilla/reparameterized absorbing diffusion (and thus these symbols can be noised), but this treatment leads to much worse performance in vanilla/reparameterized multinomial diffusion.
 
 We also adopt conditioned training (details in Appendix G) to further improve the model, which leads to consistent improvements upon vanilla training. Its effect is ablated in Table 7. In particular, conditioned training leads to almost $2$ BLEU improvements over vanilla diffusion processes but the gain becomes marginal for our reparameterized variants.
-
-</div>
 
 The detailed configuration for the optimization hyper-parameters is listed in Table 6.
 
@@ -1106,8 +894,6 @@ The detailed configuration for the optimization hyper-parameters is listed in Ta
 
 ## F.4 Decoding
 
-<div class="list">
-
 Note that we train a neural network $f(\cdot;\mathbf{\theta})$ to approximate $\mathbf{x}_0$, which is a softmax-normalized probability vector. There are several ways to decode a token from the probability vector, such as simply taking its argmax position or performing sampling with temperatures $\tau$. Empirically, we find a low temperature $\tau = 0.1$, or simply the argmax works well across tasks, and use the argmax approach by default; Nevertheless, the diversity of generated sentences can be improved by adopting a larger temperature as well.
 
 Like common diffusion models, we use an exponential moving average (EMA) to track the model parameters with a decay rate of 0.9999. We also average model parameters among the five last checkpoints for generation, following standard practices in machine translation (Vaswani et al., 2017).
@@ -1116,25 +902,19 @@ For translation experiments, we use 5 length candidates, decode them in parallel
 
 We also investigate several components of the adaptive decoding algorithm (Section 4.3) and provide more implementation details below:
 
-<div class="list">
-
 The top-$k$ selection mechanism in Eq. (8), which is deterministic by design, can also be made stochastic. In particular, instead of directly selecting those tokens with top-$k$ largest scores, we first add Gumbel noise to the score $s_{t,n}$ of each token, and then fetch the top-$k$ tokens with the largest perturbed scores. This is inspired by previous work that aims to sample multiple items from a set without replacement (Vieira, 2014; Kool et al., 2019; Kool et al., 2020); however, this simple approach brings several benefits in that the selection of $k$ tokens from the sequence could involve extra randomness, and this might be helpful for exploration during decoding.
 
 Recall that during decoding, the role of $\mathbf{v}_{t-1,n}^{(1)}$ is to indicate whether the token can remain in the denoised state, while $\mathbf{v}_{t-1,n}^{(2)}$ is used to denoise the token that is currently noisy. In Eq. (8), both of them would be set to 1 as long as the $n$-th token belongs to the top-$k$ set. However, we observe that $\mathbf{v}_{t-1,n}^{(1)}$ and $\mathbf{v}_{t-1,n}^{(2)}$ can also be generated differently. For example, one might adopt a more conservative approach, where already denoised tokens rarely or never turn back to the noise. We implemented a strategy to achieve this by imposing more constraints over $\mathbf{v}_{t-1,n}^{(1)}$: $\mathbf{v}_{t-1,n}^{(i)} = \mathbf{1}_{(n \in \mathcal{P}_{t-1}) \lor (s_{t,n} > s_{t+1,n}) \lor (\mathbf{x}_{t,n} \neq \mathbf{x}_{t+1,n})}$, where we set $\mathbf{v}_{t-1,n}^{(1)} = 0$ only when its corresponding token score is not in the top-$k$ set and indeed becomes smaller than the previous iteration. Intuitively, this means the denoised tokens should remain as denoised most time, except that the Transformer model becomes less confident and requires re-prediction. This is one of many possible approaches to achieving such control, as our framework allows us to do such conditioning flexibly; we find this strategy works sometimes better than the vanilla approach, especially on `IWSLT14``DE-EN` dataset.
 
 Another important hyper-parameter during decoding is $k$, the number of tokens to be in denoised states at each iteration for our discriminative routing mechanism (Section 4.3). To ensure that the degree of noise decreases as the generation process proceeds, we schedule $k$ to increase from $1$ to $N$ monotonically as the diffusion step $t$ goes from $T$ to $1$. We set $k$ to follow either a $\{\text{cosine}, \text{linear}\}$ scheme based on the development set performance. The cosine strategy yields $k = \left\lfloor \cos \frac{\pi t}{2T} \cdot N\right\rfloor$, while the linear variant gives $k = \left\lfloor \left(1 - \frac{t}{T}\right) \cdot N\right\rfloor$.
 
-</div>
-
 Based on our preliminary experiments, we discerned that while these components indeed have an influence on task performance, their impact is relatively minor compared to the primary improvements (e.g., reweighted training and adaptive decoding), as elucidated in the main paper.
 
 To perform conditional generation, we delegate the full task of conditioning to the encoder-decoder architecture. That is, instead of designing complicated guidance to condition the diffusion probabilistic process, we treat the conditioning information as the input of the Transformer encoder. This simple strategy is found to work well in practice.
 
-</div>
-
 # G Extension: Improved Training with Conditioning
 
-Training discrete diffusion models usually involves a heavy amount of randomness. For instance, at each training iteration, one has to sample a time step and corrupt a random subset of sequence tokens for denoising. To control the introduced variance, we adopt a simple yet effective conditioning strategy that uses multiple samples to perform training. The key idea is conceptually simple: we start with sampling two *i.i.d.* time steps $s, t \sim \operatorname{Uniform}(T)$ (without the loss of generality, we assume $s < t$). After that, we draw $\mathbf{x}_t \sim q(\mathbf{x}_t | \mathbf{x}_0)$ as usual, but condition the sample at step $s$ by drawing from $q(\mathbf{x}_{s} | \mathbf{x}_0) = %
+Training discrete diffusion models usually involves a heavy amount of randomness. For instance, at each training iteration, one has to sample a time step and corrupt a random subset of sequence tokens for denoising. To control the introduced variance, we adopt a simple yet effective conditioning strategy that uses multiple samples to perform training. The key idea is conceptually simple: we start with sampling two *i.i.d.* time steps $s, t \sim \operatorname{Uniform}(T)$ (without the loss of generality, we assume $s < t$). After that, we draw $\mathbf{x}_t \sim q(\mathbf{x}_t | \mathbf{x}_0)$ as usual, but condition the sample at step $s$ by drawing from $q(\mathbf{x}_{s} | \mathbf{x}_0) = 
    \ifthenelse{ \equal{q(\mathbf{x}_s|\mathbf{x}_t,\mathbf{x}_0)}{} }
       {\mathbb{E}\left[q(\mathbf{x}_t|\mathbf{x}_0)\right]}
       {\mathbb{E}_{q(\mathbf{x}_t|\mathbf{x}_0)}\left[q(\mathbf{x}_s|\mathbf{x}_t,\mathbf{x}_0)\right]}
@@ -1179,13 +959,7 @@ $$
 
 This conditioned training brings several benefits. On the one hand, it introduces explicit coupling between $\mathbf{x}_s$ and $\mathbf{x}_t$, which can be seen as an application of Rao-blackwellization and constrains the degree of randomness while still maintaining unbiasedness; on the other hand, as we deal with samples from the simulated backward transition $q(\mathbf{x}_s|\mathbf{x}_t,\mathbf{x}_0)$ instead of $q(\mathbf{x}_s|\mathbf{x}_0)$, this formulation aligns better with the generation process. In practice, this technique can be applied to most existing diffusion processes, only amounts to double the batch size within a single model forward pass, and consistently brings large empirical improvements over vanilla discrete diffusion baselines (Table 7). However, the gains become marginal when switched to our reparameterized variants. We hypothesize that this is due to insufficient training in vanilla discrete diffusion models, which is already alleviated in our improved training scheme.
 
-<div class="algorithm">
-
 **Algoritmo 3.** Training RDMs with Conditioning
-
-<span id="app:alg:conditioned_training" data-label="app:alg:conditioned_training"></span>
-
-<div class="algorithmic">
 
 **Input:** neural network $f\left(\cdot;\mathbf{\theta}\right)$, data distribution $p_{\text{data}}(\mathbf{x}_{0,1:N})$, and a specified reweighting scalar $\lambda_{t-1},\lambda_{s-1}$.
 
@@ -1231,10 +1005,6 @@ This conditioned training brings several benefits. On the one hand, it introduce
 
 **until** converged
 
-</div>
-
-</div>
-
 # H Additional Experimental Results
 
 ## H.1 Additional Experiments For Question and Paraphrase Generation
@@ -1278,61 +1048,14 @@ Table 9 compares the decoding runtime between RDMs and prior non-autoregressive
 
 **Tabla 9.** Decoding runtime comparison between the non-autoregressive baseline CMLM and RDMs.
 
-<table id="app:tb:cmlm_runtime">
-<tbody>
-<tr>
-<td style="text-align: center;">Iteration</td>
-<td colspan="2" style="text-align: center;">CMLM</td>
-<td colspan="2" style="text-align: center;">RDM-absorbing</td>
-<td colspan="2" style="text-align: center;">RDM-multinomial</td>
-</tr>
-<tr>
-<td style="text-align: center;"></td>
-<td style="text-align: center;">BLEU</td>
-<td style="text-align: center;">Runtime</td>
-<td style="text-align: center;">BLEU</td>
-<td style="text-align: center;">Runtime</td>
-<td style="text-align: center;">BLEU</td>
-<td style="text-align: center;">Runtime</td>
-</tr>
-<tr>
-<td style="text-align: center;">2</td>
-<td style="text-align: center;">19.73</td>
-<td style="text-align: center;">13.4s</td>
-<td style="text-align: center;">21.00</td>
-<td style="text-align: center;">12.7s</td>
-<td style="text-align: center;">21.43</td>
-<td style="text-align: center;">14.4s</td>
-</tr>
-<tr>
-<td style="text-align: center;">4</td>
-<td style="text-align: center;">22.91</td>
-<td style="text-align: center;">17.1s</td>
-<td style="text-align: center;">24.26</td>
-<td style="text-align: center;">18.2s</td>
-<td style="text-align: center;">24.05</td>
-<td style="text-align: center;">18.1s</td>
-</tr>
-<tr>
-<td style="text-align: center;">10</td>
-<td style="text-align: center;">24.89</td>
-<td style="text-align: center;">32.2s</td>
-<td style="text-align: center;">26.96</td>
-<td style="text-align: center;">31.5s</td>
-<td style="text-align: center;">25.63</td>
-<td style="text-align: center;">34.7s</td>
-</tr>
-<tr>
-<td style="text-align: center;">16</td>
-<td style="text-align: center;">25.00</td>
-<td style="text-align: center;">44.7s</td>
-<td style="text-align: center;">27.58</td>
-<td style="text-align: center;">44.9s</td>
-<td style="text-align: center;">25.64</td>
-<td style="text-align: center;">46.8s</td>
-</tr>
-</tbody>
-</table>
+|           |       |         |               |         |                 |         |
+|:---------:|:-----:|:-------:|:-------------:|:-------:|:---------------:|:-------:|
+| Iteration | CMLM  |         | RDM-absorbing |         | RDM-multinomial |         |
+|           | BLEU  | Runtime |     BLEU      | Runtime |      BLEU       | Runtime |
+|     2     | 19.73 |  13.4s  |     21.00     |  12.7s  |      21.43      |  14.4s  |
+|     4     | 22.91 |  17.1s  |     24.26     |  18.2s  |      24.05      |  18.1s  |
+|    10     | 24.89 |  32.2s  |     26.96     |  31.5s  |      25.63      |  34.7s  |
+|    16     | 25.00 |  44.7s  |     27.58     |  44.9s  |      25.64      |  46.8s  |
 
 ## H.3 Additional Experiments for Open-ended Text Generation
 
@@ -1370,717 +1093,159 @@ This section presents additional plots (Figure 3) that visualize the effect of 
 
 **Tabla 12.** A snapshot of all iterations for qualitative samples of test paraphrases generated from different diffusion models on `QQP` dataset. texts are truncated to fit into the table. Words are in lower case. \<M\> stands for mask states, and \## denotes the sub-word tokenization artifacts.
 
-<table id="app:tb:qqp_example">
-<tbody>
-<tr>
-<td colspan="3" style="text-align: left;"><strong>Source:</strong> i have only 2 months for my ca cpt exams how do i prepare?</td>
-</tr>
-<tr>
-<td colspan="3" style="text-align: left;"><strong>Reference:</strong> i want to crack ca cpt in 2 months. how should i study?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;"># Iter.</td>
-<td style="text-align: center;">Decodes</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">0</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt;</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; ca &lt;M&gt; ca &lt;M&gt; &lt;M&gt; ca &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt;</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">2</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; ca &lt;M&gt; ca &lt;M&gt; &lt;M&gt; ca &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt;</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">3</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; ca - ca cp &lt;M&gt; ca &lt;M&gt; &lt;M&gt; exam &lt;M&gt;</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">4</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; can &lt;M&gt; prepare &lt;M&gt; ca - ca cp &lt;M&gt; ca &lt;M&gt; ##t exam ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">5</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i prepare for ca - ca cp ##t ca cp ##t exam ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">0</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt;</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how &lt;M&gt; i &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">2</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how &lt;M&gt; i prepare for ca &lt;M&gt; ##t &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">3</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how &lt;M&gt; i prepare for ca cp ##t &lt;M&gt; &lt;M&gt; &lt;M&gt; months months ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">4</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how &lt;M&gt; i prepare for ca cp ##t exam in two months &lt;M&gt; ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">5</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i prepare for ca cp ##t exam in two months left ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">0</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> glossy [unused448] raymond manga subjective questioning suriname masonic listen explored</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i prepare for ca cp ##t months ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">2</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i prepare for ca cp ##t months ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">3</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i prepare for ca cp ##t months ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">4</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i prepare for ca cp ##t months ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">5</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i prepare for ca cp ##t months ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">0</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> consonants ##nin leading elegance 406 173 militant teams ##nin dyke thee seafood</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how residues i ##fighting sentences malaysian jenkins remembers transatlantic universite ##rp monarch ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">2</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i cyril for malaysian jenkins goldberg transatlantic in relationships pursuing ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">3</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i chu for ca fashionable ##t exam in clerks months ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">4</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i prepare for ca cp ##t exam in 2 months ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">5</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i prepare for ca cp ##t exam in 2 months ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">0</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> defective thereby evaluation michaels fragments primal electrically aground hostilities<sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">10</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> simulcast candidacy ##bner [unused106] ##wide subgenus dangerously sincerity resolving migrated menon ##lase <sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">100</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> westphalia ##tracted universite ##erly reissued neglect showcased [unused574] slade<sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">250</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> souza electronically compliant gerard priority townships ##neo hidalgo [unused574] <sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">500</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> spikes peptide ##ales borneo makeshift moi rebelled neglect textual 1899 erasmus publishes <sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">750</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> i reduces griffin ##ales bukit makeshift moi ##sław mcbride how ministries <sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"><span>2-3</span></td>
-<td style="text-align: center;">1000</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> i [unused582] to gazing monterrey makeshift ca wastewater norton , how ministries can<sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1001</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> i [unused582] to gazing monterrey makeshift ca iata norton , how ministries can <sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1002</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> i [unused582] to gazing monterrey makeshift ca iata norton , how ministries can <sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1003</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> i [unused582] to gazing monterrey makeshift ca iata norton , how ministries can <sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1004</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> i [unused582] to gazing monterrey makeshift ca iata norton , how ministries can <sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1005</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> i [unused582] to gazing monterrey makeshift ca iata norton , how ministries can <sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1006</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> i [unused582] to gazing monterrey makeshift ca iata norton , how ministries can <sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1007</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> i [unused582] to gazing monterrey makeshift ca iata norton , how ministries can <sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1008</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> i [unused582] to gazing monterrey makeshift ca iata norton , how ministries can <sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1009</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> i [unused582] to gazing monterrey makeshift ca iata norton , how ministries can <sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"><span>2-3</span></td>
-<td style="text-align: center;">1250</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> i want to prepare ##cchi my ca glove henan rouen how synthesized can [unused201] ##yya exam ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1500</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> i want to prepare for my ca cp exam , how transvaal can warmed ##yya exam ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1750</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> i want to prepare for my ca cp exam , how yun can get 2 exam ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">2000</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> i want to prepare for my ca cp exam , how might can get 2 exam ?</td>
-</tr>
-</tbody>
-</table>
+|  |  |  |
+|:---|:--:|:---|
+| **Source:** i have only 2 months for my ca cpt exams how do i prepare? |  |  |
+| **Reference:** i want to crack ca cpt in 2 months. how should i study? |  |  |
+|  | \# Iter. | Decodes |
+|  | 0 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> |
+|  | 1 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> ca \<M\> ca \<M\> \<M\> ca \<M\> \<M\> \<M\> \<M\> |
+|  | 2 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> ca \<M\> ca \<M\> \<M\> ca \<M\> \<M\> \<M\> \<M\> |
+|  | 3 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> ca - ca cp \<M\> ca \<M\> \<M\> exam \<M\> |
+|  | 4 | $\circ$ \<M\> can \<M\> prepare \<M\> ca - ca cp \<M\> ca \<M\> ##t exam ? |
+|  | 5 | $\circ$ how can i prepare for ca - ca cp ##t ca cp ##t exam ? |
+|  | 0 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> |
+|  | 1 | $\circ$ how \<M\> i \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> ? |
+|  | 2 | $\circ$ how \<M\> i prepare for ca \<M\> ##t \<M\> \<M\> \<M\> \<M\> \<M\> ? |
+|  | 3 | $\circ$ how \<M\> i prepare for ca cp ##t \<M\> \<M\> \<M\> months months ? |
+|  | 4 | $\circ$ how \<M\> i prepare for ca cp ##t exam in two months \<M\> ? |
+|  | 5 | $\circ$ how can i prepare for ca cp ##t exam in two months left ? |
+|  | 0 | $\circ$ glossy \[unused448\] raymond manga subjective questioning suriname masonic listen explored |
+|  | 1 | $\circ$ how can i prepare for ca cp ##t months ? |
+|  | 2 | $\circ$ how can i prepare for ca cp ##t months ? |
+|  | 3 | $\circ$ how can i prepare for ca cp ##t months ? |
+|  | 4 | $\circ$ how can i prepare for ca cp ##t months ? |
+|  | 5 | $\circ$ how can i prepare for ca cp ##t months ? |
+|  | 0 | $\circ$ consonants ##nin leading elegance 406 173 militant teams ##nin dyke thee seafood |
+|  | 1 | $\circ$ how residues i ##fighting sentences malaysian jenkins remembers transatlantic universite ##rp monarch ? |
+|  | 2 | $\circ$ how can i cyril for malaysian jenkins goldberg transatlantic in relationships pursuing ? |
+|  | 3 | $\circ$ how can i chu for ca fashionable ##t exam in clerks months ? |
+|  | 4 | $\circ$ how can i prepare for ca cp ##t exam in 2 months ? |
+|  | 5 | $\circ$ how can i prepare for ca cp ##t exam in 2 months ? |
+|  | 0 | $\circ$ defective thereby evaluation michaels fragments primal electrically aground hostilities |
+|  | 10 | $\circ$ simulcast candidacy ##bner \[unused106\] ##wide subgenus dangerously sincerity resolving migrated menon ##lase |
+|  | 100 | $\circ$ westphalia ##tracted universite ##erly reissued neglect showcased \[unused574\] slade |
+|  | 250 | $\circ$ souza electronically compliant gerard priority townships ##neo hidalgo \[unused574\] |
+|  | 500 | $\circ$ spikes peptide ##ales borneo makeshift moi rebelled neglect textual 1899 erasmus publishes |
+|  | 750 | $\circ$ i reduces griffin ##ales bukit makeshift moi ##sław mcbride how ministries |
+| 2-3 | 1000 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca wastewater norton , how ministries can |
+|  | 1001 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can |
+|  | 1002 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can |
+|  | 1003 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can |
+|  | 1004 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can |
+|  | 1005 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can |
+|  | 1006 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can |
+|  | 1007 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can |
+|  | 1008 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can |
+|  | 1009 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can |
+| 2-3 | 1250 | $\circ$ i want to prepare ##cchi my ca glove henan rouen how synthesized can \[unused201\] ##yya exam ? |
+|  | 1500 | $\circ$ i want to prepare for my ca cp exam , how transvaal can warmed ##yya exam ? |
+|  | 1750 | $\circ$ i want to prepare for my ca cp exam , how yun can get 2 exam ? |
+|  | 2000 | $\circ$ i want to prepare for my ca cp exam , how might can get 2 exam ? |
 
 **Tabla 13.** A snapshot of all iterations for qualitative samples of test paraphrases generated from different diffusion models on `QQP` dataset. texts are truncated to fit into the table. Words are in lower case. \<M\> stands for mask states, and \## denotes the sub-word tokenization artifacts.
 
-<table id="app:tb:qqp_example_2">
-<tbody>
-<tr>
-<td colspan="3" style="text-align: left;"><strong>Source:</strong> how can one increase concentration?</td>
-</tr>
-<tr>
-<td colspan="3" style="text-align: left;"><strong>Reference:</strong> how can i improve my concentration?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;"># Iter.</td>
-<td style="text-align: center;">Decodes</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">0</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt;</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; can i increase &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt;</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">2</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i increase concentration &lt;M&gt; &lt;M&gt; &lt;M&gt;</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">3</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i increase concentration in studying &lt;M&gt;</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">4</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i increase concentration in studying &lt;M&gt;</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">5</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i increase concentration in studying ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">0</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt;</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">2</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how &lt;M&gt; &lt;M&gt; &lt;M&gt; my concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">3</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how &lt;M&gt; &lt;M&gt; increase my concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">4</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how &lt;M&gt; i increase my concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">5</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i increase my concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">0</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> ##tly distances outline ##cera khmer curvature question ##tl</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i improve focus in concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">2</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i improve focus in concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">3</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i improve focus in concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">4</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i improve focus in concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">5</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how can i improve focus in concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">0</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> lungs ##down intensity cortes ##lden ufo oldies</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> worker blurted i ##kal caledonia concentration ##vb</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">2</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how trait i ##kal my concentration ##vb</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">3</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how trait i increase my concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">4</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how trait i increase my concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">5</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how do i increase my concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">0</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> skeptical coli ##zam gael erika calves wharf [unused791] ##pta vhf ##kley adoptive <sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">10</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> encompassing hesse informally campos cosmopolitan postmaster stabilization realised <sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">100</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> thump haitian i ##anov xiv ? ##] norris illuminated ##had kilometers disagreed [unused730]<sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">250</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> fatal correlated trenton i ##anov exhibits ##] scandinavia 1934 plaza leveled 910 <sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">500</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> cessna i perez newark ? venezuelan regeneration 283 zhejiang ##hectares [PAD] <sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">750</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> johanna cessna i perez shriek ? [PAD] [PAD] [PAD] [PAD] rahman [PAD] [PAD] [PAD] [PAD] postmaster<sup></sup></td>
-</tr>
-<tr>
-<td style="text-align: left;"><span>2-3</span></td>
-<td style="text-align: center;">1000</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> johanna 730 i improve terminals ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1001</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> johanna 730 i improve terminals ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1002</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> johanna 730 i improve terminals ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1003</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> johanna 730 i improve terminals ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1004</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> johanna 730 i improve terminals ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1005</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> johanna 730 i improve terminals ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1006</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> johanna 730 i improve terminals ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1007</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> johanna 730 i improve terminals ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1008</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> johanna 730 i improve terminals ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1009</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> johanna 730 i improve terminals ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"><span>2-3</span></td>
-<td style="text-align: center;">1250</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how do i improve concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1500</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how do i improve concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1750</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how do i improve concentration ?</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">2000</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> how do i improve concentration ?</td>
-</tr>
-</tbody>
-</table>
+|  |  |  |
+|:---|:--:|:---|
+| **Source:** how can one increase concentration? |  |  |
+| **Reference:** how can i improve my concentration? |  |  |
+|  | \# Iter. | Decodes |
+|  | 0 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> |
+|  | 1 | $\circ$ \<M\> can i increase \<M\> \<M\> \<M\> \<M\> |
+|  | 2 | $\circ$ how can i increase concentration \<M\> \<M\> \<M\> |
+|  | 3 | $\circ$ how can i increase concentration in studying \<M\> |
+|  | 4 | $\circ$ how can i increase concentration in studying \<M\> |
+|  | 5 | $\circ$ how can i increase concentration in studying ? |
+|  | 0 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> |
+|  | 1 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> concentration ? |
+|  | 2 | $\circ$ how \<M\> \<M\> \<M\> my concentration ? |
+|  | 3 | $\circ$ how \<M\> \<M\> increase my concentration ? |
+|  | 4 | $\circ$ how \<M\> i increase my concentration ? |
+|  | 5 | $\circ$ how can i increase my concentration ? |
+|  | 0 | $\circ$ ##tly distances outline ##cera khmer curvature question ##tl |
+|  | 1 | $\circ$ how can i improve focus in concentration ? |
+|  | 2 | $\circ$ how can i improve focus in concentration ? |
+|  | 3 | $\circ$ how can i improve focus in concentration ? |
+|  | 4 | $\circ$ how can i improve focus in concentration ? |
+|  | 5 | $\circ$ how can i improve focus in concentration ? |
+|  | 0 | $\circ$ lungs ##down intensity cortes ##lden ufo oldies |
+|  | 1 | $\circ$ worker blurted i ##kal caledonia concentration ##vb |
+|  | 2 | $\circ$ how trait i ##kal my concentration ##vb |
+|  | 3 | $\circ$ how trait i increase my concentration ? |
+|  | 4 | $\circ$ how trait i increase my concentration ? |
+|  | 5 | $\circ$ how do i increase my concentration ? |
+|  | 0 | $\circ$ skeptical coli ##zam gael erika calves wharf \[unused791\] ##pta vhf ##kley adoptive |
+|  | 10 | $\circ$ encompassing hesse informally campos cosmopolitan postmaster stabilization realised |
+|  | 100 | $\circ$ thump haitian i ##anov xiv ? ##\] norris illuminated ##had kilometers disagreed \[unused730\] |
+|  | 250 | $\circ$ fatal correlated trenton i ##anov exhibits ##\] scandinavia 1934 plaza leveled 910 |
+|  | 500 | $\circ$ cessna i perez newark ? venezuelan regeneration 283 zhejiang ##hectares \[PAD\] |
+|  | 750 | $\circ$ johanna cessna i perez shriek ? \[PAD\] \[PAD\] \[PAD\] \[PAD\] rahman \[PAD\] \[PAD\] \[PAD\] \[PAD\] postmaster |
+| 2-3 | 1000 | $\circ$ johanna 730 i improve terminals ? |
+|  | 1001 | $\circ$ johanna 730 i improve terminals ? |
+|  | 1002 | $\circ$ johanna 730 i improve terminals ? |
+|  | 1003 | $\circ$ johanna 730 i improve terminals ? |
+|  | 1004 | $\circ$ johanna 730 i improve terminals ? |
+|  | 1005 | $\circ$ johanna 730 i improve terminals ? |
+|  | 1006 | $\circ$ johanna 730 i improve terminals ? |
+|  | 1007 | $\circ$ johanna 730 i improve terminals ? |
+|  | 1008 | $\circ$ johanna 730 i improve terminals ? |
+|  | 1009 | $\circ$ johanna 730 i improve terminals ? |
+| 2-3 | 1250 | $\circ$ how do i improve concentration ? |
+|  | 1500 | $\circ$ how do i improve concentration ? |
+|  | 1750 | $\circ$ how do i improve concentration ? |
+|  | 2000 | $\circ$ how do i improve concentration ? |
 
 **Tabla 14.** A snapshot of all iterations for generated translates from different diffusion models on `IWSLT14``DE-EN` benchmark. Words are in lower case. \<M\> stands for mask states, and \## denotes the sub-word tokenization artifacts.
 
-<table id="app:tb:mt_example">
-<tbody>
-<tr>
-<td colspan="3" style="text-align: left;"><strong>Source:</strong> alleine dieser flughafen hat eine fläche von 100 quadratkilometern .</td>
-</tr>
-<tr>
-<td colspan="3" style="text-align: left;"><strong>Reference:</strong> this airport alone covers more than 100 square kilometers .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;"># Iter.</td>
-<td style="text-align: center;">Decodes</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">0</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt;</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; has an an &lt;M&gt; of &lt;M&gt; &lt;M&gt; miles &lt;M&gt;</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">2</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; has an an &lt;M&gt; of &lt;M&gt; &lt;M&gt; miles &lt;M&gt;</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">3</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; &lt;M&gt; air## &lt;M&gt; &lt;M&gt; has an an &lt;M&gt; of &lt;M&gt; &lt;M&gt; miles &lt;M&gt;</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">4</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; &lt;M&gt; air## &lt;M&gt; &lt;M&gt; has an an &lt;M&gt; of &lt;M&gt; square miles &lt;M&gt;</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">5</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; this air## port alone has an an &lt;M&gt; of &lt;M&gt; square miles &lt;M&gt;</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">6</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; this air## port alone has an an &lt;M&gt; of &lt;M&gt; square miles &lt;M&gt;</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">7</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; this air## port alone has an an &lt;M&gt; of &lt;M&gt; square miles .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">8</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; this air## port alone has an an &lt;M&gt; of 100 square miles .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">9</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; this air## port alone has an an &lt;M&gt; of 100 square miles .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">10</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> and this air## port alone has an an area of 100 square miles .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">0</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt;</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; &lt;M&gt; air## &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; square &lt;M&gt; &lt;M&gt;</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">2</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; &lt;M&gt; air## &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; square &lt;M&gt; .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">3</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; &lt;M&gt; air## &lt;M&gt; alone &lt;M&gt; &lt;M&gt; area &lt;M&gt; 100 square kilometers .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">4</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; &lt;M&gt; air## port &lt;M&gt; &lt;M&gt; an &lt;M&gt; of &lt;M&gt; square kilometers .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">5</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; &lt;M&gt; air## &lt;M&gt; &lt;M&gt; &lt;M&gt; &lt;M&gt; area of 100 square kilometers .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">6</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; this air## port &lt;M&gt; &lt;M&gt; an area of &lt;M&gt; square kilometers .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">7</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; this air## port alone &lt;M&gt; an area of 100 square kilometers .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">8</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; this air## port &lt;M&gt; has an area of 100 square kilometers .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">9</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> &lt;M&gt; this air## port alone has an area of 100 square kilometers .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">10</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> so this air## port alone has an area of 100 square kilometers .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">0</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> eher spending des## vagina drin production mili## inven## primi## open## freiheit sit schlüssel search</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> alone alone air## air## port has a a area of 100 square miles .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">2</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> alone alone air## air## port has a a area of 100 square miles .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">3</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> alone alone air## air## port has a a area of 100 square miles .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">4</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> alone alone air## air## port has a a area of 100 square miles .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">5</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> alone alone air## air## port has a a area of 100 square miles .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">6</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> alone alone air## air## port has a a area of 100 square miles .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">7</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> alone alone air## air## port has a a area of 100 square miles .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">8</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> alone alone air## air## port has a a area of 100 square miles .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">9</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> alone alone air## air## port has a a area of 100 square miles .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">10</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> alone alone air## air## port has a a area of 100 square miles .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">0</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> beschreiben denk## architect mittleren words alism grou## hilft atoms pus he## jähri## enti## ball## generally</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">1</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> expe## standing nahme cted baum katastrop## bares tion later colle## haufen 100 anstatt zy .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">2</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> cognitive standing natürlich cted ution ity bares an later aus## informa## 100 square zy .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">3</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> cognitive standing llig port wieder oth has an later erhalten saal 100 square kilometers .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">4</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> crime standing air## port spending imag## has an area incredible of 100 square prototyp## .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">5</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> crime standing air## port alone psychi## edi## an area oder of 100 square prototyp## .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">6</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> starke standing air## port alone psychi## armut an area out of 100 square kilometers .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">7</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> starke that air## port alone psychi## armut an area out of 100 square kilometers .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">8</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> starke that air## port alone has armut an area out of 100 square kilometers .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">9</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> and that air## port alone has got an area out of 100 square kilometers .</td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;">10</td>
-<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math> and that air## port alone has got an area out of 100 square kilometers .</td>
-</tr>
-</tbody>
-</table>
+|  |  |  |
+|:---|:--:|:---|
+| **Source:** alleine dieser flughafen hat eine fläche von 100 quadratkilometern . |  |  |
+| **Reference:** this airport alone covers more than 100 square kilometers . |  |  |
+|  | \# Iter. | Decodes |
+|  | 0 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> |
+|  | 1 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> has an an \<M\> of \<M\> \<M\> miles \<M\> |
+|  | 2 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> has an an \<M\> of \<M\> \<M\> miles \<M\> |
+|  | 3 | $\circ$ \<M\> \<M\> air## \<M\> \<M\> has an an \<M\> of \<M\> \<M\> miles \<M\> |
+|  | 4 | $\circ$ \<M\> \<M\> air## \<M\> \<M\> has an an \<M\> of \<M\> square miles \<M\> |
+|  | 5 | $\circ$ \<M\> this air## port alone has an an \<M\> of \<M\> square miles \<M\> |
+|  | 6 | $\circ$ \<M\> this air## port alone has an an \<M\> of \<M\> square miles \<M\> |
+|  | 7 | $\circ$ \<M\> this air## port alone has an an \<M\> of \<M\> square miles . |
+|  | 8 | $\circ$ \<M\> this air## port alone has an an \<M\> of 100 square miles . |
+|  | 9 | $\circ$ \<M\> this air## port alone has an an \<M\> of 100 square miles . |
+|  | 10 | $\circ$ and this air## port alone has an an area of 100 square miles . |
+|  | 0 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> |
+|  | 1 | $\circ$ \<M\> \<M\> air## \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> square \<M\> \<M\> |
+|  | 2 | $\circ$ \<M\> \<M\> air## \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> square \<M\> . |
+|  | 3 | $\circ$ \<M\> \<M\> air## \<M\> alone \<M\> \<M\> area \<M\> 100 square kilometers . |
+|  | 4 | $\circ$ \<M\> \<M\> air## port \<M\> \<M\> an \<M\> of \<M\> square kilometers . |
+|  | 5 | $\circ$ \<M\> \<M\> air## \<M\> \<M\> \<M\> \<M\> area of 100 square kilometers . |
+|  | 6 | $\circ$ \<M\> this air## port \<M\> \<M\> an area of \<M\> square kilometers . |
+|  | 7 | $\circ$ \<M\> this air## port alone \<M\> an area of 100 square kilometers . |
+|  | 8 | $\circ$ \<M\> this air## port \<M\> has an area of 100 square kilometers . |
+|  | 9 | $\circ$ \<M\> this air## port alone has an area of 100 square kilometers . |
+|  | 10 | $\circ$ so this air## port alone has an area of 100 square kilometers . |
+|  | 0 | $\circ$ eher spending des## vagina drin production mili## inven## primi## open## freiheit sit schlüssel search |
+|  | 1 | $\circ$ alone alone air## air## port has a a area of 100 square miles . |
+|  | 2 | $\circ$ alone alone air## air## port has a a area of 100 square miles . |
+|  | 3 | $\circ$ alone alone air## air## port has a a area of 100 square miles . |
+|  | 4 | $\circ$ alone alone air## air## port has a a area of 100 square miles . |
+|  | 5 | $\circ$ alone alone air## air## port has a a area of 100 square miles . |
+|  | 6 | $\circ$ alone alone air## air## port has a a area of 100 square miles . |
+|  | 7 | $\circ$ alone alone air## air## port has a a area of 100 square miles . |
+|  | 8 | $\circ$ alone alone air## air## port has a a area of 100 square miles . |
+|  | 9 | $\circ$ alone alone air## air## port has a a area of 100 square miles . |
+|  | 10 | $\circ$ alone alone air## air## port has a a area of 100 square miles . |
+|  | 0 | $\circ$ beschreiben denk## architect mittleren words alism grou## hilft atoms pus he## jähri## enti## ball## generally |
+|  | 1 | $\circ$ expe## standing nahme cted baum katastrop## bares tion later colle## haufen 100 anstatt zy . |
+|  | 2 | $\circ$ cognitive standing natürlich cted ution ity bares an later aus## informa## 100 square zy . |
+|  | 3 | $\circ$ cognitive standing llig port wieder oth has an later erhalten saal 100 square kilometers . |
+|  | 4 | $\circ$ crime standing air## port spending imag## has an area incredible of 100 square prototyp## . |
+|  | 5 | $\circ$ crime standing air## port alone psychi## edi## an area oder of 100 square prototyp## . |
+|  | 6 | $\circ$ starke standing air## port alone psychi## armut an area out of 100 square kilometers . |
+|  | 7 | $\circ$ starke that air## port alone psychi## armut an area out of 100 square kilometers . |
+|  | 8 | $\circ$ starke that air## port alone has armut an area out of 100 square kilometers . |
+|  | 9 | $\circ$ and that air## port alone has got an area out of 100 square kilometers . |
+|  | 10 | $\circ$ and that air## port alone has got an area out of 100 square kilometers . |
 
 This section provides a more comprehensive qualitative analysis of different diffusion models, including several generated samples as in Tables 12, 13 and 14.
 

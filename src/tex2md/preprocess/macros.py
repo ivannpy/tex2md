@@ -73,8 +73,9 @@ PROTECTED_MACROS = {"section", "subsection", "subsubsection", "paragraph", "subp
 
 def local_style_macros(text, bdir):
     """Macros defined in local .sty files loaded with \\usepackage (notation.sty, myabbrev.sty, ...).
-    pandoc never opens them, so their macros stay unexpanded in the math. Returns definitions only."""
-    out = []
+    pandoc never opens them, so their macros stay unexpanded in the math. Returns definitions only:
+    the ones the document uses, plus (transitively) the ones those definitions use."""
+    cands = []   # (name, definition text, body text)
     doc_body = text[text.find("\\begin{document}"):]
     for names in re.findall(r"\\usepackage\s*(?:\[[^\]]*\])?\s*\{([^}]*)\}", text):
         for name in (n.strip() for n in names.split(",")):
@@ -101,14 +102,22 @@ def local_style_macros(text, bdir):
                         k = sty.find("{", e)
                         j = balanced_end(sty, k) if k >= 0 and not sty[e:k].strip() else e
                     name = m.group(1) or m.group(2)
-                    used = re.search(r"\\" + name + r"(?![A-Za-z@])", doc_body)
-                    if (used and name not in PROTECTED_MACROS
+                    if (name not in PROTECTED_MACROS
                             and not re.search(r"##|\\(?:def|gdef|let|if[a-zA-Z]*|expandafter|csname|hss|llap|rlap|ifx)\b", sty[m.end():j])):
-                        out.append(sty[m.start():j])
+                        cands.append((name, sty[m.start():j], sty[m.end():j]))
                     pos = j
                 else:
                     pos = m.end()
-    return "\n".join(out)
+    wanted = {n for n, _, _ in cands if re.search(r"\\" + n + r"(?![A-Za-z@])", doc_body)}
+    grew = True
+    while grew:   # a used macro may be built from other macros of the same .sty
+        grew = False
+        for _, _, body_w in [c for c in cands if c[0] in wanted]:
+            for n, _, _ in cands:
+                if n not in wanted and re.search(r"\\" + n + r"(?![A-Za-z@])", body_w):
+                    wanted.add(n)
+                    grew = True
+    return "\n".join(d for n, d, _ in cands if n in wanted)
 
 
 def drop_fragile_macro_defs(text):
@@ -142,3 +151,105 @@ def drop_size_redefs(text):
     text = re.sub(r"\\(?:re)?newcommand\*?\s*\{?\\" + SIZES + r"\}?\s*(\[[^\]]*\])?\s*\{(?:[^{}]|\{[^{}]*\})*\}", "", text)
     text = re.sub(r"\\def\s*\\" + SIZES + r"\b\s*\{(?:[^{}]|\{[^{}]*\})*\}", "", text)
     return text
+
+
+# \textrm{ + an invisible separator: postprocess/markdown.restore_math_text recognises it in equations
+TEXT_MARK = "\\\\textrm{\u2063"
+
+_MACRO_DEF = re.compile(
+    r"(?P<head>\\(?:(?:re)?newcommand\*?|providecommand\*?|DeclareRobustCommand\*?)\s*\{?\\(?P<n1>[a-zA-Z@]+)\}?\s*(?:\[\d\])?\s*(?:\[[^\]]*\])?\s*(?=\{))"
+    r"|(?P<head2>\\(?:e|g|x)?def\s*\\(?P<n2>[a-zA-Z@]+)\s*(?:#\d)*\s*(?=\{))")
+
+_MATH = re.compile(
+    r"\$\$.*?\$\$|\$[^$\n]*\$|\\\[.*?\\\]|\\\(.*?\\\)"
+    r"|\\begin\{((?:equation|align|alignat|flalign|gather|multline|eqnarray|displaymath|math)\*?)\}.*?\\end\{\1\}", re.S)
+
+
+def text_in_macro_bodies(text):
+    r"""``\def\method{{\text{UDLM}}}``: outside math pandoc drops ``\text{...}`` (and the macro with it).
+    ``\textrm`` is understood in text mode by pandoc (and by KaTeX/MathJax in math), so macros whose body uses
+    ``\text`` AND that appear outside math get ``\textrm`` instead. ``restore_math_text`` undoes it in equations."""
+    found = []
+    for m in _MACRO_DEF.finditer(text):
+        end = balanced_end(text, m.end())
+        if end < 0 or "\\text" not in text[m.end():end]:
+            continue
+        found.append((m.start(), m.end(), end, m.group("n1") or m.group("n2")))
+    if not found:
+        return text
+    # text with the definitions and the math regions blanked out: what is left is running text
+    prose = text
+    for start, _, end, _n in sorted(found, reverse=True):
+        prose = prose[:start] + " " * (end - start) + prose[end:]
+    prose = _MATH.sub(lambda mm: " " * len(mm.group(0)), prose)
+    used = {n for _, _, _, n in found if re.search(r"\\" + re.escape(n) + r"(?![a-zA-Z@])", prose)}
+    out, pos = [], 0
+    for start, mend, end, n in found:
+        if n not in used or start < pos:
+            continue
+        out.append(text[pos:mend] + re.sub(r"\\text(?![a-zA-Z])\s*\{", TEXT_MARK, text[mend:end]))
+        pos = end
+    out.append(text[pos:])
+    return "".join(out)
+
+
+_PAIRED = re.compile(r"\\DeclarePairedDelimiter\*?\s*(?:\{\s*\\(?P<n1>[a-zA-Z]+)\s*\}|\\(?P<n2>[a-zA-Z]+))\s*(?=\{)")
+
+
+def expand_paired_delimiters(text):
+    r"""mathtools ``\DeclarePairedDelimiter\parentheses{(}{)}``: pandoc ignores it and leaves ``\parentheses*{x}``
+    in the equations. Drop the declaration and expand the uses: ``\name{x}`` -> ``( x )``, the starred form
+    ``\name*{x}`` -> ``\left( x \right)`` and ``\name[\big]{x}`` -> ``\bigl( x \bigr)``."""
+    defs = {}
+    while True:
+        m = _PAIRED.search(text)
+        if not m:
+            break
+        e1 = balanced_end(text, m.end())
+        e2 = balanced_end(text, e1) if e1 > 0 and text[e1:e1 + 1] == "{" else -1
+        if e2 < 0:
+            text = text[:m.start()] + text[m.end():]
+            continue
+        defs[m.group("n1") or m.group("n2")] = (text[m.end() + 1:e1 - 1], text[e1 + 1:e2 - 1])
+        text = text[:m.start()] + text[e2:]
+    for name, (left, right) in defs.items():
+        use = re.compile(r"\\" + name + r"(?![a-zA-Z])(\*)?\s*(?:\[\s*(\\[a-zA-Z]+)\s*\])?\s*(?=\{)")
+        pos = 0
+        while True:
+            m = use.search(text, pos)
+            if not m:
+                break
+            e = balanced_end(text, m.end())
+            if e < 0:
+                pos = m.end()
+                continue
+            arg = text[m.end() + 1:e - 1]
+            if m.group(1):
+                rep = "\\left" + left + " " + arg + " \\right" + right
+            elif m.group(2):
+                rep = m.group(2) + "l" + left + " " + arg + " " + m.group(2) + "r" + right
+            else:
+                rep = left + arg + right
+            text = text[:m.start()] + rep + text[e:]
+            pos = m.start()
+    return text
+
+
+_DELIMITED = re.compile(r"\\(?:e|g|x)?def\s*\\(?P<name>[a-zA-Z]+)\s*#1\s*\\(?P<end>[a-zA-Z]+)\s*(?=\{)")
+
+
+def expand_delimited_macros(text):
+    r"""``\def\bb#1\ee{\begin{align*}#1\end{align*}}`` then ``\bb ... \ee``: pandoc cannot read macros whose
+    argument is delimited by a control sequence, so the uses are expanded here and the definition dropped."""
+    while True:
+        m = _DELIMITED.search(text)
+        if not m:
+            return text
+        e = balanced_end(text, m.end())
+        if e < 0:
+            return text[:m.start()] + text[m.end():]
+        body = text[m.end() + 1:e - 1]
+        name, end = m.group("name"), m.group("end")
+        text = text[:m.start()] + text[e:]
+        use = re.compile(r"\\" + name + r"(?![a-zA-Z])\s*(.*?)\\" + end + r"(?![a-zA-Z])", re.S)
+        text = use.sub(lambda mm, body=body: body.replace("#1", mm.group(1)), text)

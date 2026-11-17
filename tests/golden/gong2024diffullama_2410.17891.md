@@ -74,6 +74,7 @@ Following Eq.2 and $q(\boldsymbol{x}_t|\boldsymbol{x}_0)=\sum_{\boldsymbol{x}_s}
 
 $$\begin{equation}
     q(\boldsymbol{x}_t|\boldsymbol{x}_s)=\text{Cat}(\boldsymbol{x}_t;\boldsymbol{\overline{Q}}_{s|t}^\top \boldsymbol{x}_s) =\frac{\alpha_t}{\alpha_s}\boldsymbol{x}_s+(1-\frac{\alpha_t}{\alpha_s})\boldsymbol{m},
+\tag{3}
 \end{equation}$$
 
 with $\boldsymbol{\overline{Q}}_{s|t} \coloneqq \boldsymbol{\overline{Q}}_s^{-1}\boldsymbol{\overline{Q}}_t=\frac{\alpha_t}{\alpha_s}I+(1-\frac{\alpha_t}{\alpha_s})\mathbf{1}\boldsymbol{m}^\top$. The corresponding backward transition distribution conditional on $\boldsymbol{x}_0$ is also available in closed form, 
@@ -91,6 +92,7 @@ In discrete diffusion processes, we aim to approximate the backward transition d
 
 $$\begin{equation}
     D_{\mathrm{KL}}(q(\boldsymbol{x}_s|\boldsymbol{x}_t,\boldsymbol{x}_0)||p_{\theta}(\boldsymbol{x}_s||\boldsymbol{x}_t))=-\frac{\alpha_s-\alpha_t}{1-\alpha_t}\delta_{\boldsymbol{x}_t,\boldsymbol{m}}\boldsymbol{x}_0^\top\log f_{\theta}(\boldsymbol{x}_t),
+\tag{5}
 \end{equation}$$
 
 where $\delta_{a,b}$ is the indicator function for $a=b$. If we take the limit and let $T\rightarrow \infty$, the first two terms of Eq.1 will approach 0 and some constant, respectively. Thus the evidence lower bound (ELBO) effectively becomes $\mathcal{L}_T$ and 
@@ -126,9 +128,59 @@ In fact, an alternative way to understand AR modeling, through the lens of diffu
 
 Building on the connection between AR modeling and discrete diffusion processes, we construct an adaptation recipe next. Figure 1 shows an overview of our adaptation approach. We use attention mask annealing, shift operations, and a time-embedding free architecture to narrow the differences between AR and DLMs.
 
-<span id="sec:ada" data-label="sec:ada"></span>
+**Algoritmo 1.** Adaptation Training
+
+**Input:** network $f_{\theta}$ initialized by existing models, training corpus $p_{data}(\boldsymbol{x}_{0}^{1:N})$, mask token $\boldsymbol{m}$.
+
+**Output:** model parameters $\theta$.
+
+**repeat**
+
+ Draw $\boldsymbol{x}_{0}^{1:N}\sim p_{data}$ and set $\textit{labels} \gets \boldsymbol{x}_{0}^{1:N}$
+
+ Sample $t \in \textit{Uniform}(0,1)$
+
+ Sample $\boldsymbol{x}_{t}^{1:N}\sim q(\boldsymbol{x}_{t}|\boldsymbol{x}_{0})$
+
+ Anneal the attention mask $attn\_mask$
+
+ Forward $\textit{logits} \gets f_{\theta}(\boldsymbol{x}_{t}^{1:N})$ with $attn\_mask$
+
+ Right shift $\textit{logits}$ by one position
+
+ $\mathcal{L}_t=\frac{1}{t}\delta_{x_t, m}$CE$(\textit{logits},\textit{labels})$ $\triangleright$ Eq.7
+
+ Backprop with $\mathcal{L}_t$ and update $\theta$
+
+**until** end training
 
 **Figura.**
+
+**Algoritmo 2.** Sampling
+
+**Input:** Trained diffusion model $f_{\theta}$, sampling algorithm $\tau$, mask token $\boldsymbol{m}$, start token $\boldsymbol{s}$.
+
+**Output:** generated sample $\boldsymbol{x}_0$.
+
+**Initialize** $\boldsymbol{x}_T^{1:N}=\boldsymbol{m}$.
+
+**for** $t = T,\dots,1$ **do**
+
+ Forward $\textit{logits} \gets f_{\theta}(\boldsymbol{x}_{t}^{1:N})$
+
+ Sample $\tilde{\boldsymbol{x}}_0^{1:N}\sim \textit{Categorical}(\tau(\textit{logits}))$
+
+ **for** $n = 1,\dots,N$ **do**
+
+ $\boldsymbol{x}_{t-1}^n=q(\boldsymbol{x}_{t-1}^n|\boldsymbol{x}_{t}^n,\tilde{\boldsymbol{x}}_0^n)$ $\triangleright$ Eq.4
+
+ **end for**
+
+ Right shift $\boldsymbol{x}_{t-1}^{1:N} =[\boldsymbol{s},\boldsymbol{x}_{t-1}^{1:N-1}]$
+
+**end for**
+
+**Return** $\boldsymbol{x}_0^{2:N}$
 
 **Figura.**
 
@@ -156,7 +208,7 @@ Following Shi et al. (2024), we initialize $\boldsymbol{x}_T$ with all `[MASK]`
 
 **Figura 2.** Training loss over tokens for various model sizes of our adapted diffusion models.
 
-**DiffuLLaMA** We continue pre-training <span class="smallcaps">llama-2-7-hf</span> (Touvron et al., 2023a) on a mixture of SlimPajama (70%) (Soboleva et al., 2023) and Starcoder (30%) (Li et al., 2023a) data following TinyLLaMA (Zhang et al., 2024a). We randomly sample 65 billion tokens from this mixture and use sequence packing with context length of $2048$. For efficient implementation we enable flash-attention 2 (Dao, 2024) and directly use bi-directional attention without attention mask annealing.
+**DiffuLLaMA** We continue pre-training llama-2-7-hf (Touvron et al., 2023a) on a mixture of SlimPajama (70%) (Soboleva et al., 2023) and Starcoder (30%) (Li et al., 2023a) data following TinyLLaMA (Zhang et al., 2024a). We randomly sample 65 billion tokens from this mixture and use sequence packing with context length of $2048$. For efficient implementation we enable flash-attention 2 (Dao, 2024) and directly use bi-directional attention without attention mask annealing.
 
 For both adaptation settings, we employ full parameter finetuning with `bf16`. Please refer to Appendix B.2 for details. We plot the training loss curve in Figure 2. We train DiffuLLaMA on 60B tokens and achieve a lower loss compared to 127M and 335M models, suggesting a scaling trend similar to that of AR LLMs (Kaplan et al., 2020). We also note that there is still scope for training more, since the model does not show signs of saturation.
 
@@ -166,165 +218,21 @@ Previously developed diffusion language models (Gulrajani & Hashimoto, 2023; Lo
 
 in
 
-**Tabla 1.** Comprehensive evaluation of different diffusion language models and the same <span style="color: brown">size</span> pre-trained autoregressive models. There are 3 types of these models: AR for autoregressive, DD for discrete diffusion and CD for continuous diffusion. For the infilling task, we use ROUGE-1/2/L score; for other tasks, we use the accuracy (%) metric. $^*$ indicates we finetune GSM8K on models; other tasks are all in zero-shot setting. Numbers in the () indicate that AR models are only given prefix for infilling tasks. We bold the best performance among diffusion language models and underline results that surpass their base models.
+**Tabla 1.** Comprehensive evaluation of different diffusion language models and the same size pre-trained autoregressive models. There are 3 types of these models: AR for autoregressive, DD for discrete diffusion and CD for continuous diffusion. For the infilling task, we use ROUGE-1/2/L score; for other tasks, we use the accuracy (%) metric. $^*$ indicates we finetune GSM8K on models; other tasks are all in zero-shot setting. Numbers in the () indicate that AR models are only given prefix for infilling tasks. We bold the best performance among diffusion language models and underline results that surpass their base models.
 
-<table id="tab:eval">
-<tbody>
-<tr>
-<td style="text-align: center;"><p><strong>Model</strong></p></td>
-<td style="text-align: center;"><p><strong>Size</strong></p></td>
-<td style="text-align: center;"><p><strong>Type</strong></p></td>
-<td style="text-align: center;"><p><strong>QA</strong></p></td>
-<td style="text-align: center;"><p><strong>Word</strong></p></td>
-<td colspan="4" style="text-align: center;"><p><strong>CommonSense Reasoning</strong></p></td>
-<td style="text-align: center;"><p><strong>Math</strong></p></td>
-<td colspan="2" style="text-align: center;"><p><strong>Infilling</strong></p></td>
-</tr>
-<tr>
-<td style="text-align: left;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"><p>TriQA</p></td>
-<td style="text-align: center;"><p>Lamb.</p></td>
-<td style="text-align: center;"><p>HSwag</p></td>
-<td style="text-align: center;"><p>Wino.</p></td>
-<td style="text-align: center;"><p>SIQA</p></td>
-<td style="text-align: center;"><p>PIQA</p></td>
-<td style="text-align: center;"><p>GSM8K<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi></mi><mo>*</mo></msup><annotation encoding="application/x-tex">^*</annotation></semantics></math></p></td>
-<td style="text-align: center;"><p>ROCStories</p></td>
-<td style="text-align: center;"><p>Code</p></td>
-</tr>
-<tr>
-<td style="text-align: left;"><p><span>1-1</span> (lr)<span>2-2</span> (lr)<span>3-3</span> (lr)<span>4-4</span> (lr)<span>5-5</span> (lr)<span>6-9</span> (lr)<span>10-10</span> (lr)<span>11-12</span></p>
-<p>GPT2-S</p></td>
-<td style="text-align: center;"><p>127M</p></td>
-<td style="text-align: center;"><p>AR</p></td>
-<td style="text-align: center;"><p>4.0</p></td>
-<td style="text-align: center;"><p>25.9</p></td>
-<td style="text-align: center;"><p>29.9</p></td>
-<td style="text-align: center;"><p>48.5</p></td>
-<td style="text-align: center;"><p>35.7</p></td>
-<td style="text-align: center;"><p>62.1</p></td>
-<td style="text-align: center;"><p>44.8</p></td>
-<td style="text-align: center;"><p>(7.8/0.8/7.4)</p></td>
-<td style="text-align: center;"><p>(1.6)</p></td>
-</tr>
-<tr>
-<td style="text-align: left;"><p>SEDD-S</p></td>
-<td style="text-align: center;"><p>170M</p></td>
-<td style="text-align: center;"><p>DD</p></td>
-<td style="text-align: center;"><p>1.5</p></td>
-<td style="text-align: center;"><p>12.4</p></td>
-<td style="text-align: center;"><p>30.2</p></td>
-<td style="text-align: center;"><p>50.1</p></td>
-<td style="text-align: center;"><p>34.4</p></td>
-<td style="text-align: center;"><p>55.6</p></td>
-<td style="text-align: center;"><p>45.3</p></td>
-<td style="text-align: center;"><p>11.9/0.7/10.9</p></td>
-<td style="text-align: center;"><p>0.7</p></td>
-</tr>
-<tr>
-<td style="text-align: left;"><p>DiffuGPT-S</p></td>
-<td style="text-align: center;"><p>127M</p></td>
-<td style="text-align: center;"><p>DD</p></td>
-<td style="text-align: center;"><p>2.0</p></td>
-<td style="text-align: center;"><p>21.6</p></td>
-<td style="text-align: center;"><p><u>33.4</u></p></td>
-<td style="text-align: center;"><p><u>50.8</u></p></td>
-<td style="text-align: center;"><p><u>37.0</u></p></td>
-<td style="text-align: center;"><p>57.7</p></td>
-<td style="text-align: center;"><p><u>50.2</u></p></td>
-<td style="text-align: center;"><p><u>13.7/1.4/12.6</u></p></td>
-<td style="text-align: center;"><p>0.3</p></td>
-</tr>
-<tr>
-<td style="text-align: left;"><p>GPT2-M</p></td>
-<td style="text-align: center;"><p>355M</p></td>
-<td style="text-align: center;"><p>AR</p></td>
-<td style="text-align: center;"><p>6.7</p></td>
-<td style="text-align: center;"><p>37.7</p></td>
-<td style="text-align: center;"><p>38.3</p></td>
-<td style="text-align: center;"><p>50.7</p></td>
-<td style="text-align: center;"><p>37.7</p></td>
-<td style="text-align: center;"><p>67.4</p></td>
-<td style="text-align: center;"><p>45.6</p></td>
-<td style="text-align: center;"><p>(8.6/0.9/8.2)</p></td>
-<td style="text-align: center;"><p>(2.6)</p></td>
-</tr>
-<tr>
-<td style="text-align: left;"><p>SEDD-M</p></td>
-<td style="text-align: center;"><p>424M</p></td>
-<td style="text-align: center;"><p>DD</p></td>
-<td style="text-align: center;"><p>1.8</p></td>
-<td style="text-align: center;"><p>23.1</p></td>
-<td style="text-align: center;"><p>31.5</p></td>
-<td style="text-align: center;"><p>49.0</p></td>
-<td style="text-align: center;"><p>35.4</p></td>
-<td style="text-align: center;"><p>56.1</p></td>
-<td style="text-align: center;"><p>53.5</p></td>
-<td style="text-align: center;"><p>13.1/1.4/12.2</p></td>
-<td style="text-align: center;"><p>0.5</p></td>
-</tr>
-<tr>
-<td style="text-align: left;"><p>DiffuGPT-M</p></td>
-<td style="text-align: center;"><p>355M</p></td>
-<td style="text-align: center;"><p>DD</p></td>
-<td style="text-align: center;"><p>3.8</p></td>
-<td style="text-align: center;"><p>30.3</p></td>
-<td style="text-align: center;"><p>37.2</p></td>
-<td style="text-align: center;"><p><u>52.6</u></p></td>
-<td style="text-align: center;"><p><u>39.0</u></p></td>
-<td style="text-align: center;"><p>59.6</p></td>
-<td style="text-align: center;"><p><u>61.8</u></p></td>
-<td style="text-align: center;"><p><u>18.7/2.7/17.0</u></p></td>
-<td style="text-align: center;"><p><u>2.9</u></p></td>
-</tr>
-<tr>
-<td style="text-align: left;"><p>Plaid1B</p></td>
-<td style="text-align: center;"><p>1.3B</p></td>
-<td style="text-align: center;"><p>CD</p></td>
-<td style="text-align: center;"><p>1.2</p></td>
-<td style="text-align: center;"><p>8.6</p></td>
-<td style="text-align: center;"><p>39.3</p></td>
-<td style="text-align: center;"><p>51.3</p></td>
-<td style="text-align: center;"><p>32.3</p></td>
-<td style="text-align: center;"><p>54.5</p></td>
-<td style="text-align: center;"><p>32.6</p></td>
-<td style="text-align: center;"><p>12.1/1.1/11.2</p></td>
-<td style="text-align: center;"><p>0.1</p></td>
-</tr>
-<tr>
-<td style="text-align: left;"><p>LLaMA2</p></td>
-<td style="text-align: center;"><p>7B</p></td>
-<td style="text-align: center;"><p>AR</p></td>
-<td style="text-align: center;"><p>45.4</p></td>
-<td style="text-align: center;"><p>68.8</p></td>
-<td style="text-align: center;"><p>74.9</p></td>
-<td style="text-align: center;"><p>67.1</p></td>
-<td style="text-align: center;"><p>44.8</p></td>
-<td style="text-align: center;"><p>78.3</p></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"><p>(11.6/2.1/10.5)</p></td>
-<td style="text-align: center;"><p>(1.7)</p></td>
-</tr>
-<tr>
-<td style="text-align: left;"><p>DiffuLLaMA</p></td>
-<td style="text-align: center;"><p>7B</p></td>
-<td style="text-align: center;"><p>DD</p></td>
-<td style="text-align: center;"><p><strong>18.5</strong></p></td>
-<td style="text-align: center;"><p><strong>53.9</strong></p></td>
-<td style="text-align: center;"><p><strong>58.7</strong></p></td>
-<td style="text-align: center;"><p><strong>56.4</strong></p></td>
-<td style="text-align: center;"><p><strong>43.2</strong></p></td>
-<td style="text-align: center;"><p><strong>63.3</strong></p></td>
-<td style="text-align: center;"><p><u><strong>63.1</strong></u></p></td>
-<td style="text-align: center;"><p><u><strong>23.3/5.5/21.2</strong></u></p></td>
-<td style="text-align: center;"><p><u><strong>15.5</strong></u></p></td>
-</tr>
-</tbody>
-</table>
-
-<span id="tab:eval" data-label="tab:eval"></span>
+|  |  |  |  |  |  |  |  |  |  |  |  |
+|:---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| **Model** | **Size** | **Type** | **QA** | **Word** | **CommonSense Reasoning** |  |  |  | **Math** | **Infilling** |  |
+|  |  |  | TriQA | Lamb. | HSwag | Wino. | SIQA | PIQA | GSM8K$^*$ | ROCStories | Code |
+| 1-1 (lr)2-2 (lr)3-3 (lr)4-4 (lr)5-5 (lr)6-9 (lr)10-10 (lr)11-12 GPT2-S | 127M | AR | 4.0 | 25.9 | 29.9 | 48.5 | 35.7 | 62.1 | 44.8 | (7.8/0.8/7.4) | (1.6) |
+| SEDD-S | 170M | DD | 1.5 | 12.4 | 30.2 | 50.1 | 34.4 | 55.6 | 45.3 | 11.9/0.7/10.9 | 0.7 |
+| DiffuGPT-S | 127M | DD | 2.0 | 21.6 | <u>33.4</u> | <u>50.8</u> | <u>37.0</u> | 57.7 | <u>50.2</u> | <u>13.7/1.4/12.6</u> | 0.3 |
+| GPT2-M | 355M | AR | 6.7 | 37.7 | 38.3 | 50.7 | 37.7 | 67.4 | 45.6 | (8.6/0.9/8.2) | (2.6) |
+| SEDD-M | 424M | DD | 1.8 | 23.1 | 31.5 | 49.0 | 35.4 | 56.1 | 53.5 | 13.1/1.4/12.2 | 0.5 |
+| DiffuGPT-M | 355M | DD | 3.8 | 30.3 | 37.2 | <u>52.6</u> | <u>39.0</u> | 59.6 | <u>61.8</u> | <u>18.7/2.7/17.0</u> | <u>2.9</u> |
+| Plaid1B | 1.3B | CD | 1.2 | 8.6 | 39.3 | 51.3 | 32.3 | 54.5 | 32.6 | 12.1/1.1/11.2 | 0.1 |
+| LLaMA2 | 7B | AR | 45.4 | 68.8 | 74.9 | 67.1 | 44.8 | 78.3 |  | (11.6/2.1/10.5) | (1.7) |
+| DiffuLLaMA | 7B | DD | **18.5** | **53.9** | **58.7** | **56.4** | **43.2** | **63.3** | <u>**63.1**</u> | <u>**23.3/5.5/21.2**</u> | <u>**15.5**</u> |
 
 **Tasks and Metrics** We consider TriviaQA (Joshi et al., 2017) to test the reading comprehension of models and last word completion task Lambada (Paperno et al., 2016) to test how models capture long-range dependencies in text. These two tasks are measured by exact match accuracy. We also test for common sense reasoning tasks HellaSwag (Zellers et al., 2019), Winogrande (Sakaguchi et al., 2021), SIQA (Sap et al., 2019) and PIQA (Bisk et al., 2020), all of which involve multiple-choice questions assessed by accuracy. On grade school math problems GSM8K (Cobbe et al., 2021), we follow Ye et al. (2024b) in finetuning setting using the augmented symbolic data to test the CoT (Wei et al., 2022b) math reasoning abilities of diffusion models. Following Shen et al. (2023), we also test the story infilling tasks using ROCStories (Mostafazadeh et al., 2016) and evaluate using ROUGE score (Lin, 2004). To test the code infilling, we adopt Humaneval (Bavarian et al., 2022a) single line infilling task, which is evaluated by pass@1 rate. We evaluate DiffuLLaMA’s math reasoning and in-context learning ability by evaluating on MAWPS (Koncel-Kedziorski et al., 2016) consisting of math word problems and SATMATH from AGI-eval consisting of math problems from SAT exam (Zhong et al., 2024). We base our implementation on `lm-evaluation-harness` (Gao et al., 2024) and re-implement all tasks across models to ensure a fair comparison.
 
@@ -352,16 +260,14 @@ in
 
 **Tabla 2.** Performance on math/QA benchmarks ($\uparrow$). We compare of DiffuLLaMA with zero-shot (ZS), few-shot (FS), self-consistency (SC), hit@$k$ and chain-of-thought (CoT) prompts.
 
-| **Settings** | MAWPS | SATMath | TriviaQA |
-|:---|:--:|:--:|:--:|
-| <span style="color: mygray">LLaMA2</span> | <span style="color: mygray">63.5</span> | <span style="color: mygray">24.5</span> | <span style="color: mygray">45.4</span> |
-| DiffuLLaMA-ZS | 9.7 | $<$<!-- -->1 | 18.5 |
-| DiffuLLaMA-FS | 31.3 | 23.6 | 20.9 |
-| DiffuLLaMA-SC | 33.1 | 27.7 | 26.0 |
-| <span style="color: gray">DiffuLLaMA-@$k$</span> | <span style="color: gray">40.8</span> | <span style="color: gray">57.7</span> | <span style="color: gray">34.1</span> |
-| DiffuLLaMA-CoT | 28.7 | 9.5 | \- |
-
-<span id="tab:diffullama" data-label="tab:diffullama"></span>
+| **Settings**    | MAWPS |   SATMath    | TriviaQA |
+|:----------------|:-----:|:------------:|:--------:|
+| LLaMA2          | 63.5  |     24.5     |   45.4   |
+| DiffuLLaMA-ZS   |  9.7  | $<$<!-- -->1 |   18.5   |
+| DiffuLLaMA-FS   | 31.3  |     23.6     |   20.9   |
+| DiffuLLaMA-SC   | 33.1  |     27.7     |   26.0   |
+| DiffuLLaMA-@$k$ | 40.8  |     57.7     |   34.1   |
+| DiffuLLaMA-CoT  | 28.7  |     9.5      |    \-    |
 
 We validate that increasing the size of adapted DLMs significantly enhances the performance of downstream tasks in Table 1. Further, we aim to assess if the 7B model demonstrates in-context learning and reasoning capabilities similar to AR LLMs. Table 2 presents the exact match accuracy between gold labels and predictions generated by DiffuLLaMA across zero-shot (ZS), few-shot (FS), and FS with chain-of-thought (CoT) scenarios. Besides, we deploy the self-consistency approach (Wang et al., 2023), considering that small DLMs can indeed benefit from this technique (Ye et al., 2024b). We use majority vote to choose the best answer from $3$ individual predictions, and also report the hit rate @$k$ with $k=3$, which measures whether any of the $k$ predictions include the correct answer, serving as a reference for the model’s upper bound. For in-context learning (ICL) evaluations, we give $4$-shot on math tasks and $2$-shot on TriviaQA.
 
@@ -382,8 +288,6 @@ in
 | DD-w/o shift   |   \-   |  33.5  |  34.5  |     |     |
 | DD-w/o anneal  |   \-   |  43.3  |  47.2  |     |     |
 | DD             |  28.0  |  45.4  |  49.7  |     |     |
-
-<span id="tab:gsm" data-label="tab:gsm"></span>
 
 Direct ablation on adaptation training is costly; hence, we conduct preliminary experiments to determine the adaptation recipes. Following Ye et al. (2024b), we finetune models on the augmented GSM8K symbolic dataset using various base models and training objectives. The models are either trained from scratch (random initialization) or initialized with GPT2-S/M weights. Training objectives includes autoregressive training with a causal mask, continuous diffusion loss (CD), and discrete diffusion loss (DD). As shown in Table 3, different training objectives yield comparable results when training from scratch. However, when using GPT2 as the base model, the CD loss performs worse than both the DD and AR losses. We attribute this to the better alignment of DD and AR losses as discussed in §3.2. Previous continuous diffusion models (Dieleman et al., 2022; Gulrajani & Hashimoto, 2023) has reparameterized the estimation of embeddings into the CE loss. However, adapting diffusion models from an AR model in continuous space necessitates an additional projection from the embedding to a categorical distribution, increasing the difficulty of adaptation.
 
@@ -429,12 +333,14 @@ We denote $\mathbf{x}_0\sim p_{data}(\mathbf{x}_0)$ as the variable following th
 
 $$\begin{equation}
 q(\mathbf{x}_{1:T}|\mathbf{x}_0)=\prod_{t=1}^Tq(\mathbf{x}_t|\mathbf{x}_{t-1})
+\tag{9}
 \end{equation}$$
 
 corrupts the initial data $\mathbf{x}_0$ into a sequence of increasingly noisy variables $\mathbf{x}_{1:T}$. Accordingly, the reverse Markov process models the joint probability as 
 
 $$\begin{equation}
 p_{\theta}(\mathbf{x}_{0:T})=p_{\theta}(\mathbf{x}_T)\prod_{t=1}^Tp_{\theta}(\mathbf{x}_{t-1}|\mathbf{x}_t),
+\tag{10}
 \end{equation}$$
 
 which gradually denoises $\mathbf{x}_t$ to reconstruct the original data $\mathbf{x}_0$. Parameters $\theta$ are learned by minimizing the negative log-likelihood of $\mathbf{x}_0$, which can be optimized through the variational lower bound (VLB): 
@@ -450,13 +356,15 @@ $$\begin{align}
 For continuous text diffusion (Li et al., 2022; Gong et al., 2023b), at each forward step, perturbations are applied according to 
 
 $$\begin{equation}
-q(\mathbf{x}_{t} \vert \mathbf{x}_{t-1}) = \mathcal{N}(\mathbf{x}_{t};\sqrt{1-\beta_t}\mathbf{x}_{t-1}, {\beta}_t \mathbf{I}),
+q(\mathbf{x}_{t} \vert \mathbf{x}_{t-1}) = \mathcal{N}(\mathbf{x}_{t};\sqrt{1-\beta_t}\mathbf{x}_{t-1}, {\beta}_t \mathbf{I}), 
+\tag{13}
 \end{equation}$$
 
 where $\beta_t \in (0,1)$ represents different scales. In the end, $\mathbf{x}_T \sim \mathcal{N}(0, \mathbf{I})$. In the case of discrete denoising models (Ho et al., 2020; Austin et al., 2021; Zheng et al., 2024a), $\mathbf{x}_t$ follows a categorical distribution which naturally aligns with discrete text data. Let $\boldsymbol{x}$ be the one-hot encoded sample of variable $\mathbf{x}$ and $\mathbf{x}_t\sim \text{Cat}(\boldsymbol{x}_t;\boldsymbol{p})$ represent a categorical distribution over vector $\boldsymbol{x}$ with probabilities given by $\boldsymbol{p}$. Here, $K$ represents the vocabulary size, $\boldsymbol{x}\in \{\boldsymbol{e}_1,\dots,\boldsymbol{e}_K\}$, and $\boldsymbol{e}_k \in \{0, 1\}^K$ is the one-hot encoding of the $k$-th word category. The forward process can be formulated through a transition matrix $\boldsymbol{Q}_t\in[0,1]^{K\times K}$ such that 
 
 $$\begin{equation}
 q(\mathbf{x}_{t} \vert \mathbf{x}_{t-1})=\text{Cat}(\boldsymbol{x}_t;\boldsymbol{Q}_t^\top\boldsymbol{x}_{t-1}); \boldsymbol{Q}_t=(1-\beta_t)I+\beta_t\mathbf{1}\boldsymbol{e}_K^\top,
+\tag{14}
 \end{equation}$$
 
 with $\mathbf{1}$ as an all-one vector of size $K$ and we assume $\boldsymbol{e}_K$ as the special \[mask\] state, also defined as the absorbing state in discrete diffusion $\boldsymbol{m}$. Each entry in $[\boldsymbol{Q}_t]_{ij}$ denotes the probability of transition from the state $\boldsymbol{e}_i$ to $\boldsymbol{e}_j$, and thus the previously defined $\boldsymbol{Q}_t$ means with probability $1-\beta_t$, $\boldsymbol{x}_t$ will stay unchanged and otherwise it will jump to the mask state $\boldsymbol{e}_K$.
@@ -466,6 +374,7 @@ Starting from $\boldsymbol{x}_0$, the $t$-step marginal distribution and the pos
 $$\begin{equation}
     q(\boldsymbol{x}_t|\boldsymbol{x}_0)=\text{Cat}(\boldsymbol{x}_t;\boldsymbol{p}=\boldsymbol{\overline{Q}}_t^\top\boldsymbol{x}_0); \; q(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t,\boldsymbol{x}_0)=
     \frac{q(\boldsymbol{x}_{t}|\boldsymbol{x}_{t-1},\boldsymbol{x}_0)q(\boldsymbol{x}_{t-1}|\boldsymbol{x}_0)}{q(\boldsymbol{x}_t|\boldsymbol{x}_0)}
+\tag{15}
 \end{equation}$$
 
 where cumulative products $\boldsymbol{\overline{Q}}_t = \prod_{i=1}^t\boldsymbol{Q}_i=\alpha_tI+(1-\alpha_t)\mathbf{1}\boldsymbol{m}^\top$, and $\alpha_t=\prod_{i=1}^t(1-\beta_t)$. We expect $\alpha_T$ approaches $0$ such that the full noise data $\boldsymbol{x}_T$ is equal to $\boldsymbol{e}_K$ with probability $1$. In the following sections, we primarily takes the discrete diffusion formulation.
@@ -478,12 +387,14 @@ Following the previous definition, after simplification, we have $q(\boldsymbol{
 
 $$\begin{equation}
     q(\boldsymbol{x}_t|\boldsymbol{x}_s)=\text{Cat}(\boldsymbol{x}_t;\boldsymbol{\overline{Q}}_{s|t}^\top \boldsymbol{x}_s), \;\text{with }\boldsymbol{\overline{Q}}_{s|t} = \boldsymbol{\overline{Q}}_s^{-1}\boldsymbol{\overline{Q}}_t=\frac{\alpha_t}{\alpha_s}I+(1-\frac{\alpha_t}{\alpha_s})\mathbf{1}\boldsymbol{m}^\top.
+\tag{16}
 \end{equation}$$
 
 Similarly, after simplification, 
 
 $$\begin{equation}
 q(\boldsymbol{x}_t|\boldsymbol{x}_s)=\frac{\alpha_t}{\alpha_s}\boldsymbol{x}_s+(1-\frac{\alpha_t}{\alpha_s})\boldsymbol{m}.
+\tag{17}
 \end{equation}$$
 
 Following Zheng et al. (2024a); Shi et al. (2024) and extend the formulation to continuous time, we have the backward transition probability: 
@@ -519,18 +430,21 @@ $$\begin{equation}
         \frac{\alpha_s-\alpha_t}{1-\alpha_t}D_{\mathrm{KL}}(\boldsymbol{x}_0||f_{\theta}(\boldsymbol{x}_t)), & \text{for } \boldsymbol{x}_t =\boldsymbol{m};\\
         0, & \text{for } \boldsymbol{x}_t \neq \boldsymbol{m}.\\
     \end{cases}
+\tag{21}
 \end{equation}$$
 
 We can use the indicator function $\delta_{\boldsymbol{x}_t,\boldsymbol{m}}$ to unify the conditional cases. In addition, given $\boldsymbol{x}_0$, we have $D_{\mathrm{KL}}(\boldsymbol{x}_0||f_{\theta}(\boldsymbol{x}_t))=-\boldsymbol{x}_0^\top\log f_{\theta}(\boldsymbol{x}_t)$ which corresponds to the cross-entropy widely used in the classification. Therefore, we have 
 
 $$\begin{equation}
     D_{\mathrm{KL}}(q(\boldsymbol{x}_s|\boldsymbol{x}_t,\boldsymbol{x}_0)||p_{\theta}(\boldsymbol{x}_s||\boldsymbol{x}_t))=-\frac{\alpha_s-\alpha_t}{1-\alpha_t}\delta_{\boldsymbol{x}_t,\boldsymbol{m}}\boldsymbol{x}_0^\top\log f_{\theta}(\boldsymbol{x}_t).
+\tag{22}
 \end{equation}$$
 
 Following Eq.12, if we set a small timestep $\Delta_t=t-s=\frac{1}{T}\in(0,1)$, 
 
 $$\begin{equation}
     \mathcal{L}_T = \sum_{t=2}^T [-\frac{\alpha_s-\alpha_t}{(t-s)(1-\alpha_t)}\delta_{\boldsymbol{x}_t,\boldsymbol{m}}\boldsymbol{x}_0^\top\log f_{\theta}(\boldsymbol{x}_t)\Delta_t].
+\tag{23}
 \end{equation}$$
 
 By taking the limit as $T\rightarrow \infty$, we have $\alpha_t^\prime=\frac{\alpha_t-\alpha_s}{t-s}$, and the sum is transformed into an integral: 
@@ -584,11 +498,9 @@ We implement DiffuGPT using LLaMA-Factory[^4] with DeepSpeed Zero-2 parallelizat
 | DiffuGPT-S | 1000k | 256 | 512 |  |  |
 | DiffuGPT-M | 160k | 1280 | 1024 |  |  |
 
-<span id="tab:training-appen" data-label="tab:training-appen"></span>
-
 #### DiffuLLaMA
 
-For a more efficient pre-training, we implement DiffuLLaMA using huggingface[^5]. We use DeepSpeed Zero-3 parallelization with CPU offloading (Rajbhandari et al., 2020) to efficiently scale DiffuLLaMA to multiple GPUs and nodes. Furthermore, we use flash-attention 2 and fused cross-entropy loss for optimized GPU memory usage and compute time (Dao, 2024). With these settings, we get set a batch size of 60 per GPU with context length 2048 on a GH200 96GB GPU. We use AdamW (Loshchilov & Hutter, 2019) to optimize our models with a constant learning rate of $2e-5$ and accumulate gradients every $4$ steps. We train our model for 65 billion tokens on $16$ 4xGH200 nodes. <span id="appendix:train" data-label="appendix:train"></span>
+For a more efficient pre-training, we implement DiffuLLaMA using huggingface[^5]. We use DeepSpeed Zero-3 parallelization with CPU offloading (Rajbhandari et al., 2020) to efficiently scale DiffuLLaMA to multiple GPUs and nodes. Furthermore, we use flash-attention 2 and fused cross-entropy loss for optimized GPU memory usage and compute time (Dao, 2024). With these settings, we get set a batch size of 60 per GPU with context length 2048 on a GH200 96GB GPU. We use AdamW (Loshchilov & Hutter, 2019) to optimize our models with a constant learning rate of $2e-5$ and accumulate gradients every $4$ steps. We train our model for 65 billion tokens on $16$ 4xGH200 nodes.
 
 #### Tokenizer
 
@@ -642,8 +554,6 @@ Training with the initial weightings of GPT2, we evaluate three loss functions: 
 | DiffuGPT                | 0.009       | 61.8 |
 | DiffuLLaMA              | 0.003       | 63.1 |
 
-<span id="tab:elbo-gsm" data-label="tab:elbo-gsm"></span>
-
 **Figura 6.** Finetune GSM8K data with discrete diffusion objectives, using a base model of either GPT2-S/M or DiffuGPT-S/M. DiffuGPT converges faster and attains a lower loss.
 
 ## C.3 Advantages of DLMs
@@ -652,20 +562,18 @@ To explore the self-correction advantages of DLMs noted by Ye et al. (2024b), we
 
 **Tabla 6.** A Case study to show self-correction capacity of DiffuGPT. $t/T$ refers to the current decoding step over the total diffusion steps. The incorrect rationales are marked in red.
 
-| Steps ($t/T$) | DoT rationales |
-|:--:|:--:|
-| ... | ... |
-| 9/32 | `<<3*15=45>> <<4*45=180>> <<180+300=`<span style="color: red">`00>> #### 00`</span> |
-| 8/32 | `<<3*15=45>> <<4*45=180>> <<180+`<span style="color: red">`400=580000 #### #### 000`</span> |
-| 7/32 | `<<3*15=45>> <<4*45=180>> <<180+`<span style="color: red">`400=400`</span>`>> #### 480` |
-| 6/32 | `<<3*15=45>> <<4*45=180>> <<180+300=`<span style="color: red">`500`</span>`>> #### `<span style="color: red">`580`</span> |
-| 5/32 | `<<3*15=45>> <<4*45=180>> <<180+300=`<span style="color: red">`580`</span>`>> #### `<span style="color: red">`580`</span> |
-| 4/32 | `<<3*15=45>> <<4*45=180>> <<180+300=480>> #### `<span style="color: red">`580`</span> |
-| 3/32 | `<<3*15=45>> <<4*45=180>> <<180+300=480>> #### `<span style="color: red">`580`</span> |
-| 2/32 | `<<3*15=45>> <<4*45=180>> <<180+300=480>> #### 480` |
-| 1/32 | `<<3*15=45>> <<4*45=180>> <<180+300=480>> #### 480` |
-
-<span id="tab:self-correct" data-label="tab:self-correct"></span>
+| Steps ($t/T$) |                       DoT rationales                        |
+|:-------------:|:-----------------------------------------------------------:|
+|      ...      |                             ...                             |
+|     9/32      |     `<<3*15=45>> <<4*45=180>> <<180+300=``00>> #### 00`     |
+|     8/32      | `<<3*15=45>> <<4*45=180>> <<180+``400=580000 #### #### 000` |
+|     7/32      |   `<<3*15=45>> <<4*45=180>> <<180+``400=400``>> #### 480`   |
+|     6/32      |  `<<3*15=45>> <<4*45=180>> <<180+300=``500``>> #### ``580`  |
+|     5/32      |  `<<3*15=45>> <<4*45=180>> <<180+300=``580``>> #### ``580`  |
+|     4/32      |    `<<3*15=45>> <<4*45=180>> <<180+300=480>> #### ``580`    |
+|     3/32      |    `<<3*15=45>> <<4*45=180>> <<180+300=480>> #### ``580`    |
+|     2/32      |     `<<3*15=45>> <<4*45=180>> <<180+300=480>> #### 480`     |
+|     1/32      |     `<<3*15=45>> <<4*45=180>> <<180+300=480>> #### 480`     |
 
 For global planning, we follow Ye et al. (2024a) to finetune DLMs on counting down (CD) datasets. CD is a mathematical reasoning challenge and a generalized version of the game 24, which many AR models struggle with (Gandhi et al., 2024). We compare DiffuGPT with other AR baselines with different model sizes in Table 7, demonstrating the advantages of DLMs.
 
@@ -677,8 +585,6 @@ For global planning, we follow Ye et al. (2024a) to finetune DLMs on counting do
 | LLaMA FT                  | 13B  | 51.1 |
 | SoS (Gandhi et al., 2024) | 250M | 54.2 |
 | DiffuGPT                  | 355M | 87.5 |
-
-<span id="tab:sos" data-label="tab:sos"></span>
 
 For infilling tasks, we attempt to query the LLaMA model with the prompt `given the <prefix> and <suffix>, please answer the <middle> part`, which includes both prefix and suffix information. However, this approach is no better than simply completing the prefix, likely because the LLaMA model needs tuning for filling in the middle (FIM; Bavarian et al. 2022b). Additionally, Bavarian et al. (2022b) notes that using AR models for infilling presents challenges, such as prompting difficulties and repetition. In contrast, DLMs are naturally suited for this task, as they are trained to handle masked inputs, which is a key advantage.
 
@@ -692,8 +598,6 @@ Additionally, we conduct a controlled experiment by training both AR and DLMs on
 | CodeLLaMA FT (FIM-PSM) |            0.74            |
 | Diffu-CodeLLaMA (Ours) |            0.76            |
 
-<span id="tab:code" data-label="tab:code"></span>
-
 ## C.4 Continual pre-training AR models
 
 We conduct a continual pre-training of GPT2 on the same corpus under the same settings as DiffuGPT. However, the zero-shot performance, shown in Table 9, indicates no improvement. This may be due to the stability gap introduced by continual pre-training (Guo et al., 2024), leading to performance degradation. Additionally, since our used corpus is similar to the one used for GPT2’s initial pre-training, continual pre-training may offer limited new knowledge.
@@ -705,8 +609,6 @@ We conduct a continual pre-training of GPT2 on the same corpus under the same se
 | GPT2-M                     | 38.3  | 50.7 | 37.7 | 67.4 | 2.6  |
 | GPT2-M (continue pretrain) | 36.7  | 49.4 | 37.9 | 66.7 | 2.6  |
 | DiffuGPT-M                 | 37.2  | 52.6 | 39.0 | 59.6 | 2.9  |
-
-<span id="tab:tasks" data-label="tab:tasks"></span>
 
 ## C.5 Decoding Speed Testing
 
@@ -724,8 +626,6 @@ We evaluate the inference time of LLaMA2 and DiffuLLaMA for unconditional text g
 |    2048    | flash-attention 2 |         23.5         |      35.7       |
 |    2048    | vanilla           |         38.1         |      32.8       |
 
-<span id="tab:appen-speed" data-label="tab:appen-speed"></span>
-
 Yet smaller $T$ leads to faster generation, in downstream tasks like multiple-choices, this may slightly impact accuracy. Examples are provided in Table 11.
 
 **Tabla 11.** Performance of DiffuLLaMA models on various tasks.
@@ -735,11 +635,7 @@ Yet smaller $T$ leads to faster generation, in downstream tasks like multiple-ch
 | DiffuLLaMA T=32 | 58.7  | 56.4 | 43.2 | 63.3 |
 | DiffuLLaMA T=8  | 47.1  | 52.6 | 41.9 | 57.1 |
 
-<span id="tab:diffullama-t" data-label="tab:diffullama-t"></span>
-
 **Tabla 12.** Generation examples of DiffuGPT-M ($T=1024)$.
-
-<div class="tcolorbox">
 
 If you’re considering applying to the JBCC school, I’m confident you will find something there!
 
@@ -796,13 +692,7 @@ There is no need to reuse your tee shirt. This means you can spend a few minutes
 
 Since polyester is very breathable, which means it is able to be used on both your skin and anything else
 
-</div>
-
-<span id="tab:sample1-appen" data-label="tab:sample1-appen"></span>
-
 **Tabla 13.** Generation examples of DiffuGPT-M ($T=256)$.
-
-<div class="tcolorbox">
 
 Use of the Service: Cookies may enable your internet site or your computer or device to access information using our Services, so as to allow us to work together to provide the website that you use. Cookies may provide Personal Information in certain cases.
 
@@ -830,13 +720,7 @@ For kids with a weekend, Logan has a playground and good for two and on August 4
 
 John Moody Brews is about to bring their Labor Day fun to the streets and your backyard on Labor Day Weekend. Logan Friendly Brews has a brewery cruise, street vendors and live music on Thursday night and they’ll have giveaways on Sunday. It’s a fun
 
-</div>
-
-<span id="tab:sample2-appen" data-label="tab:sample2-appen"></span>
-
 **Tabla 14.** Generation examples of DiffuGPT-M in 1024 tokens ($T=32)$.
-
-<div class="tcolorbox">
 
 t work in near-zero conditions.
 
@@ -875,10 +759,6 @@ REV: July 3, 1949
 By resolution which is passed: Either a person uses nothing more than a boat within a warehouse, apartment or barn. Department of the Interior or Department of Labor or system of it existed as a whole under the laws of Michigan three. through December one of such it would not. Each \$100 person shall be fined and the division shall collect all damages of each two hundred dollars and dollars’ the total of such amount and enter a. Rights reserved: also a trustee thereof may order the delinquent bonds. : If a person convicted if that has committed any act of attachment. Assisting duties shall deemed to have ceased within fifteen days, then the Commissioner to be appointed shall pay the district the sum of four percent of the value of the money recovered from these costs. Pursuant in this section shall be revoked without notice. Revocation: also the equivalent of instructions accompanied with. Fifteen days of the entry of such order. : The blight or place known to be in a person has an occupancy.k enables.
 
 He can throw in an about picture. How he loves it so much he is the greater these online webit himself right from scuba dive and wishes to be removed by the government of America, that’s a much sleazier story. From time social circles, the members of MoolahFast, a dating site focusing on the planet of different scuba divers,
-
-</div>
-
-<span id="tab:sample3-appen" data-label="tab:sample3-appen"></span>
 
 # References
 

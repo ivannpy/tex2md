@@ -79,3 +79,86 @@ def isolate_display_math(body):
     if body.count("$$") % 2:
         return body
     return pat.sub(repl, body)
+
+
+_MARK = "\u2063"
+
+
+def restore_math_text(body):
+    r"""Undo ``text-in-macro-bodies``: it writes ``\textrm{<U+2063>...}`` so a macro survives in text mode.
+    In running text pandoc has already turned that into plain words, so every ``\textrm{<U+2063>`` left is in
+    an equation: the author's ``\text{...}`` goes back. The invisible mark is removed everywhere."""
+    return body.replace("\\textrm{" + _MARK, "\\text{").replace(_MARK, "")
+
+
+_MATHML = re.compile(r"<math\b[^>]*>.*?<annotation encoding=\"application/x-tex\">(.*?)</annotation>.*?</math>", re.S)
+
+
+def mathml_to_tex(body):
+    """Tables pandoc can only write as HTML carry formulas as MathML; put back the TeX they came from."""
+    import html
+    return _MATHML.sub(lambda m: "$" + html.unescape(m.group(1)).strip() + "$", body)
+
+
+_COUNTER_HACKS = re.compile(r"\\(?:addtocounter|setcounter|stepcounter)\s*\{[^{}]*\}(?:\s*\{[^{}]*\})?|\\tag\{\\theequation[^{}]*\}")
+
+
+def drop_counter_hacks(body):
+    r"""``\addtocounter{equation}{1}\tag{\theequation}``: LaTeX counter juggling that no Markdown math engine
+    knows; the equation already carries its real ``\tag{N}``."""
+    return _COUNTER_HACKS.sub("", body)
+
+
+_COMMENT = re.compile(r"(?<!\\)%[^\n]*")
+
+
+def _math_spans(body):
+    """Left-to-right scan for math: ``$$ ... $$`` and ``$ ... $`` (an inline span may cross a line but not a
+    blank line; ``\\$`` is a dollar sign). Yields (start, end, is_display)."""
+    i, n = 0, len(body)
+    while i < n:
+        c = body[i]
+        if c == "\\":
+            i += 2
+            continue
+        if c != "$":
+            i += 1
+            continue
+        display = body.startswith("$$", i)
+        closer = "$$" if display else "$"
+        j, start = i + len(closer), i
+        while j < n:
+            if body[j] == "\\":
+                j += 2
+                continue
+            if body.startswith(closer, j):
+                break
+            if not display and body.startswith("\n\n", j):
+                j = n
+                break
+            j += 1
+        if j >= n:
+            i += len(closer)
+            continue
+        yield start, j + len(closer), display
+        i = j + len(closer)
+
+
+def tidy_math(body):
+    r"""Two clean-ups inside Markdown math: TeX comments (``% ...`` to the end of the line, usually a bare ``%``
+    that glues lines together in LaTeX) are dropped, and two inline formulas written back to back
+    (``$1$$\uparrow$``, which reads as the start of a display block) are merged into one."""
+    spans = list(_math_spans(body))
+    out, pos, prev = [], 0, None
+    for start, end, display in spans:
+        text = body[start:end]
+        if "%" in text:
+            text = _COMMENT.sub("", text)
+        if prev and not display and prev[1] == start and not prev[2]:
+            # glue to the previous inline span: drop the closing and the opening dollar
+            out[-1] = out[-1][:-1] + " " + text[1:]
+        else:
+            out.append(body[pos:start] + text)
+        pos, prev = end, (start, end, display)
+    out.append(body[pos:])
+    return "".join(out)
