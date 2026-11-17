@@ -45,8 +45,13 @@ numbers and the `.md` does not. Result: 0 float differences against the compiled
   longer leaves a half-extracted cache); at least 3 s between requests to the arXiv API across runs, `Retry-After`
   honoured, no retries on 4xx; network errors as one-line messages; `--mn` is validated; `arxiv` exits 1 when
   the conversion failed; JATS CDATA escaped.
-- **Library `.md` files not regenerated**: the new output differs from them (checklist answers, "Acknowledgments"
-  headings, fewer HTML tables, more captions). Regenerate with `tests/regress.py` when the library is to be updated.
+- **Library regenerated**: the 124 arXiv-LaTeX `.md` files of the library were rewritten with this version (same
+  front matter, MarginNote links included; the previous files were copied outside the library first). Against the
+  previous ones: paragraphs with an odd `$` 40 -> 0, decimal numbers of the PDF missing from the text 248 -> 53,
+  files with `error` diagnostics 15 -> 4 (the genuine `??`), unnumbered captions 42 -> 21, citations in the PDF's
+  own format (author-year where the paper uses it), table values and marks that `\cellcolor` and ✓/✗ used to
+  drop, listings as code instead of `#` headings, checklist answers and "Acknowledgments" headings back.
+- `tests/regress.py --out DIR` keeps the reconverted files and skips `INDEX.md` and the PDF/JATS conversions.
 
 ## 0.1.0 (refactor)
 - Package `tex2md` under `src/`; one CLI (`tex2md arxiv|jats|pdf|frontmatter|add-mn|check|index|fixmath|doctor`).

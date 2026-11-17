@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """Regression harness: reconvert papers with the current code and compare with a frozen baseline.
 
-    python3 tests/regress.py BASELINE_DIR [--jobs 4] [--only NAME ...]
+    python3 tests/regress.py BASELINE_DIR [--jobs 4] [--only NAME ...] [--out DIR]
 
 Each baseline .md carries its own arXiv id, version and MarginNote links in the front matter, so the
 conversion is replayed exactly (from the local cache, no network needed once downloaded). The
-comparison ignores the ``converted:`` date. Exit status 1 if any file differs.
+comparison ignores the ``converted:`` date. Exit status 1 if any file differs. Files that do not come
+from arXiv LaTeX (INDEX.md, PDF and JATS conversions) are skipped.
+
+``--out DIR`` keeps the reconverted files in DIR (otherwise they are written to a temporary folder and
+deleted): that is how a library is regenerated without touching it until the result has been reviewed.
 """
 from __future__ import annotations
 
@@ -31,6 +35,12 @@ def command_for(md_text: str, out: str) -> list[str]:
     for b, p in re.findall(r'bookmd5: (\w+)\s+path: ("(?:[^"\\]|\\.)*")', fm):
         cmd += ["--mn", f"{b}::{json.loads(p)}"]      # the path is a JSON string: decode its escapes (\u001b, \")
     return cmd
+
+
+def is_arxiv_latex(path: str) -> bool:
+    """True for a file written by ``tex2md arxiv`` (INDEX.md and the PDF/JATS conversions are not)."""
+    parts = Path(path).read_text(encoding="utf-8", errors="replace").split("---\n", 2)
+    return len(parts) == 3 and 'source: "arXiv LaTeX' in parts[1]
 
 
 def normalise(text: str) -> str:
@@ -59,17 +69,23 @@ def main() -> int:
     ap.add_argument("baseline")
     ap.add_argument("--jobs", type=int, default=4)
     ap.add_argument("--only", nargs="*")
+    ap.add_argument("--out", help="keep the reconverted files in this folder (default: a temporary one, deleted at the end)")
     a = ap.parse_args()
     files = sorted(os.path.join(a.baseline, f) for f in os.listdir(a.baseline) if f.endswith(".md"))
     if a.only:
         files = [f for f in files if any(o in f for o in a.only)]
+    total = len(files)
+    files = [f for f in files if is_arxiv_latex(f)]
     bad = 0
     with tempfile.TemporaryDirectory() as tmp, ThreadPoolExecutor(a.jobs) as ex:
-        for name, status, detail in ex.map(lambda f: check(f, tmp), files):
+        outdir = os.path.abspath(a.out) if a.out else tmp
+        os.makedirs(outdir, exist_ok=True)
+        for name, status, detail in ex.map(lambda f: check(f, outdir), files):
             if status != "same":
                 bad += 1
                 print(f"{status:7} {name}\n{detail}")
-    print(f"{len(files) - bad}/{len(files)} identical")
+    note = f" ({total - len(files)} not from arXiv LaTeX: skipped)" if total > len(files) else ""
+    print(f"{len(files) - bad}/{len(files)} identical{note}" + (f"; reconverted files in {outdir}" if a.out else ""))
     return 1 if bad else 0
 
 

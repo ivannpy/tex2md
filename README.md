@@ -109,6 +109,7 @@ Qué hace, cómo, fallas conocidas y trabajo futuro: ver `ROADMAP.md`.
 make check      # ruff + mypy + pytest (rápido)
 make regress    # reconvierte los artículos golden desde el caché local y compara
 python3 tests/regress.py DIR_CON_MD_BASE   # regresión completa contra una línea base
+python3 tests/regress.py DIR --out NUEVO   # igual, y conserva los .md reconvertidos en NUEVO (así se regenera una biblioteca)
 ```
 
 La regresión usa el front matter de cada `.md` base para repetir la conversión exacta y compara el cuerpo

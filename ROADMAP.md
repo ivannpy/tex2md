@@ -90,7 +90,8 @@ sin depender del orden.
 ### 2.3 Verificación
 - `tests/unit/`: reglas, filtro Lua (con pandoc real), CLI, posproceso y 22 conversiones reales («golden»)
   que se repiten desde el caché y se comparan byte a byte.
-- `tests/regress.py`: reconvierte toda la biblioteca y compara contra una línea base.
+- `tests/regress.py`: reconvierte toda la biblioteca y compara contra una línea base (`--out DIR` conserva los
+  archivos reconvertidos, que es como se regenera la biblioteca sin tocarla hasta revisar el resultado).
 - `audit [--level error|warning|info]`: compara cada `.md` con los números de su PDF compilado (leyendas
   ausentes o inexistentes, también las que están dentro de una lista o una cita) y muestra los diagnósticos
   tipados de su cuerpo; sale con estado 1 si hay diferencias de flotantes o diagnósticos de gravedad `error`.
@@ -129,7 +130,7 @@ Ordenadas por impacto. «Frecuencia» es sobre los 124 artículos de LaTeX.
 | F10 | ~~Compilar LaTeX de terceros sin `-no-shell-escape`~~ **resuelta**: `latexmk` se llama con `-no-shell-escape` (probado: `\write18` queda `disabled`) y las 124 conversiones siguen idénticas | — | — |
 | F11 | **Sin caché de versiones del conversor en el `.md`** | `VERSION` sigue en `0.1`; el encabezado no indica con qué versión se generó | no se distingue un `.md` viejo de uno nuevo |
 | F12 | **Parte de las verificaciones sigue siendo manual** | los diagnósticos ya viven en el paquete (`audit`, y desde esta revisión `unbalanced-math` y `lost-text`), pero los scripts de muestreo (cobertura de texto y de números frente al PDF, `\tag` frente a «(N)») siguen fuera del repositorio | esas comprobaciones dependen de que alguien las vuelva a escribir |
-| F17 | **Los `.md` de la biblioteca no se han regenerado** con esta versión | los 124 se reconvirtieron en una carpeta aparte y se compararon; difieren en las respuestas de las listas de verificación, los encabezados «Acknowledgments», menos tablas HTML y más leyendas | los `.md` que están en uso (vinculados a MarginNote) no tienen las correcciones |
+| F17 | ~~Los `.md` de la biblioteca no se habían regenerado con esta versión~~ **resuelta** el 2026-11-17: los 124 de LaTeX se reconvirtieron (la copia anterior se guardó fuera de la biblioteca) y `tests/regress.py` los reproduce idénticos | — | — |
 
 **Límites de diseño** (no son fallas a corregir): las imágenes no se extraen; la fidelidad tipográfica
 (posición de figuras, columnas) no se conserva; un `.md` de un artículo con macros muy exóticas puede requerir
@@ -152,6 +153,11 @@ una regla nueva.
 4. **Ritmo de la API de arXiv** (3 s entre peticiones, `Retry-After`, sin reintentos en errores 4xx) y errores de
    red como un mensaje de una línea.
 5. 271 pruebas (antes 138); `ruff` y `mypy` sin avisos.
+6. **Biblioteca regenerada** (F17): los 124 `.md` de LaTeX, con el mismo encabezado YAML (vínculos de MarginNote
+   incluidos). Frente a los anteriores: `$` sin pareja 40 → 0 párrafos, números decimales del PDF ausentes
+   248 → 53, archivos con diagnósticos `error` 15 → 4 (los `??` reales). `tests/regress.py --out DIR` conserva los
+   archivos reconvertidos y omite `INDEX.md` y los de PDF/JATS; es el flujo descrito en el `CLAUDE.md` de la
+   biblioteca.
 
 ### Hecho el 2026-11-16
 1. **Diagnósticos tipados** en el informe de conversión y en `audit` (`diagnostics.py`). Hicieron visibles F2,
@@ -162,9 +168,6 @@ una regla nueva.
    idéntica byte a byte.
 
 ### Siguiente, derivado de los diagnósticos
-- **Regenerar los `.md` de la biblioteca** con esta versión (F17), de modo que no se pierdan los vínculos con
-  MarginNote: `tests/regress.py` reconvierte con el front matter de cada archivo; revisar la diferencia antes de
-  sustituirlos.
 - **Revisar a mano los `lost-text`** de mayor tamaño (`hu2026elf`, `madeira2026trajectory`, `han2022ssdlm`) para
   afinar el diagnóstico (F15), y ver las ecuaciones sin `\tag` que no son de `campbell2022` (F3).
 - **Investigar las 87 citas de `sahoo2022`** (F13) y añadir una lista de diagnósticos aceptados a `audit`
