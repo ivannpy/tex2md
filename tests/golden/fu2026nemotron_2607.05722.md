@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: 3694727177d530e85c6424b9dec81632aefb05139e1288e8e8c23e1599a47acf
     path: "PCIC/Tesis/Text generation/Nemotron-Labs-Diffusion- A Tri-Mode Language Model Unifying Autoregressive, Diffusion, and Self-Speculation Decoding.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-16
+converted: 2026-11-17
 ---
 
 # Nemotron-Labs-Diffusion: A Tri-Mode Language Model Unifying Autoregressive, Diffusion, and Self-Speculation Decoding
@@ -227,11 +227,7 @@ Tri-mode LMs fully preserve standard left-to-right generation: at step $i$, they
 
 <u>Verification with AR.</u> We then run a second forward pass over the draft tokens $[\hat{x}_{n+1},\ldots,\hat{x}_{n+k}]$ with causal attention, again reusing the prefix KV cache. The AR logits at each position yield next-token predictions $\{x^{\text{AR}}_{n+j}\}_{j=1}^{k}$. We accept the longest prefix of draft tokens that passes the verification criterion (e.g., $x^{\text{AR}}_{n+j} = \hat{x}_{n+j}$) and commit the accepted tokens to the verified prefix. As in standard speculative decoding \[17\], the AR prediction at the first rejected position provides one additional verified token, so each step produces between 1 and $k{+}1$ tokens. Note that both the drafting and verification passes can reuse the cached prefix KVs from prior verified steps.
 
-**Enhance linear self-speculation w/ LoRA.** We further enhance linear self-speculation by tuning a LoRA adapter \[18\] on top of the diffusion draft pathway to better align its drafts with the AR verifier, thereby extending the accepted prefix length per step. We apply LoRA only to the $o_{\text{proj}}$ layer of the attention module (rank $128$, $\alpha{=}512$, $\sim
-
-$$36$M trainable parameters/$\sim$$
-
-0.4\%$ of the backbone), leaving the AR pathway unchanged. The training loss combines an LK-hybrid distribution-matching term \[19\] with a token-level cross-entropy term, both applied to the accepted prefix plus the first rejected position of each draft block, as shown in Fig. 11 in Appendix B.
+**Enhance linear self-speculation w/ LoRA.** We further enhance linear self-speculation by tuning a LoRA adapter \[18\] on top of the diffusion draft pathway to better align its drafts with the AR verifier, thereby extending the accepted prefix length per step. We apply LoRA only to the $o_{\text{proj}}$ layer of the attention module (rank $128$, $\alpha{=}512$, $\sim 36$M trainable parameters/$\sim 0.4\%$ of the backbone), leaving the AR pathway unchanged. The training loss combines an LK-hybrid distribution-matching term \[19\] with a token-level cross-entropy term, both applied to the accepted prefix plus the first rejected position of each draft block, as shown in Fig. 11 in Appendix B.
 
 <u>Drafter–verifier setup.</u> For each position $j \in \{1, \ldots, k\}$ in the draft block, the LoRA-augmented drafter produces logits $z^d_j \in \mathbb{R}^{|\mathcal{V}|}$ over the vocabulary $\mathcal{V}$, while the frozen AR verifier produces target logits $z^t_j$ on the same context. We define the temperature-scaled distributions 
 
@@ -426,7 +422,7 @@ We evaluate across scientific QA and instruction following (GPQA, IFEval, MMLU),
 |  | AR | 39.39 | 69.39 | 76.22 | 71.16 | 77.60 | 87.87 | 23.33 | 16.67 | 71.70 | 21.37 | 55.50 | 1.00 |
 |  | Diff. | 33.84 | 68.93 | 74.39 | 73.54 | 74.80 | 88.40 | 16.67 | 10.00 | 72.06 | 16.30 | 52.90 | 1.91 |
 |  | Linear SS | 35.86 | 68.96 | 75.00 | 70.11 | 77.40 | 87.79 | 26.67 | 16.67 | 71.89 | 20.04 | 55.00 | 4.36 |
-|  | Quad. SS | 42.93 | 71.36 | 79.27 | 76.46 | 78.20 | 88.25 | 13.33 | 16.67 | 72.12 | 19.60 | 55.80 | 5.42 |
+| **Nemotron-Labs** **-Diffusion-3B** **(Tri-Mode)** | Quad. SS | 42.93 | 71.36 | 79.27 | 76.46 | 78.20 | 88.25 | 13.33 | 16.67 | 72.12 | 19.60 | 55.80 | 5.42 |
 | *14B Scale* |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | Gemma-3-12B-IT | AR | 38.32 | 85.73 | 58.23 | 85.45 | 84.55 | 90.45 | 23.75 | 16.88 | 76.41 | 20.54 | 58.03 | 1.00 |
 | Phi-3-Medium-14B | AR | 37.56 | 85.75 | 70.43 | 76.65 | 43.35 | 89.69 | 1.88 | 0.62 | 76.67 | 10.79 | 49.34 | 1.00 |
@@ -436,7 +432,7 @@ We evaluate across scientific QA and instruction following (GPQA, IFEval, MMLU),
 |  | AR | 54.55 | 68.50 | 86.59 | 85.19 | 88.40 | 91.36 | 46.67 | 43.33 | 82.51 | 27.48 | 67.46 | 1.00 |
 |  | Diff. | 48.99 | 69.03 | 83.54 | 82.80 | 85.80 | 93.71 | 43.33 | 50.00 | 82.17 | 25.77 | 66.51 | 2.74 |
 |  | Linear SS | 47.47 | 70.06 | 85.37 | 84.66 | 86.60 | 92.04 | 50.00 | 40.00 | 81.11 | 26.32 | 66.36 | 5.96 |
-|  | Quad. SS | 52.02 | 72.15 | 87.20 | 85.45 | 88.00 | 92.12 | 53.33 | 40.00 | 82.45 | 28.74 | 68.15 | 6.92 |
+| **Nemotron-Labs** **-Diffusion-14B** **(Tri-Mode)** | Quad. SS | 52.02 | 72.15 | 87.20 | 85.45 | 88.00 | 92.12 | 53.33 | 40.00 | 82.45 | 28.74 | 68.15 | 6.92 |
 
 **Tabla 8.** Benchmark our Nemotron-Labs-Diffusion-8B base model against SOTA AR and diffusion base LMs across coding, math, knowledge, and commonsense reasoning benchmarks.
 
@@ -450,7 +446,7 @@ We evaluate across scientific QA and instruction following (GPQA, IFEval, MMLU),
 |  | AR | 60.37 | 53.05 | 68.20 | 82.54 | 88.25 | 66.00 | 74.68 | 83.38 | 58.11 | 76.08 | 80.09 | 71.98 | 71.89 | 1.00 |
 |  | Diff. | 62.80 | 57.32 | 67.00 | 81.75 | 87.26 | 65.16 | 74.68 | 83.38 | 58.11 | 76.08 | 80.09 | 71.98 | 72.13 | 2.06 |
 |  | Linear SS | 63.41 | 56.10 | 67.20 | 81.75 | 88.17 | 67.38 | 74.68 | 83.38 | 58.11 | 76.08 | 80.09 | 71.98 | 72.36 | 4.67 |
-|  | Quad. SS | 62.20 | 54.88 | 67.60 | 81.48 | 88.48 | 66.24 | 74.68 | 83.38 | 58.11 | 76.08 | 80.09 | 71.98 | 72.10 | 7.04 |
+| **Nemotron-Labs** **-Diffusion-8B** **(Tri-Mode)** | Quad. SS | 62.20 | 54.88 | 67.60 | 81.48 | 88.48 | 66.24 | 74.68 | 83.38 | 58.11 | 76.08 | 80.09 | 71.98 | 72.10 | 7.04 |
 
 **Tabla 9.** Benchmarking discrete diffusion VLMs and Nemotron-Labs-Diffusion-VLM across tasks. The diffusion mode of Nemotron-Labs-Diffusion-VLM uses denoising threshold $\tau{=}0.9$.
 
@@ -461,8 +457,8 @@ We evaluate across scientific QA and instruction following (GPQA, IFEval, MMLU),
 | Dimple | Diff. | 74.4 | 63.4 | 37.7 | 45.2 | 23.8 | 12.4 | 42.3 | 55.4 | 1 | 44.3 |
 | LLaDA-V-8B | Diff. | **77.8** | 78.3 | 83.9 | 48.6 | **35.2** | 18.6 | 59.7 | **63.2** | 1 | 58.2 |
 |  | AR | 75.0 | **81.3** | **89.2** | 50.3 | 32.6 | **24.3** | **60.4** | 62.6 | 1 | **59.5** |
-|  | Diff. | 74.7 | 76.6 | 88.3 | **50.4** | 31.7 | 22.2 | 58.5 | 60.3 |  | 57.9 |
-|  | Linear SS | 74.9 | 81.2 | 89.3 | 50.0 | 32.8 | 24.1 | 60.7 | 62.4 |  | 59.4 |
+|  | Diff. | 74.7 | 76.6 | 88.3 | **50.4** | 31.7 | 22.2 | 58.5 | 60.3 | 2.46 all samples 2.80 tok${>}$<!-- -->100 3.15 tok${>}$<!-- -->200 | 57.9 |
+| **Nemotron-Labs** **-Diffusion** **-VLM-8B** | Linear SS | 74.9 | 81.2 | 89.3 | 50.0 | 32.8 | 24.1 | 60.7 | 62.4 | 3.63 all samples 6.03 tok${>}$<!-- -->100 7.45 tok${>}$<!-- -->200 | 59.4 |
 
 **Improve diffusion decoding with a better sampler.** We evaluate the effectiveness of the proposed sampler in Sec. 3.2. We apply it on top of our instruct model with a block size of 32 and report the average accuracy across all ten tasks under different denoising thresholds to obtain the accuracy–TPF trade-off. As shown in Fig. 8, the trained sampler shifts the entire Pareto frontier upward, delivering higher TPF at the same accuracy (e.g., 1.3$\times$ TPF) or higher accuracy at the same TPF (e.g., +10.6% accuracy). The improvements from this simple design suggest that part of the gap between the realized diffusion-mode TPF and the SOL ceiling in Sec. 4 can be closed by learning the acceptance policy itself.
 
@@ -554,15 +550,11 @@ Looking forward, these insights shed light on several promising directions for f
 
 This appendix details the sampler introduced in Sec. 3.2, including its architecture, input features, and training trajectory collection.
 
-<u>Architecture and feature engineering.</u> As shown in Fig. 10, the sampler operates on top of the frozen backbone and adds negligible parameter overhead ($\sim
-
-$$0.06\%$, with $4.8\mathrm{M}$ compared to the $8\mathrm{B}$ backbone). It is a 4-layer lightweight Transformer with a hidden dimension of $d{=}384$. It attends bidirectionally over the current block, followed by a per-position linear head with a sigmoid output. Each input position is represented by a 144-dimensional feature: PCA-compressed semantic embeddings of the top-$3$ predictions, as well as statistics summarizing the output distribution (e.g., top-$1$ probability, margin, top-$3$ mass, and entropy). The semantic embedding of the model’s own top-$1$ prediction is by far the most informative feature. We also find cross-position attention to be essential as an MLP-only ablation drops accuracy-TPF AUC by 10 percentage points, indicating that the sampler must jointly reason about which positions are mutually safe to commit.
+<u>Architecture and feature engineering.</u> As shown in Fig. 10, the sampler operates on top of the frozen backbone and adds negligible parameter overhead ($\sim 0.06\%$, with $4.8\mathrm{M}$ compared to the $8\mathrm{B}$ backbone). It is a 4-layer lightweight Transformer with a hidden dimension of $d{=}384$. It attends bidirectionally over the current block, followed by a per-position linear head with a sigmoid output. Each input position is represented by a 144-dimensional feature: PCA-compressed semantic embeddings of the top-$3$ predictions, as well as statistics summarizing the output distribution (e.g., top-$1$ probability, margin, top-$3$ mass, and entropy). The semantic embedding of the model’s own top-$1$ prediction is by far the most informative feature. We also find cross-position attention to be essential as an MLP-only ablation drops accuracy-TPF AUC by 10 percentage points, indicating that the sampler must jointly reason about which positions are mutually safe to commit.
 
 **Figura 10.** An illustration of the sampler design on top of the diffusion mode.
 
-<u>Data collection for sampler training.</u> To train the sampler, we collect $\sim$$
-
-20\mathrm{M}$ denoising trajectories from Nemotron-Labs-Diffusion-8B on \[70\] (math, code, STEM, and chat subsets) at block lengths $B \in {8, 32}$. We use two complementary trajectory policies: (i) standard confidence decoding ($k{=}1$), where the block is decoded one token at a time in confidence order; and (ii) a hybrid policy that first commits ground-truth tokens whenever the model’s top-$1$ prediction already agrees with them, then falls back to confidence for the remaining positions. At each intermediate step of every trajectory, we store the 144-dimensional per-position features and the binary label $\mathbf{1}[\text{current top-}1 = \text{final ID}]$, where the *final ID* is the token ultimately committed at that position once the block is fully decoded under the same policy. Training uses per-position binary cross-entropy on masked positions, with AUC on a held-out trajectory split as the early stopping criterion. The resulting accuracy–TPF gains over confidence thresholding are empirically reported in Sec. 6.1 and Fig. 8.
+<u>Data collection for sampler training.</u> To train the sampler, we collect $\sim 20\mathrm{M}$ denoising trajectories from Nemotron-Labs-Diffusion-8B on \[70\] (math, code, STEM, and chat subsets) at block lengths $B \in {8, 32}$. We use two complementary trajectory policies: (i) standard confidence decoding ($k{=}1$), where the block is decoded one token at a time in confidence order; and (ii) a hybrid policy that first commits ground-truth tokens whenever the model’s top-$1$ prediction already agrees with them, then falls back to confidence for the remaining positions. At each intermediate step of every trajectory, we store the 144-dimensional per-position features and the binary label $\mathbf{1}[\text{current top-}1 = \text{final ID}]$, where the *final ID* is the token ultimately committed at that position once the block is fully decoded under the same policy. Training uses per-position binary cross-entropy on masked positions, with AUC on a held-out trajectory split as the early stopping criterion. The resulting accuracy–TPF gains over confidence thresholding are empirically reported in Sec. 6.1 and Fig. 8.
 
 # B LoRA-Enhanced Linear SS
 

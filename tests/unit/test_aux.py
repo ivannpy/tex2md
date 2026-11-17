@@ -36,3 +36,49 @@ def test_parse_floats_follows_input_order_and_keeps_numbers(tmp_path):
 def test_parse_floats_is_empty_without_caption_lines(tmp_path):
     (tmp_path / "main.aux").write_text(r"\relax \newlabel{a}{{1}{1}}")
     assert parse_floats(str(tmp_path)) == []
+
+
+def test_algorithm_captions_are_read_from_the_list_of_algorithms(tmp_path):
+    (tmp_path / "main.aux").write_text(
+        "\\@writefile{loa}{\\contentsline {algorithm}{\\numberline {1}{\\ignorespaces Sampling from \\textbf  {Argmax} Flows}}{4}{algorithm.1}}\n"
+        "\\@writefile{loa}{\\contentsline {algorithm}{\\numberline {A.2}{\\ignorespaces Optimizing}}{9}{algorithm.2}}\n"
+        "\\@writefile{lof}{\\contentsline {figure}{\\numberline {1}{\\ignorespaces Overview.}}{2}{figure.caption.1}}\n")
+    floats = parse_floats(str(tmp_path))
+    assert [(f["kind"], f["num"]) for f in floats] == [("algorithm", "1"), ("algorithm", "A.2"), ("figure", "1")]
+    assert floats[0]["text"].startswith("samplingfromargmaxflows")
+
+
+def test_a_caption_written_with_a_size_command_keeps_its_own_text_in_the_aux(tmp_path):
+    (tmp_path / "main.aux").write_text(
+        "\\@writefile{lot}{\\contentsline {table}{\\numberline {2}{\\ignorespaces \\relax \\fontsize  {9}{10}\\selectfont  "
+        "\\abovedisplayskip 6\\p@ plus1.5\\p@ minus4\\p@ \\abovedisplayshortskip \\z@ plus2\\p@ \\belowdisplayskip \\abovedisplayskip "
+        "\\belowdisplayshortskip 3\\p@ plus2\\p@ minus2\\p@ {Unconditional CIFAR10 reverse process.}}}{6}{figure.caption.5}}\n"
+        "\\@writefile{lot}{\\contentsline {table}{\\numberline {3}{\\ignorespaces \\@setfontsize \\small \\@ixpt {11}"
+        "\\abovedisplayskip 8.5\\p@ plus3\\p@ minus4\\p@ {Second one.}}}{7}{table.3}}\n")
+    first, second = (f["text"] for f in parse_floats(str(tmp_path)))
+    assert first.startswith("unconditionalcifar10reverseprocess") and second.startswith("secondone")
+
+
+def test_a_size_command_before_a_caption_without_braces_does_not_eat_the_caption(tmp_path):
+    (tmp_path / "main.aux").write_text(
+        "\\@writefile{lot}{\\contentsline {table}{\\numberline {5}{\\ignorespaces \\relax \\fontsize  {9}{10}\\selectfont  "
+        "\\abovedisplayskip 6\\p@ plus1.5\\p@ minus4\\p@ \\abovedisplayshortskip \\z@ plus2\\p@ \\belowdisplayskip \\abovedisplayskip "
+        "\\belowdisplayshortskip 3\\p@ plus2\\p@ minus2\\p@ Planning times for Redundancy-Aware vs. Unaware.}}{10}{table.caption.20}}\n")
+    (floats,) = parse_floats(str(tmp_path))
+    assert floats["text"].startswith("planningtimesforredundancyawarevsunaware")
+
+
+def test_audit_counts_captions_that_sit_in_a_list_item_or_a_quote(tmp_path, monkeypatch):
+    from tex2md.library import audit
+    monkeypatch.setattr(audit, "CACHE", str(tmp_path / "cache"))
+    build = tmp_path / "cache" / "2401.00001v1" / "build"
+    build.mkdir(parents=True)
+    (build / "main.aux").write_text(
+        "\\@writefile{lof}{\\contentsline {figure}{\\numberline {1}{\\ignorespaces First figure.}}{1}{figure.caption.1}}\n"
+        "\\@writefile{lof}{\\contentsline {figure}{\\numberline {2}{\\ignorespaces Second figure.}}{2}{figure.caption.2}}\n"
+        "\\@writefile{lof}{\\contentsline {figure}{\\numberline {3}{\\ignorespaces Third figure.}}{3}{figure.caption.3}}\n")
+    md = tmp_path / "p.md"
+    md.write_text('---\nsource: "arXiv LaTeX (x)"\narxiv: "2401.00001"\narxiv_version: "v1"\n---\n\n'
+                  "1.  Item\n\n    **Figura 1.** First figure.\n\n> **Figura 2.** Second figure.\n\n**Figura 3.** Third figure.\n")
+    result = audit.audit_file(md)
+    assert result is not None and result.missing == [] and result.unknown == []

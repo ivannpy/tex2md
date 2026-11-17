@@ -2,8 +2,8 @@ __pycache__/
 *.pyc
 .venv/
 marker/.venv/
-build/
-dist/
+/build/
+/dist/
 *.egg-info/
 .pytest_cache/
 .ruff_cache/

@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: 4a439691831e2e7c25e5fc9a4890c0f65a811a3fa054dee5b968def668c3bae5
     path: "PCIC/Tesis/low-resource/LinguaLIFT- An Effective Two-stage Instruction Tuning Framework for Low-Resource Language Reasoning.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-16
+converted: 2026-11-17
 ---
 
 # LinguaLIFT: An Effective Two-stage Instruction Tuning Framework for Low-Resource Language Reasoning
@@ -131,35 +131,34 @@ Three categories of baselines are considered: (1) **Mono-SFT**: *MAmmoTH* (Yue 
 
 **Tabla 1.** Results on the MMWP benchmark, where “LR.”, “MR.”, and “HR.” denote mean accuracy for low-, medium-, and high-resource languages, respectively. “Use Multi.” denotes whether multilingual or parallel corpus is utilized. Bold values indicate the highest score across systems. $\dagger$ marks results obtained using officially released models, $\Diamond$ denotes the LoRA (Hu et al., 2022) implementation, and $\ddagger$ signifies results from our local implementation. The LLM and extra data used in the third baseline category are specified in brackets.
 
-|                               |            |          |          |          |          |
-|:------------------------------|:----------:|:--------:|:--------:|:--------:|:--------:|
-| **LLaMA-2-7B as base model**  |  **Use**   | **LR.**  | **MR.**  | **HR.**  | **Avg.** |
-|                               | **Multi.** |          |          |          |          |
-|                               |            |          |          |          |          |
-|                               |            |          |          |          |          |
-| MAmmoTH^†^                    |            |   6.36   |   20.4   |   26.1   |   15.5   |
-| WizardMath^†^                 |            |   10.1   |   28.0   |   32.2   |   21.0   |
-| MetaMath^†^                   |            |   13.6   |   37.2   |   41.8   |   27.8   |
-| OpenMath2                     |            |   19.3   |   55.5   | **62.7** |   41.1   |
-|                               |            |          |          |          |          |
-| MathOctopus-Parallel^†^       |            |   11.0   |   20.8   |   25.2   |   17.4   |
-| MathOctopus-MAPO-DPO^†^       |            |   18.6   |   29.8   |   33.1   |   25.6   |
-| MetaMathOctopus-MAPO-DPO^†^   |            |   16.4   |   36.7   |   43.9   |   29.3   |
-| QAlign-MetaMathQA^†^          |            |   17.1   |   39.0   |   44.5   |   30.6   |
-|                               |            |          |          |          |          |
-| Translate-En (MetaMath)       |            |   27.6   |   36.4   |   40.6   |   33.4   |
-| LangBridge^†^ (MetaMath)      |            |   33.4   |   36.8   |   39.4   |   35.9   |
-| MindMerger-Soft^†^ (MetaMath) |            |   36.6   |   40.7   |   43.2   |   39.4   |
-|                               |            |   36.7   |   39.8   |   41.5   |   38.8   |
-|                               |            |   33.4   |   36.8   |   39.4   |   35.9   |
-| Translate-En (OpenMath2)      |            |   43.1   |   54.7   |   61.5   |   51.0   |
-| LangBridge (OpenMath2)        |            |   47.9   |   53.8   |   59.2   |   52.3   |
-| MindMerger-Soft (OpenMath2)   |            |   49.5   |   54.8   |   61.2   |   53.8   |
-|                               |            |          |          |          |          |
-|                               |            |   41.2   |   44.3   |   45.5   |   43.2   |
-|                               |            |   38.6   |   42.7   |   44.1   |   41.2   |
-|                               |            | **55.4** | **61.2** |   62.5   | **58.9** |
-|                               |            |   53.5   |   59.0   |   60.8   |   57.0   |
+| **LLaMA-2-7B as base model** | **Use** | **LR.** | **MR.** | **HR.** | **Avg.** |
+|:---|:--:|:--:|:--:|:--:|:--:|
+|  | **Multi.** |  |  |  |  |
+| baseline |  |  |  |  |  |
+| ***Mono-SFT*** |  |  |  |  |  |
+| MAmmoTH^†^ | ✗ | 6.36 | 20.4 | 26.1 | 15.5 |
+| WizardMath^†^ | ✗ | 10.1 | 28.0 | 32.2 | 21.0 |
+| MetaMath^†^ | ✗ | 13.6 | 37.2 | 41.8 | 27.8 |
+| OpenMath2^‡^ | ✗ | 19.3 | 55.5 | **62.7** | 41.1 |
+| ***Multi-SFT*** |  |  |  |  |  |
+| MathOctopus-Parallel^†^ | ✓ | 11.0 | 20.8 | 25.2 | 17.4 |
+| MathOctopus-MAPO-DPO^†^ | ✓ | 18.6 | 29.8 | 33.1 | 25.6 |
+| MetaMathOctopus-MAPO-DPO^†^ | ✓ | 16.4 | 36.7 | 43.9 | 29.3 |
+| QAlign-MetaMathQA^†^ | ✓ | 17.1 | 39.0 | 44.5 | 30.6 |
+| ***Leveraging External Tools or Models*** |  |  |  |  |  |
+| Translate-En^‡^ (MetaMath) | ✗ | 27.6 | 36.4 | 40.6 | 33.4 |
+| LangBridge^†^ (MetaMath) | ✗ | 33.4 | 36.8 | 39.4 | 35.9 |
+| MindMerger-Soft^†^ (MetaMath) | ✓ | 36.6 | 40.7 | 43.2 | 39.4 |
+| (Add Low-Resource)^‡^ | ✓ | 36.7 | 39.8 | 41.5 | 38.8 |
+| (Low-Resource Retrain)^‡^ | ✓ | 33.4 | 36.8 | 39.4 | 35.9 |
+| Translate-En^‡^ (OpenMath2) | ✗ | 43.1 | 54.7 | 61.5 | 51.0 |
+| LangBridge^‡^ (OpenMath2) | ✗ | 47.9 | 53.8 | 59.2 | 52.3 |
+| MindMerger-Soft^‡^ (OpenMath2) | ✓ | 49.5 | 54.8 | 61.2 | 53.8 |
+| our methods |  |  |  |  |  |
+| **LinguaLIFT (MetaMathQA)** | ✗ | 41.2 | 44.3 | 45.5 | 43.2 |
+| **LinguaLIFT^$\Diamond$^ (MetaMathQA)** | ✗ | 38.6 | 42.7 | 44.1 | 41.2 |
+| **LinguaLIFT (OpenMathInstruct-2)** | ✗ | **55.4** | **61.2** | 62.5 | **58.9** |
+| **LinguaLIFT^$\Diamond$^ (OpenMathInstruct-2)** | ✗ | 53.5 | 59.0 | 60.8 | 57.0 |
 
 #### LinguaLIFT demonstrates significant improvements across low-resource languages.
 
@@ -169,54 +168,52 @@ Table 1 presents experimental results on the MMWP test set, grouped by language
 
 **Tabla 2.** Results on MGSM and MSVAMP datasets. The usage of abbreviation, symbol and boldface are the same in Table 1.
 
-|  |  |  |  |  |  |  |
-|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
 |  | **MGSM** |  |  | **MSVAMP** |  |  |
+|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
 | **LLaMA-2-7B as base model** | **LR.** | **HR.** | **Avg.** | **LR.** | **HR.** | **Avg.** |
-|  |  |  |  |  |  |  |
-|  |  |  |  |  |  |  |
-|  | 3.40 | 32.4 | 21.9 | 6.57 | 40.1 | 30.1 |
-|  | 4.00 | 37.7 | 25.5 | 15.7 | 48.5 | 38.7 |
-|  | 4.60 | 51.7 | 34.6 | 15.2 | 61.2 | 47.4 |
-|  | 5.60 | 60.2 | 40.4 | 18.8 | 70.5 | 55.0 |
-|  |  |  |  |  |  |  |
-|  | 28.0 | 42.4 | 37.2 | 33.6 | 43.8 | 40.8 |
-|  | 30.6 | 43.4 | 38.8 | 52.5 | 58.8 | 56.9 |
-|  | 31.0 | 55.6 | 46.7 | 57.8 | 67.4 | 64.5 |
-|  | 26.3 | 55.9 | 45.2 | 48.4 | 61.5 | 57.6 |
-|  |  |  |  |  |  |  |
-|  | 39.6 | 55.1 | 49.4 | 47.4 | 52.3 | 50.9 |
-|  | 38.4 | 51.9 | 47.0 | 43.9 | 54.5 | 51.4 |
-|  | 53.1 | 57.9 | 56.2 | 52.7 | 60.6 | 58.2 |
-|  | 41.3 | 63.8 | 55.6 | 51.9 | 62.2 | 59.1 |
-|  | 42.6 | 60.8 | 54.2 | 47.9 | 64.4 | 59.5 |
-|  | 60.5 | **67.5** | 65.0 | 63.4 | 74.2 | 70.9 |
-|  |  |  |  |  |  |  |
-|  | 55.4 | 58.8 | 57.6 | 56.1 | 60.6 | 59.3 |
-|  | 51.2 | 54.7 | 53.5 | 51.5 | 56.1 | 54.7 |
-|  | **63.8** | 66.5 | **65.5** | **67.2** | **74.3** | **72.2** |
-|  | 59.9 | 62.9 | 61.8 | 63.5 | 70.5 | 68.4 |
+| baseline |  |  |  |  |  |  |
+| ***Mono-SFT*** |  |  |  |  |  |  |
+| MAmmoTH^†^ | 3.40 | 32.4 | 21.9 | 6.57 | 40.1 | 30.1 |
+| WizardMath^†^ | 4.00 | 37.7 | 25.5 | 15.7 | 48.5 | 38.7 |
+| MetaMath^†^ | 4.60 | 51.7 | 34.6 | 15.2 | 61.2 | 47.4 |
+| OpenMath2^‡^ | 5.60 | 60.2 | 40.4 | 18.8 | 70.5 | 55.0 |
+| ***Multi-SFT*** |  |  |  |  |  |  |
+| MathOctopus-Parallel^†^ | 28.0 | 42.4 | 37.2 | 33.6 | 43.8 | 40.8 |
+| MathOctopus-MAPO-DPO^†^ | 30.6 | 43.4 | 38.8 | 52.5 | 58.8 | 56.9 |
+| MetaMathOctopus-MAPO-DPO^†^ | 31.0 | 55.6 | 46.7 | 57.8 | 67.4 | 64.5 |
+| QAlign-MetaMathQA^†^ | 26.3 | 55.9 | 45.2 | 48.4 | 61.5 | 57.6 |
+| ***Leveraging External Tools or Models*** |  |  |  |  |  |  |
+| Translate-En^‡^ (MetaMath) | 39.6 | 55.1 | 49.4 | 47.4 | 52.3 | 50.9 |
+| LangBridge^†^ (MetaMath) | 38.4 | 51.9 | 47.0 | 43.9 | 54.5 | 51.4 |
+| MindMerger-Soft^†^ (MetaMath) | 53.1 | 57.9 | 56.2 | 52.7 | 60.6 | 58.2 |
+| Translate-En^‡^ (OpenMath2) | 41.3 | 63.8 | 55.6 | 51.9 | 62.2 | 59.1 |
+| LangBridge^‡^ (OpenMath2) | 42.6 | 60.8 | 54.2 | 47.9 | 64.4 | 59.5 |
+| MindMerger-Soft^‡^ (OpenMath2) | 60.5 | **67.5** | 65.0 | 63.4 | 74.2 | 70.9 |
+| our methods |  |  |  |  |  |  |
+| **LinguaLIFT (MetaMathQA)** | 55.4 | 58.8 | 57.6 | 56.1 | 60.6 | 59.3 |
+| **LinguaLIFT^$\Diamond$^ (MetaMathQA)** | 51.2 | 54.7 | 53.5 | 51.5 | 56.1 | 54.7 |
+| **LinguaLIFT (OpenMathInstruct-2)** | **63.8** | 66.5 | **65.5** | **67.2** | **74.3** | **72.2** |
+| **LinguaLIFT^$\Diamond$^ (OpenMathInstruct-2)** | 59.9 | 62.9 | 61.8 | 63.5 | 70.5 | 68.4 |
 
 Experimental results across four multilingual reasoning benchmarks (Tables 2 and 3) demonstrate LinguaLIFT’s robust generalization capabilities in out-of-domain scenarios. The framework achieves significant improvements over existing baselines in mathematical reasoning tasks (MGSM, MSVAMP) for low-resource languages while exhibiting strong adaptability to cross-domain commonsense reasoning challenges (XNLI, X-CSQA). By excelling in numerical computation and understanding semantics, LinguaLIFT demonstrates its task-agnostic generalization ability across various tasks, effectively transferring learned patterns between different reasoning paradigms and thus enhancing performance in low-resource language reasoning. Furthermore, the model enhances reasoning accuracy even in high-resource languages, underscoring its dual capacity to generalize and adapt across tasks and resource levels.
 
-**Tabla 3.** Results on XNLI and X-CSQA datasets. The usage of abbreviation is the same in Table 2. The asterisk symbol () indicates results are taken from the published results of Huang et al. (2024).
+**Tabla 3.** Results on XNLI and X-CSQA datasets. The usage of abbreviation is the same in Table 2. The asterisk symbol (∗) indicates results are taken from the published results of Huang et al. (2024).
 
-|  |  |  |  |  |  |  |
-|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
 |  | **XNLI** |  |  | **X-CSQA** |  |  |
+|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
 | **LLaMA-2-7B as base model** | **LR.** | **HR.** | **Avg.** | **LR.** | **HR.** | **Avg.** |
-|  |  |  |  |  |  |  |
-|  |  |  |  |  |  |  |
-|  | 58.7 | 80.1 | 68.7 | 28.6 | 58.6 | 51.3 |
-|  |  |  |  |  |  |  |
-|  | 63.6 | 81.5 | 71.9 | 29.4 | 48.6 | 43.8 |
-|  | 67.1 | 80.9 | 73.5 | 35.5 | 57.9 | 52.3 |
-|  |  |  |  |  |  |  |
-|  | 73.9 | 79.4 | 76.5 | 30.9 | 37.8 | 36.1 |
-|  | 71.1 | 79.6 | 75.1 | 42.7 | 55.5 | 52.3 |
-|  | 74.4 | 83.1 | 78.4 | 47.9 | 65.4 | 61.0 |
-|  |  |  |  |  |  |  |
-|  | **77.6** | **83.3** | **80.3** | **49.6** | **65.5** | **61.5** |
+| baselines |  |  |  |  |  |  |
+| ***Mono-SFT(English-only Task Data)*** |  |  |  |  |  |  |
+| Mono-SFT^∗^ | 58.7 | 80.1 | 68.7 | 28.6 | 58.6 | 51.3 |
+| ***Multi-SFT(Multilingual Task Data with Query Translation)*** |  |  |  |  |  |  |
+| Multi-SFT^∗^ | 63.6 | 81.5 | 71.9 | 29.4 | 48.6 | 43.8 |
+| QAlign^∗^ | 67.1 | 80.9 | 73.5 | 35.5 | 57.9 | 52.3 |
+| ***Freezing LLM with External Tools or Models*** |  |  |  |  |  |  |
+| LangBridge^∗^ | 73.9 | 79.4 | 76.5 | 30.9 | 37.8 | 36.1 |
+| Translate-En^∗^ | 71.1 | 79.6 | 75.1 | 42.7 | 55.5 | 52.3 |
+| MindMerger-Soft^∗^ | 74.4 | 83.1 | 78.4 | 47.9 | 65.4 | 61.0 |
+| our methods |  |  |  |  |  |  |
+| **LinguaLIFT** | **77.6** | **83.3** | **80.3** | **49.6** | **65.5** | **61.5** |
 
 Overall, LinguaLIFT established itself as a universally applicable and strong potential method for LLMs to advance low-resource language performance across various reasoning tasks. More experimental results are provided in Appendix C.
 
@@ -244,20 +241,19 @@ Figure 5 evaluates low-resource language reasoning on the MGSM test set using t
 
 **Tabla 4.** Tesults on MGSM across various LLMs. Abbreviation and symbol are the same in Table 1.
 
-|  |  |  |  |  |  |  |
-|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
 |  | **Mistral-7B** |  |  | **Llama-2-13B** |  |  |
+|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
 | **Methods** | **LR.** | **HR.** | **Avg.** | **LR.** | **HR.** | **Avg.** |
 | baseline |  |  |  |  |  |  |
-|  |  |  |  |  |  |  |
-|  | 30.0 | 66.5 | 55.6 | 8.53 | 59.7 | 44.4 |
-|  |  |  |  |  |  |  |
-|  | 48.1 | 51.1 | 50.2 | 41.6 | 47.7 | 45.8 |
-|  | 50.7 | 59.3 | 56.7 | 44.7 | 62.4 | 57.1 |
-|  |  |  |  |  |  |  |
-|  | 53.7 | 60.1 | 58.2 | 44.4 | 55.5 | 52.2 |
-|  | 52.4 | 65.8 | 61.8 | 41.3 | 52.9 | 49.5 |
-|  | 56.8 | 69.1 | 65.4 | 57.1 | 65.1 | 62.7 |
+| ***Mono-SFT(English-only Task Data)*** |  |  |  |  |  |  |
+| MetaMath^∗^ | 30.0 | 66.5 | 55.6 | 8.53 | 59.7 | 44.4 |
+| ***Multi-SFT(Multilingual Task Data with Query Translation)*** |  |  |  |  |  |  |
+| MathOctopus-Parallel^∗^ | 48.1 | 51.1 | 50.2 | 41.6 | 47.7 | 45.8 |
+| QAlign-MetaMathQA^∗^ | 50.7 | 59.3 | 56.7 | 44.7 | 62.4 | 57.1 |
+| ***Freezing LLM with External Tools or Models*** |  |  |  |  |  |  |
+| Translate-En^∗^ | 53.7 | 60.1 | 58.2 | 44.4 | 55.5 | 52.2 |
+| LangBridge^∗^ | 52.4 | 65.8 | 61.8 | 41.3 | 52.9 | 49.5 |
+| MindMerger-Soft^∗^ | 56.8 | 69.1 | 65.4 | 57.1 | 65.1 | 62.7 |
 | our methods |  |  |  |  |  |  |
 | **LinguaLIFT (MetaMathQA)** | 57.7 | 68.8 | 65.5 | 58.7 | 64.7 | 62.9 |
 
@@ -681,56 +677,56 @@ The complete experimental results on MMWP are shown in Table 8, 9 and 10. These
 
 The complete experimental results on MGSM and MSVAMP are shown in Table 11, and 12.
 
-**Tabla 11.** Experimental Results on the MGSM Dataset. "LR." "HR." and "Avg." represent the average performance for low-resource languages, high-resource languages, and all languages, respectively. Following prior work (Yoon et al., 2024), we classify Bn, Te, Th, and Sw as low-resource languages, while the remaining languages are categorized as high-resource. The dagger symbol (†) indicates results obtained using officially released models, the diamond symbol ($\Diamond$) signifies the LoRA implementation, and the double dagger symbol () denotes results from our local implementation.
+**Tabla 11.** Experimental Results on the MGSM Dataset. "LR." "HR." and "Avg." represent the average performance for low-resource languages, high-resource languages, and all languages, respectively. Following prior work (Yoon et al., 2024), we classify Bn, Te, Th, and Sw as low-resource languages, while the remaining languages are categorized as high-resource. The dagger symbol (†) indicates results obtained using officially released models, the diamond symbol ($\Diamond$) signifies the LoRA implementation, and the double dagger symbol (‡) denotes results from our local implementation.
 
 | **LLaMA-2-7B as base model** | **Bn** | **De** | **En** | **Es** | **Fr** | **Ja** | **Ru** | **Sw** | **Te** | **Th** | **Zh** | **LR.** | **HR.** | **Avg.** |
 |:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
 | Baseline |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| *Mono-SFT* |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | MAmmoTH^†^ | 3.20 | 33.2 | 47.2 | 34.4 | 32.4 | 23.2 | 30.4 | 2.00 | 1.60 | 6.80 | 26.0 | 3.40 | 32.4 | 21.9 |
 | WizardMath^†^ | 4.40 | 37.2 | 51.6 | 43.2 | 39.2 | 27.2 | 36.8 | 4.40 | 1.60 | 5.60 | 28.8 | 4.00 | 37.7 | 25.5 |
 | MetaMath^†^ | 5.60 | 56.4 | 68.0 | 54.4 | 56.0 | 34.8 | 52.8 | 5.20 | 2.00 | 5.60 | 39.6 | 4.60 | 51.7 | 34.6 |
-| OpenMath2 | 6.80 | 65.6 | 79.2 | 66.0 | 62.4 | 42.4 | 57.6 | 6.00 | 2.80 | 6.80 | 48.4 | 5.60 | 60.2 | 40.4 |
-|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| OpenMath2^‡^ | 6.80 | 65.6 | 79.2 | 66.0 | 62.4 | 42.4 | 57.6 | 6.00 | 2.80 | 6.80 | 48.4 | 5.60 | 60.2 | 40.4 |
+| *Multi-SFT* |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | MathOctopus-Parallel^†^ | 31.2 | 46.0 | 51.6 | 42.8 | 43.6 | 34.0 | 40.0 | 36.4 | 10.8 | 33.6 | 38.8 | 28.0 | 42.4 | 37.2 |
 | MathOctopus-MAPO-DPO^†^ | 33.2 | 47.2 | 46.8 | 43.2 | 39.6 | 41.6 | 40.8 | 37.2 | 13.6 | 38.4 | 44.8 | 30.6 | 43.4 | 38.8 |
 | MetaMathOctopus-MAPO-DPO^†^ | 35.6 | 52.4 | 70.0 | 58.0 | 51.2 | 46.4 | 56.0 | 42.4 | 2.00 | 44.0 | 55.2 | 31.0 | 55.6 | 46.7 |
 | QAlign-MetaMathQA^†^ | 29.6 | 54.0 | 68.4 | 57.6 | 59.2 | 45.2 | 58.4 | 35.6 | 2.40 | 37.6 | 48.8 | 26.3 | 55.9 | 45.2 |
-|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| Translate-En-MetaMath | 49.0 | 59.6 | 65.6 | 59.8 | 56.2 | 49.0 | 48.4 | 37.4 | 34.6 | 37.2 | 47.0 | 39.6 | 55.1 | 49.4 |
+| *Leveraging External Tools or Models* |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| Translate-En-MetaMath^‡^ | 49.0 | 59.6 | 65.6 | 59.8 | 56.2 | 49.0 | 48.4 | 37.4 | 34.6 | 37.2 | 47.0 | 39.6 | 55.1 | 49.4 |
 | LangBridge-MetaMath^†^ | 41.2 | 53.2 | 62.4 | 58.0 | 51.6 | 39.6 | 55.2 | 39.6 | 28.0 | 44.8 | 43.2 | 38.4 | 51.9 | 47.0 |
 | MindMerger-Soft-MetaMath^†^ | 50.4 | 59.6 | 67.2 | 58.4 | 55.6 | 50.0 | 61.6 | 55.2 | 52.8 | 54.2 | 53.2 | 53.1 | 57.9 | 56.2 |
-| Translate-En-OpenMath2 | 52.1 | 69.8 | 76.9 | 71.6 | 63.4 | 57.4 | 54.2 | 38.4 | 35.6 | 39.2 | 53.2 | 41.3 | 63.8 | 55.6 |
-| LangBridge-OpenMath2 | 43.2 | 63.0 | 73.8 | 69.8 | 58.9 | 47.6 | 60.2 | 41.0 | 39.8 | 46.2 | 52.2 | 42.6 | 60.8 | 54.2 |
-| MindMerger-Soft-OpenMath2 | 60.0 | 69.4 | 77.8 | 74.2 | 63.4 | 57.8 | 71.8 | 61.2 | 57.2 | 63.6 | 58.4 | 60.5 | 67.5 | 65.0 |
+| Translate-En-OpenMath2^‡^ | 52.1 | 69.8 | 76.9 | 71.6 | 63.4 | 57.4 | 54.2 | 38.4 | 35.6 | 39.2 | 53.2 | 41.3 | 63.8 | 55.6 |
+| LangBridge-OpenMath2^‡^ | 43.2 | 63.0 | 73.8 | 69.8 | 58.9 | 47.6 | 60.2 | 41.0 | 39.8 | 46.2 | 52.2 | 42.6 | 60.8 | 54.2 |
+| MindMerger-Soft-OpenMath2^‡^ | 60.0 | 69.4 | 77.8 | 74.2 | 63.4 | 57.8 | 71.8 | 61.2 | 57.2 | 63.6 | 58.4 | 60.5 | 67.5 | 65.0 |
 | Our Methods |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | **LinguaLIFT-MetaMathQA** | 54.4 | 62.0 | 64.8 | 63.6 | 56.8 | 50.0 | 60.4 | 55.6 | 54.0 | 57.6 | 54.0 | 55.4 | 58.8 | 57.6 |
 | **LinguaLIFT-MetaMathQA^$\Diamond$^** | 50.2 | 57.2 | 61.4 | 60.2 | 52.6 | 45.8 | 55.4 | 51.2 | 49.8 | 53.6 | 50.6 | 51.2 | 54.7 | 53.5 |
 | **LinguaLIFT-OpenMathInstruct-2** | 63.0 | 69.6 | 76.0 | 75.2 | 62.8 | 52.0 | 71.6 | 64.2 | 61.2 | 66.6 | 58.0 | 63.8 | 66.5 | 65.5 |
 | **LinguaLIFT-OpenMathInstruct-2^$\Diamond$^** | 59.2 | 65.0 | 72.8 | 71.6 | 59.4 | 48.6 | 67.2 | 60.0 | 57.4 | 62.8 | 55.4 | 59.9 | 62.9 | 61.8 |
 
-**Tabla 12.** Experimental Results on the MSVAMP Dataset. "LR." "HR." and "Avg." represent the average performance for low-resource languages, high-resource languages, and all languages, respectively. Following prior work (Yoon et al., 2024), we classify Bn, Th, and Sw as low-resource languages, while the remaining languages are categorized as high-resource. The dagger symbol (†) indicates results obtained using officially released models, while the double dagger symbol () denotes results from our local implementation.
+**Tabla 12.** Experimental Results on the MSVAMP Dataset. "LR." "HR." and "Avg." represent the average performance for low-resource languages, high-resource languages, and all languages, respectively. Following prior work (Yoon et al., 2024), we classify Bn, Th, and Sw as low-resource languages, while the remaining languages are categorized as high-resource. The dagger symbol (†) indicates results obtained using officially released models, while the double dagger symbol (‡) denotes results from our local implementation.
 
 | **LLaMA-2-7B as base model** | **Bn** | **De** | **En** | **Es** | **Fr** | **Ja** | **Ru** | **Sw** | **Th** | **Zh** | **LR.** | **HR.** | **Avg.** |
 |:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
 | baselines |  |  |  |  |  |  |  |  |  |  |  |  |  |
-|  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| ***Mono-SFT*** |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | MAmmoTH^†^ | 6.2 | 44.1 | 39.5 | 45.4 | 42.3 | 34.1 | 38.1 | 5.1 | 8.4 | 37.5 | 6.57 | 40.1 | 30.1 |
 | WizardMath^†^ | 16.4 | 49.1 | 56.1 | 50.5 | 50.8 | 45.4 | 44.8 | 13.4 | 17.2 | 43.1 | 15.7 | 48.5 | 38.7 |
 | MetaMath^†^ | 12.5 | 63.5 | 67.2 | 64.7 | 64.9 | 54.2 | 58.2 | 16.7 | 16.5 | 55.5 | 15.2 | 61.2 | 47.4 |
-| OpenMath2 | 19.9 | 72.7 | 78.6 | 72.5 | 72.9 | 64.6 | 68.5 | 13.1 | 23.5 | 63.8 | 18.8 | 70.5 | 55.0 |
-|  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| OpenMath2^‡^ | 19.9 | 72.7 | 78.6 | 72.5 | 72.9 | 64.6 | 68.5 | 13.1 | 23.5 | 63.8 | 18.8 | 70.5 | 55.0 |
+| ***Multi-SFT*** |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | MathOctopus-Parallel^†^ | 27.8 | 43.8 | 46.1 | 45.4 | 44.9 | 41.4 | 43.8 | 38.1 | 34.9 | 41.4 | 33.6 | 43.8 | 40.8 |
 | MathOctopus-MAPO-DPO^†^ | 48.3 | 57.6 | 59.0 | 59.4 | 60.0 | 58.7 | 58.0 | 54.6 | 54.7 | 59.1 | 52.5 | 58.8 | 56.9 |
 | MetaMathOctopus-MAPO-DPO^†^ | 50.3 | 67.7 | 71.5 | 68.7 | 67.5 | 65.4 | 64.7 | 61.3 | 61.7 | 66.0 | 57.8 | 67.4 | 64.5 |
 | QAlign-MetaMathQA^†^ | 41.9 | 63.5 | 65.5 | 63.0 | 62.8 | 58.0 | 61.5 | 53.6 | 49.7 | 56.2 | 48.4 | 61.5 | 57.6 |
-|  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| Translate-En-MetaMath | 47.9 | 43.9 | 60.6 | 51.4 | 50.9 | 50.4 | 53.4 | 43.1 | 51.3 | 55.8 | 47.4 | 52.3 | 50.9 |
+| ***Leveraging External Tools or Models*** |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| Translate-En-MetaMath^‡^ | 47.9 | 43.9 | 60.6 | 51.4 | 50.9 | 50.4 | 53.4 | 43.1 | 51.3 | 55.8 | 47.4 | 52.3 | 50.9 |
 | LangBridge-MetaMath^†^ | 39.6 | 58.8 | 60.1 | 56.8 | 57.9 | 45.2 | 53.6 | 45.8 | 46.3 | 49.4 | 43.9 | 54.5 | 51.4 |
 | MindMerger-Soft-MetaMath^†^ | 52.0 | 61.1 | 64.5 | 62.9 | 60.8 | 59.0 | 58.6 | 54.0 | 52.1 | 57.3 | 52.7 | 60.6 | 58.2 |
-| Translate-En-OpenMath2 | 56.3 | 54.1 | 72.0 | 59.5 | 59.3 | 60.9 | 64.6 | 40.2 | 59.2 | 64.9 | 51.9 | 62.2 | 59.1 |
-| LangBridge-OpenMath2 | 48.0 | 68.6 | 71.9 | 64.8 | 66.6 | 56.5 | 64.4 | 42.3 | 53.5 | 58.3 | 47.9 | 64.4 | 59.5 |
-| MindMerger-Soft-OpenMath2 | 61.2 | 77.2 | 77.1 | 73.6 | 73.5 | 74.1 | 70.8 | 64.8 | 64.1 | 72.8 | 63.4 | 74.2 | 70.9 |
+| Translate-En-OpenMath2^‡^ | 56.3 | 54.1 | 72.0 | 59.5 | 59.3 | 60.9 | 64.6 | 40.2 | 59.2 | 64.9 | 51.9 | 62.2 | 59.1 |
+| LangBridge-OpenMath2^‡^ | 48.0 | 68.6 | 71.9 | 64.8 | 66.6 | 56.5 | 64.4 | 42.3 | 53.5 | 58.3 | 47.9 | 64.4 | 59.5 |
+| MindMerger-Soft-OpenMath2^‡^ | 61.2 | 77.2 | 77.1 | 73.6 | 73.5 | 74.1 | 70.8 | 64.8 | 64.1 | 72.8 | 63.4 | 74.2 | 70.9 |
 | our methods |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | **LinguaLIFT-MetaMathQA** | 54.3 | 62.8 | 65.2 | 59.9 | 62.7 | 57.9 | 59.7 | 56.8 | 57.2 | 56.0 | 56.1 | 60.6 | 59.3 |
 | **LinguaLIFT-MetaMathQA^$\Diamond$^** | 49.8 | 57.6 | 61.1 | 55.4 | 58.2 | 53.5 | 55.3 | 52.1 | 52.7 | 51.4 | 51.5 | 56.1 | 54.7 |
@@ -741,37 +737,37 @@ The complete experimental results on MGSM and MSVAMP are shown in Table 11, and
 
 The complete experimental results on XNLI and X-CSQA are shown in Table 13, and 14.
 
-**Tabla 13.** Experimental Results on the XNLI Dataset. "LR." "HR." and "Avg." represent the average performance for low-resource languages, high-resource languages, and all languages, respectively. The asterisk symbol () indicates results obtained directly from the published results (Huang et al., 2024).
+**Tabla 13.** Experimental Results on the XNLI Dataset. "LR." "HR." and "Avg." represent the average performance for low-resource languages, high-resource languages, and all languages, respectively. The asterisk symbol (∗) indicates results obtained directly from the published results (Huang et al., 2024).
 
 | **LLaMA-2-7B as base model** | **Ar** | **Bg** | **Sw** | **Th** | **Tr** | **Ur** | **El** | **Hi** | **Zh** | **Ru** | **Vi** | **De** | **Fr** | **Es** | **En** | **LR.** | **HR.** | **Avg.** |
 |:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
 | baselines |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| Mono-SFT | 60.9 | 76.7 | 45.9 | 55.4 | 61.9 | 49.2 | 63.7 | 55.7 | 74.7 | 77.6 | 73.7 | 80.6 | 82.2 | 82.2 | 90.0 | 58.7 | 80.1 | 68.7 |
-|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| Multi-SFT | 61.7 | 78.7 | 56.3 | 60.1 | 65.6 | 57.5 | 67.0 | 61.7 | 79.1 | 79.7 | 73.7 | 82.3 | 82.9 | 83.9 | 88.8 | 63.6 | 81.5 | 71.9 |
-| QAlign | 67.0 | 79.4 | 65.2 | 65.2 | 67.9 | 62.2 | 66.5 | 63.3 | 76.6 | 79.2 | 73.7 | 80.9 | 83.1 | 83.8 | 89.1 | 67.1 | 80.9 | 73.5 |
-|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| LangBridge | 75.2 | 79.6 | 71.7 | 72.4 | 74.8 | 66.9 | 79.1 | 71.1 | 77.4 | 77.4 | 78.5 | 78.8 | 79.9 | 80.5 | 83.4 | 73.9 | 79.4 | 76.5 |
-| Translate-En | 68.9 | 80.8 | 65.3 | 69.5 | 74.5 | 61.6 | 79.3 | 68.7 | 74.8 | 76 | 76.7 | 80.6 | 80.4 | 81.4 | 87.4 | 71.1 | 79.6 | 75.1 |
-| MindMerger-Soft | 76.2 | 82.4 | 66.6 | 71.8 | 75.7 | 69.4 | 78.5 | 74.7 | 80.0 | 80.7 | 80.3 | 83.5 | 83.9 | 84.4 | 88.7 | 74.4 | 83.1 | 78.4 |
+| ***Mono-SFT*** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| Mono-SFT^∗^ | 60.9 | 76.7 | 45.9 | 55.4 | 61.9 | 49.2 | 63.7 | 55.7 | 74.7 | 77.6 | 73.7 | 80.6 | 82.2 | 82.2 | 90.0 | 58.7 | 80.1 | 68.7 |
+| ***Multi-SFT*** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| Multi-SFT^∗^ | 61.7 | 78.7 | 56.3 | 60.1 | 65.6 | 57.5 | 67.0 | 61.7 | 79.1 | 79.7 | 73.7 | 82.3 | 82.9 | 83.9 | 88.8 | 63.6 | 81.5 | 71.9 |
+| QAlign^∗^ | 67.0 | 79.4 | 65.2 | 65.2 | 67.9 | 62.2 | 66.5 | 63.3 | 76.6 | 79.2 | 73.7 | 80.9 | 83.1 | 83.8 | 89.1 | 67.1 | 80.9 | 73.5 |
+| ***Leveraging External Tools or Models*** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| LangBridge^∗^ | 75.2 | 79.6 | 71.7 | 72.4 | 74.8 | 66.9 | 79.1 | 71.1 | 77.4 | 77.4 | 78.5 | 78.8 | 79.9 | 80.5 | 83.4 | 73.9 | 79.4 | 76.5 |
+| Translate-En^∗^ | 68.9 | 80.8 | 65.3 | 69.5 | 74.5 | 61.6 | 79.3 | 68.7 | 74.8 | 76 | 76.7 | 80.6 | 80.4 | 81.4 | 87.4 | 71.1 | 79.6 | 75.1 |
+| MindMerger-Soft^∗^ | 76.2 | 82.4 | 66.6 | 71.8 | 75.7 | 69.4 | 78.5 | 74.7 | 80.0 | 80.7 | 80.3 | 83.5 | 83.9 | 84.4 | 88.7 | 74.4 | 83.1 | 78.4 |
 | our methods |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | **LinguaLIFT** | 78.4 | 83.5 | 75.1 | 77.0 | 77.1 | 72.4 | 82.2 | 75.1 | 80.2 | 80.5 | 80.8 | 83.6 | 84.0 | 84.4 | 89.5 | 77.6 | 83.3 | 80.3 |
 
-**Tabla 14.** Experimental Results on the X-CSQA Dataset. "LR." "HR." and "Avg." represent the average performance for details of the low-resource, high-resource, and all languages, respectively. The asterisk symbol () indicates results obtained directly from the published results (Huang et al., 2024).
+**Tabla 14.** Experimental Results on the X-CSQA Dataset. "LR." "HR." and "Avg." represent the average performance for details of the low-resource, high-resource, and all languages, respectively. The asterisk symbol (∗) indicates results obtained directly from the published results (Huang et al., 2024).
 
 | **LLaMA-2-7B as base model** | **Ar** | **De** | **En** | **Es** | **Fr** | **Hi** | **It** | **Ja** | **Nl** | **Pl** | **Pt** | **Ru** | **Sw** | **Ur** | **Vi** | **Zh** | **LR.** | **HR.** | **Avg.** |
 |:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|---:|---:|:--:|
 | baselines |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| Mono-SFT | 32.3 | 61.2 | 76.3 | 64.0 | 63.5 | 32.9 | 56.0 | 49.1 | 57.5 | 50.6 | 61.7 | 56.0 | 24.2 | 25.1 | 50.9 | 56.5 | 28.6 | 58.6 | 51.3 |
-|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| Multi-SFT | 28.7 | 49.1 | 67.2 | 54.3 | 52.1 | 32.0 | 50.2 | 38.7 | 45.9 | 45.5 | 51.2 | 46.5 | 27.6 | 29.2 | 38.8 | 43.8 | 29.4 | 48.6 | 43.8 |
-| QAlign | 36.3 | 58.8 | 75.7 | 63.1 | 60.3 | 37.8 | 58.3 | 49.2 | 56.3 | 51.3 | 59.8 | 56.3 | 35.1 | 32.6 | 50.5 | 54.8 | 35.5 | 57.9 | 52.3 |
-|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| LangBridge | 30.6 | 37.4 | 44.4 | 38.4 | 38.2 | 30.6 | 39.1 | 33.9 | 38.4 | 39.8 | 36.3 | 35.1 | 31.8 | 30.5 | 33.3 | 39.8 | 30.9 | 37.8 | 36.1 |
-| Translate-En | 44.6 | 57.3 | 71.3 | 55.5 | 57.2 | 48.4 | 56.3 | 47.1 | 55.0 | 53.3 | 54.7 | 54.4 | 36.5 | 41.3 | 51.8 | 51.5 | 42.7 | 55.5 | 52.3 |
-| MindMerger-Soft | 51.4 | 67.0 | 78.1 | 69.1 | 68.1 | 48.4 | 66.8 | 53.9 | 63.8 | 63.3 | 67.1 | 63.7 | 45.5 | 46.2 | 60.6 | 62.9 | 47.9 | 65.4 | 61.0 |
+| ***Mono-SFT*** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| Mono-SFT^∗^ | 32.3 | 61.2 | 76.3 | 64.0 | 63.5 | 32.9 | 56.0 | 49.1 | 57.5 | 50.6 | 61.7 | 56.0 | 24.2 | 25.1 | 50.9 | 56.5 | 28.6 | 58.6 | 51.3 |
+| ***Multi-SFT*** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| Multi-SFT^∗^ | 28.7 | 49.1 | 67.2 | 54.3 | 52.1 | 32.0 | 50.2 | 38.7 | 45.9 | 45.5 | 51.2 | 46.5 | 27.6 | 29.2 | 38.8 | 43.8 | 29.4 | 48.6 | 43.8 |
+| QAlign^∗^ | 36.3 | 58.8 | 75.7 | 63.1 | 60.3 | 37.8 | 58.3 | 49.2 | 56.3 | 51.3 | 59.8 | 56.3 | 35.1 | 32.6 | 50.5 | 54.8 | 35.5 | 57.9 | 52.3 |
+| ***Leveraging External Tools or Models*** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| LangBridge^∗^ | 30.6 | 37.4 | 44.4 | 38.4 | 38.2 | 30.6 | 39.1 | 33.9 | 38.4 | 39.8 | 36.3 | 35.1 | 31.8 | 30.5 | 33.3 | 39.8 | 30.9 | 37.8 | 36.1 |
+| Translate-En^∗^ | 44.6 | 57.3 | 71.3 | 55.5 | 57.2 | 48.4 | 56.3 | 47.1 | 55.0 | 53.3 | 54.7 | 54.4 | 36.5 | 41.3 | 51.8 | 51.5 | 42.7 | 55.5 | 52.3 |
+| MindMerger-Soft^∗^ | 51.4 | 67.0 | 78.1 | 69.1 | 68.1 | 48.4 | 66.8 | 53.9 | 63.8 | 63.3 | 67.1 | 63.7 | 45.5 | 46.2 | 60.6 | 62.9 | 47.9 | 65.4 | 61.0 |
 | our methods |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | **LinguaLIFT** | 54.1 | 68.7 | 78.3 | 67.9 | 68.7 | 50.6 | 65.7 | 53.8 | 63.5 | 62.9 | 68.2 | 63.5 | 46.7 | 46.8 | 60.4 | 64.1 | 49.6 | 65.5 | 61.5 |
 
@@ -845,37 +841,37 @@ We experimented with various multilingual encoders regarding types and sizes and
 
 LinguaLIFT can be flexibly adapted to different LLMs. To validate this, we conducted experiments on Mistral-7B (Jiang et al., 2023) and the larger Llama-2-13B (Touvron et al., 2023). As shown in Tables 19 and 20, LinguaLIFT outperforms various baselines, with average accuracy improvements of at least 1.6% and 0.9% for low-resource languages based on Llama-2-13B and Mistral-7B, respectively. These results demonstrate LinguaLIFT’s potential for broader applicability across LLMs.
 
-**Tabla 19.** Experimental Results on the MGSM Dataset. "LR." "HR." and "Avg." represent the average performance for low-resource languages, high-resource languages, and all languages, respectively. Following prior work (citation: LLaMA2), we classify Bn, Te, Th, and Sw as low-resource languages, while the remaining languages are categorized as high-resource. The asterisk symbol () denotes results taken directly from the published results of Zhu et al. (2024); Huang et al. (2024).
+**Tabla 19.** Experimental Results on the MGSM Dataset. "LR." "HR." and "Avg." represent the average performance for low-resource languages, high-resource languages, and all languages, respectively. Following prior work (citation: LLaMA2), we classify Bn, Te, Th, and Sw as low-resource languages, while the remaining languages are categorized as high-resource. The asterisk symbol (∗) denotes results taken directly from the published results of Zhu et al. (2024); Huang et al. (2024).
 
 | **Llama-2-13B as base model** | **Bn** | **De** | **En** | **Es** | **Fr** | **Ja** | **Ru** | **Sw** | **Th** | **Zh** | **LR.** | **HR.** | **Avg.** |
 |:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
 | baseline |  |  |  |  |  |  |  |  |  |  |  |  |  |
-|  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| MetaMath | 11.6 | 64.8 | 67.2 | 65.2 | 65.2 | 42.8 | 63.6 | 7.60 | 6.40 | 49.2 | 8.53 | 59.7 | 44.4 |
-|  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| MathOctopus-Parallel | 35.2 | 44.4 | 53.2 | 48.0 | 48.4 | 43.2 | 47.6 | 42.8 | 46.8 | 48.8 | 41.6 | 47.7 | 45.8 |
-| QAlign-MetaMathQA | 38.4 | 62.0 | 69.2 | 67.2 | 62.4 | 52.4 | 64.4 | 46.0 | 49.6 | 59.2 | 44.7 | 62.4 | 57.1 |
-|  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| Translate-En | 34.8 | 53.6 | 70.8 | 62.4 | 54.0 | 44.4 | 45.6 | 44.4 | 54.0 | 58.0 | 44.4 | 55.5 | 52.2 |
-| LangBridge | 39.2 | 55.2 | 65.2 | 60.8 | 54.8 | 33.6 | 58.8 | 42.0 | 42.8 | 42.0 | 41.3 | 52.9 | 49.4 |
-| MindMerger-Soft | 55.2 | 65.2 | 68.8 | 69.6 | 63.6 | 60.0 | 68.0 | 56.4 | 59.6 | 60.4 | 57.1 | 65.1 | 62.7 |
+| ***Mono-SFT*** |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| MetaMath^∗^ | 11.6 | 64.8 | 67.2 | 65.2 | 65.2 | 42.8 | 63.6 | 7.60 | 6.40 | 49.2 | 8.53 | 59.7 | 44.4 |
+| ***Multi-SFT*** |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| MathOctopus-Parallel^∗^ | 35.2 | 44.4 | 53.2 | 48.0 | 48.4 | 43.2 | 47.6 | 42.8 | 46.8 | 48.8 | 41.6 | 47.7 | 45.8 |
+| QAlign-MetaMathQA^∗^ | 38.4 | 62.0 | 69.2 | 67.2 | 62.4 | 52.4 | 64.4 | 46.0 | 49.6 | 59.2 | 44.7 | 62.4 | 57.1 |
+| ***Leveraging External Tools or Models*** |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| Translate-En^∗^ | 34.8 | 53.6 | 70.8 | 62.4 | 54.0 | 44.4 | 45.6 | 44.4 | 54.0 | 58.0 | 44.4 | 55.5 | 52.2 |
+| LangBridge^∗^ | 39.2 | 55.2 | 65.2 | 60.8 | 54.8 | 33.6 | 58.8 | 42.0 | 42.8 | 42.0 | 41.3 | 52.9 | 49.4 |
+| MindMerger-Soft^∗^ | 55.2 | 65.2 | 68.8 | 69.6 | 63.6 | 60.0 | 68.0 | 56.4 | 59.6 | 60.4 | 57.1 | 65.1 | 62.7 |
 | our methods |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | **LinguaLIFT** | 57.6 | 64.4 | 67.8 | 70.4 | 64.0 | 59.8 | 67.2 | 57.8 | 60.8 | 59.4 | 58.7 | 64.7 | 62.9 |
 
-**Tabla 20.** Experimental Results on the MGSM Dataset. "LR." "HR." and "Avg." represent the average performance for low-resource languages, high-resource languages, and all languages, respectively. Following prior work (Huang et al., 2024), we classify Bn, Te, Th, and Sw as low-resource languages, while the remaining languages are categorized as high-resource. The asterisk symbol () denotes results taken directly from the published results of Zhu et al. (2024); Huang et al. (2024).
+**Tabla 20.** Experimental Results on the MGSM Dataset. "LR." "HR." and "Avg." represent the average performance for low-resource languages, high-resource languages, and all languages, respectively. Following prior work (Huang et al., 2024), we classify Bn, Te, Th, and Sw as low-resource languages, while the remaining languages are categorized as high-resource. The asterisk symbol (∗) denotes results taken directly from the published results of Zhu et al. (2024); Huang et al. (2024).
 
 | **Mistral-7B as base model** | **Bn** | **De** | **En** | **Es** | **Fr** | **Ja** | **Ru** | **Sw** | **Th** | **Zh** | **LR.** | **HR.** | **Avg.** |
 |:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
 | baseline |  |  |  |  |  |  |  |  |  |  |  |  |  |
-|  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| MetaMath | 38.4 | 70.4 | 78.0 | 71.2 | 70.8 | 50.8 | 67.2 | 16.8 | 34.8 | 57.2 | 30.0 | 66.5 | 55.6 |
-|  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| MathOctopus-Parallel | 44.0 | 50.0 | 58.4 | 53.2 | 47.2 | 48.0 | 49.6 | 51.6 | 48.8 | 51.6 | 48.1 | 51.1 | 50.2 |
-| QAlign-MetaMathQA | 45.6 | 59.2 | 65.8 | 63.6 | 59.8 | 49.4 | 60.2 | 55.2 | 51.2 | 57.2 | 50.7 | 59.3 | 56.7 |
-|  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| Translate-En | 54.6 | 50.4 | 69.7 | 58.6 | 56.7 | 57.2 | 64.9 | 47.7 | 58.7 | 63.1 | 53.7 | 60.1 | 58.2 |
-| LangBridge | 50.0 | 68.4 | 65.6 | 65.6 | 68.8 | 58.4 | 68.4 | 47.2 | 60.0 | 65.6 | 52.4 | 65.8 | 61.8 |
-| MindMerger-Soft | 57.6 | 69.2 | 79.2 | 71.6 | 69.6 | 57.2 | 68.4 | 53.2 | 59.6 | 68.8 | 56.8 | 69.1 | 65.4 |
+| ***Mono-SFT*** |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| MetaMath^∗^ | 38.4 | 70.4 | 78.0 | 71.2 | 70.8 | 50.8 | 67.2 | 16.8 | 34.8 | 57.2 | 30.0 | 66.5 | 55.6 |
+| ***Multi-SFT*** |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| MathOctopus-Parallel^∗^ | 44.0 | 50.0 | 58.4 | 53.2 | 47.2 | 48.0 | 49.6 | 51.6 | 48.8 | 51.6 | 48.1 | 51.1 | 50.2 |
+| QAlign-MetaMathQA^∗^ | 45.6 | 59.2 | 65.8 | 63.6 | 59.8 | 49.4 | 60.2 | 55.2 | 51.2 | 57.2 | 50.7 | 59.3 | 56.7 |
+| ***Leveraging External Tools or Models*** |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| Translate-En^∗^ | 54.6 | 50.4 | 69.7 | 58.6 | 56.7 | 57.2 | 64.9 | 47.7 | 58.7 | 63.1 | 53.7 | 60.1 | 58.2 |
+| LangBridge^∗^ | 50.0 | 68.4 | 65.6 | 65.6 | 68.8 | 58.4 | 68.4 | 47.2 | 60.0 | 65.6 | 52.4 | 65.8 | 61.8 |
+| MindMerger-Soft^∗^ | 57.6 | 69.2 | 79.2 | 71.6 | 69.6 | 57.2 | 68.4 | 53.2 | 59.6 | 68.8 | 56.8 | 69.1 | 65.4 |
 | our methods |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | **LinguaLIFT** | 58.4 | 67.2 | 77.6 | 72.1 | 70.6 | 56.4 | 66.8 | 58.4 | 63.2 | 68.2 | 60.0 | 68.4 | 65.9 |
 
@@ -1000,6 +996,10 @@ To evaluate the cross-lingual alignment capabilities of LLMs, we employ the mult
 
 We adopt the evaluation procedure outlined in XTREME (Hu et al., 2020) to evaluate cross-lingual alignment. For each language pair, we compute the cosine similarity between sentences in the source language and their closest counterparts in the target language. Following the methods of Yang et al. (2021) and Xie et al. (2022), we use top-1 retrieval accuracy as a metric to quantify alignment between the two languages. A higher retrieval accuracy score indicates a stronger alignment.
 
+*(a) MGSM*
+
+*(b) MSVAMP*
+
 **Figura 12.** Performances on MGSM and MSVAMP test set, where languages are sorted by decreasing retrieval accuracy. The trend indicates the mathemtical reasoning performance worsens along with the decreasing cross-lingual alignment degree.
 
 **Tabla 24.** The ablation experiments of the selection of language alignment layer results on the MGSM Dataset. "LR." "HR." and "Avg." represent the average performance for low-resource languages, high-resource languages, and all languages, respectively. Following prior work (Huang et al., 2024), we classify Bn, Te, Th, and Sw as low-resource languages, while the remaining languages are categorized as high-resource.
@@ -1010,13 +1010,12 @@ We adopt the evaluation procedure outlined in XTREME (Hu et al., 2020) to evalu
 | 2 layers MLP | 10 M | 54.4 | 62.0 | 64.8 | 63.6 | 56.8 | 50.0 | 60.4 | 55.6 | 54.0 | 57.6 | 54.0 | 55.4 | 58.8 | 57.6 |
 | 3 layers MLP | 14 M | 53.8 | 62.8 | 66.6 | 56.6 | 58.8 | 50.0 | 59.4 | 53.8 | 53.6 | 58.2 | 53.4 | 54.9 | 58.2 | 57.0 |
 
-**Tabla 25.** Spearman’s rank correlation coefficient ($\rho$) between retrieval accuracy (%) on Tatoeba and reasoning accuracy on MGSM. An asterisk () signifies a statistically significant correlation (p-value \< 0.05).
+**Tabla 25.** Spearman’s rank correlation coefficient ($\rho$) between retrieval accuracy (%) on Tatoeba and reasoning accuracy on MGSM. An asterisk (∗) signifies a statistically significant correlation (p-value \< 0.05).
 
-|                |              |               |              |               |
-|:--------------:|:------------:|:-------------:|:------------:|:-------------:|
 |    Test set    |     MGSM     |               |    MSVAMP    |               |
+|:--------------:|:------------:|:-------------:|:------------:|:-------------:|
 | Resource-Level | Low-Resource | High-Resource | Low-Resource | High-Resource |
-|     $\rho$     |    0.733     |     0.778     |    0.763     |     0.783     |
+|     $\rho$     |   0.733^∗^   |   0.778^∗^    |   0.763^∗^   |   0.783^∗^    |
 
 Figure 12 illustrates that the performance of low-resource languages lags significantly behind that of other languages in both mathematical reasoning tasks and the cross-lingual sentence retrieval task. It also shows that a higher alignment degree tends to correlate with improved mathematical reasoning performance. Additionally, we compute the Spearman’s rank correlation between the retrieval accuracy scores and reasoning performance, as presented in Table 25, which reveals a strong correlation between the two. Both the observed trend and the correlation coefficient confirm that the consistency of multilingual mathematical reasoning is closely tied to the cross-lingual alignment degree.
 
@@ -1028,11 +1027,11 @@ In the main experiment, we utilize two layers of MLP as the language alignment l
 
 We present three examples of CoT reasoning. These examples demonstrate LinguaLIFT’s ability to effectively understand low-resource languages and generate corresponding mathematical reasoning processes using the chain-of-thought reasoning strategy. Figure 13 illustrates a zero-shot CoT example from the MGSM Bengali dataset. The Vanilla Mono-SFT model produces incorrect reasoning, while the LinguaLIFT model generates a correct reasoning process, ultimately leading to the correct answer. Similar trends are observed in the Thai and Swahili, shown in Figures 14 and 15, where the LinguaLIFT model corrects the erroneous reasoning produced by the Mono-SFT model when presented with the same problems.
 
-**Figura 13.** Example of zero-shot CoT generated by MetaMath-7B when prompted with an example from MGSM Bengali. Translation of the input and response is provided in .
+**Figura 13.** Example of zero-shot CoT generated by MetaMath-7B when prompted with an example from MGSM Bengali. Translation of the input and response is provided in brown text.
 
-**Figura 14.** Example of zero-shot CoT generated by MetaMath-7B when prompted with an example from MGSM Thai. Translation of the input and response is provided in .
+**Figura 14.** Example of zero-shot CoT generated by MetaMath-7B when prompted with an example from MGSM Thai. Translation of the input and response is provided in brown text.
 
-**Figura 15.** Example of zero-shot CoT generated by MetaMath-7B when prompted with an example from MGSM Swahili. Translation of the input and response is provided in .
+**Figura 15.** Example of zero-shot CoT generated by MetaMath-7B when prompted with an example from MGSM Swahili. Translation of the input and response is provided in brown text.
 
 # References
 

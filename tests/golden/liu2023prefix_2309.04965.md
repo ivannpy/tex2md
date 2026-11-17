@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: 4e3bba15176440baff6796d899054b43c1660bc04e072efe22d7544a90fc036f
     path: "PCIC/Tesis/Image Captioning/Prefix-diffusion- A Lightweight Diffusion Model for Diverse Image Captioning.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-16
+converted: 2026-11-17
 ---
 
 # Prefix-diffusion: A Lightweight Diffusion Model for Diverse Image Captioning
@@ -129,7 +129,7 @@ $$\begin{equation}
 
 | **Method** |  | **Common Metrics $\uparrow$** |  |  |  |  |  | **Similarity Score $\uparrow$** |  |  | **Diversity $\uparrow$** |  |  |
 |:--:|:---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| 3-8 (r)9-11 (r)12-14 | B@1 | B@3 | M | R-L | C | S | CLIP-S | Ref-CLIP | P-Bert | D@2 | D@3 | Voc-u |  |
+|  |  | B@1 | B@3 | M | R-L | C | S | CLIP-S | Ref-CLIP | P-Bert | D@2 | D@3 | Voc-u |
 | MTIC |  | 80.8 | 50.9 | 29.2 | 58.6 | 131.2 | 22.6 | 60.3 | 68.6 | 94.0 | 7.9 | 16.3 | 8.3 |
 | DLCT |  | 81.1 | 51.1 | 29.4 | 58.9 | 133.1 | 22.8 | 60.6 | 69.0 | 94.1 | 8.1 | 17.1 | 8.3 |
 | Frozen Clip Feature | CapDec | 68.3 | 36.6 | 25.2 | 51.2 | 91.7 | 18.3 | 60.4 | 67.8 | 93.4 | 8.3 | 14.9 | 1.9 |
@@ -141,7 +141,7 @@ $$\begin{equation}
 
 | **Method** | **Common Metrics $\uparrow$** |  |  |  |  |  | **Similarity Score $\uparrow$** |  |  | **Diversity $\uparrow$** |  |  |
 |:---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| 2-7 (r)8-10 (r)11-13 | B@1 | B@3 | M | R-L | C | S | CLIP-S | Ref-CLIP | P-Bert | D@2 | D@3 | Voc-u |
+|  | B@1 | B@3 | M | R-L | C | S | CLIP-S | Ref-CLIP | P-Bert | D@2 | D@3 | Voc-u |
 | CapDec | 57.6 | 27.9 | 20.0 | 44.5 | 42.0 | 14.3 | 58.0 | 61.4 | <u>92.8</u> | 15.5 | 25.2 | 1.3 |
 | ClipCap | 67.0 | <u>35.2</u> | **22.5** | <u>49.0</u> | <u>60.8</u> | **16.5** | 60.9 | 65.0 | **93.0** | 20.9 | 34.5 | 1.77 |
 | Ours(T) | <u>68.7</u> | 34.9 | 20.1 | 48.7 | 53.8 | 14.2 | <u>61.6</u> | <u>66.3</u> | 92.2 | <u>23.1</u> | <u>41.0</u> | <u>3.6</u> |
@@ -228,7 +228,7 @@ Since CapDec and ClipCap use CLIP to extract the same image features and freeze 
 
 | **Method** | Human Evaluation$\uparrow$ |  |  | Paras (M) $\downarrow$ |
 |:---|:--:|:--:|:--:|:--:|
-| 2-4 | Fluency | Sim | Div |  |
+|  | Fluency | Sim | Div |  |
 | MTIC | 3.65 | 3.63 | 3.52 | 38.44 |
 | DLCT | 3.70 | 3.25 | 3.43 | 63.04 |
 | Capdec | 3.53 | 2.95 | 3.29 | 178.03 |
@@ -244,7 +244,7 @@ Since CapDec and ClipCap use CLIP to extract the same image features and freeze 
 
 | **Method** | **Common Metrics $\uparrow$** |  |  |  |  |  | **Similarity Score $\uparrow$** |  |  | **Diversity $\uparrow$** |  |  |
 |:---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| 2-7 (r)8-10 (r)11-13 | B@1 | B@3 | M | R-L | C | S | CLIP-S | Ref-CLIP | P-Bert | D@2 | D@3 | Voc-u |
+|  | B@1 | B@3 | M | R-L | C | S | CLIP-S | Ref-CLIP | P-Bert | D@2 | D@3 | Voc-u |
 | *COCO$\Longrightarrow$ Flickr30k* |  |  |  |  |  |  |  |  |  |  |  |  |
 | CapDec | 57.2 | 23.9 | 17.1 | 40.3 | 30.3 | 10.8 | 54.4 | 58.7 | 92.1 | 18.5 | 29.4 | 1.2 |
 | ClipCap | 64.6 | 29.3 | 18.9 | 44.3 | 44.4 | 12.5 | 56.5 | 61.2 | **92.5** | **19.7** | 32.7 | 1.3 |
@@ -268,7 +268,7 @@ The dimension of word embeddings is an important hyper-parameter. The higher dim
 
 | **$n$** | **Common Metrics $\uparrow$** |  |  |  |  |  | **Similarity Score $\uparrow$** |  |  | **Diversity $\uparrow$** |  |  |
 |:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| 2-7 (r)8-10 (r)11-13 | B@1 | B@3 | M | R-L | C | S | CLIP-S | Ref-CLIP | P-Bert | D@2 | D@3 | Voc-u |
+|  | B@1 | B@3 | M | R-L | C | S | CLIP-S | Ref-CLIP | P-Bert | D@2 | D@3 | Voc-u |
 | 1 | 77.2 | 43.6 | 26.0 | 55.6 | 105.2 | 19.5 | 60.4 | 68.6 | 93.1 | 11.9 | 26.4 | 5.4 |
 | 5 | 78.1 | **44.2** | **26.6** | **56.1** | **109.3** | **20.4** | 63.7 | 71.2 | **93.7** | 12.7 | 28.0 | 5.7 |
 | 10 | **78.3** | 43.8 | **26.6** | 56.0 | 109.1 | 20.3 | 65.3 | 72.2 | 93.4 | 13.1 | 28.8 | 5.8 |
@@ -278,7 +278,7 @@ The dimension of word embeddings is an important hyper-parameter. The higher dim
 
 | **Noise Schedule** | **Metrics $\uparrow$** |          |          |          |
 |:-------------------|:----------------------:|:--------:|:--------:|:--------:|
-| 2-5                |          B@1           |  CLIP-S  | Ref-CLIP |  P-Bert  |
+|                    |          B@1           |  CLIP-S  | Ref-CLIP |  P-Bert  |
 | Square             |          70.5          | **66.8** |   72.2   |   92.6   |
 | Linear             |          70.4          |   65.9   |   71.6   |   92.3   |
 | Cosine             |          70.5          |   66.5   |   72.0   |   92.5   |

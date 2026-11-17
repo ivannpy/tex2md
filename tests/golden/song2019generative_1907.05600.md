@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: ebd221af1ebf608d82f69aadc62f09e89cc8c1379faa00c8d0251a7063383539
     path: "PCIC/Tesis/core/Generative Modeling by Estimating Gradients of the Data Distribution.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-16
+converted: 2026-11-17
 ---
 
 # Generative Modeling by Estimating Gradients of the Data Distribution
@@ -129,7 +129,7 @@ Similar to likelihood-based generative models and GANs, the design of model arch
 
 ## 4.2 Learning NCSNs via score matching
 
-Both sliced and denoising score matching can train NCSNs. We adopt denoising score matching as it is slightly faster and naturally fits the task of estimating scores of noise-perturbed data distributions. However, we emphasize that empirically sliced score matching can train NCSNs as well as denoising score matching. We choose the noise distribution to be $q_\sigma(\tilde{\mathbf{x}} \mid \mathbf{x}) = \mathcal{N}(\tilde{\mathbf{x}} \mid \mathbf{x}, \sigma^2 I)$; therefore $\nabla_{\tilde{\mathbf{x}}} \log q_\sigma(\tilde{\mathbf{x}} \mid \mathbf{x}) = -\nicefrac{(\tilde{\mathbf{x}} - \mathbf{x})}{\sigma^2}$. For a given $\sigma$, the denoising score matching objective (Eq. (2)) is 
+Both sliced and denoising score matching can train NCSNs. We adopt denoising score matching as it is slightly faster and naturally fits the task of estimating scores of noise-perturbed data distributions. However, we emphasize that empirically sliced score matching can train NCSNs as well as denoising score matching. We choose the noise distribution to be $q_\sigma(\tilde{\mathbf{x}} \mid \mathbf{x}) = \mathcal{N}(\tilde{\mathbf{x}} \mid \mathbf{x}, \sigma^2 I)$; therefore $\nabla_{\tilde{\mathbf{x}}} \log q_\sigma(\tilde{\mathbf{x}} \mid \mathbf{x}) = -{(\tilde{\mathbf{x}} - \mathbf{x})}/{\sigma^2}$. For a given $\sigma$, the denoising score matching objective (Eq. (2)) is 
 
 $$\begin{align}
  \ell({\boldsymbol{\theta}}; \sigma) \triangleq \frac{1}{2}\mathbb{E}_{p_\text{data}(\mathbf{x})} \mathbb{E}_{\tilde{\mathbf{x}}\sim \mathcal{N}(\mathbf{x},\sigma^2 I)} \bigg[\left\lVert \mathbf{s}_{\boldsymbol{\theta}}(\tilde{\mathbf{x}}, \sigma) + \frac{\tilde{\mathbf{x}} - \mathbf{x}}{\sigma^2}\right\rVert_2^2\bigg]. \tag{5}
@@ -143,7 +143,7 @@ $$\begin{align}
 
 where $\lambda(\sigma_i) > 0$ is a coefficient function depending on $\sigma_i$. Assuming $\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma)$ has enough capacity, $\mathbf{s}_{{\boldsymbol{\theta}}^*}(\mathbf{x}, \sigma)$ minimizes Eq. (6) if and only if $\mathbf{s}_{{\boldsymbol{\theta}}^*}(\mathbf{x}, \sigma_i) = \nabla_\mathbf{x}\log q_{\sigma_i}(\mathbf{x})$ a.s.for all $i \in \{1,2,\cdots, L\}$, because Eq. (6) is a conical combination of $L$ denoising score matching objectives.
 
-There can be many possible choices of $\lambda(\cdot)$. Ideally, we hope that the values of $\lambda(\sigma_i)\ell({\boldsymbol{\theta}}; \sigma_i)$ for all $\{\sigma_i\}_{i=1}^L$ are roughly of the same order of magnitude. Empirically, we observe that when the score networks are trained to optimality, we approximately have $\left\lVert\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma)\right\rVert_2 \propto \nicefrac{1}{\sigma}$. This inspires us to choose $\lambda(\sigma) = \sigma^2$. Because under this choice, we have $\lambda(\sigma)\ell({\boldsymbol{\theta}}; \sigma) = \sigma^2 \ell({\boldsymbol{\theta}}; \sigma) = \frac{1}{2}\mathbb{E}[\|\sigma \mathbf{s}_{\boldsymbol{\theta}}(\tilde{\mathbf{x}}, \sigma) + \frac{\tilde{\mathbf{x}} - \mathbf{x}}{\sigma}\|_2^2]$. Since $\frac{\tilde{\mathbf{x}} - \mathbf{x}}{\sigma} \sim \mathcal{N}(0,I)$ and $\left\lVert\sigma \mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma)\right\rVert_2 \propto 1$, we can easily conclude that the order of magnitude of $\lambda(\sigma)\ell({\boldsymbol{\theta}}; \sigma)$ does not depend on $\sigma$.
+There can be many possible choices of $\lambda(\cdot)$. Ideally, we hope that the values of $\lambda(\sigma_i)\ell({\boldsymbol{\theta}}; \sigma_i)$ for all $\{\sigma_i\}_{i=1}^L$ are roughly of the same order of magnitude. Empirically, we observe that when the score networks are trained to optimality, we approximately have $\left\lVert\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma)\right\rVert_2 \propto {1}/{\sigma}$. This inspires us to choose $\lambda(\sigma) = \sigma^2$. Because under this choice, we have $\lambda(\sigma)\ell({\boldsymbol{\theta}}; \sigma) = \sigma^2 \ell({\boldsymbol{\theta}}; \sigma) = \frac{1}{2}\mathbb{E}[\|\sigma \mathbf{s}_{\boldsymbol{\theta}}(\tilde{\mathbf{x}}, \sigma) + \frac{\tilde{\mathbf{x}} - \mathbf{x}}{\sigma}\|_2^2]$. Since $\frac{\tilde{\mathbf{x}} - \mathbf{x}}{\sigma} \sim \mathcal{N}(0,I)$ and $\left\lVert\sigma \mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma)\right\rVert_2 \propto 1$, we can easily conclude that the order of magnitude of $\lambda(\sigma)\ell({\boldsymbol{\theta}}; \sigma)$ does not depend on $\sigma$.
 
 We emphasize that our objective Eq. (6) requires no adversarial training, no surrogate losses, and no sampling from the score network during training (*e.g*., unlike contrastive divergence). Also, it does not require $\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma)$ to have special architectures in order to be tractable. In addition, when $\lambda(\cdot)$ and $\{\sigma_i\}_{i=1}^L$ are fixed, it can be used to quantitatively compare different NCSNs.
 
@@ -173,13 +173,11 @@ Initialize $\tilde{\mathbf{x}}_0$
 
 **return** $\tilde{\mathbf{x}}_T$
 
-**Figura.**
-
 After the NCSN $\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma)$ is trained, we propose a sampling approach—annealed Langevin dynamics (Alg. 1)—to produced samples, inspired by simulated annealing \[30\] and annealed importance sampling \[37\]. As shown in Alg. 1, we start annealed Langevin dynamics by initializing the samples from some fixed prior distribution, *e.g*., uniform noise. Then, we run Langevin dynamics to sample from $q_{\sigma_1}(\mathbf{x})$ with step size $\alpha_1$. Next, we run Langevin dynamics to sample from $q_{\sigma_2}(\mathbf{x})$, starting from the final samples of the previous simulation and using a reduced step size $\alpha_2$. We continue in this fashion, using the final samples of Langevin dynamics for $q_{\sigma_{i-1}}(\mathbf{x})$ as the initial samples of Langevin dynamic for $q_{\sigma_i}(\mathbf{x})$, and tuning down the step size $\alpha_i$ gradually with $\alpha_i = \epsilon \cdot \sigma_i^2 / \sigma_L^2$. Finally, we run Langevin dynamics to sample from $q_{\sigma_L}(\mathbf{x})$, which is close to $p_\text{data}(\mathbf{x})$ when $\sigma_L \approx 0$.
 
 Since the distributions $\{q_{\sigma_i}\}_{i=1}^L$ are all perturbed by Gaussian noise, their supports span the whole space and their scores are well-defined, avoiding difficulties from the manifold hypothesis. When $\sigma_1$ is sufficiently large, the low density regions of $q_{\sigma_1}(\mathbf{x})$ become small and the modes become less isolated. As discussed previously, this can make score estimation more accurate, and the mixing of Langevin dynamics faster. We can therefore assume that Langevin dynamics produce good samples for $q_{\sigma_1}(\mathbf{x})$. These samples are likely to come from high density regions of $q_{\sigma_1}(\mathbf{x})$, which means they are also likely to reside in the high density regions of $q_{\sigma_2}(\mathbf{x})$, given that $q_{\sigma_1}(\mathbf{x})$ and $q_{\sigma_2}(\mathbf{x})$ only slightly differ from each other. As score estimation and Langevin dynamics perform better in high density regions, samples from $q_{\sigma_1}(\mathbf{x})$ will serve as good initial samples for Langevin dynamics of $q_{\sigma_2}(\mathbf{x})$. Similarly, $q_{\sigma_{i-1}}(\mathbf{x})$ provides good initial samples for $q_{\sigma_i}(\mathbf{x})$, and finally we obtain samples of good quality from $q_{\sigma_L}(\mathbf{x})$.
 
-There could be many possible ways of tuning $\alpha_i$ according to $\sigma_i$ in Alg. 1. Our choice is $\alpha_i \propto \sigma_i^2$. The motivation is to fix the magnitude of the “signal-to-noise” ratio $\frac{\alpha_i \mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma_i)}{2 \sqrt{\alpha_i}~ \mathbf{z}}$ in Langevin dynamics. Note that $\mathbb{E}[\|\frac{\alpha_i \mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma_i)}{2\sqrt{\alpha_i}~ \mathbf{z}}\|_2^2] \approx \mathbb{E}[\frac{\alpha_i \left\lVert\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma_i)\right\rVert_2^2}{4}] \propto \frac{1}{4}\mathbb{E}[\left\lVert\sigma_i \mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma_i)\right\rVert_2^2]$. Recall that empirically we found $\left\lVert\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma)\right\rVert_2 \propto \nicefrac{1}{\sigma}$ when the score network is trained close to optimal, in which case $\mathbb{E}[\left\lVert\sigma_i \mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}; \sigma_i)\right\rVert_2^2] \propto 1$. Therefore $\|\frac{\alpha_i \mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma_i)}{2 \sqrt{\alpha_i}~ \mathbf{z}}\|_2\propto \frac{1}{4}\mathbb{E}[\left\lVert\sigma_i \mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma_i)\right\rVert_2^2] \propto \frac{1}{4}$ does not depend on $\sigma_i$.
+There could be many possible ways of tuning $\alpha_i$ according to $\sigma_i$ in Alg. 1. Our choice is $\alpha_i \propto \sigma_i^2$. The motivation is to fix the magnitude of the “signal-to-noise” ratio $\frac{\alpha_i \mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma_i)}{2 \sqrt{\alpha_i}~ \mathbf{z}}$ in Langevin dynamics. Note that $\mathbb{E}[\|\frac{\alpha_i \mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma_i)}{2\sqrt{\alpha_i}~ \mathbf{z}}\|_2^2] \approx \mathbb{E}[\frac{\alpha_i \left\lVert\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma_i)\right\rVert_2^2}{4}] \propto \frac{1}{4}\mathbb{E}[\left\lVert\sigma_i \mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma_i)\right\rVert_2^2]$. Recall that empirically we found $\left\lVert\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma)\right\rVert_2 \propto {1}/{\sigma}$ when the score network is trained close to optimal, in which case $\mathbb{E}[\left\lVert\sigma_i \mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}; \sigma_i)\right\rVert_2^2] \propto 1$. Therefore $\|\frac{\alpha_i \mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma_i)}{2 \sqrt{\alpha_i}~ \mathbf{z}}\|_2\propto \frac{1}{4}\mathbb{E}[\left\lVert\sigma_i \mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma_i)\right\rVert_2^2] \propto \frac{1}{4}$ does not depend on $\sigma_i$.
 
 To demonstrate the efficacy of our annealed Langevin dynamics, we provide a toy example where the goal is to sample from a mixture of Gaussian with two well-separated modes using only scores. We apply Alg. 1 to sample from the mixture of Gausssian used in Section 3.2. In the experiment, we choose $\{\sigma_i\}_{i=1}^L$ to be a geometric progression, with $L=10$, $\sigma_1 = 10$ and $\sigma_{10} = 0.1$. The results are provided in Fig. 3. Comparing Fig. 3 (b) against (c), annealed Langevin dynamics correctly recover the relative weights between the two modes whereas standard Langevin dynamics fail.
 
@@ -210,6 +208,12 @@ We use MNIST, CelebA \[34\], and CIFAR-10 \[31\] datasets in our experiments. 
 | BigGAN \[6\]               |     $\mathbf{9.22}$     | $\mathbf{14.73}$ |
 
 **Figura 4.** Intermediate samples of annealed Langevin dynamics.
+
+*(a) MNIST*
+
+*(b) CelebA*
+
+*(c) CIFAR-10*
 
 **Figura 5.** Uncurated samples on MNIST, CelebA, and CIFAR-10 datasets.
 
@@ -337,7 +341,19 @@ The hyperparameters are the same as those of the annealed Langevin dynamics used
 
 ## C.1 Samples from the baseline models
 
+*(a) MNIST*
+
+*(b) CelebA*
+
+*(c) CIFAR-10*
+
 **Figura 7.** Uncurated samples on MNIST, CelebA, and CIFAR-10 datasets from the baseline model.
+
+*(a) MNIST*
+
+*(b) CelebA*
+
+*(c) CIFAR-10*
 
 **Figura 8.** Intermediate samples from Langevin dynamics for the baseline model.
 

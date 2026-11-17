@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 
-from tex2md.util.tex import balanced_end
+from tex2md.util.tex import balanced_end, protected_spans
 
 
 def mark_appendix(text: str) -> str:
@@ -30,8 +30,13 @@ def expand_abbreviations(text: str) -> str:
 
 
 def strip_comment_lines(text: str) -> str:
-    """Comment-only lines can sit inside optional arguments (\\includegraphics[..., %\\n ...]) and trip pandoc."""
-    return re.sub(r"(?m)^[ \t]*%.*\n", "", text)
+    """Comment-only lines can sit inside optional arguments (\\includegraphics[..., %\\n ...]) and trip pandoc.
+    Inside verbatim a line that starts with "%" is content."""
+    out, pos = [], 0
+    for start, end in protected_spans(text, math=False):
+        out.append(re.sub(r"(?m)^[ \t]*%.*\n", "", text[pos:start]) + text[start:end])
+        pos = end
+    return "".join(out) + re.sub(r"(?m)^[ \t]*%.*\n", "", text[pos:])
 
 
 def drop_title_hacks(text: str) -> str:

@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: 27c7ae7ccf3059d7cf7183fbc805fb8adcec089a1d50de138b63dcc88a67a04c
     path: "PCIC/Tesis/Distilation/DistilBERT, a distilled version of BERT- smaller, faster, cheaper and lighter.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-16
+converted: 2026-11-17
 ---
 
 # DistilBERT, a distilled version of BERT: smaller, faster, cheaper and lighter
@@ -66,7 +66,7 @@ The results on each of the 9 tasks are showed on Table 1 along with the macro-s
 
 | Model      | **Score** | CoLA | MNLI | MRPC | QNLI | QQP  | RTE  | SST-2 | STS-B | WNLI |
 |:-----------|:---------:|:----:|:----:|:----:|:----:|:----:|:----:|:-----:|:-----:|:----:|
-| 2-11 ELMo  |   68.7    | 44.1 | 68.6 | 76.6 | 71.1 | 86.2 | 53.4 | 91.5  | 70.4  | 56.3 |
+| ELMo       |   68.7    | 44.1 | 68.6 | 76.6 | 71.1 | 86.2 | 53.4 | 91.5  | 70.4  | 56.3 |
 | BERT-base  |   79.5    | 56.3 | 86.7 | 88.6 | 91.8 | 89.6 | 69.3 | 92.7  | 89.0  | 53.5 |
 | DistilBERT |   77.0    | 51.3 | 82.2 | 87.5 | 89.2 | 88.5 | 59.9 | 91.3  | 86.9  | 56.3 |
 
@@ -76,21 +76,19 @@ The results on each of the 9 tasks are showed on Table 1 along with the macro-s
 
 **Tabla 2.** **DistilBERT yields to comparable performance on downstream tasks.** Comparison on downstream tasks: IMDb (test accuracy) and SQuAD 1.1 (EM/F1 on dev set). D: with a second step of distillation during fine-tuning.
 
-|                |        |           |
-|:---------------|:------:|:---------:|
 | Model          |  IMDb  |   SQuAD   |
+|:---------------|:------:|:---------:|
 |                | (acc.) |  (EM/F1)  |
-| 2-3 BERT-base  | 93.46  | 81.2/88.5 |
+| BERT-base      | 93.46  | 81.2/88.5 |
 | DistilBERT     | 92.82  | 77.7/85.8 |
 | DistilBERT (D) |   \-   | 79.1/86.9 |
 
 **Tabla 3.** **DistilBERT is significantly smaller while being constantly faster.** Inference time of a full pass of GLUE task STS-B (sentiment analysis) on CPU with a batch size of 1.
 
-|            |            |           |
-|:-----------|:----------:|:---------:|
 | Model      | \# param.  | Inf. time |
+|:-----------|:----------:|:---------:|
 |            | (Millions) | (seconds) |
-| 2-3 ELMo   |    180     |    895    |
+| ELMo       |    180     |    895    |
 | BERT-base  |    110     |    668    |
 | DistilBERT |     66     |    410    |
 
@@ -112,7 +110,7 @@ In this section, we investigate the influence of various components of the tripl
 
 | Ablation | **Variation on GLUE macro-score** |
 |:---|:--:|
-| 1-2 $\emptyset$ - $L_{cos}$ - $L_{mlm}$ | -2.96 |
+| $\emptyset$ - $L_{cos}$ - $L_{mlm}$ | -2.96 |
 | $L_{ce}$ - $\emptyset$ - $L_{mlm}$ | -1.46 |
 | $L_{ce}$ - $L_{cos}$ - $\emptyset$ | -0.31 |
 | Triple loss + random weights initialization | -3.69 |

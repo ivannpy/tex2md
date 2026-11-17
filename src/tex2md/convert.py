@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from tex2md.build.aux import parse_aux, parse_floats
 from tex2md.build.latex import find_main
 from tex2md.config import CACHE, FILTER, UNWRAP_FILTER
-from tex2md.diagnostics import Diagnostic, counts, from_pandoc_stderr, scan_markdown
+from tex2md.diagnostics import Diagnostic, counts, from_pandoc_stderr, scan_lost_text, scan_markdown
 from tex2md.library.frontmatter import frontmatter
 from tex2md.pandoc_recovery import convert_with_recovery
 from tex2md.pandoc_recovery import diagnostics as dropped_diagnostics
@@ -27,10 +27,15 @@ from tex2md.postprocess.markdown import (
     isolate_display_math,
     mathml_to_tex,
     normalize_math_macros,
+    protect_code,
+    resolve_ifthenelse,
+    restore_code,
     restore_math_text,
     tidy_math,
 )
+from tex2md.preprocess.braces import BraceRepair, repair_braces
 from tex2md.preprocess.citations import parse_bbl
+from tex2md.preprocess.comments import empty_comments, expand_remaining_inputs, inline_listing_files
 from tex2md.preprocess.equations import label_numbered_equations
 from tex2md.preprocess.macros import local_style_macros
 from tex2md.preprocess.pipeline import preprocess
@@ -73,7 +78,8 @@ def fetch(aid, ver, report) -> Workspace | None:
     ws = Workspace(work=work, src=os.path.join(work, "src"), build=os.path.join(work, "build"))
     ws.main = find_main(ws.src)
     if not ws.main:
-        report["error"] = "no main .tex found"
+        report["error"] = "no main .tex found (no file with \\documentclass and \\begin{document}: plain TeX and " \
+                          "LaTeX 2.09 sources are not supported)"
         return None
     if not os.path.isdir(ws.build):
         shutil.copytree(ws.src, ws.build)
@@ -97,10 +103,12 @@ def label_equations(ws: Workspace):
         for fn in sorted(fns):
             if fn.endswith(".tex"):
                 path = os.path.join(dp, fn)
-                text = read(path)
+                # surrogateescape: a latin-1 source goes back to disk byte for byte, only the labels are added
+                with open(path, encoding="utf-8", errors="surrogateescape") as fh:
+                    text = fh.read()
                 new, counter = label_numbered_equations(text, start=counter)
                 if new != text:
-                    with open(path, "w") as fh:
+                    with open(path, "w", encoding="utf-8", errors="surrogateescape") as fh:
                         fh.write(new)
     for dp, _, fns in os.walk(ws.build):
         for fn in fns:
@@ -136,10 +144,12 @@ def locate_bbl(ws: Workspace):
 
 
 def flatten(ws: Workspace):
-    rc, flat, _ = run(["latexpand", "--empty-comments", ws.base + ".tex"], ws.bdir, 120)
+    """One .tex with every \\input resolved and the comments emptied. latexpand would strip "%" inside verbatim
+    too (``if i % 2 == 1:`` in a listing), so it keeps the comments and ``empty_comments`` removes them."""
+    rc, flat, _ = run(["latexpand", "--keep-comments", "--empty-comments", ws.base + ".tex"], ws.bdir, 120)
     if rc != 0 or not flat.strip():
         flat = read(os.path.join(ws.bdir, ws.base + ".tex"))
-    return flat
+    return expand_remaining_inputs(empty_comments(flat), ws.bdir)
 
 
 def load_bibliography(flat, bbl_path):
@@ -147,7 +157,7 @@ def load_bibliography(flat, bbl_path):
     return parse_bbl(inline.group(0) if inline else read(bbl_path)) if (inline or bbl_path) else None
 
 
-def run_pandoc(ws: Workspace, tex, labels, bib, report):
+def run_pandoc(ws: Workspace, tex, labels, floats, bib, report):
     """Write the numbering tables and run pandoc (retrying without the environments it cannot parse).
     Returns (body or None, last stderr, dropped environments)."""
     # pandoc runs in an empty directory: it would otherwise try to parse local .sty files
@@ -158,7 +168,7 @@ def run_pandoc(ws: Workspace, tex, labels, bib, report):
         json.dump(labels, fh)
     floats_path = os.path.join(ws.work, "floats.json")
     with open(floats_path, "w") as fh:
-        json.dump(parse_floats(ws.build), fh)
+        json.dump(floats, fh)
     cmd = ["pandoc", "_tex2md_flat.tex", "-f", "latex", "-t", PANDOC_FORMAT, "--wrap=none",
            "--syntax-highlighting=none", "--lua-filter", FILTER, "-M", "tex2md_labels=" + lab_path,
            "-M", "tex2md_floats=" + floats_path]
@@ -176,6 +186,8 @@ def run_pandoc(ws: Workspace, tex, labels, bib, report):
     body, err, dropped, error = convert_with_recovery(tex, run_once)
     report["dropped_environments"] = [vars(d) for d in dropped]
     if body is None:
+        if error.startswith("pandoc produced an empty document") and "\\includepdf" in tex:
+            error += " (the arXiv source only wraps a PDF with \\includepdf: convert the PDF with `tex2md pdf`)"
         report["error"] = error
         return None, err, dropped
     return body, err, dropped
@@ -193,11 +205,25 @@ def latex_reference_diagnostics(stats) -> list[Diagnostic]:
     return out
 
 
+def brace_diagnostics(repairs: list[BraceRepair]) -> list[Diagnostic]:
+    """Braces of the paper's own LaTeX that did not pair up and were repaired so that pandoc could read it."""
+    if not repairs:
+        return []
+    return [Diagnostic("unbalanced-braces", "warning",
+                       "braces that do not pair up in the LaTeX source: a group was closed at the end of its paragraph "
+                       "or a stray } was dropped (check the text around it)", len(repairs),
+                       [f"{r.kind} at line {r.line}: {r.context}" for r in repairs[:3]])]
+
+
 def postprocess(body):
     # leftovers of \maketitle/\thanks redefinitions
     body = re.sub(r"(?m)^[a-z ]*\bmaketitle\b[a-z ]*$", "", body)
-    body = isolate_display_math(fix_text_math(normalize_math_macros(cap_heading_levels(body))))
-    body = tidy_math(drop_counter_hacks(restore_math_text(mathml_to_tex(body))))
+    # MathML first: it sits in HTML tables, whose backticks must not be taken for inline code below
+    body, code = protect_code(mathml_to_tex(cap_heading_levels(body)))     # "$" inside code is not math
+    body = fix_text_math(normalize_math_macros(resolve_ifthenelse(body)))
+    body = drop_counter_hacks(restore_math_text(body))
+    # tidy first: it joins "$a$$b$", which the display-math pass would otherwise read as the start of a block
+    body = restore_code(isolate_display_math(tidy_math(body)), code)
     return re.sub(r"\n{3,}", "\n\n", body)
 
 
@@ -234,15 +260,17 @@ def convert(arg, out, mn):
     report["bib_entries"] = len(bib) if bib else 0
 
     stats = {"unresolved_refs": 0, "unresolved_cites": 0}
+    flat = inline_listing_files(flat, ws.bdir)
     defs = local_style_macros(flat, ws.bdir)
     if defs:
         at = flat.find("\\usepackage")
         flat = flat[:at] + defs + "\n" + flat[at:] if at >= 0 else defs + "\n" + flat
-    tex = escape_citation_ampersands(preprocess(flat, labels, bib, stats))
+    floats = parse_floats(ws.build)
+    tex, repairs = repair_braces(escape_citation_ampersands(preprocess(flat, labels, bib, stats, floats)))
     report.update(stats)
     report["tables_in_tex"] = len(re.findall(r"\\begin\{table\*?\}", tex))
 
-    body, err, dropped = run_pandoc(ws, tex, labels, bib, report)
+    body, err, dropped = run_pandoc(ws, tex, labels, floats, bib, report)
     if body is None:
         return report
     mm = re.search(r"tex2md-stats figures=(\d+) tables=(\d+)", err)
@@ -251,13 +279,14 @@ def convert(arg, out, mn):
     body = postprocess(body)
     report["unresolved_left"] = len(re.findall(r"\[[a-zA-Z]+:[^\]\s]+\]", body)) + body.count("??")
 
-    diags = scan_markdown(body) + from_pandoc_stderr(err) + latex_reference_diagnostics(stats) + dropped_diagnostics(dropped)
+    diags = (scan_markdown(body) + from_pandoc_stderr(err) + latex_reference_diagnostics(stats)
+             + dropped_diagnostics(dropped) + scan_lost_text(tex, body) + brace_diagnostics(repairs))
     report["diagnostics"] = [d.to_dict() for d in diags]
     report["diagnostic_counts"] = counts(diags)
 
-    with open(out, "w") as fh:
+    with open(out, "w", encoding="utf-8") as fh:
         fh.write(render_document(meta, aid, ver, mn, body))
     report["ok"] = True
-    with open(os.path.join(ws.work, "report.json"), "w") as fh:
+    with open(os.path.join(ws.work, "report.json"), "w", encoding="utf-8") as fh:
         json.dump(report, fh, indent=1)
     return report

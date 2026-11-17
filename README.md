@@ -36,9 +36,15 @@ tex2md arxiv 2603.23507v1 -o md/ding2026did_2603.23507.md --mn BOOKMD5::PCIC/Tes
 tex2md jats  "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMC123" -o md/x.md --doi 10.1000/x
 tex2md pdf   paper.pdf -o md/x.md --doi 10.1000/x --mode balanced
 tex2md index md && tex2md check md
+tex2md audit md --level warning     # números de figuras y tablas frente al PDF compilado + diagnósticos
 ```
 
-`arxiv` imprime un informe JSON de calidad (tablas en el tex vs. en el md, referencias y citas sin resolver).
+`arxiv` imprime un informe JSON de calidad (tablas en el tex vs. en el md, referencias y citas sin resolver) y
+una lista de **diagnósticos tipados** (código, gravedad `error`/`warning`/`info`, cantidad y ejemplos): fórmulas
+con `$` sin cerrar (`unbalanced-math`), texto del LaTeX que no llegó al Markdown (`lost-text`), llaves
+reparadas (`unbalanced-braces`), entornos o definiciones que pandoc no pudo leer (`dropped-environment`,
+`dropped-definition`), comandos que KaTeX no conoce, referencias y citas sin resolver… El comando termina con
+estado 1 si la conversión no se completó. `audit` repite la comprobación de los `.md` ya escritos.
 
 ## Datos y configuración
 
@@ -65,6 +71,8 @@ src/tex2md/
 ├── preprocess/         LaTeX → LaTeX que pandoc entiende
 │   ├── pipeline.py     RULES: lista ordenada de reglas con nombre (único lugar donde se fija el orden)
 │   └── structure · floats · macros · tables · boxes · algorithms · references · citations
+│       comments (`%`, `\input`, listados) · environments (forest, multicols, tblr, glosarios…)
+│       symbols (`\ding`, `\cmark`…) · textloss (cajas y comandos que pandoc vacía) · braces (llaves sin cerrar)
 ├── postprocess/        limpieza del Markdown (encabezados, matemáticas)
 ├── filters/            filtros Lua de pandoc
 │   ├── tex2md.lua      punto de entrada: orden de pasadas
@@ -72,7 +80,7 @@ src/tex2md/
 ├── library/            front matter, índice, comprobación de enlaces con MarginNote
 ├── util/               tex.py (grupos balanceados, macros) · io.py (procesos, HTTP, YAML)
 ├── diagnostics.py      diagnósticos tipados (informe de conversión y `audit`)
-├── pandoc_recovery.py  reintento sin el entorno que pandoc no puede leer
+├── pandoc_recovery.py  reintento sin el entorno, la definición o la línea del preámbulo que pandoc no puede leer
 └── doctor.py
 tests/                  unit/ · golden/ · regress.py
 marker/                 proyecto uv aislado (pyproject + uv.lock)
@@ -90,6 +98,8 @@ si el `.aux` no trae datos de ese tipo usa la etiqueta, y como último recurso u
 1. Escribe una función `texto -> texto` en el módulo temático (`preprocess/floats.py`, `tables.py`, …).
 2. Regístrala en `RULES` de `preprocess/pipeline.py` **en su sitio** (el orden importa) con un nombre.
 3. Añade una prueba mínima en `tests/unit/` (entrada LaTeX → salida esperada) y, si arregla un artículo real, un caso golden.
+4. Un módulo nuevo del paquete hay que añadirlo a git (`git add src/tex2md/<paquete>/`): `.gitignore` solo ignora
+   `/build/` y `/dist/` de la raíz, no los paquetes de `src/` que se llamen así.
 
 Qué hace, cómo, fallas conocidas y trabajo futuro: ver `ROADMAP.md`.
 

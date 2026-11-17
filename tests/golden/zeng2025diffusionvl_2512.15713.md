@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: 81bf80f4b35a99ada7ce7f12ebfea30675883c86855c1758e465420ba3d3b066
     path: "PCIC/Tesis/ar-diff/DiffusionVL- Translating Any Autoregressive Models into Diffusion Vision Language Models.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-16
+converted: 2026-11-17
 ---
 
 # DiffusionVL: Translating Any Autoregressive Models into Diffusion Vision Language Models
@@ -140,9 +140,7 @@ The model is trained to minimize the cross-entropy loss at masked positions usin
 
 **Output:** generated token sequence $\mathbf{Y}$
 
-$\mathbf{C}_0\gets \texttt{cat}\bigl(\texttt{proj}(\texttt{ve}(\mathbf{I})),\texttt{embed}(\mathbf{T})\bigr);
-
-\mathbf{Y}\gets\varnothing$
+$\mathbf{C}_0\gets \texttt{cat}\bigl(\texttt{proj}(\texttt{ve}(\mathbf{I})),\texttt{embed}(\mathbf{T})\bigr);\;\mathbf{Y}\gets\varnothing$
 
 **for** $m \gets 1$ **to** $\lfloor L/D \rfloor$ **do**
 
@@ -160,13 +158,17 @@ $\mathbf{C}_0\gets \texttt{cat}\bigl(\texttt{proj}(\texttt{ve}(\mathbf{I})),\tex
 
  $\mathcal{U}^{(s)} \gets \operatorname{top\text{-}k}(\{c_{m,i}^{(s)}\}, k)$
 
-  $x_{m,i}^{(s)} \gets \hat{x}_{m,i}^{(s)}$ if $i \in \mathcal{U}^{(s)}$, else $\texttt{[MASK]}$
+ **if** dynamic **then**
 
- $\mathbf{C}_m \gets \mathbf{C}_{m-1} \cup \mathbf{x}_m^{(S)};
+ $\mathcal{U}^{(s)} \gets \mathcal{U}^{(s)} \cup \{i \in \mathcal{M}^{(s-1)} \mid c_{m,i}^{(s)} > \tau\}$
 
-\quad\ \mathbf{Y} \gets \mathbf{Y} \cup \mathbf{x}_m^{(S)}$
+ $x_{m,i}^{(s)} \gets \hat{x}_{m,i}^{(s)}$ if $i \in \mathcal{U}^{(s)}$, else $\texttt{[MASK]}$
 
- 
+ $\mathbf{C}_m \gets \mathbf{C}_{m-1} \cup \mathbf{x}_m^{(S)};\; \mathbf{Y} \gets \mathbf{Y} \cup \mathbf{x}_m^{(S)}$
+
+ **if** $\langle\text{EOS}\rangle \in \mathbf{x}_m^{(S)}$ **then**
+
+ **break**
 
 **return** $\mathbf{Y}$
 
@@ -263,13 +265,17 @@ It is worth noting that the performance difference between the DiffusionVL here 
 
 ## 4.4 Inference Speed and Quality
 
+*(a) DetailCaps captioning performance.*
+
+*(b) MathVista benchmark performance.*
+
 **Figura 4.** **Speed and quality trade-offs on detailed captioning and math reasoning.** We define the parallelism factor for dVLMs as the average number of tokens generated simultaneously throughout the sequence (e.g., $1\times$ corresponds to single-token sampling). Speed metrics were collected on 8 GPUs and reported as the average per device.
 
 **Tabla 4.** **Comprehensive comparison on math reasoning benchmarks.** We report both accuracy (Acc.) and inference throughput (TPS). Best results are in **bold** and second-best are <u>underlined</u>.
 
 | **Model** | **MathVista** |  | **MathVerse** |  | **MathVision** |  |
 |:---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 2-3 (lr)4-5 (lr)6-7 | Acc.$\uparrow$ | TPS$\uparrow$ | Acc.$\uparrow$ | TPS$\uparrow$ | Acc.$\uparrow$ | TPS$\uparrow$ |
+|  | Acc.$\uparrow$ | TPS$\uparrow$ | Acc.$\uparrow$ | TPS$\uparrow$ | Acc.$\uparrow$ | TPS$\uparrow$ |
 | DiffusionVL-7B | **64.30** | 5.21 | **36.29** | 14.38 | **19.08** | 17.74 |
 | LLaDA-V-8B | 55.10 | <u>23.07</u> | 31.35 | <u>23.18</u> | 17.11 | <u>22.75</u> |
 | DiffusionVL-CoT-7B | <u>63.70</u> | **39.47** | <u>32.74</u> | **42.31** | <u>18.75</u> | **39.26** |
@@ -333,17 +339,17 @@ Table 7 shows that smaller dynamic thresholds allow the model to decode all tok
 
 # References
 
-Ahmad et al. (2024). Muhammad Awais Ahmad, Tauqir Ahmed, Muhammad Aslam, Amjad Rehman, Faten S Alamri, Saeed Ali Bahaj, and Tanzila Saba. Mathvision: An accessible intelligent agent for visually impaired people to understand mathematical equations. IEEE Access, 13:0 6155–6165, 2024.
+Ahmad et al. (2024). Muhammad Awais Ahmad, Tauqir Ahmed, Muhammad Aslam, Amjad Rehman, Faten S Alamri, Saeed Ali Bahaj, and Tanzila Saba. Mathvision: An accessible intelligent agent for visually impaired people to understand mathematical equations. IEEE Access, 13:6155–6165, 2024.
 
 Arriola et al. (2025). Marianne Arriola, Aaron Gokaslan, Justin T Chiu, Zhihan Yang, Zhixuan Qi, Jiaqi Han, Subham Sekhar Sahoo, and Volodymyr Kuleshov. Block diffusion: Interpolating between autoregressive and diffusion language models. arXiv preprint arXiv:2503.09573, 2025.
 
-Austin et al. (2021). Jacob Austin, Daniel D Johnson, Jonathan Ho, Daniel Tarlow, and Rianne Van Den Berg. Structured denoising diffusion models in discrete state-spaces. Advances in neural information processing systems, 34:0 17981–17993, 2021.
+Austin et al. (2021). Jacob Austin, Daniel D Johnson, Jonathan Ho, Daniel Tarlow, and Rianne Van Den Berg. Structured denoising diffusion models in discrete state-spaces. Advances in neural information processing systems, 34:17981–17993, 2021.
 
 Bai et al. (2025). Shuai Bai, Keqin Chen, Xuejing Liu, Jialin Wang, Wenbin Ge, Sibo Song, Kai Dang, Peng Wang, Shijie Wang, Jun Tang, et al. Qwen2. 5-vl technical report. arXiv preprint arXiv:2502.13923, 2025.
 
 Bie et al. (2025). Tiwei Bie, Maosong Cao, Kun Chen, Lun Du, Mingliang Gong, Zhuochen Gong, Yanmei Gu, Jiaqi Hu, Zenan Huang, Zhenzhong Lan, Chengxi Li, Chongxuan Li, Jianguo Li, Zehuan Li, Huabin Liu, Lin Liu, Guoshan Lu, Xiaocheng Lu, Yuxin Ma, Jianfeng Tan, Lanning Wei, Ji-Rong Wen, Yipeng Xing, Xiaolu Zhang, Junbo Zhao, Da Zheng, Jun Zhou, Junlin Zhou, Zhanchao Zhou, Liwang Zhu, and Yihong Zhuang. Llada2.0: Scaling up diffusion language models to 100b, 2025.
 
-Chen et al. (2024a). Lin Chen, Jinsong Li, Xiaoyi Dong, Pan Zhang, Yuhang Zang, Zehui Chen, Haodong Duan, Jiaqi Wang, Yu Qiao, Dahua Lin, et al. Are we on the right way for evaluating large vision-language models? Advances in Neural Information Processing Systems, 37:0 27056–27087, 2024a.
+Chen et al. (2024a). Lin Chen, Jinsong Li, Xiaoyi Dong, Pan Zhang, Yuhang Zang, Zehui Chen, Haodong Duan, Jiaqi Wang, Yu Qiao, Dahua Lin, et al. Are we on the right way for evaluating large vision-language models? Advances in Neural Information Processing Systems, 37:27056–27087, 2024a.
 
 Chen et al. (2021). Mark Chen, Jerry Tworek, Heewoo Jun, Qiming Yuan, Henrique Ponde de Oliveira Pinto, Jared Kaplan, Harri Edwards, Yuri Burda, Nicholas Joseph, Greg Brockman, Alex Ray, Raul Puri, Gretchen Krueger, Michael Petrov, Heidy Khlaaf, Girish Sastry, Pamela Mishkin, Brooke Chan, Scott Gray, Nick Ryder, Mikhail Pavlov, Alethea Power, Lukasz Kaiser, Mohammad Bavarian, Clemens Winter, Philippe Tillet, Felipe Petroski Such, Dave Cummings, Matthias Plappert, Fotios Chantzis, Elizabeth Barnes, Ariel Herbert-Voss, William Hebgen Guss, Alex Nichol, Alex Paino, Nikolas Tezak, Jie Tang, Igor Babuschkin, Suchir Balaji, Shantanu Jain, William Saunders, Christopher Hesse, Andrew N. Carr, Jan Leike, Josh Achiam, Vedant Misra, Evan Morikawa, Alec Radford, Matthew Knight, Miles Brundage, Mira Murati, Katie Mayer, Peter Welinder, Bob McGrew, Dario Amodei, Sam McCandlish, Ilya Sutskever, and Wojciech Zaremba. Evaluating large language models trained on code, 2021.
 
@@ -375,7 +381,7 @@ Li et al. (2025c). Yongkang Li, Kaixin Xiong, Xiangyu Guo, Fang Li, Sixu Yan, Ga
 
 Liao et al. (2025). Bencheng Liao, Shaoyu Chen, Haoran Yin, Bo Jiang, Cheng Wang, Sixu Yan, Xinbang Zhang, Xiangyu Li, Ying Zhang, Qian Zhang, et al. Diffusiondrive: Truncated diffusion model for end-to-end autonomous driving. In Proceedings of the Computer Vision and Pattern Recognition Conference, pages 12037–12047, 2025.
 
-Liu et al. (2023). Haotian Liu, Chunyuan Li, Qingyang Wu, and Yong Jae Lee. Visual instruction tuning. Advances in neural information processing systems, 36:0 34892–34916, 2023.
+Liu et al. (2023). Haotian Liu, Chunyuan Li, Qingyang Wu, and Yong Jae Lee. Visual instruction tuning. Advances in neural information processing systems, 36:34892–34916, 2023.
 
 Liu et al. (2024). Yuan Liu, Haodong Duan, Yuanhan Zhang, Bo Li, Songyang Zhang, Wangbo Zhao, Yike Yuan, Jiaqi Wang, Conghui He, Ziwei Liu, et al. Mmbench: Is your multi-modal model an all-around player? In European conference on computer vision, pages 216–233. Springer, 2024.
 
@@ -397,7 +403,7 @@ Tao et al. (2025). Hongyuan Tao, Bencheng Liao, Shaoyu Chen, Haoran Yin, Qian Zh
 
 Tschannen et al. (2025). Michael Tschannen, Alexey Gritsenko, Xiao Wang, Muhammad Ferjad Naeem, Ibrahim Alabdulmohsin, Nikhil Parthasarathy, Talfan Evans, Lucas Beyer, Ye Xia, Basil Mustafa, et al. Siglip 2: Multilingual vision-language encoders with improved semantic understanding, localization, and dense features. arXiv preprint arXiv:2502.14786, 2025.
 
-Vaswani et al. (2017). Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, ukasz Kaiser, and Illia Polosukhin. Attention is all you need. Advances in neural information processing systems, 30, 2017.
+Vaswani et al. (2017). Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, and Illia Polosukhin. Attention is all you need. Advances in neural information processing systems, 30, 2017.
 
 Wang et al. (2024). Fei Wang, Xingyu Fu, James Y Huang, Zekun Li, Qin Liu, Xiaogeng Liu, Mingyu Derek Ma, Nan Xu, Wenxuan Zhou, Kai Zhang, et al. Muirbench: A comprehensive benchmark for robust multi-image understanding. arXiv preprint arXiv:2406.09411, 2024.
 
@@ -405,13 +411,13 @@ Wu et al. (2025a). Chengyue Wu, Hao Zhang, Shuchen Xue, Shizhe Diao, Yonggan Fu,
 
 Wu et al. (2025b). Chengyue Wu, Hao Zhang, Shuchen Xue, Zhijian Liu, Shizhe Diao, Ligeng Zhu, Ping Luo, Song Han, and Enze Xie. Fast-dllm: Training-free acceleration of diffusion llm by enabling kv cache and parallel decoding. arXiv preprint arXiv:2505.22618, 2025b.
 
-Wu et al. (2023). Tong Wu, Zhihao Fan, Xiao Liu, Hai-Tao Zheng, Yeyun Gong, Jian Jiao, Juntao Li, Jian Guo, Nan Duan, Weizhu Chen, et al. Ar-diffusion: Auto-regressive diffusion model for text generation. Advances in Neural Information Processing Systems, 36:0 39957–39974, 2023.
+Wu et al. (2023). Tong Wu, Zhihao Fan, Xiao Liu, Hai-Tao Zheng, Yeyun Gong, Jian Jiao, Juntao Li, Jian Guo, Nan Duan, Weizhu Chen, et al. Ar-diffusion: Auto-regressive diffusion model for text generation. Advances in Neural Information Processing Systems, 36:39957–39974, 2023.
 
 xAI (2024). xAI. Grok-1.5 vision preview: Connecting the digital and physical worlds with our first multimodal model, 2024.
 
 Yang et al. (2025). Ling Yang, Ye Tian, Bowen Li, Xinchen Zhang, Ke Shen, Yunhai Tong, and Mengdi Wang. Mmada: Multimodal large diffusion language models. arXiv preprint arXiv:2505.15809, 2025.
 
-Yao et al. (2024). Jingfeng Yao, Cheng Wang, Wenyu Liu, and Xinggang Wang. Fasterdit: Towards faster diffusion transformers training without architecture modification. Advances in Neural Information Processing Systems, 37:0 56166–56189, 2024.
+Yao et al. (2024). Jingfeng Yao, Cheng Wang, Wenyu Liu, and Xinggang Wang. Fasterdit: Towards faster diffusion transformers training without architecture modification. Advances in Neural Information Processing Systems, 37:56166–56189, 2024.
 
 Yao et al. (2025). Jingfeng Yao, Bin Yang, and Xinggang Wang. Reconstruction vs. generation: Taming optimization dilemma in latent diffusion models. In Proceedings of the Computer Vision and Pattern Recognition Conference, pages 15703–15712, 2025.
 

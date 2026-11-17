@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import json
 import os
 import re
 import subprocess
@@ -27,8 +28,8 @@ def command_for(md_text: str, out: str) -> list[str]:
     aid = re.search(r'^arxiv: "([^"]+)"', fm, re.M).group(1)
     ver = re.search(r'^arxiv_version: "([^"]+)"', fm, re.M)
     cmd = [sys.executable, "-m", "tex2md", "arxiv", aid + (ver.group(1) if ver else ""), "-o", out]
-    for b, p in re.findall(r'bookmd5: (\w+)\s+path: "([^"]+)"', fm):
-        cmd += ["--mn", f"{b}::{p}"]
+    for b, p in re.findall(r'bookmd5: (\w+)\s+path: ("(?:[^"\\]|\\.)*")', fm):
+        cmd += ["--mn", f"{b}::{json.loads(p)}"]      # the path is a JSON string: decode its escapes (\u001b, \")
     return cmd
 
 

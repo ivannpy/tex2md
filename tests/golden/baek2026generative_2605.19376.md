@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: ee876e9451b4fe1bfe9cc4ecc80fdb089d55e8b027c62878c7c33754b9848127
     path: "PCIC/Tesis/Planning/Generative Recursive Reasoning.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-16
+converted: 2026-11-17
 ---
 
 # Generative Recursive Reasoning
@@ -243,18 +243,18 @@ We evaluate GRAM against deterministic recursive baselines on tasks designed to 
 
 |  |  |  |  |  | **N-Queens** |  |  |  | **Graph Coloring** |  |  |  |  |
 |:---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| 6-9 (lr)10-13 |  |  |  |  | $8 \times 8$ |  | $10 \times 10$ |  | 8-vertex |  | 10-vertex |  |  |
-| 6-7 (lr)8-9 (lr)10-11 (lr)12-13 Method | Rec. | Gen. | \# Params | $N$ | Acc. | Cov@20 | Acc. | Cov@20 | Conflict$\downarrow$ | Cov@20 | Conflict$\downarrow$ | Cov@20 |  |
-| Direct Pred (8 layers) |  |  | 27M | – | 40.4$\pm 1.1$ | 13.7$\pm 1.1$ | 13.6$\pm 0.5$ | 1.6$\pm 0.2$ | 179.3$\pm 4.0$ | 19.9$\pm 0.2$ | 198.7$\pm 5.0$ | 6.7$\pm 0.1$ |  |
-| Direct Pred (32 layers) |  |  | 100M | – | 40.2$\pm 1.3$ | 13.6$\pm 1.1$ | 13.1$\pm 0.4$ | 1.6$\pm 0.2$ | 174.0$\pm 18.0$ | 19.1$\pm 1.7$ | 227.7$\pm 34.5$ | 6.5$\pm 1.9$ |  |
-| Looped TF |  |  | 7M | – | 68.1$\pm 7.4$ | 23.6$\pm 1.9$ | 50.0$\pm 7.6$ | 6.2$\pm 3.2$ | 136.0$\pm 16.1$ | 20.5$\pm 1.5$ | 157.3$\pm 9.0$ | 7.2$\pm 0.7$ |  |
-| HRM |  |  | 27M | – | 78.7$\pm 2.9$ | 26.7$\pm 1.3$ | 37.8$\pm 0.7$ | 4.7$\pm 0.1$ | 109.7$\pm 1.5$ | 21.8$\pm 0.3$ | 164.3$\pm 21.6$ | 8.9$\pm 1.7$ |  |
-| TRM |  |  | 7M | – | 66.8$\pm 5.6$ | 22.6$\pm 0.8$ | 17.5$\pm 11.2$ | 2.0$\pm 1.3$ | 109.3$\pm 3.1$ | 22.3$\pm 0.6$ | 170.7$\pm 17.9$ | 6.8$\pm 0.3$ |  |
-| AR |  |  | 10.6M | 1 | 96.3$\pm 1.0$ | – | **90.0**$\pm 2.2$ | – | 37.3$\pm 6.1$ | – | 101.7$\pm 4.0$ | – |  |
+|  |  |  |  |  | $8 \times 8$ |  | $10 \times 10$ |  | 8-vertex |  | 10-vertex |  |  |
+| Method | Rec. | Gen. | \# Params | $N$ | Acc. | Cov@20 | Acc. | Cov@20 | Conflict$\downarrow$ | Cov@20 | Conflict$\downarrow$ | Cov@20 |  |
+| Direct Pred (8 layers) | ✗ | ✗ | 27M | – | 40.4$\pm 1.1$ | 13.7$\pm 1.1$ | 13.6$\pm 0.5$ | 1.6$\pm 0.2$ | 179.3$\pm 4.0$ | 19.9$\pm 0.2$ | 198.7$\pm 5.0$ | 6.7$\pm 0.1$ |  |
+| Direct Pred (32 layers) | ✗ | ✗ | 100M | – | 40.2$\pm 1.3$ | 13.6$\pm 1.1$ | 13.1$\pm 0.4$ | 1.6$\pm 0.2$ | 174.0$\pm 18.0$ | 19.1$\pm 1.7$ | 227.7$\pm 34.5$ | 6.5$\pm 1.9$ |  |
+| Looped TF | ✓ | ✗ | 7M | – | 68.1$\pm 7.4$ | 23.6$\pm 1.9$ | 50.0$\pm 7.6$ | 6.2$\pm 3.2$ | 136.0$\pm 16.1$ | 20.5$\pm 1.5$ | 157.3$\pm 9.0$ | 7.2$\pm 0.7$ |  |
+| HRM | ✓ | ✗ | 27M | – | 78.7$\pm 2.9$ | 26.7$\pm 1.3$ | 37.8$\pm 0.7$ | 4.7$\pm 0.1$ | 109.7$\pm 1.5$ | 21.8$\pm 0.3$ | 164.3$\pm 21.6$ | 8.9$\pm 1.7$ |  |
+| TRM | ✓ | ✗ | 7M | – | 66.8$\pm 5.6$ | 22.6$\pm 0.8$ | 17.5$\pm 11.2$ | 2.0$\pm 1.3$ | 109.3$\pm 3.1$ | 22.3$\pm 0.6$ | 170.7$\pm 17.9$ | 6.8$\pm 0.3$ |  |
+| AR | ✗ | ✓ | 10.6M | 1 | 96.3$\pm 1.0$ | – | **90.0**$\pm 2.2$ | – | 37.3$\pm 6.1$ | – | 101.7$\pm 4.0$ | – |  |
 |  |  |  |  | 20 | 98.3$\pm 0.7$ | 84.8$\pm 0.8$ | 95.1$\pm 1.5$ | 53.2$\pm 0.8$ | 19.0$\pm 11.3$ | 83.0$\pm 0.7$ | 61.3$\pm 8.3$ | 40.0$\pm 0.3$ |  |
-| MDLM |  |  | 12.6M | 1 | 96.1$\pm 1.5$ | – | 74.3$\pm 6.6$ | – | 16.3$\pm 2.5$ | – | 57.3$\pm 4.7$ | – |  |
+| MDLM | ✗ | ✓ | 12.6M | 1 | 96.1$\pm 1.5$ | – | 74.3$\pm 6.6$ | – | 16.3$\pm 2.5$ | – | 57.3$\pm 4.7$ | – |  |
 |  |  |  |  | 20 | **100.0**$\pm 0.0$ | 87.2$\pm 0.6$ | 98.6$\pm 0.8$ | 47.4$\pm 2.2$ | **2.7**$\pm 0.6$ | 84.5$\pm 4.0$ | 12.0$\pm 7.0$ | 48.2$\pm 1.4$ |  |
-| **GRAM (Ours)** |  |  | 10M | 1 | **99.5**$\pm 0.3$ | – | 89.7$\pm 2.7$ | – | **8.3**$\pm 2.5$ | – | **31.3**$\pm 15.0$ | – |  |
+| **GRAM (Ours)** | ✓ | ✓ | 10M | 1 | **99.5**$\pm 0.3$ | – | 89.7$\pm 2.7$ | – | **8.3**$\pm 2.5$ | – | **31.3**$\pm 15.0$ | – |  |
 |  |  |  |  | 20 | **100.0**$\pm 0.0$ | **89.7**$\pm 1.7$ | **100.0**$\pm 0.0$ | **57.5**$\pm 3.4$ | **2.7**$\pm 2.1$ | **85.8**$\pm 0.5$ | **3.3**$\pm 1.5$ | **51.3**$\pm 2.8$ |  |
 
 ## 4.3 Exploring GRAM as an Unconditional Generator
@@ -291,7 +291,7 @@ We ablate GRAM’s model structure and stochastic mechanism on Sudoku-Extreme an
 
 |  | **Sudoku** |  | **N-Queens** |  |
 |:---|:--:|:--:|:--:|:--:|
-| 2-3 (lr)4-5 **Model variant** | $N$=1 | $N$=20 | $N$=1 | $N$=20 |
+| **Model variant** | $N$=1 | $N$=20 | $N$=1 | $N$=20 |
 | Base (Looped TF) | 61.7$_{\color{gray}\pm0.9}$ | 61.7$_{\color{gray}\pm0.9}$ | 68.1$_{\color{gray}\pm7.4}$ | 68.1$_{\color{gray}\pm7.4}$ |
 | \+ DS + HR (=TRM) | 83.6$_{\color{gray}\pm1.3}$ | 83.6$_{\color{gray}\pm1.3}$ | 66.8$_{\color{gray}\pm5.6}$ | 66.8$_{\color{gray}\pm5.6}$ |
 | \+ SG | 65.1$_{\color{gray}\pm0.5}$ | 74.0$_{\color{gray}\pm0.6}$ | 87.0$_{\color{gray}\pm7.5}$ | 87.3$_{\color{gray}\pm7.8}$ |
@@ -378,11 +378,11 @@ $e_x \gets f_{\mathrm{enc}}(x)$;$z \gets z_0$
 
  **for** $t = 1$ **to** $T-1$ **do**
 
- $(z, \cdot) \gets \mathrm{stopgrad}\big(\textsc{Transition}(z, e_x,\ q_\phi(\cdot \mid \cdot,\, y))\big)$
+ $(z, \cdot) \gets \mathrm{stopgrad}\big(\text{Transition}(z, e_x,\ q_\phi(\cdot \mid \cdot,\, y))\big)$
 
  **end for**
 
- $(z, u_T) \gets \textsc{Transition}(z, e_x,\ q_\phi(\cdot \mid \cdot,\, y))$
+ $(z, u_T) \gets \text{Transition}(z, e_x,\ q_\phi(\cdot \mid \cdot,\, y))$
 
  *// Compute loss (prediction + KL + ACT) and update weights*
 
@@ -392,7 +392,7 @@ $e_x \gets f_{\mathrm{enc}}(x)$;$z \gets z_0$
 
  $\mathcal{L}^{(n)} \gets \mathcal{L}^{(n)} + \mathrm{BCE}\big(q,\ \mathbf{1}[\hat{y} = y]\big)$ *// ACT halting, Appendix A.3*
 
- $(\theta, \phi, \psi) \gets \textsc{AdamW}\big((\theta, \phi, \psi),\ \nabla \mathcal{L}^{(n)}\big)$
+ $(\theta, \phi, \psi) \gets \text{AdamW}\big((\theta, \phi, \psi),\ \nabla \mathcal{L}^{(n)}\big)$
 
  *// detaching and carrying states*
 
@@ -422,7 +422,7 @@ $e_x \gets f_{\mathrm{enc}}(x)$
 
  **for** $t = 1$ **to** $T$ **do**
 
- $(z, \cdot) \gets \textsc{Transition}(z, e_x,\ p_\theta(\cdot \mid \cdot))$ *// prior: $y$ is unavailable*
+ $(z, \cdot) \gets \text{Transition}(z, e_x,\ p_\theta(\cdot \mid \cdot))$ *// prior: $y$ is unavailable*
 
  **end for**
 
@@ -538,7 +538,7 @@ The encoding process proceeds in three stages. First, the discrete input tokens 
 |           | Linear Scaling $[-1, 1]$  |           $(B, C, H, W)$            |
 | 2\. Conv  | Conv2d $5\times5$ ($p=2$) |          $(B, D/2, H, W)$           |
 |           | SiLU $\rightarrow$ GN(32) |                                     |
-| 2-3       | Conv2d $5\times5$ ($p=2$) |          $(B, D/2, H, W)$           |
+|           | Conv2d $5\times5$ ($p=2$) |          $(B, D/2, H, W)$           |
 |           | SiLU $\rightarrow$ GN(32) |                                     |
 | 3\. Patch | Flatten Patches           | $(B, N_{p}, P^2 \cdot \frac{D}{2})$ |
 |           | Linear Projection         |           $(B, N_{p}, D)$           |
@@ -555,7 +555,7 @@ The encoding process proceeds in three stages. First, the discrete input tokens 
 
 - *N-Queens* flattens an $N \times N$ board row-by-row into $N^2$ tokens with vocabulary size 3 (0=pad, 1=empty, 2=queen).
 
-- *Graph Coloring* encodes the upper triangle of the adjacency matrix as $\nicefrac{n(n+1)}{2}$ tokens, using 0=PAD, 1=no-edge, and 2=edge for inputs and $3 + \text{color\_id}$ for output colors.
+- *Graph Coloring* encodes the upper triangle of the adjacency matrix as ${n(n+1)}/{2}$ tokens, using 0=PAD, 1=no-edge, and 2=edge for inputs and $3 + \text{color\_id}$ for output colors.
 
 - For image generation on *binarized-MNIST* (Lecun et al., 1998), images are quantized into pixels with vocabulary size 3 (0=pad, 1=black, 2=white) and processed via CNN-based patchification (LeCun et al., 1998; Peebles and Xie, 2023), with the encoder applying patchify and the decoder unpatchify. Then, patched input forms $14\times 14$ flattened sequence tokens.
 
@@ -626,7 +626,7 @@ For evaluation, we employed an 85:15 train-test split. Crucially, to prevent dat
 
 The Graph Coloring problem requires assigning one of $k$ colors to each node in a graph such that no two adjacent nodes share the same color. We consider graphs with $N \in \{8, 10\}$ nodes and use $k=3$ colors. Figure 11 illustrates an example instance with $N=8$ nodes and $k=3$ colors.
 
-Graphs are generated using the Erdős–Rényi random graph model (Erdand Rényi, 1964), following the generation pipeline from GNN-GCP (Lemos et al., 2019), in which a CP-SAT solver verifies the chromatic number of each sampled graph. We retain only graphs whose chromatic number is exactly 3. The resulting graphs have 6 to 14 edges for $N=8$ and 9 to 19 edges for $N=10$. Mean edge density is 0.38 in training and 0.42 in test for $N=8$, and 0.28 and 0.34 for $N=10$.
+Graphs are generated using the Erdős–Rényi random graph model (Erdős and Rényi, 1964), following the generation pipeline from GNN-GCP (Lemos et al., 2019), in which a CP-SAT solver verifies the chromatic number of each sampled graph. We retain only graphs whose chromatic number is exactly 3. The resulting graphs have 6 to 14 edges for $N=8$ and 9 to 19 edges for $N=10$. Mean edge density is 0.38 in training and 0.42 in test for $N=8$, and 0.28 and 0.34 for $N=10$.
 
 For each graph, we enumerate all valid 3-colorings and retain only canonical forms, in which colors are relabelled in order of first appearance, to eliminate redundant solutions under color permutation. Since each graph admits several canonical colorings, a training graph may carry multiple targets, on average 3.40 for $N=8$ and 8.73 for $N=10$; the test split uses one coloring per graph. The distribution of solution counts is shown in Figure 12.
 
@@ -753,6 +753,10 @@ We group N-Queens test instances by the number of valid solutions each input adm
 
 **Coverage.** Figure 16 shows solution coverage on $8\times8$ and $10\times10$ N-Queens. Deterministic recursive models (HRM and TRM) decline sharply as the number of valid solutions increases, since a single fixed reasoning trajectory cannot reach alternative solutions no matter how long it is refined. GRAM instead improves monotonically as the number of parallel samples $N$ grows from 1 to 20, in both settings. Recovering multiple solutions therefore requires sampling from a distribution over trajectories rather than refining a single one, with Table 3b isolating the contribution of stochastic guidance itself.
 
+*(a) N-Queens $8\times8$*
+
+*(b) N-Queens $10\times10$*
+
 **Figura 16.** **Solution coverage analysis on N-Queens ($\mathbf{8\times8}$ and $\mathbf{10\times10}$)** with respect to the number of ground-truth solutions. While deterministic baselines (HRM, TRM) suffer from mode collapse as the solution space grows, GRAM demonstrates monotonic improvement in coverage as the number of parallel samples $N$ increases.
 
 ## D.5 Additional Generated Samples
@@ -793,7 +797,7 @@ Table 3b in the main text reports the stochasticity and guidance ablation at $N
 
 |  | **Sudoku** |  | **N-Queens** |  |
 |:---|:--:|:--:|:--:|:--:|
-| 2-3 (lr)4-5 **Model variant** | $N$=1 | $N$=20 | $N$=1 | $N$=20 |
+| **Model variant** | $N$=1 | $N$=20 | $N$=1 | $N$=20 |
 | **GRAM (ours)** | 86.6$_{\pm2.2}$ | **96.1**$_{\pm0.9}$ | 99.5$_{\pm0.3}$ | **100.0**$_{\pm0.0}$ |
 | w/o stochastic guidance | 83.6$_{\pm1.3}$ | 83.6$_{\pm1.3}$ | 66.8$_{\pm5.6}$ | 66.8$_{\pm5.6}$ |
 | stochasticity only | 86.6$_{\pm1.4}$ | 96.0$_{\pm1.1}$ | 60.2$_{\pm15.1}$ | 62.1$_{\pm14.9}$ |
@@ -829,7 +833,7 @@ We investigate whether GRAM can be further improved with outcome-level feedback 
 
 |  | **N-Queens** ($8\times8$) |  |  | **N-Queens** ($10\times10$) |  |  |
 |:---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 2-4 (lr)5-7 **Method** | $N{=}1$ | $N{=}20$ | Coverage | $N{=}1$ | $N{=}20$ | Coverage |
+| **Method** | $N{=}1$ | $N{=}20$ | Coverage | $N{=}1$ | $N{=}20$ | Coverage |
 | GRAM (Ours) | 99.5$\pm 0.3$ | 100.0$\pm 0.0$ | 89.7$\pm 1.7$ | 89.7$\pm 2.7$ | 100.0$\pm 0.0$ | 57.5$\pm 3.4$ |
 | **GRAM-RL** | **99.9**$\pm 0.2$ | 100.0$\pm 0.0$ | **90.7**$\pm 0.5$ | **99.1**$\pm 0.3$ | 100.0$\pm 0.0$ | **61.8**$\pm 0.2$ |
 
@@ -862,9 +866,9 @@ Figures 19 and 20 compare TRM and GRAM on the same Sudoku puzzle. TRM follows 
 
 # References
 
-Wei et al. (2022). Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, Fei Xia, Ed Chi, Quoc V Le, Denny Zhou, et al. Chain-of-thought prompting elicits reasoning in large language models. Advances in neural information processing systems, 35:0 24824–24837, 2022.
+Wei et al. (2022). Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, Fei Xia, Ed Chi, Quoc V Le, Denny Zhou, et al. Chain-of-thought prompting elicits reasoning in large language models. Advances in neural information processing systems, 35:24824–24837, 2022.
 
-Yao et al. (2023). Shunyu Yao, Dian Yu, Jeffrey Zhao, Izhak Shafran, Tom Griffiths, Yuan Cao, and Karthik Narasimhan. Tree of thoughts: Deliberate problem solving with large language models. Advances in neural information processing systems, 36:0 11809–11822, 2023.
+Yao et al. (2023). Shunyu Yao, Dian Yu, Jeffrey Zhao, Izhak Shafran, Tom Griffiths, Yuan Cao, and Karthik Narasimhan. Tree of thoughts: Deliberate problem solving with large language models. Advances in neural information processing systems, 36:11809–11822, 2023.
 
 Besta et al. (2024). Maciej Besta, Nils Blach, Ales Kubicek, Robert Gerstenberger, Michal Podstawski, Lukas Gianinazzi, Joanna Gajda, Tomasz Lehmann, Hubert Niewiadomski, Piotr Nyczyk, et al. Graph of thoughts: Solving elaborate problems with large language models. In Proceedings of the AAAI conference on artificial intelligence, volume 38, pages 17682–17690, 2024.
 
@@ -880,19 +884,19 @@ Wang et al. (2025). Guan Wang, Jin Li, Yuhao Sun, Xing Chen, Changling Liu, Yue 
 
 Jolicoeur-Martineau (2025). Alexia Jolicoeur-Martineau. Less is more: Recursive reasoning with tiny networks. arXiv preprint arXiv:2510.04871, 2025.
 
-Dehghani et al. (2018). Mostafa Dehghani, Stephan Gouws, Oriol Vinyals, Jakob Uszkoreit, and ukasz Kaiser. Universal transformers. arXiv preprint arXiv:1807.03819, 2018.
+Dehghani et al. (2018). Mostafa Dehghani, Stephan Gouws, Oriol Vinyals, Jakob Uszkoreit, and Łukasz Kaiser. Universal transformers. arXiv preprint arXiv:1807.03819, 2018.
 
 Kahneman (2011). Daniel Kahneman. Thinking, fast and slow. Farrar, Straus and Giroux, 2011.
 
 Bengio (2017). Yoshua Bengio. The consciousness prior. arXiv preprint arXiv:1709.08568, 2017.
 
-Chollet (2019). FranChollet. On the measure of intelligence. arXiv preprint arXiv:1911.01547, 2019.
+Chollet (2019). François Chollet. On the measure of intelligence. arXiv preprint arXiv:1911.01547, 2019.
 
 Chollet et al. (2025). Francois Chollet, Mike Knoop, Gregory Kamradt, Bryan Landers, and Henry Pinkard. Arc-agi-2: A new challenge for frontier ai reasoning systems. arXiv preprint arXiv:2505.11831, 2025.
 
-Lecun et al. (1998). Y. Lecun, L. Bottou, Y. Bengio, and P. Haffner. Gradient-based learning applied to document recognition. Proceedings of the IEEE, 860 (11):0 2278–2324, 1998. 10.1109/5.726791.
+Lecun et al. (1998). Y. Lecun, L. Bottou, Y. Bengio, and P. Haffner. Gradient-based learning applied to document recognition. Proceedings of the IEEE, 86(11): 2278–2324, 1998. 10.1109/5.726791.
 
-Williams and Peng (1990). Ronald J Williams and Jing Peng. An efficient gradient-based algorithm for on-line training of recurrent network trajectories. Neural computation, 20 (4):0 490–501, 1990.
+Williams and Peng (1990). Ronald J Williams and Jing Peng. An efficient gradient-based algorithm for on-line training of recurrent network trajectories. Neural computation, 2(4):490–501, 1990.
 
 Tallec and Ollivier (2017). Corentin Tallec and Yann Ollivier. Unbiasing truncated backpropagation through time. arXiv preprint arXiv:1705.08209, 2017.
 
@@ -916,9 +920,9 @@ Mohtashami et al. (2023). Amirkeivan Mohtashami, Matteo Pagliardini, and Martin 
 
 Bae et al. (2024). Sangmin Bae, Adam Fisch, Hrayr Harutyunyan, Ziwei Ji, Seungyeon Kim, and Tal Schuster. Relaxed recursive transformers: Effective parameter sharing with layer-wise lora. arXiv preprint arXiv:2410.20672, 2024.
 
-Elman (1990). Jeffrey L Elman. Finding structure in time. Cognitive science, 140 (2):0 179–211, 1990.
+Elman (1990). Jeffrey L Elman. Finding structure in time. Cognitive science, 14(2):179–211, 1990.
 
-Hochreiter and Schmidhuber (1997). Sepp Hochreiter and Jürgen Schmidhuber. Long short-term memory. Neural computation, 90 (8):0 1735–1780, 1997.
+Hochreiter and Schmidhuber (1997). Sepp Hochreiter and Jürgen Schmidhuber. Long short-term memory. Neural computation, 9(8):1735–1780, 1997.
 
 Cho et al. (2014). Kyunghyun Cho, Bart Van Merriënboer, Caglar Gulcehre, Dzmitry Bahdanau, Fethi Bougares, Holger Schwenk, and Yoshua Bengio. Learning phrase representations using rnn encoder-decoder for statistical machine translation. arXiv preprint arXiv:1406.1078, 2014.
 
@@ -942,17 +946,17 @@ Hafner et al. (2023). Danijar Hafner, Jurgis Pasukonis, Jimmy Ba, and Timothy Li
 
 ARC-Prize-Foundation (2026). ARC-Prize-Foundation. ARC-AGI benchmarking: Leaderboard and dataset for the ARC-AGI benchmark. https://arcprize.org/leaderboard, 2026. Accessed: 2026-1-22.
 
-Sahoo et al. (2024). Subham Sahoo, Marianne Arriola, Yair Schiff, Aaron Gokaslan, Edgar Marroquin, Justin Chiu, Alexander Rush, and Volodymyr Kuleshov. Simple and effective masked diffusion language models. Advances in Neural Information Processing Systems, 37:0 130136–130184, 2024.
+Sahoo et al. (2024). Subham Sahoo, Marianne Arriola, Yair Schiff, Aaron Gokaslan, Edgar Marroquin, Justin Chiu, Alexander Rush, and Volodymyr Kuleshov. Simple and effective masked diffusion language models. Advances in Neural Information Processing Systems, 37:130136–130184, 2024.
 
 Salimans et al. (2016). Tim Salimans, Ian Goodfellow, Wojciech Zaremba, Vicki Cheung, Alec Radford, and Xi Chen. Improved techniques for training gans. Advances in neural information processing systems, 29, 2016.
 
 Heusel et al. (2017). Martin Heusel, Hubert Ramsauer, Thomas Unterthiner, Bernhard Nessler, and Sepp Hochreiter. Gans trained by a two time-scale update rule converge to a local nash equilibrium. Advances in neural information processing systems, 30, 2017.
 
-Austin et al. (2021). Jacob Austin, Daniel D Johnson, Jonathan Ho, Daniel Tarlow, and Rianne Van Den Berg. Structured denoising diffusion models in discrete state-spaces. Advances in neural information processing systems, 34:0 17981–17993, 2021.
+Austin et al. (2021). Jacob Austin, Daniel D Johnson, Jonathan Ho, Daniel Tarlow, and Rianne Van Den Berg. Structured denoising diffusion models in discrete state-spaces. Advances in neural information processing systems, 34:17981–17993, 2021.
 
 Kingma and Welling (2013). Diederik P Kingma and Max Welling. Auto-encoding variational bayes. arXiv preprint arXiv:1312.6114, 2013.
 
-Su et al. (2024). Jianlin Su, Murtadha Ahmed, Yu Lu, Shengfeng Pan, Wen Bo, and Yunfeng Liu. Roformer: Enhanced transformer with rotary position embedding. Neurocomputing, 568:0 127063, 2024.
+Su et al. (2024). Jianlin Su, Murtadha Ahmed, Yu Lu, Shengfeng Pan, Wen Bo, and Yunfeng Liu. Roformer: Enhanced transformer with rotary position embedding. Neurocomputing, 568:127063, 2024.
 
 Shazeer (2020). Noam Shazeer. Glu variants improve transformer. arXiv preprint arXiv:2002.05202, 2020.
 
@@ -960,25 +964,25 @@ Ryu (2024). Simo Ryu. Minimal implementation of a d3pm (structured denoising dif
 
 Peebles and Xie (2023). William Peebles and Saining Xie. Scalable diffusion models with transformers. In Proceedings of the IEEE/CVF international conference on computer vision, pages 4195–4205, 2023.
 
-LeCun et al. (1998). Yann LeCun, Léon Bottou, Yoshua Bengio, and Patrick Haffner. Gradient-based learning applied to document recognition. Proceedings of the IEEE, 860 (11):0 2278–2324, 1998.
+LeCun et al. (1998). Yann LeCun, Léon Bottou, Yoshua Bengio, and Patrick Haffner. Gradient-based learning applied to document recognition. Proceedings of the IEEE, 86(11): 2278–2324, 1998.
 
 Krizhevsky et al. (2012). Alex Krizhevsky, Ilya Sutskever, and Geoffrey E Hinton. Imagenet classification with deep convolutional neural networks. Advances in neural information processing systems, 25, 2012.
 
-Elfwing et al. (2018). Stefan Elfwing, Eiji Uchibe, and Kenji Doya. Sigmoid-weighted linear units for neural network function approximation in reinforcement learning. Neural networks, 107:0 3–11, 2018.
+Elfwing et al. (2018). Stefan Elfwing, Eiji Uchibe, and Kenji Doya. Sigmoid-weighted linear units for neural network function approximation in reinforcement learning. Neural networks, 107:3–11, 2018.
 
 Wu and He (2018). Yuxin Wu and Kaiming He. Group normalization. In Proceedings of the European conference on computer vision (ECCV), pages 3–19, 2018.
 
-Vaswani et al. (2017). Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, ukasz Kaiser, and Illia Polosukhin. Attention is all you need. Advances in neural information processing systems, 30, 2017.
+Vaswani et al. (2017). Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, and Illia Polosukhin. Attention is all you need. Advances in neural information processing systems, 30, 2017.
 
 Loshchilov and Hutter (2017). Ilya Loshchilov and Frank Hutter. Decoupled weight decay regularization. arXiv preprint arXiv:1711.05101, 2017.
 
 Brock et al. (2018). Andrew Brock, Jeff Donahue, and Karen Simonyan. Large scale gan training for high fidelity natural image synthesis. arXiv preprint arXiv:1809.11096, 2018.
 
-Song and Ermon (2020). Yang Song and Stefano Ermon. Improved techniques for training score-based generative models. Advances in neural information processing systems, 33:0 12438–12448, 2020.
+Song and Ermon (2020). Yang Song and Stefano Ermon. Improved techniques for training score-based generative models. Advances in neural information processing systems, 33:12438–12448, 2020.
 
-Bell and Stevens (2009). Jordan Bell and Brett Stevens. A survey of known results and research areas for n-queens. Discrete mathematics, 3090 (1):0 1–31, 2009.
+Bell and Stevens (2009). Jordan Bell and Brett Stevens. A survey of known results and research areas for n-queens. Discrete mathematics, 309(1):1–31, 2009.
 
-Erdand Rényi (1964). P. Erdand A. Rényi. On the strength of connectedness of a random graph. Acta Mathematica Academiae Scientiarum Hungarica, 120 (1):0 261–267, Mar 1964. ISSN 1588-2632. 10.1007/BF02066689. URL https://doi.org/10.1007/BF02066689.
+Erdős and Rényi (1964). P. Erdős and A. Rényi. On the strength of connectedness of a random graph. Acta Mathematica Academiae Scientiarum Hungarica, 12 (1):261–267, Mar 1964. ISSN 1588-2632. 10.1007/BF02066689. URL https://doi.org/10.1007/BF02066689.
 
 Lemos et al. (2019). Henrique Lemos, Marcelo Prates, Pedro Avelar, and Luis Lamb. Graph colouring meets deep learning: Effective graph neural network models for combinatorial problems. In 2019 IEEE 31st International Conference on Tools with Artificial Intelligence (ICTAI), pages 879–885. IEEE, 2019.
 
@@ -988,4 +992,8 @@ Schulman et al. (2015). John Schulman, Philipp Moritz, Sergey Levine, Michael Jo
 
 Shlens (2014). Jonathon Shlens. A tutorial on principal component analysis. arXiv preprint arXiv:1404.1100, 2014.
 
-Bentley (1975). Jon Louis Bentley. Multidimensional binary search trees used for associative searching. Commun. ACM, 18:0 509–517, 1975. URL https://api.semanticscholar.org/CorpusID:13091446.
+Bentley (1975). Jon Louis Bentley. Multidimensional binary search trees used for associative searching. Commun. ACM, 18:509–517, 1975. URL https://api.semanticscholar.org/CorpusID:13091446.
+
+[^1]: Equal contribution
+
+[^2]: Correspondence to: Sungjin Ahn (`sungjin.ahn@kaist.ac.kr`)

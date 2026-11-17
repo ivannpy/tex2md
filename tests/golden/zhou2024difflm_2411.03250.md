@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: e0db5cf8a374027a9731b8f76eaa161d2c98ed144bd9c65e9d2b9b52dfc4457b
     path: "PCIC/Tesis/Data generation/DiffLM Controllable Synthetic Data Generation via Diffusion Language Models.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-16
+converted: 2026-11-17
 ---
 
 # DiffLM: Controllable Synthetic Data Generation via Diffusion Language Models
@@ -107,7 +107,7 @@ The detailed description for diffusion model could be found in Appendix A.2.
 
 | **Method** | **Adult** |  | **Default** |  | **Magic** |  | **Shoppers** |  | **Beijing** |  |
 |:---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| 2-3 (lr)4-5 (lr)6-7 (lr)8-9 (lr)10-11 | MLE $\uparrow$ | $\rho$ $\downarrow$ | MLE $\uparrow$ | $\rho$ $\downarrow$ | MLE $\uparrow$ | $\rho$ $\downarrow$ | MLE $\uparrow$ | $\rho$ $\downarrow$ | MLE $\downarrow$ | $\rho$ $\downarrow$ |
+|  | MLE $\uparrow$ | $\rho$ $\downarrow$ | MLE $\uparrow$ | $\rho$ $\downarrow$ | MLE $\uparrow$ | $\rho$ $\downarrow$ | MLE $\uparrow$ | $\rho$ $\downarrow$ | MLE $\downarrow$ | $\rho$ $\downarrow$ |
 | Real | 0.927 | \- | 0.770 | \- | 0.946 | \- | 0.926 | \- | 0.423 | \- |
 | SMOTE | 0.899 | 1.60 | 0.741 | 1.48 | 0.934 | 0.91 | 0.911 | 2.68 | 0.593 | 1.85 |
 | CTGAN | 0.886 | 16.84 | 0.696 | 16.83 | 0.855 | 9.810 | 0.875 | 21.15 | 0.902 | 21.39 |
@@ -133,7 +133,7 @@ In this section, we evaluate the generation quality of the DiffLM method on mult
 
 | **Model** | **Size** | **HumanEval** |  |  | **MBPP** |  |  |
 |:---|:---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 3-5 (lr)6-8 |  | pass@1 | pass@10 | pass@100 | pass@1 | pass@10 | pass@100 |
+|  |  | pass@1 | pass@10 | pass@100 | pass@1 | pass@10 | pass@100 |
 | GPT-4 | \- | 67.00 | \- | \- | \- | \- | \- |
 | CodeLLaMA | 7B | 33.50 | 59.60 | 85.90 | 41.40$^*$ | 66.70$^*$ | 82.50$^*$ |
 |  | 34B | 48.80 | 76.80 | 93.00 | 55.00$^*$ | 76.20$^*$ | 86.60$^*$ |
@@ -376,7 +376,7 @@ Figure 6 presents 2D t-SNE visualizations of the latent space for multiple data
 
 | **Method** | **Adult** |  | **Default** |  | **Magic** |  | **Shoppers** |  | **Beijing** |  |
 |:---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| 2-3 (lr)4-5 (lr)6-7 (lr)8-9 (lr)10-11 | MLE $\uparrow$ | $\rho$ $\downarrow$ | MLE $\uparrow$ | $\rho$ $\downarrow$ | MLE $\uparrow$ | $\rho$ $\downarrow$ | MLE $\uparrow$ | $\rho$ $\downarrow$ | MLE $\downarrow$ | $\rho$ $\downarrow$ |
+|  | MLE $\uparrow$ | $\rho$ $\downarrow$ | MLE $\uparrow$ | $\rho$ $\downarrow$ | MLE $\uparrow$ | $\rho$ $\downarrow$ | MLE $\uparrow$ | $\rho$ $\downarrow$ | MLE $\downarrow$ | $\rho$ $\downarrow$ |
 | Real | 0.927 | \- | 0.770 | \- | 0.946 | \- | 0.926 | \- | 0.423 | \- |
 | GReaT | **0.913** | 12.12 | 0.755 | 19.94 | 0.888 | 16.16 | 0.902 | 14.51 | **0.653** | 8.25 |
 | ICL-*Lllama* | 0.848 | 16.02 | \- | \- | 0.792 | 21.6 | 0.871 | 27.56 | 1.005 | 17.71 |
@@ -508,11 +508,11 @@ Bauer et al. (2024). André Bauer, Simon Trapp, Michael Stenger, Robert Leppich,
 
 Betker et al. (2023). James Betker, Gabriel Goh, Li Jing, Tim Brooks, Jianfeng Wang, Linjie Li, Long Ouyang, Juntang Zhuang, Joyce Lee, Yufei Guo, et al. 2023. Improving image generation with better captions. Computer Science. https://cdn.openai.com/papers/dall-e-3.pdf, 2(3):8.
 
-Borisov et al. (2023). Vadim Borisov, Kathrin Seler, Tobias Leemann, Martin Pawelczyk, and Gjergji Kasneci. 2023. Language models are realistic tabular data generators. In ICLR. OpenReview.net.
+Borisov et al. (2023). Vadim Borisov, Kathrin Seßler, Tobias Leemann, Martin Pawelczyk, and Gjergji Kasneci. 2023. Language models are realistic tabular data generators. In ICLR. OpenReview.net.
 
 Bowman et al. (2016). Samuel R. Bowman, Luke Vilnis, Oriol Vinyals, Andrew M. Dai, Rafal Józefowicz, and Samy Bengio. 2016. Generating sentences from a continuous space. In CoNLL, pages 10–21. ACL.
 
-Burgess et al. (2018). Christopher P. Burgess, Irina Higgins, Arka Pal, Loc̈ Matthey, Nick Watters, Guillaume Desjardins, and Alexander Lerchner. 2018. Understanding disentangling in $\beta$-vae. CoRR, abs/1804.03599.
+Burgess et al. (2018). Christopher P. Burgess, Irina Higgins, Arka Pal, Loïc Matthey, Nick Watters, Guillaume Desjardins, and Alexander Lerchner. 2018. Understanding disentangling in $\beta$-vae. CoRR, abs/1804.03599.
 
 Chawla et al. (2002). Nitesh V. Chawla, Kevin W. Bowyer, Lawrence O. Hall, and W. Philip Kegelmeyer. 2002. SMOTE: synthetic minority over-sampling technique. J. Artif. Intell. Res., 16:321–357.
 
@@ -534,13 +534,13 @@ Gu et al. (2022). Shuyang Gu, Dong Chen, Jianmin Bao, Fang Wen, Bo Zhang, Dongdo
 
 Gu et al. (2023). Yuxuan Gu, Xiaocheng Feng, Sicheng Ma, Lingyuan Zhang, Heng Gong, Weihong Zhong, and Bing Qin. 2023. Controllable text generation via probability density estimation in the latent space. In ACL (1), pages 12590–12616. Association for Computational Linguistics.
 
-Gulrajani et al. (2017). Ishaan Gulrajani, Kundan Kumar, Faruk Ahmed, Adrien Ali Tag̈a, Francesco Visin, David Vázquez, and Aaron C. Courville. 2017. Pixelvae: A latent variable model for natural images. In ICLR (Poster). OpenReview.net.
+Gulrajani et al. (2017). Ishaan Gulrajani, Kundan Kumar, Faruk Ahmed, Adrien Ali Taïga, Francesco Visin, David Vázquez, and Aaron C. Courville. 2017. Pixelvae: A latent variable model for natural images. In ICLR (Poster). OpenReview.net.
 
 Havrylov and Titov (2020). Serhii Havrylov and Ivan Titov. 2020. Preventing posterior collapse with levenshtein variational autoencoder. CoRR, abs/2004.14758.
 
 He et al. (2023). Zhengfu He, Tianxiang Sun, Qiong Tang, Kuanning Wang, Xuanjing Huang, and Xipeng Qiu. 2023. Diffusionbert: Improving generative masked language models with diffusion models. In ACL (1), pages 4521–4534. Association for Computational Linguistics.
 
-Higgins et al. (2017). Irina Higgins, Loc̈ Matthey, Arka Pal, Christopher P. Burgess, Xavier Glorot, Matthew M. Botvinick, Shakir Mohamed, and Alexander Lerchner. 2017. beta-vae: Learning basic visual concepts with a constrained variational framework. In ICLR (Poster). OpenReview.net.
+Higgins et al. (2017). Irina Higgins, Loïc Matthey, Arka Pal, Christopher P. Burgess, Xavier Glorot, Matthew M. Botvinick, Shakir Mohamed, and Alexander Lerchner. 2017. beta-vae: Learning basic visual concepts with a constrained variational framework. In ICLR (Poster). OpenReview.net.
 
 Houlsby et al. (2019). Neil Houlsby, Andrei Giurgiu, Stanislaw Jastrzebski, Bruna Morrone, Quentin de Laroussilhe, Andrea Gesmundo, Mona Attariyan, and Sylvain Gelly. 2019. Parameter-efficient transfer learning for NLP. In ICML, volume 97 of Proceedings of Machine Learning Research, pages 2790–2799. PMLR.
 

@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: bf21a535f9d17d14caa0af5c425eb4bb46f4f4b75dc94878ecde81eb4ba02def
     path: "PCIC/Tesis/core/Simple and Effective Masked Diffusion Language Models.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-16
+converted: 2026-11-17
 ---
 
 # Simple and Effective Masked Diffusion Language Models
@@ -188,8 +188,7 @@ $$\begin{align}
 
 #### Invariance to the noise schedule
 
-The function $\alpha_{t}$ is invertible due to the monotonicity assumption in Sec. 3.1, and so we can perform the following change of variables in (10):  ${\boldsymbol \gamma}\equiv \log(1 - \alpha_{t})$. Thus, the diffusion loss can be equivalently expressed as ${\mathcal{L}^{\infty}_{\text{NELBO}}}
-= - \mathbb{E}_{q}\int_{{\boldsymbol \gamma}= -\infty}^{{\boldsymbol \gamma}= 0} \log \langle {\mathbf x}_{\theta}({\mathbf z}_{\boldsymbol \gamma}, {\boldsymbol \gamma}), {\mathbf x}\rangle {\text{d}}{\boldsymbol \gamma}$; see Suppl. E.1.1 for details. This new formulation demonstrates that the diffusion loss is invariant to the functional form of $\alpha_{t},$ which we verify empirically in Suppl. E.1.
+The function $\alpha_{t}$ is invertible due to the monotonicity assumption in Sec. 3.1, and so we can perform the following change of variables in (10):  ${\boldsymbol \gamma}\equiv \log(1 - \alpha_{t})$. Thus, the diffusion loss can be equivalently expressed as ${\mathcal{L}^{\infty}_{\text{NELBO}}} = - \mathbb{E}_{q}\int_{{\boldsymbol \gamma}= -\infty}^{{\boldsymbol \gamma}= 0} \log \langle {\mathbf x}_{\theta}({\mathbf z}_{\boldsymbol \gamma}, {\boldsymbol \gamma}), {\mathbf x}\rangle {\text{d}}{\boldsymbol \gamma}$; see Suppl. E.1.1 for details. This new formulation demonstrates that the diffusion loss is invariant to the functional form of $\alpha_{t},$ which we verify empirically in Suppl. E.1.
 
 ## 3.5 Masked Diffusion Language Models
 
@@ -305,7 +304,7 @@ We also explore applications to the generative modeling of biological sequences 
 
 #### Experimental Setup
 
-We pre-train the encoder-only Caduceus (Schiff et al., 2024), which is an MLM, on the HG38 human reference genome (Consortium, 2009) and perform fine-tuning using our diffusion parameterization. We use a context length of 1024 tokens and follow Schiff et al. (2024) for the experimental setup, other than learning rate which was reduced to 1e-3. See Suppl. D.7 for full experimental details. We assess both generative performance using perplexity and downstream performance on Genomics Benchmarks (Greá et al., 2023) across language diffusion paradigms and AR models.
+We pre-train the encoder-only Caduceus (Schiff et al., 2024), which is an MLM, on the HG38 human reference genome (Consortium, 2009) and perform fine-tuning using our diffusion parameterization. We use a context length of 1024 tokens and follow Schiff et al. (2024) for the experimental setup, other than learning rate which was reduced to 1e-3. See Suppl. D.7 for full experimental details. We assess both generative performance using perplexity and downstream performance on Genomics Benchmarks (Grešová et al., 2023) across language diffusion paradigms and AR models.
 
 #### Generative Performance
 
@@ -323,7 +322,7 @@ We fine-tune the Caduceus MLM across diffusion parameterizations and compare per
 
 #### Downstream Task Fine-tuning
 
-We perform downstream evaluation with the Genomics Benchmarks (Greá et al., 2023), a recently proposed benchmark with eight regulatory element classification tasks. As shown in Table 7, our generative fine-tuning paradigm preserves or improves upon downstream performance from MLM pre-training. Absorbing-state diffusion methods outperform Plaid across tasks except for the simplest task Human vs. Worm, where all methods have roughly the same performance. For tasks where the input is a biased subsample of the full genome, we observe that the correlation between perplexity and downstream performance is weaker; see Suppl. D.7.
+We perform downstream evaluation with the Genomics Benchmarks (Grešová et al., 2023), a recently proposed benchmark with eight regulatory element classification tasks. As shown in Table 7, our generative fine-tuning paradigm preserves or improves upon downstream performance from MLM pre-training. Absorbing-state diffusion methods outperform Plaid across tasks except for the simplest task Human vs. Worm, where all methods have roughly the same performance. For tasks where the input is a biased subsample of the full genome, we observe that the correlation between perplexity and downstream performance is weaker; see Suppl. D.7.
 
 **Tabla 7.** Genomic Benchmarks. Top-1 accuracy ($\uparrow$) across 5-fold cross-validation (CV) for a pre-trained AR Mamba, and a pre-trained Caduceus model fine-tuned with different diffusion parameterizations. The best values per task are bolded and the second best are italicized. Error bars indicate the difference between the maximum and minimum values across 5 random seeds used for CV.
 
@@ -594,8 +593,7 @@ $$\begin{align}
 
 ### A.2.3 Diffusion Loss
 
-For a given $T$, Let ${\mathcal{L}_{T}}= \mathbb{E}_{t \in \{\frac{1}{T}, \frac{2}{T}, \ldots, 1\}}\mathbb{E}_{q({\mathbf z}_t | {\mathbf x})} T 
-\text{D}_{\text{KL}}(q({\mathbf z}_s | {\mathbf z}_t, {\mathbf x}) \| {p_\theta}({\mathbf z}_s | {\mathbf z}_t))$ denote the diffusion loss. We break down the computation of $\text{D}_{\text{KL}}(q({\mathbf z}_s | {\mathbf z}_t, {\mathbf x}) \| {p_\theta}({\mathbf z}_s | {\mathbf z}_t))$ into 2 cases: ${\mathbf z}_t = {\mathbf x}$ (**case 1**) and ${\mathbf z}_t = {\mathbf m}$ (**case 2**).
+For a given $T$, Let ${\mathcal{L}_{T}}= \mathbb{E}_{t \in \{\frac{1}{T}, \frac{2}{T}, \ldots, 1\}}\mathbb{E}_{q({\mathbf z}_t | {\mathbf x})} T \text{D}_{\text{KL}}(q({\mathbf z}_s | {\mathbf z}_t, {\mathbf x}) \| {p_\theta}({\mathbf z}_s | {\mathbf z}_t))$ denote the diffusion loss. We break down the computation of $\text{D}_{\text{KL}}(q({\mathbf z}_s | {\mathbf z}_t, {\mathbf x}) \| {p_\theta}({\mathbf z}_s | {\mathbf z}_t))$ into 2 cases: ${\mathbf z}_t = {\mathbf x}$ (**case 1**) and ${\mathbf z}_t = {\mathbf m}$ (**case 2**).
 
 #### Case 1:
 
@@ -1360,7 +1358,7 @@ We perform downstream task fine-tuning on the final hidden state embedding from 
 
 #### Genomic Benchmark Task Distributions
 
-We use a subset of the Genomic Benchmark tasks with an emphasis on tasks from Human data. The positive samples for each dataset were generated by selecting samples that were annotated, either computationally or experimentally, in previous work (e.g enhancers, promoters, open chromatin regions (OCR)) (Greá et al., 2023). These annotations each correspond to subsets of the genome of varying sizes that may exhibit different distributions of DNA than those observed globally over the reference genome. Due to this, the observed dataset may have a different distribution than the data used for pre-training and calculating perplexity. This might in turn lead to a case where perplexity and downstream performance may not necessarily correlate.
+We use a subset of the Genomic Benchmark tasks with an emphasis on tasks from Human data. The positive samples for each dataset were generated by selecting samples that were annotated, either computationally or experimentally, in previous work (e.g enhancers, promoters, open chromatin regions (OCR)) (Grešová et al., 2023). These annotations each correspond to subsets of the genome of varying sizes that may exhibit different distributions of DNA than those observed globally over the reference genome. Due to this, the observed dataset may have a different distribution than the data used for pre-training and calculating perplexity. This might in turn lead to a case where perplexity and downstream performance may not necessarily correlate.
 
 # E Additional Experiments
 
@@ -1698,7 +1696,7 @@ The checklist is designed to encourage best practices for responsible machine le
 
 Please read the checklist guidelines carefully for information on how to answer these questions. For each question in the checklist:
 
-- You should answer , , or .
+- You should answer \[Yes\] , \[No\] , or \[N/A\] .
 
 - means either that the question is Not Applicable for that particular paper or the relevant information is Not Available.
 
@@ -1706,13 +1704,13 @@ Please read the checklist guidelines carefully for information on how to answer 
 
 **The checklist answers are an integral part of your paper submission.** They are visible to the reviewers, area chairs, senior area chairs, and ethics reviewers. You will be asked to also include it (after eventual revisions) with the final version of your paper, and its final version will be published with the paper.
 
-The reviewers of your paper will be asked to use the checklist as one of the factors in their evaluation. While "" is generally preferable to "", it is perfectly acceptable to answer "" provided a proper justification is given (e.g., "error bars are not reported because it would be too computationally expensive" or "we were unable to find the license for the dataset we used"). In general, answering "" or "" is not grounds for rejection. While the questions are phrased in a binary way, we acknowledge that the true answer is often more nuanced, so please just use your best judgment and write a justification to elaborate. All supporting evidence can appear either in the main paper or the supplemental material, provided in appendix. If you answer to a question, in the justification please point to the section(s) where related material for the question can be found.
+The reviewers of your paper will be asked to use the checklist as one of the factors in their evaluation. While "\[Yes\] " is generally preferable to "\[No\] ", it is perfectly acceptable to answer "\[No\] " provided a proper justification is given (e.g., "error bars are not reported because it would be too computationally expensive" or "we were unable to find the license for the dataset we used"). In general, answering "\[No\] " or "\[N/A\] " is not grounds for rejection. While the questions are phrased in a binary way, we acknowledge that the true answer is often more nuanced, so please just use your best judgment and write a justification to elaborate. All supporting evidence can appear either in the main paper or the supplemental material, provided in appendix. If you answer \[Yes\] to a question, in the justification please point to the section(s) where related material for the question can be found.
 
 1.  **Claims**
 
 2.  Question: Do the main claims made in the abstract and introduction accurately reflect the paper’s contributions and scope?
 
-3.  Answer:
+3.  Answer: \[Yes\]
 
 4.  Justification: Claims are addressed
 
@@ -1720,7 +1718,7 @@ The reviewers of your paper will be asked to use the checklist as one of the fac
 
 6.  Question: Does the paper discuss the limitations of the work performed by the authors?
 
-7.  Answer:
+7.  Answer: \[Yes\]
 
 8.  Justification: Our method under-performs compared to autoregressive models. We also discuss other limitations in the paper.
 
@@ -1728,7 +1726,7 @@ The reviewers of your paper will be asked to use the checklist as one of the fac
 
 10. Question: For each theoretical result, does the paper provide the full set of assumptions and a complete (and correct) proof?
 
-11. Answer:
+11. Answer: \[Yes\]
 
 12. Justification: They are in the proofs.
 
@@ -1750,7 +1748,7 @@ The reviewers of your paper will be asked to use the checklist as one of the fac
 
 15. Question: Does the paper fully disclose all the information needed to reproduce the main experimental results of the paper to the extent that it affects the main claims and/or conclusions of the paper (regardless of whether the code and data are provided or not)?
 
-16. Answer:
+16. Answer: \[Yes\]
 
 17. Justification: We provide all hyperparameters necesessary to reproduce the experiments and will provide code.
 
@@ -1758,7 +1756,7 @@ The reviewers of your paper will be asked to use the checklist as one of the fac
 
 19. Question: Does the paper provide open access to the data and code, with sufficient instructions to faithfully reproduce the main experimental results, as described in supplemental material?
 
-20. Answer:
+20. Answer: \[No\]
 
 21. Justification: We will release all code after the paper is accepted. The datasets are already public.
 
@@ -1784,7 +1782,7 @@ The reviewers of your paper will be asked to use the checklist as one of the fac
 
 24. Question: Does the paper specify all the training and test details (e.g., data splits, hyperparameters, how they were chosen, type of optimizer, etc.) necessary to understand the results?
 
-25. Answer:
+25. Answer: \[Yes\]
 
 26. Justification: We provide detailed hyperparameters for all experiments.
 
@@ -1800,7 +1798,7 @@ The reviewers of your paper will be asked to use the checklist as one of the fac
 
 29. Question: Does the paper report error bars suitably and correctly defined or other appropriate information about the statistical significance of the experiments?
 
-30. Answer:
+30. Answer: \[Yes\]
 
 31. Justification: Many of our tabels include error bars and standard deviations
 
@@ -1826,7 +1824,7 @@ The reviewers of your paper will be asked to use the checklist as one of the fac
 
 34. Question: For each experiment, does the paper provide sufficient information on the computer resources (type of compute workers, memory, time of execution) needed to reproduce the experiments?
 
-35. Answer: .
+35. Answer: \[Yes\] .
 
 36. Justification: We conduct all experiments on 8x 3090s, 8xA6000s, 8xA100s, or 8xH100s. The largest models on OpenWebText take 2 weeks to train on 8xA100, the LM1B models only take 2 days to train on the same hardware
 
@@ -1844,7 +1842,7 @@ The reviewers of your paper will be asked to use the checklist as one of the fac
 
 39. Question: Does the research conducted in the paper conform, in every respect, with the NeurIPS Code of Ethics <https://neurips.cc/public/EthicsGuidelines>?
 
-40. Answer:
+40. Answer: \[Yes\]
 
 41. Justification: We follow standard practices
 
@@ -1860,7 +1858,7 @@ The reviewers of your paper will be asked to use the checklist as one of the fac
 
 44. Question: Does the paper discuss both potential positive societal impacts and negative societal impacts of the work performed?
 
-45. Answer:
+45. Answer: \[Yes\]
 
 46. Justification: Our model will allow for more controllable text generation models, and do not increase the capability of current autoregressive models
 
@@ -1882,7 +1880,7 @@ The reviewers of your paper will be asked to use the checklist as one of the fac
 
 49. Question: Does the paper describe safeguards that have been put in place for responsible release of data or models that have a high risk for misuse (e.g., pre-trained language models, image generators, or scraped datasets)?
 
-50. Answer:
+50. Answer: \[Yes\]
 
 51. Justification: These models are trained on trivial datasets and unlikely to cause any harm compared to state of the art language models.
 
@@ -1900,7 +1898,7 @@ The reviewers of your paper will be asked to use the checklist as one of the fac
 
 54. Question: Are the creators or original owners of assets (e.g., code, data, models), used in the paper, properly credited and are the license and terms of use explicitly mentioned and properly respected?
 
-55. Answer:
+55. Answer: \[Yes\]
 
 56. Justification: All assets are publically available and we respect the licenses for all the data.
 
@@ -1926,7 +1924,7 @@ The reviewers of your paper will be asked to use the checklist as one of the fac
 
 59. Question: Are new assets introduced in the paper well documented and is the documentation provided alongside the assets?
 
-60. Answer:
+60. Answer: \[N/A\]
 
 61. Justification: We provide no new assets.
 
@@ -1944,9 +1942,9 @@ The reviewers of your paper will be asked to use the checklist as one of the fac
 
 64. Question: For crowdsourcing experiments and research with human subjects, does the paper include the full text of instructions given to participants and screenshots, if applicable, as well as details about compensation (if any)?
 
-65. Answer:
+65. Answer: \[N/A\]
 
-66. Justification:
+66. Justification: \[N/A\]
 
 67. Guidelines:
 
@@ -1960,9 +1958,9 @@ The reviewers of your paper will be asked to use the checklist as one of the fac
 
 69. Question: Does the paper describe potential risks incurred by study participants, whether such risks were disclosed to the subjects, and whether Institutional Review Board (IRB) approvals (or an equivalent approval/review based on the requirements of your country or institution) were obtained?
 
-70. Answer:
+70. Answer: \[N/A\]
 
-71. Justification:
+71. Justification: \[N/A\]
 
 72. Guidelines:
 
@@ -1978,15 +1976,15 @@ End of NEURIPS CHECKLIST. Must be at end of document after appendix
 
 # References
 
-Austin et al. (2021). Jacob Austin, Daniel D Johnson, Jonathan Ho, Daniel Tarlow, and Rianne Van Den Berg. Structured denoising diffusion models in discrete state-spaces. Advances in Neural Information Processing Systems, 34:0 17981–17993, 2021.
+Austin et al. (2021). Jacob Austin, Daniel D Johnson, Jonathan Ho, Daniel Tarlow, and Rianne Van Den Berg. Structured denoising diffusion models in discrete state-spaces. Advances in Neural Information Processing Systems, 34:17981–17993, 2021.
 
 Avdeyev et al. (2023). Pavel Avdeyev, Chenlai Shi, Yuhao Tan, Kseniia Dudnyk, and Jian Zhou. Dirichlet diffusion score model for biological sequence generation. In International Conference on Machine Learning, pp. 1276–1301. PMLR, 2023.
 
-Avsec et al. (2021). Avsec, Vikram Agarwal, Daniel Visentin, Joseph R Ledsam, Agnieszka Grabska-Barwinska, Kyle R Taylor, Yannis Assael, John Jumper, Pushmeet Kohli, and David R Kelley. Effective gene expression prediction from sequence by integrating long-range interactions. Nature methods, 180 (10):0 1196–1203, 2021.
+Avsec et al. (2021). Žiga Avsec, Vikram Agarwal, Daniel Visentin, Joseph R Ledsam, Agnieszka Grabska-Barwinska, Kyle R Taylor, Yannis Assael, John Jumper, Pushmeet Kohli, and David R Kelley. Effective gene expression prediction from sequence by integrating long-range interactions. Nature methods, 18(10):1196–1203, 2021.
 
 Benton et al. (2022). Joe Benton, Yuyang Shi, Valentin De Bortoli, George Deligiannidis, and Arnaud Doucet. From denoising diffusions to denoising markov models. arXiv preprint arXiv:2211.03595, 2022.
 
-Campbell et al. (2022). Andrew Campbell, Joe Benton, Valentin De Bortoli, Thomas Rainforth, George Deligiannidis, and Arnaud Doucet. A continuous time framework for discrete denoising models. Advances in Neural Information Processing Systems, 35:0 28266–28279, 2022.
+Campbell et al. (2022). Andrew Campbell, Joe Benton, Valentin De Bortoli, Thomas Rainforth, George Deligiannidis, and Arnaud Doucet. A continuous time framework for discrete denoising models. Advances in Neural Information Processing Systems, 35:28266–28279, 2022.
 
 Campbell et al. (2024). Andrew Campbell, Jason Yim, Regina Barzilay, Tom Rainforth, and Tommi Jaakkola. Generative flows on discrete state-spaces: Enabling multimodal flows with applications to protein co-design. arXiv preprint arXiv:2402.04997, 2024.
 
@@ -2004,7 +2002,7 @@ Consortium et al. (2009). Genome Reference Consortium et al. Genome reference co
 
 Dai et al. (2019). Zihang Dai, Zhilin Yang, Yiming Yang, Jaime Carbonell, Quoc V Le, and Ruslan Salakhutdinov. Transformer-xl: Attentive language models beyond a fixed-length context. arXiv preprint arXiv:1901.02860, 2019.
 
-Deshpande et al. (2022). Shachi Deshpande, Kaiwen Wang, Dhruv Sreenivas, Zheng Li, and Volodymyr Kuleshov. Deep multi-modal structural equations for causal effect estimation with unstructured proxies. Advances in Neural Information Processing Systems, 35:0 10931–10944, 2022.
+Deshpande et al. (2022). Shachi Deshpande, Kaiwen Wang, Dhruv Sreenivas, Zheng Li, and Volodymyr Kuleshov. Deep multi-modal structural equations for causal effect estimation with unstructured proxies. Advances in Neural Information Processing Systems, 35:10931–10944, 2022.
 
 Devlin et al. (2018). Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. Bert: Pre-training of deep bidirectional transformers for language understanding. arXiv preprint arXiv:1810.04805, 2018.
 
@@ -2016,7 +2014,7 @@ Gokaslan et al. (2019). Aaron Gokaslan, Vanya Cohen, Ellie Pavlick, and Stefanie
 
 Gokaslan et al. (2024). Aaron Gokaslan, A Feder Cooper, Jasmine Collins, Landan Seguin, Austin Jacobson, Mihir Patel, Jonathan Frankle, Cory Stephenson, and Volodymyr Kuleshov. Commoncanvas: Open diffusion models trained on creative-commons images. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pp. 8250–8260, 2024.
 
-Greá et al. (2023). Katarńa Greá, Vlastimil Martinek, David ák, Petr , and Panagiotis Alexiou. Genomic benchmarks: a collection of datasets for genomic sequence classification. BMC Genomic Data, 240 (1):0 25, 2023.
+Grešová et al. (2023). Katarína Grešová, Vlastimil Martinek, David Čechák, Petr Šimeček, and Panagiotis Alexiou. Genomic benchmarks: a collection of datasets for genomic sequence classification. BMC Genomic Data, 24(1):25, 2023.
 
 Gu & Dao (2023). Albert Gu and Tri Dao. Mamba: Linear-time sequence modeling with selective state spaces. arXiv preprint arXiv:2312.00752, 2023.
 
@@ -2030,13 +2028,13 @@ Hanson (2007). Floyd B. Hanson. Applied stochastic processes and control for jum
 
 He et al. (2022). Zhengfu He, Tianxiang Sun, Kuanning Wang, Xuanjing Huang, and Xipeng Qiu. Diffusionbert: Improving generative masked language models with diffusion models. arXiv preprint arXiv:2211.15029, 2022.
 
-Ho et al. (2020). Jonathan Ho, Ajay Jain, and Pieter Abbeel. Denoising diffusion probabilistic models. Advances in neural information processing systems, 33:0 6840–6851, 2020.
+Ho et al. (2020). Jonathan Ho, Ajay Jain, and Pieter Abbeel. Denoising diffusion probabilistic models. Advances in neural information processing systems, 33:6840–6851, 2020.
 
 Hu et al. (2024). Vincent Hu, Di Wu, Yuki Asano, Pascal Mettes, Basura Fernando, Björn Ommer, and Cees Snoek. Flow matching for conditional text generation in a few sampling steps. In Proceedings of the 18th Conference of the European Chapter of the Association for Computational Linguistics (Volume 2: Short Papers), pp. 380–392, 2024.
 
-Kingma et al. (2021). Diederik Kingma, Tim Salimans, Ben Poole, and Jonathan Ho. Variational diffusion models. Advances in neural information processing systems, 34:0 21696–21707, 2021.
+Kingma et al. (2021). Diederik Kingma, Tim Salimans, Ben Poole, and Jonathan Ho. Variational diffusion models. Advances in neural information processing systems, 34:21696–21707, 2021.
 
-Li et al. (2022). Xiang Li, John Thickstun, Ishaan Gulrajani, Percy S Liang, and Tatsunori B Hashimoto. Diffusion-lm improves controllable text generation. Advances in Neural Information Processing Systems, 35:0 4328–4343, 2022.
+Li et al. (2022). Xiang Li, John Thickstun, Ishaan Gulrajani, Percy S Liang, and Tatsunori B Hashimoto. Diffusion-lm improves controllable text generation. Advances in Neural Information Processing Systems, 35:4328–4343, 2022.
 
 Li et al. (2021). Xuanlin Li, Brandon Trabucco, Dong Huk Park, Michael Luo, Sheng Shen, Trevor Darrell, and Yang Gao. Discovering non-monotonic autoregressive orderings with variational inference. arXiv preprint arXiv:2110.15797, 2021.
 
@@ -2046,11 +2044,11 @@ Lou et al. (2023). Aaron Lou, Chenlin Meng, and Stefano Ermon. Discrete diffusio
 
 Lovelace et al. (2024). Justin Lovelace, Varsha Kishore, Chao Wan, Eliot Shekhtman, and Kilian Q Weinberger. Latent diffusion for language generation. Advances in Neural Information Processing Systems, 36, 2024.
 
-Mallet & Vert (2021). Vincent Mallet and Jean-Philippe Vert. Reverse-complement equivariant networks for dna sequences. Advances in neural information processing systems, 34:0 13511–13523, 2021.
+Mallet & Vert (2021). Vincent Mallet and Jean-Philippe Vert. Reverse-complement equivariant networks for dna sequences. Advances in neural information processing systems, 34:13511–13523, 2021.
 
-Marcus et al. (1993). Mitch Marcus, Beatrice Santorini, and Mary Ann Marcinkiewicz. Building a large annotated corpus of english: The penn treebank. Computational linguistics, 190 (2):0 313–330, 1993.
+Marcus et al. (1993). Mitch Marcus, Beatrice Santorini, and Mary Ann Marcinkiewicz. Building a large annotated corpus of english: The penn treebank. Computational linguistics, 19(2):313–330, 1993.
 
-Meng et al. (2022). Chenlin Meng, Kristy Choi, Jiaming Song, and Stefano Ermon. Concrete score matching: Generalized score matching for discrete data. Advances in Neural Information Processing Systems, 35:0 34532–34545, 2022.
+Meng et al. (2022). Chenlin Meng, Kristy Choi, Jiaming Song, and Stefano Ermon. Concrete score matching: Generalized score matching for discrete data. Advances in Neural Information Processing Systems, 35:34532–34545, 2022.
 
 Merity et al. (2016). Stephen Merity, Caiming Xiong, James Bradbury, and Richard Socher. Pointer sentinel mixture models, 2016.
 
@@ -2068,13 +2066,13 @@ Press et al. (2022). Ofir Press, Noah A. Smith, and Mike Lewis. Train short, tes
 
 Radford et al. (2019). Alec Radford, Jeff Wu, Rewon Child, David Luan, Dario Amodei, and Ilya Sutskever. Language models are unsupervised multitask learners. 2019.
 
-Raffel et al. (2020). Colin Raffel, Noam Shazeer, Adam Roberts, Katherine Lee, Sharan Narang, Michael Matena, Yanqi Zhou, Wei Li, and Peter J. Liu. Exploring the limits of transfer learning with a unified text-to-text transformer. J. Mach. Learn. Res., 210 (1), jan 2020. ISSN 1532-4435.
+Raffel et al. (2020). Colin Raffel, Noam Shazeer, Adam Roberts, Katherine Lee, Sharan Narang, Michael Matena, Yanqi Zhou, Wei Li, and Peter J. Liu. Exploring the limits of transfer learning with a unified text-to-text transformer. J. Mach. Learn. Res., 21(1), jan 2020. ISSN 1532-4435.
 
 Rastogi & Schiff (2023). Richa Rastogi and Yair Schiff. Semi parametric inducing point networks and neural processes. In International Conference on Learning Representations, 2023.
 
 Sahoo et al. (2023a). Subham Sekhar Sahoo, Aaron Gokaslan, Chris De Sa, and Volodymyr Kuleshov. Diffusion models with learned adaptive noise. arXiv preprint arXiv:2312.13236, 2023a.
 
-Sahoo et al. (2023b). Subham Sekhar Sahoo, Anselm Paulus, Marin Vlastelica, Vt́ Musil, Volodymyr Kuleshov, and Georg Martius. Backpropagation through combinatorial algorithms: Identity with projection works. In The Eleventh International Conference on Learning Representations, 2023b. URL https://openreview.net/forum?id=JZMR727O29.
+Sahoo et al. (2023b). Subham Sekhar Sahoo, Anselm Paulus, Marin Vlastelica, Vít Musil, Volodymyr Kuleshov, and Georg Martius. Backpropagation through combinatorial algorithms: Identity with projection works. In The Eleventh International Conference on Learning Representations, 2023b. URL https://openreview.net/forum?id=JZMR727O29.
 
 Schiff et al. (2024). Yair Schiff, Chia-Hsiang Kao, Aaron Gokaslan, Tri Dao, Albert Gu, and Volodymyr Kuleshov. Caduceus: Bi-directional equivariant long-range dna sequence modeling. arXiv preprint arXiv:2403.03234, 2024.
 
@@ -2096,11 +2094,11 @@ Su et al. (2021). Jianlin Su, Yu Lu, Shengfeng Pan, Ahmed Murtadha, Bo Wen, and 
 
 Sun et al. (2022). Haoran Sun, Lijun Yu, Bo Dai, Dale Schuurmans, and Hanjun Dai. Score-based continuous-time discrete diffusion models. arXiv preprint arXiv:2211.16750, 2022.
 
-Sun & Yang (2023). Zhiqing Sun and Yiming Yang. Difusco: Graph-based diffusion solvers for combinatorial optimization. Advances in Neural Information Processing Systems, 36:0 3706–3731, 2023.
+Sun & Yang (2023). Zhiqing Sun and Yiming Yang. Difusco: Graph-based diffusion solvers for combinatorial optimization. Advances in Neural Information Processing Systems, 36:3706–3731, 2023.
 
 Tay et al. (2021). Yi Tay, Mostafa Dehghani, Vamsi Aribandi, Jai Gupta, Philip M Pham, Zhen Qin, Dara Bahri, Da-Cheng Juan, and Donald Metzler. Omninet: Omnidirectional representations from transformers. In International Conference on Machine Learning, pp. 10193–10202. PMLR, 2021.
 
-Vaswani et al. (2017). Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, ukasz Kaiser, and Illia Polosukhin. Attention is all you need. Advances in neural information processing systems, 30, 2017.
+Vaswani et al. (2017). Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, and Illia Polosukhin. Attention is all you need. Advances in neural information processing systems, 30, 2017.
 
 Vignac et al. (2022). Clement Vignac, Igor Krawczuk, Antoine Siraudin, Bohan Wang, Volkan Cevher, and Pascal Frossard. Digress: Discrete denoising diffusion for graph generation. arXiv preprint arXiv:2209.14734, 2022.
 

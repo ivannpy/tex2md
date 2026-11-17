@@ -134,38 +134,93 @@ def rewrite_algorithmic(text):
     return "".join(out)
 
 
-def rewrite_algorithm_captions(text, labels):
-    """pandoc drops caption inside algorithm environments; keep it as a bold "Algoritmo N." paragraph."""
-    out, pos, count = [], 0, 0
-    for m in re.finditer(r"\\begin\{algorithm\*?\}(\[[^\]]*\])?(.*?)\\end\{algorithm\*?\}", text, re.S):
+def _caption_key(tex):
+    """The start of a caption the way ``parse_floats`` keeps the .aux captions (letters and digits only)."""
+    return re.sub(r"[^a-z0-9]", "", re.sub(r"\\[a-zA-Z@]+\s*", " ", tex).lower())[:40]
+
+
+class _AlgorithmNumbers:
+    """Number of each algorithm caption: its own label, else the matching .aux caption, else a running count."""
+
+    def __init__(self, labels, floats):
+        self.labels = labels
+        self.entries = [f for f in (floats or []) if f.get("kind") == "algorithm"]
+        self.used: set[int] = set()
+        self.count = 0
+
+    def number(self, caption, label):
+        self.count += 1
+        lab = self.labels.get(label) if label else None
+        # a \label after the caption may belong to a line of the algorithm: only an algorithm label counts
+        if lab and lab.get("num") and lab.get("type") in ("algorithm", "") and (lab["type"] or lab["num"].isdigit()):
+            self._take(caption)
+            return lab["num"]
+        return self._take(caption) or str(self.count)
+
+    def _take(self, caption):
+        key = _caption_key(caption)
+        for n in (40, 24, 12):
+            prefix = key[:n]
+            if not prefix:
+                break
+            for i, entry in enumerate(self.entries):
+                if i not in self.used and entry["text"].startswith(prefix):
+                    self.used.add(i)
+                    return entry["num"]
+        return None
+
+
+def rewrite_algorithm_captions(text, labels, floats=None):
+    """pandoc drops caption inside algorithm environments; keep it as a bold "Algoritmo N." paragraph, with the
+    number the compiled document gives it (``\\captionof{algorithm}`` outside the environment included)."""
+    numbers = _AlgorithmNumbers(labels, floats)
+    out, pos = [], 0
+    spans = [(m.start(), m.end(), m) for m in re.finditer(r"\\begin\{algorithm\*?\}(\[[^\]]*\])?(.*?)\\end\{algorithm\*?\}", text, re.S)]
+    loose = re.compile(r"\\captionof\s*\{algorithm\}\s*(?:\[[^\]]*\])?\s*(?=\{)")
+
+    def titled(cap, after):
+        lab = re.search(r"\\label\{([^}]*)\}", cap) or re.match(r"\s*\\label\{([^}]*)\}", after)
+        cap = re.sub(r"\\label\{[^}]*\}", "", cap).strip()
+        return "\n\n\\textbf{Algoritmo " + numbers.number(cap, lab.group(1) if lab else None) + ".} " + cap + "\n\n"
+
+    def loose_captions(chunk):
+        res, at = [], 0
+        for c in loose.finditer(chunk):
+            e = balanced_end(chunk, c.end())
+            if e < 0 or c.start() < at:
+                continue
+            res.append(chunk[at:c.start()] + titled(chunk[c.end() + 1:e - 1], chunk[e:e + 200]))
+            at = e
+        return "".join(res) + chunk[at:]
+
+    for start, end, m in spans:
+        out.append(loose_captions(text[pos:start]))
         body = m.group(2)
         cm = re.search(r"\\caption\*?(?:\[[^\]]*\])?(?=\{)", body)
-        count += 1  # noqa: SIM113 (counts matches, not loop turns)
         if cm:
             e = balanced_end(body, cm.end())
             if e > 0:
-                cap = body[cm.end() + 1:e - 1]
-                lab = re.search(r"\\label\{([^}]*)\}", cap) or re.search(r"\\label\{([^}]*)\}", body[e:e + 200])
-                cap = re.sub(r"\\label\{[^}]*\}", "", cap).strip()
-                num = str(count)
-                if lab and re.fullmatch(r"[1-9]\d*", str((labels.get(lab.group(1)) or {}).get("num", ""))):
-                    num = labels[lab.group(1)]["num"]
-                body = body[:cm.start()] + "\n\n\\textbf{Algoritmo " + num + ".} " + cap + "\n\n" + body[e:]
-        out.append(text[pos:m.start()] + text[m.start():m.start(2)] + body + text[m.end(2):m.end()])
-        pos = m.end()
-    out.append(text[pos:])
+                body = body[:cm.start()] + titled(body[cm.end() + 1:e - 1], body[e:e + 200]) + body[e:]
+        else:
+            numbers.count += 1     # an algorithm without caption still takes a number
+        out.append(text[start:m.start(2)] + body + text[m.end(2):end])
+        pos = end
+    out.append(loose_captions(text[pos:]))
     return "".join(out)
 
 
 # --------------------------------------------------------------------------- algorithm2e
 
-A2E_MARKERS = re.compile(r"\\(?:KwIn|KwOut|KwData|KwResult|Input|Output|For|ForEach|ForAll|While|If|uIf|Repeat|Return|tcp|tcc)\b|\\;")
+A2E_MARKERS = re.compile(r"\\(?:KwIn|KwOut|KwData|KwResult|Input|Output|For|ForEach|ForAll|While|If|uIf|eIf|lIf|Repeat|Return|tcp|tcc)\b|\\;")
 A2E_HEADS = {  # name: (number of {..} args that follow, text before, text after the first argument)
     "For": (2, "for ", " do"), "ForEach": (2, "for each ", " do"), "ForAll": (2, "for all ", " do"),
     "While": (2, "while ", " do"), "If": (2, "if ", " then"), "uIf": (2, "if ", " then"),
     "ElseIf": (2, "else if ", " then"), "uElseIf": (2, "else if ", " then"),
+    # the one-line forms (\lIf{c}{stmt}) read the same once written out
+    "lFor": (2, "for ", " do"), "lForEach": (2, "for each ", " do"), "lForAll": (2, "for all ", " do"),
+    "lWhile": (2, "while ", " do"), "lIf": (2, "if ", " then"), "lElseIf": (2, "else if ", " then"),
 }
-A2E_BARE = {"Else": "else", "uElse": "else"}
+A2E_BARE = {"Else": "else", "uElse": "else", "lElse": "else"}
 A2E_LABELS = {"KwIn": "Input", "KwOut": "Output", "KwData": "Data", "KwResult": "Result", "Input": "Input", "Output": "Output"}
 
 
@@ -173,12 +228,14 @@ def _a2e_inline(s):
     """Keyword macros that may appear inside a header or an input list."""
     s = re.sub(r"\\KwTo\b", r" \\textbf{to} ", s)
     s = re.sub(r"\\(?:Return|KwRet)\b\s*", r"\\textbf{return} ", s)
-    return re.sub(r" {2,}", " ", s.replace("\\;", "")).strip()
+    # "\;" ends a statement; inside a formula it is a thin space and stays
+    s = re.sub(r"(\$[^$]*\$)|\\;", lambda m: m.group(1) or "", s)
+    return re.sub(r" {2,}", " ", s).strip()
 
 
 def _a2e(text, depth, lines):
     r"""algorithm2e source -> list of (depth, tex line). Statements end at \; ; blocks are {..} groups."""
-    cur, i = [], 0
+    cur, i, in_math = [], 0, False
 
     def flush():
         s = re.sub(r" {2,}", " ", "".join(cur)).strip()
@@ -188,11 +245,18 @@ def _a2e(text, depth, lines):
 
     while i < len(text):
         c = text[i]
+        if c == "$":      # a formula: its "\;", "\\" and macros are not algorithm2e's
+            n = 2 if text.startswith("$$", i) else 1
+            in_math = not in_math
+            cur.append(text[i:i + n])
+            i += n
+            continue
         if c == "\\":
             m = re.compile(r"\\([A-Za-z]+)\*?|\\;|\\\\").match(text, i)
-            if not m:
-                cur.append(text[i:i + 2])
-                i += 2
+            if not m or in_math:
+                step = m.end() - i if m else 2
+                cur.append(text[i:i + step])
+                i += step
                 continue
             name = m.group(1)
             if m.group(0) in (r"\;", r"\\"):
@@ -216,6 +280,18 @@ def _a2e(text, depth, lines):
                 flush()
                 lines.append((depth, r"\textbf{" + pre.strip() + "} " + _a2e_inline(args[0]) + (r" \textbf{" + post.strip() + "}")))
                 _a2e(args[1], depth + 1, lines)
+                i = e
+            elif name == "eIf":     # \eIf{condition}{then}{else}
+                args, e = _brace_args(text, m.end(), 3)
+                if args is None:
+                    cur.append(m.group(0))
+                    i = m.end()
+                    continue
+                flush()
+                lines.append((depth, r"\textbf{if} " + _a2e_inline(args[0]) + r" \textbf{then}"))
+                _a2e(args[1], depth + 1, lines)
+                lines.append((depth, r"\textbf{else}"))
+                _a2e(args[2], depth + 1, lines)
                 i = e
             elif name in A2E_BARE:
                 args, e = _brace_args(text, m.end(), 1)

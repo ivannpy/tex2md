@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: 63418088313572876d38c6f2a4c58dd2d6f57693d072b638c915e6dfc3947754
     path: "PCIC/Tesis/Distilation/Sequence-Level Knowledge Distillation.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-16
+converted: 2026-11-17
 ---
 
 # Sequence-Level Knowledge Distillation
@@ -20,17 +20,17 @@ converted: 2026-11-16
 
 ## Abstract
 
-Neural machine translation (NMT) offers a novel alternative formulation of translation that is potentially simpler than statistical approaches. However to reach competitive performance, NMT models need to be exceedingly large. In this paper we consider applying *knowledge distillation* approaches \[3, 19\] that have proven successful for reducing the size of neural models in other domains to the problem of NMT. We demonstrate that standard knowledge distillation applied to word-level prediction can be effective for NMT, and also introduce two novel *sequence-level* versions of knowledge distillation that further improve performance, and somewhat surprisingly, seem to eliminate the need for beam search (even when applied on the original teacher model). Our best student model runs $10$ times faster than its state-of-the-art teacher with little loss in performance. It is also significantly better than a baseline model trained without knowledge distillation: by $4.2/1.7$ BLEU with greedy decoding/beam search. Applying weight pruning on top of knowledge distillation results in a student model that has $13 \times$ fewer parameters than the original teacher model, with a decrease of $0.4$ BLEU.
+Neural machine translation (NMT) offers a novel alternative formulation of translation that is potentially simpler than statistical approaches. However to reach competitive performance, NMT models need to be exceedingly large. In this paper we consider applying *knowledge distillation* approaches (Bucila et al., 2006; Hinton et al., 2015) that have proven successful for reducing the size of neural models in other domains to the problem of NMT. We demonstrate that standard knowledge distillation applied to word-level prediction can be effective for NMT, and also introduce two novel *sequence-level* versions of knowledge distillation that further improve performance, and somewhat surprisingly, seem to eliminate the need for beam search (even when applied on the original teacher model). Our best student model runs $10$ times faster than its state-of-the-art teacher with little loss in performance. It is also significantly better than a baseline model trained without knowledge distillation: by $4.2/1.7$ BLEU with greedy decoding/beam search. Applying weight pruning on top of knowledge distillation results in a student model that has $13 \times$ fewer parameters than the original teacher model, with a decrease of $0.4$ BLEU.
 
 # 1 Introduction
 
-Neural machine translation (NMT) \[22, 9, 48, 2\] is a deep learning-based method for translation that has recently shown promising results as an alternative to statistical approaches. NMT systems directly model the probability of the next word in the target sentence simply by conditioning a recurrent neural network on the source sentence and previously generated target words.
+Neural machine translation (NMT) (Kalchbrenner and Blunsom, 2013; Cho et al., 2014; Sutskever et al., 2014; Bahdanau et al., 2015) is a deep learning-based method for translation that has recently shown promising results as an alternative to statistical approaches. NMT systems directly model the probability of the next word in the target sentence simply by conditioning a recurrent neural network on the source sentence and previously generated target words.
 
-While both simple and surprisingly accurate, NMT systems typically need to have very high capacity in order to perform well: Sutskever et al. \[48\] used a $4$-layer LSTM with $1000$ hidden units per layer (herein $4\times1000$) and Zhou et al. \[53\] obtained state-of-the-art results on English $\rightarrow$ French with a $16$-layer LSTM with $512$ units per layer. The sheer size of the models requires cutting-edge hardware for training and makes using the models on standard setups very challenging.
+While both simple and surprisingly accurate, NMT systems typically need to have very high capacity in order to perform well: Sutskever et al. (2014) used a $4$-layer LSTM with $1000$ hidden units per layer (herein $4\times1000$) and Zhou et al. (2016) obtained state-of-the-art results on English $\rightarrow$ French with a $16$-layer LSTM with $512$ units per layer. The sheer size of the models requires cutting-edge hardware for training and makes using the models on standard setups very challenging.
 
-This issue of excessively large networks has been observed in several other domains, with much focus on fully-connected and convolutional networks for multi-class classification. Researchers have particularly noted that large networks seem to be necessary for training, but learn redundant representations in the process \[13\]. Therefore compressing deep models into smaller networks has been an active area of research. As deep learning systems obtain better results on NLP tasks, compression also becomes an important practical issue with applications such as running deep learning models for speech and translation locally on cell phones.
+This issue of excessively large networks has been observed in several other domains, with much focus on fully-connected and convolutional networks for multi-class classification. Researchers have particularly noted that large networks seem to be necessary for training, but learn redundant representations in the process (Denil et al., 2013). Therefore compressing deep models into smaller networks has been an active area of research. As deep learning systems obtain better results on NLP tasks, compression also becomes an important practical issue with applications such as running deep learning models for speech and translation locally on cell phones.
 
-Existing compression methods generally fall into two categories: (1) *pruning* and (2) *knowledge distillation*. *Pruning* methods \[25, 18, 17\], zero-out weights or entire neurons based on an importance criterion: LeCun et al. \[25\] use (a diagonal approximation to) the Hessian to identify weights whose removal minimally impacts the objective function, while Han et al. \[17\] remove weights based on thresholding their absolute values. *Knowledge distillation* approaches \[3, 1, 19\] learn a smaller *student* network to mimic the original *teacher* network by minimizing the loss (typically $L_2$ or cross-entropy) between the student and teacher output.
+Existing compression methods generally fall into two categories: (1) *pruning* and (2) *knowledge distillation*. *Pruning* methods (LeCun et al., 1990; He et al., 2014; Han et al., 2016), zero-out weights or entire neurons based on an importance criterion: LeCun et al. (1990) use (a diagonal approximation to) the Hessian to identify weights whose removal minimally impacts the objective function, while Han et al. (2016) remove weights based on thresholding their absolute values. *Knowledge distillation* approaches (Bucila et al., 2006; Ba and Caruana, 2014; Hinton et al., 2015) learn a smaller *student* network to mimic the original *teacher* network by minimizing the loss (typically $L_2$ or cross-entropy) between the student and teacher output.
 
 In this work, we investigate knowledge distillation in the context of neural machine translation. We note that NMT differs from previous work which has mainly explored non-recurrent models in the multi-class prediction setting. For NMT, while the model is trained on multi-class prediction at the word-level, it is tasked with predicting complete sequence outputs conditioned on previous decisions. With this difference in mind, we experiment with standard knowledge distillation for NMT and also propose two new versions of the approach that attempt to approximately match the sequence-level (as opposed to word-level) distribution of the teacher network. This sequence-level approximation leads to a simple training procedure wherein the student network is trained on a newly generated dataset that is the result of running beam search with the teacher network.
 
@@ -46,13 +46,13 @@ $$\begin{equation*}
 \mathop{\mathrm{argmax}}_{\mathbf{t}\in \mathcal{T}} p(\mathbf{t}\,|\,\mathbf{s})
 \end{equation*}$$
 
-where $\mathcal{T}$ is the set of all possible sequences. NMT models parameterize $p(\mathbf{t}\,|\,\mathbf{s})$ with an *encoder* neural network which reads the source sentence and a *decoder* neural network which produces a distribution over the target sentence (one word at a time) given the source. We employ the attentional architecture from Luong et al. \[33\], which achieved state-of-the-art results on English $\rightarrow$ German translation.[^3]
+where $\mathcal{T}$ is the set of all possible sequences. NMT models parameterize $p(\mathbf{t}\,|\,\mathbf{s})$ with an *encoder* neural network which reads the source sentence and a *decoder* neural network which produces a distribution over the target sentence (one word at a time) given the source. We employ the attentional architecture from Luong et al. (2015), which achieved state-of-the-art results on English $\rightarrow$ German translation.[^3]
 
 **Figura 1.** Overview of the different knowledge distillation approaches. In word-level knowledge distillation (left) cross-entropy is minimized between the student/teacher distributions (yellow) for each word in the actual target sequence (ECD), as well as between the student distribution and the degenerate data distribution, which has all of its probabilitiy mass on one word (black). In sequence-level knowledge distillation (center) the student network is trained on the output from beam search of the teacher network that had the highest score (ACF). In sequence-level interpolation (right) the student is trained on the output from beam search of the teacher network that had the highest $sim$ with the target sequence (ECE).
 
 ## 2.2 Knowledge Distillation
 
-Knowledge distillation describes a class of methods for training a smaller *student* network to perform better by learning from a larger *teacher* network (in addition to learning from the training data set). We generally assume that the teacher has previously been trained, and that we are estimating parameters for the student. Knowledge distillation suggests training by matching the student’s predictions to the teacher’s predictions. For classification this usually means matching the probabilities either via $L_2$ on the $\log$ scale \[1\] or by cross-entropy \[26, 19\].
+Knowledge distillation describes a class of methods for training a smaller *student* network to perform better by learning from a larger *teacher* network (in addition to learning from the training data set). We generally assume that the teacher has previously been trained, and that we are estimating parameters for the student. Knowledge distillation suggests training by matching the student’s predictions to the teacher’s predictions. For classification this usually means matching the probabilities either via $L_2$ on the $\log$ scale (Ba and Caruana, 2014) or by cross-entropy (Li et al., 2014; Hinton et al., 2015).
 
 Concretely, assume we are learning a multi-class classifier over a data set of examples of the form $(x, y)$ with possible classes $\mathcal{V}$. The usual training criteria is to minimize NLL for each example from the training data, 
 
@@ -69,7 +69,7 @@ $$\begin{align*}
 & \log p(y = k \,|\,x;\theta)
 \end{align*}$$
 
-where $\theta_T$ parameterizes the teacher distribution and remains fixed. Note the cross-entropy setup is identical, but the target distribution is no longer a sparse distribution.[^4] Training on $q(y \,|\,x;\theta_T)$ is attractive since it gives more information about other classes for a given data point (e.g. similarity between classes) and has less variance in gradients \[19\].
+where $\theta_T$ parameterizes the teacher distribution and remains fixed. Note the cross-entropy setup is identical, but the target distribution is no longer a sparse distribution.[^4] Training on $q(y \,|\,x;\theta_T)$ is attractive since it gives more information about other classes for a given data point (e.g. similarity between classes) and has less variance in gradients (Hinton et al., 2015).
 
 Since this new objective has no direct term for the training data, it is common practice to interpolate between the two losses, 
 
@@ -161,19 +161,19 @@ $$\begin{equation*}
 
 and train on both observed ($\mathbf{y}$) and teacher-generated ($\hat{\mathbf{y}}$) data. However, this process is non-ideal for two reasons: (1) unlike for standard knowledge distribution, it doubles the size of the training data, and (2) it requires training on both the teacher-generated sequence and the true sequence, conditioned on the same source input. The latter concern is particularly problematic since we observe that $\mathbf{y}$ and $\hat{\mathbf{y}}$ are often quite different.
 
-As an alternative, we propose a single-sequence approximation that is more attractive in this setting. This approach is inspired by *local updating* \[28\], a method for discriminative training in statistical machine translation (although to our knowledge not for knowledge distillation). Local updating suggests selecting a training sequence which is close to $\mathbf{y}$ *and* has high probability under the teacher model, 
+As an alternative, we propose a single-sequence approximation that is more attractive in this setting. This approach is inspired by *local updating* (Liang et al., 2006), a method for discriminative training in statistical machine translation (although to our knowledge not for knowledge distillation). Local updating suggests selecting a training sequence which is close to $\mathbf{y}$ *and* has high probability under the teacher model, 
 
 $$\begin{equation*}
 \tilde{\mathbf{y}} = \mathop{\mathrm{argmax}}_{\mathbf{t}\in \mathcal{T}} sim(\mathbf{t}, \mathbf{y}) q(\mathbf{t}\,|\,\mathbf{s})
 \end{equation*}$$
 
-where $sim$ is a function measuring closeness (e.g. Jaccard similarity or BLEU \[38\]). Following local updating, we can approximate this sequence by running beam search and choosing 
+where $sim$ is a function measuring closeness (e.g. Jaccard similarity or BLEU (Papineni et al., 2002)). Following local updating, we can approximate this sequence by running beam search and choosing 
 
 $$\begin{equation*}
 \tilde{\mathbf{y}} \approx \mathop{\mathrm{argmax}}_{\mathbf{t}\in \mathcal{T}_K} sim(\mathbf{t}, \mathbf{y})
 \end{equation*}$$
 
-where $\mathcal{T}_K$ is the $K$-best list from beam search. We take $sim$ to be smoothed sentence-level BLEU \[6\].
+where $\mathcal{T}_K$ is the $K$-best list from beam search. We take $sim$ to be smoothed sentence-level BLEU (Chen and Cherry, 2014).
 
 We justify training on $\tilde{\mathbf{y}}$ from a knowledge distillation perspective with the following generative process: suppose that there is a true target sequence (which we do not observe) that is first generated from the underlying data distribution $\mathcal{D}$. And further suppose that the target sequence that we observe ($\mathbf{y}$) is a noisy version of the unobserved true sequence: i.e. (i) $\mathbf{t}\sim \mathcal{D}$, (ii) $\mathbf{y}\sim \epsilon(\mathbf{t})$, where $\epsilon(\mathbf{t})$ is, for example, a noise function that independently replaces each element in $\mathbf{t}$ with a random element in $\mathcal{V}$ with some small probability.[^6] In such a case, ideally the student’s distribution should match the mixture distribution, 
 
@@ -189,7 +189,7 @@ In this setting, due to the noise assumption, $\mathcal{D}$ now has significant 
 
 To test out these approaches, we conduct two sets of NMT experiments: high resource (English $\rightarrow$ German) and low resource (Thai $\rightarrow$ English).
 
-The **English-German** data comes from WMT 2014.[^7] The training set has $4$m sentences and we take newstest2012/newstest2013 as the dev set and newstest2014 as the test set. We keep the top $50$k most frequent words, and replace the rest with UNK. The teacher model is a $4 \times 1000$ LSTM (as in Luong et al. \[33\]) and we train two student models: $2 \times 300$ and $2 \times 500$. The **Thai-English** data comes from IWSLT 2015.[^8] There are $90$k sentences in the training set and we take 2010/2011/2012 data as the dev set and 2012/2013 as the test set, with a vocabulary size is $25$k. Size of the teacher model is $2 \times 500$ (which performed better than $4 \times 1000$, $2 \times 750$ models), and the student model is $2 \times 100$. Other training details mirror Luong et al. \[33\].
+The **English-German** data comes from WMT 2014.[^7] The training set has $4$m sentences and we take newstest2012/newstest2013 as the dev set and newstest2014 as the test set. We keep the top $50$k most frequent words, and replace the rest with UNK. The teacher model is a $4 \times 1000$ LSTM (as in Luong et al. (2015)) and we train two student models: $2 \times 300$ and $2 \times 500$. The **Thai-English** data comes from IWSLT 2015.[^8] There are $90$k sentences in the training set and we take 2010/2011/2012 data as the dev set and 2012/2013 as the test set, with a vocabulary size is $25$k. Size of the teacher model is $2 \times 500$ (which performed better than $4 \times 1000$, $2 \times 750$ models), and the student model is $2 \times 100$. Other training details mirror Luong et al. (2015).
 
 We evaluate on tokenized BLEU with $\texttt{multi-bleu.perl}$, and experiment with the following variations:
 
@@ -284,135 +284,135 @@ Run-time complexity for beam search grows linearly with beam size. Therefore, th
 
 Although knowledge distillation enables training faster models, the number of parameters for the student models is still somewhat large (Table 1: Params), due to the word embeddings which dominate most of the parameters.[^10] For example, on the $2 \times 500$ English $\rightarrow$ German model the word embeddings account for approximately $63\%$ ($50$m out of $84$m) of the parameters. The size of word embeddings have little impact on run-time as the word embedding layer is a simple lookup table that only affects the first layer of the model.
 
-We therefore focus next on reducing the memory footprint of the student models further through weight pruning. Weight pruning for NMT was recently investigated by See et al. \[43\], who found that up to $80-90\%$ of the parameters in a large NMT model can be pruned with little loss in performance. We take our best English $\rightarrow$ German student model ($2 \times 500$ Seq-KD $+$ Seq-Inter) and prune $x\%$ of the parameters by removing the weights with the lowest absolute values. We then retrain the pruned model on Seq-KD data with a learning rate of $0.2$ and fine-tune towards Seq-Inter data with a learning rate of $0.1$. As observed by See et al. \[43\], retraining proved to be crucial. The results are shown in Table 3.
+We therefore focus next on reducing the memory footprint of the student models further through weight pruning. Weight pruning for NMT was recently investigated by See et al. (2016), who found that up to $80-90\%$ of the parameters in a large NMT model can be pruned with little loss in performance. We take our best English $\rightarrow$ German student model ($2 \times 500$ Seq-KD $+$ Seq-Inter) and prune $x\%$ of the parameters by removing the weights with the lowest absolute values. We then retrain the pruned model on Seq-KD data with a learning rate of $0.2$ and fine-tune towards Seq-Inter data with a learning rate of $0.1$. As observed by See et al. (2016), retraining proved to be crucial. The results are shown in Table 3.
 
 Our findings suggest that compression benefits achieved through weight pruning and knowledge distillation are orthogonal.[^11] Pruning $80\%$ of the weight in the $2 \times 500$ student model results in a model with $13\times$ fewer parameters than the original teacher model with only a decrease of $0.4$ BLEU. While pruning $90\%$ of the weights results in a more appreciable decrease of $1.0$ BLEU, the model is drastically smaller with $8$m parameters, which is $26\times$ fewer than the original teacher model.
 
 ## 5.3 Further Observations
 
-- For models trained with word-level knowledge distillation, we also tried regressing the student network’s top-most hidden layer at each time step to the teacher network’s top-most hidden layer as a pretraining step, noting that Romero et al. \[40\] obtained improvements with a similar technique on feed-forward models. We found this to give comparable results to standard knowledge distillation and hence did not pursue this further.
+- For models trained with word-level knowledge distillation, we also tried regressing the student network’s top-most hidden layer at each time step to the teacher network’s top-most hidden layer as a pretraining step, noting that Romero et al. (2015) obtained improvements with a similar technique on feed-forward models. We found this to give comparable results to standard knowledge distillation and hence did not pursue this further.
 
-- There have been promising recent results on eliminating word embeddings completely and obtaining word representations directly from characters with character composition models, which have many fewer parameters than word embedding lookup tables \[30, 23, 31, 21, 10\]. Combining such methods with knowledge distillation/pruning to further reduce the memory footprint of NMT systems remains an avenue for future work.
+- There have been promising recent results on eliminating word embeddings completely and obtaining word representations directly from characters with character composition models, which have many fewer parameters than word embedding lookup tables (Ling et al., 2015a; Kim et al., 2016; Ling et al., 2015b; Jozefowicz et al., 2016; Costa-Jussa and Fonollosa, 2016). Combining such methods with knowledge distillation/pruning to further reduce the memory footprint of NMT systems remains an avenue for future work.
 
 # 6 Related Work
 
-Compressing deep learning models is an active area of current research. *Pruning* methods involve pruning weights or entire neurons/nodes based on some criterion. LeCun et al. \[25\] prune weights based on an approximation of the Hessian, while Han et al. \[17\] show that a simple magnitude-based pruning works well. Prior work on removing neurons/nodes include Srinivas and Babu \[46\] and Mariet and Sra \[34\]. See et al. \[43\] were the first to apply pruning to Neural Machine Translation, observing that that different parts of the architecture (input word embeddings, LSTM matrices, etc.) admit different levels of pruning. *Knowledge distillation* approaches train a smaller student model to mimic a larger teacher model, by minimizing the loss between the teacher/student predictions \[3, 1, 26, 19\]. Romero et al. \[40\] additionally regress on the intermediate hidden layers of the student/teacher network as a pretraining step, while Mou et al. \[35\] obtain smaller word embeddings from a teacher model via regression. There has also been work on transferring knowledge across different network architectures: Chan et al. \[5\] show that a deep non-recurrent neural network can learn from an RNN; Geras et al. \[15\] train a CNN to mimic an LSTM for speech recognition. Kuncoro et al. \[24\] recently investigated knowledge distillation for structured prediction by having a single parser learn from an ensemble of parsers.
+Compressing deep learning models is an active area of current research. *Pruning* methods involve pruning weights or entire neurons/nodes based on some criterion. LeCun et al. (1990) prune weights based on an approximation of the Hessian, while Han et al. (2016) show that a simple magnitude-based pruning works well. Prior work on removing neurons/nodes include Srinivas and Babu (2015) and Mariet and Sra (2016). See et al. (2016) were the first to apply pruning to Neural Machine Translation, observing that that different parts of the architecture (input word embeddings, LSTM matrices, etc.) admit different levels of pruning. *Knowledge distillation* approaches train a smaller student model to mimic a larger teacher model, by minimizing the loss between the teacher/student predictions (Bucila et al., 2006; Ba and Caruana, 2014; Li et al., 2014; Hinton et al., 2015). Romero et al. (2015) additionally regress on the intermediate hidden layers of the student/teacher network as a pretraining step, while Mou et al. (2015) obtain smaller word embeddings from a teacher model via regression. There has also been work on transferring knowledge across different network architectures: Chan et al. (2015b) show that a deep non-recurrent neural network can learn from an RNN; Geras et al. (2016) train a CNN to mimic an LSTM for speech recognition. Kuncoro et al. (2016) recently investigated knowledge distillation for structured prediction by having a single parser learn from an ensemble of parsers.
 
-Other approaches for compression involve low rank factorizations of weight matrices \[14, 20, 32, 39\], sparsity-inducing regularizers \[36\], binarization of weights \[11, 29\], and weight sharing \[7, 17\]. Finally, although we have motivated sequence-level knowledge distillation in the context of training a smaller model, there are other techniques that train on a mixture of the model’s predictions and the data, such as local updating \[28\], hope/fear training \[8\], SEARN \[12\], DAgger \[41\], and minimum risk training \[37, 45\].
+Other approaches for compression involve low rank factorizations of weight matrices (Denton et al., 2014; Jaderberg et al., 2014; Lu et al., 2016; Prabhavalkar et al., 2016), sparsity-inducing regularizers (Murray and Chiang, 2015), binarization of weights (Courbariaux et al., 2016; Lin et al., 2016), and weight sharing (Chen et al., 2015; Han et al., 2016). Finally, although we have motivated sequence-level knowledge distillation in the context of training a smaller model, there are other techniques that train on a mixture of the model’s predictions and the data, such as local updating (Liang et al., 2006), hope/fear training (Chiang, 2012), SEARN (Daumé III et al., 2009), DAgger (Ross et al., 2011), and minimum risk training (Och, 2003; Shen et al., 2016).
 
 # 7 Conclusion
 
 In this work we have investigated existing knowledge distillation methods for NMT (which work at the word-level) and introduced two *sequence-level* variants of knowledge distillation, which provide improvements over standard word-level knowledge distillation.
 
-We have chosen to focus on translation as this domain has generally required the largest capacity deep learning models, but the sequence-to-sequence framework has been successfully applied to a wide range of tasks including parsing \[50\], summarization \[42\], dialogue \[49, 44, 27\], NER/POS-tagging \[16\], image captioning \[51, 52\], video generation \[47\], and speech recognition \[4\]. We anticipate that methods described in this paper can be used to similarly train smaller models in other domains.
+We have chosen to focus on translation as this domain has generally required the largest capacity deep learning models, but the sequence-to-sequence framework has been successfully applied to a wide range of tasks including parsing (Vinyals et al., 2015a), summarization (Rush et al., 2015), dialogue (Vinyals and Le, 2015; Serban et al., 2016; Li et al., 2016), NER/POS-tagging (Gillick et al., 2016), image captioning (Vinyals et al., 2015b; Xu et al., 2015), video generation (Srivastava et al., 2015), and speech recognition (Chan et al., 2015a). We anticipate that methods described in this paper can be used to similarly train smaller models in other domains.
 
 # References
 
-\[1\]. Lei Jimmy Ba and Rich Caruana. 2014. Do Deep Nets Really Need to be Deep? In Proceedings of NIPS.
+Ba and Caruana (2014). Lei Jimmy Ba and Rich Caruana. 2014. Do Deep Nets Really Need to be Deep? In Proceedings of NIPS.
 
-\[2\]. Dzmitry Bahdanau, Kyunghyun Cho, and Yoshua Bengio. 2015. Neural Machine Translation by Jointly Learning to Align and Translate. In Proceedings of ICLR.
+Bahdanau et al. (2015). Dzmitry Bahdanau, Kyunghyun Cho, and Yoshua Bengio. 2015. Neural Machine Translation by Jointly Learning to Align and Translate. In Proceedings of ICLR.
 
-\[3\]. Cristian Bucila, Rich Caruana, and Alexandru Niculescu-Mizil. 2006. Model Compression. In Proceedings of KDD.
+Bucila et al. (2006). Cristian Bucila, Rich Caruana, and Alexandru Niculescu-Mizil. 2006. Model Compression. In Proceedings of KDD.
 
-\[4\]. William Chan, Navdeep Jaitly, Quoc Le, and Oriol Vinyals. 2015a. Listen, Attend and Spell. arXiv:1508.01211.
+Chan et al. (2015a). William Chan, Navdeep Jaitly, Quoc Le, and Oriol Vinyals. 2015a. Listen, Attend and Spell. arXiv:1508.01211.
 
-\[5\]. William Chan, Nan Rosemary Ke, and Ian Laner. 2015b. Transfering Knowledge from a RNN to a DNN. arXiv:1504.01483.
+Chan et al. (2015b). William Chan, Nan Rosemary Ke, and Ian Laner. 2015b. Transfering Knowledge from a RNN to a DNN. arXiv:1504.01483.
 
-\[6\]. Boxing Chen and Colin Cherry. 2014. A Systematic Comparison of Smoothing Techniques for Sentence-Level BLEU. In Proceedings of the Ninth Workshop on Statistical Machine Translation.
+Chen and Cherry (2014). Boxing Chen and Colin Cherry. 2014. A Systematic Comparison of Smoothing Techniques for Sentence-Level BLEU. In Proceedings of the Ninth Workshop on Statistical Machine Translation.
 
-\[7\]. Wenlin Chen, James T. Wilson, Stephen Tyree, Kilian Q. Weinberger, and Yixin Chen. 2015. Compressing Neural Networks with the Hashing Trick. In Proceedings of ICML.
+Chen et al. (2015). Wenlin Chen, James T. Wilson, Stephen Tyree, Kilian Q. Weinberger, and Yixin Chen. 2015. Compressing Neural Networks with the Hashing Trick. In Proceedings of ICML.
 
-\[8\]. David Chiang. 2012. Hope and Fear for Discriminative Training of Statistical Translation Models. In JMLR.
+Chiang (2012). David Chiang. 2012. Hope and Fear for Discriminative Training of Statistical Translation Models. In JMLR.
 
-\[9\]. Kyunghyun Cho, Bart van Merrienboer, Caglar Gulcehre, Dzmitry Bahdanau, Fethi Bougares, Holger Schwenk, and Yoshua Bengio. 2014. Learning Phrase Representations using RNN Encoder-Decoder for Statistical Machine Translation. In Proceedings of EMNLP.
+Cho et al. (2014). Kyunghyun Cho, Bart van Merrienboer, Caglar Gulcehre, Dzmitry Bahdanau, Fethi Bougares, Holger Schwenk, and Yoshua Bengio. 2014. Learning Phrase Representations using RNN Encoder-Decoder for Statistical Machine Translation. In Proceedings of EMNLP.
 
-\[10\]. Marta R. Costa-Jussa and Jose A.R. Fonollosa. 2016. Character-based Neural Machine Translation. arXiv:1603.00810.
+Costa-Jussa and Fonollosa (2016). Marta R. Costa-Jussa and Jose A.R. Fonollosa. 2016. Character-based Neural Machine Translation. arXiv:1603.00810.
 
-\[11\]. Matthieu Courbariaux, Itay Hubara, Daniel Soudry, Ran El-Yaniv, and Yoshua Bengio. 2016. Binarized Neural Networks: Training Neural Networks with Weights and Activations Constrained to $+1$ or $-1$. arXiv:1602.02830.
+Courbariaux et al. (2016). Matthieu Courbariaux, Itay Hubara, Daniel Soudry, Ran El-Yaniv, and Yoshua Bengio. 2016. Binarized Neural Networks: Training Neural Networks with Weights and Activations Constrained to $+1$ or $-1$. arXiv:1602.02830.
 
-\[12\]. Hal Daumé III, John Langford, and Daniel Marcu. 2009. Search-based Structured Prediction. Machine Learning.
+Daumé III et al. (2009). Hal Daumé III, John Langford, and Daniel Marcu. 2009. Search-based Structured Prediction. Machine Learning.
 
-\[13\]. Misha Denil, Babak Shakibi, Laurent Dinh, Marc’Aurelio Ranzato, and Nando de Freitas. 2013. Predicting Parameters in Deep Learning. In Proceedings of NIPS.
+Denil et al. (2013). Misha Denil, Babak Shakibi, Laurent Dinh, Marc’Aurelio Ranzato, and Nando de Freitas. 2013. Predicting Parameters in Deep Learning. In Proceedings of NIPS.
 
-\[14\]. Emily L. Denton, Wojciech Zaremba, Joan Bruna, Yann LeCun, and Rob Fergus. 2014. Exploiting Linear Structure within Convolutional Neural Networks for Efficient Evaluation. In Proceedings of NIPS.
+Denton et al. (2014). Emily L. Denton, Wojciech Zaremba, Joan Bruna, Yann LeCun, and Rob Fergus. 2014. Exploiting Linear Structure within Convolutional Neural Networks for Efficient Evaluation. In Proceedings of NIPS.
 
-\[15\]. Krzysztof J. Geras, Abdel rahman Mohamed, Rich Caruana, Gregor Urban, Shengjie Wang, Ozlem Aslan, Matthai Philipose, Matthew Richardson, and Charles Sutton. 2016. Blending LSTMs into CNNs. In Proceedings of ICLR Workshop.
+Geras et al. (2016). Krzysztof J. Geras, Abdel rahman Mohamed, Rich Caruana, Gregor Urban, Shengjie Wang, Ozlem Aslan, Matthai Philipose, Matthew Richardson, and Charles Sutton. 2016. Blending LSTMs into CNNs. In Proceedings of ICLR Workshop.
 
-\[16\]. Dan Gillick, Cliff Brunk, Oriol Vinyals, and Amarnag Subramanya. 2016. Multilingual Language Processing from Bytes. In Proceedings of NAACL.
+Gillick et al. (2016). Dan Gillick, Cliff Brunk, Oriol Vinyals, and Amarnag Subramanya. 2016. Multilingual Language Processing from Bytes. In Proceedings of NAACL.
 
-\[17\]. Song Han, Huizi Mao, and William J. Dally. 2016. Deep Compression: Compressing Deep Neural Networks with Pruning, Trained Quantization and Huffman Coding. In Proceedings of ICLR.
+Han et al. (2016). Song Han, Huizi Mao, and William J. Dally. 2016. Deep Compression: Compressing Deep Neural Networks with Pruning, Trained Quantization and Huffman Coding. In Proceedings of ICLR.
 
-\[18\]. Tianxing He, Yuchen Fan, Yanmin Qian, Tian Tan, and Kai Yu. 2014. Reshaping Deep Neural Network for Fast Decoding by Node-Pruning. In Proceedings of ICASSP.
+He et al. (2014). Tianxing He, Yuchen Fan, Yanmin Qian, Tian Tan, and Kai Yu. 2014. Reshaping Deep Neural Network for Fast Decoding by Node-Pruning. In Proceedings of ICASSP.
 
-\[19\]. Geoffrey Hinton, Oriol Vinyals, and Jeff Dean. 2015. Distilling the Knowledge in a Neural Network. arXiv:1503.0253.
+Hinton et al. (2015). Geoffrey Hinton, Oriol Vinyals, and Jeff Dean. 2015. Distilling the Knowledge in a Neural Network. arXiv:1503.0253.
 
-\[20\]. Max Jaderberg, Andrea Vedaldi, and Andrew Zisserman. 2014. Speeding up Convolutional Neural Networks with Low Rank Expansions. In BMCV.
+Jaderberg et al. (2014). Max Jaderberg, Andrea Vedaldi, and Andrew Zisserman. 2014. Speeding up Convolutional Neural Networks with Low Rank Expansions. In BMCV.
 
-\[21\]. Rafal Jozefowicz, Oriol Vinyals, Mike Schuster, Noam Shazeer, and Yonghui Wu. 2016. Exploring the Limits of Language Modeling. arXiv:1602.02410.
+Jozefowicz et al. (2016). Rafal Jozefowicz, Oriol Vinyals, Mike Schuster, Noam Shazeer, and Yonghui Wu. 2016. Exploring the Limits of Language Modeling. arXiv:1602.02410.
 
-\[22\]. Nal Kalchbrenner and Phil Blunsom. 2013. Recurrent Continuous Translation Models. In Proceedings of EMNLP.
+Kalchbrenner and Blunsom (2013). Nal Kalchbrenner and Phil Blunsom. 2013. Recurrent Continuous Translation Models. In Proceedings of EMNLP.
 
-\[23\]. Yoon Kim, Yacine Jernite, David Sontag, and Alexander M. Rush. 2016. Character-Aware Neural Language Models. In Proceedings of AAAI.
+Kim et al. (2016). Yoon Kim, Yacine Jernite, David Sontag, and Alexander M. Rush. 2016. Character-Aware Neural Language Models. In Proceedings of AAAI.
 
-\[24\]. Adhiguna Kuncoro, Miguel Ballesteros, Lingpeng Kong, Chris Dyer, and Noah A. Smith. 2016. Distilling an Ensemble of Greedy Dependency Parsers into One MST Parser. In Proceedings of EMNLP.
+Kuncoro et al. (2016). Adhiguna Kuncoro, Miguel Ballesteros, Lingpeng Kong, Chris Dyer, and Noah A. Smith. 2016. Distilling an Ensemble of Greedy Dependency Parsers into One MST Parser. In Proceedings of EMNLP.
 
-\[25\]. Yann LeCun, John S. Denker, and Sara A. Solla. 1990. Optimal Brain Damage. In Proceedings of NIPS.
+LeCun et al. (1990). Yann LeCun, John S. Denker, and Sara A. Solla. 1990. Optimal Brain Damage. In Proceedings of NIPS.
 
-\[26\]. Jinyu Li, Rui Zhao, Jui-Ting Huang, and Yifan Gong. 2014. Learning Small-Size DNN with Output-Distribution-Based Criteria. In Proceedings of INTERSPEECH.
+Li et al. (2014). Jinyu Li, Rui Zhao, Jui-Ting Huang, and Yifan Gong. 2014. Learning Small-Size DNN with Output-Distribution-Based Criteria. In Proceedings of INTERSPEECH.
 
-\[27\]. Jiwei Li, Michael Galley, Chris Brockett, Jianfeg Gao, and Bill Dolan. 2016. A Diversity-Promoting Objective Function for Neural Conversational Models. In Proceedings of NAACL 2016.
+Li et al. (2016). Jiwei Li, Michael Galley, Chris Brockett, Jianfeg Gao, and Bill Dolan. 2016. A Diversity-Promoting Objective Function for Neural Conversational Models. In Proceedings of NAACL 2016.
 
-\[28\]. Percy Liang, Alexandre Bouchard-Cote, Dan Klein, and Ben Taskar. 2006. An End-to-End Discriminative Approach to Machine Translation. In Proceedings of COLING-ACL.
+Liang et al. (2006). Percy Liang, Alexandre Bouchard-Cote, Dan Klein, and Ben Taskar. 2006. An End-to-End Discriminative Approach to Machine Translation. In Proceedings of COLING-ACL.
 
-\[29\]. Zhouhan Lin, Matthieu Coubariaux, Roland Memisevic, and Yoshua Bengio. 2016. Neural Networks with Few Multiplications. In Proceedings of ICLR.
+Lin et al. (2016). Zhouhan Lin, Matthieu Coubariaux, Roland Memisevic, and Yoshua Bengio. 2016. Neural Networks with Few Multiplications. In Proceedings of ICLR.
 
-\[30\]. Wang Ling, Tiago Lui, Luis Marujo, Ramon Fernandez Astudillo, Silvio Amir, Chris Dyer, Alan W Black, and Isabel Trancoso. 2015a. Finding Function in Form: Composition Character Models for Open Vocabulary Word Representation. In Proceedings of EMNLP.
+Ling et al. (2015a). Wang Ling, Tiago Lui, Luis Marujo, Ramon Fernandez Astudillo, Silvio Amir, Chris Dyer, Alan W Black, and Isabel Trancoso. 2015a. Finding Function in Form: Composition Character Models for Open Vocabulary Word Representation. In Proceedings of EMNLP.
 
-\[31\]. Wang Ling, Isabel Trancoso, Chris Dyer, and Alan W Black. 2015b. Character-based Neural Machine Translation. arXiv:1511.04586.
+Ling et al. (2015b). Wang Ling, Isabel Trancoso, Chris Dyer, and Alan W Black. 2015b. Character-based Neural Machine Translation. arXiv:1511.04586.
 
-\[32\]. Zhiyun Lu, Vikas Sindhwani, and Tara N. Sainath. 2016. Learning Compact Recurrent Neural Networks. In Proceedings of ICASSP.
+Lu et al. (2016). Zhiyun Lu, Vikas Sindhwani, and Tara N. Sainath. 2016. Learning Compact Recurrent Neural Networks. In Proceedings of ICASSP.
 
-\[33\]. Minh-Thang Luong, Hieu Pham, and Christopher D. Manning. 2015. Effective Approaches to Attention-based Neural Machine Translation. In Proceedings of EMNLP.
+Luong et al. (2015). Minh-Thang Luong, Hieu Pham, and Christopher D. Manning. 2015. Effective Approaches to Attention-based Neural Machine Translation. In Proceedings of EMNLP.
 
-\[34\]. Zelda Mariet and Suvrit Sra. 2016. Diversity Networks. In Proceedings of ICLR.
+Mariet and Sra (2016). Zelda Mariet and Suvrit Sra. 2016. Diversity Networks. In Proceedings of ICLR.
 
-\[35\]. Lili Mou, Ge Li, Yan Xu, Lu Zhang, and Zhi Jin. 2015. Distilling Word Embeddings: An Encoding Approach. arXiv:1506.04488.
+Mou et al. (2015). Lili Mou, Ge Li, Yan Xu, Lu Zhang, and Zhi Jin. 2015. Distilling Word Embeddings: An Encoding Approach. arXiv:1506.04488.
 
-\[36\]. Kenton Murray and David Chiang. 2015. Auto-sizing Neural Networks: With Applications to N-Gram Language Models. In Proceedings of EMNLP.
+Murray and Chiang (2015). Kenton Murray and David Chiang. 2015. Auto-sizing Neural Networks: With Applications to N-Gram Language Models. In Proceedings of EMNLP.
 
-\[37\]. Franz J. Och. 2003. Minimum Error Rate Training in Statistical Machine Translation. In Proceedings of ACL.
+Och (2003). Franz J. Och. 2003. Minimum Error Rate Training in Statistical Machine Translation. In Proceedings of ACL.
 
-\[38\]. Kishore Papineni, Slim Roukos, Todd Ward, and Wei-Jing Zhu. 2002. BLEU: A Method for Automatic Evaluation of Machine Translation. In Proceedings of ICML.
+Papineni et al. (2002). Kishore Papineni, Slim Roukos, Todd Ward, and Wei-Jing Zhu. 2002. BLEU: A Method for Automatic Evaluation of Machine Translation. In Proceedings of ICML.
 
-\[39\]. Rohit Prabhavalkar, Ouais Alsharif, Antoine Bruguier, and Ian McGraw. 2016. On the Compression of Recurrent Neural Networks with an Application to LVCSR Acoustic Modeling for Embedded Speech Recognition. In Proceedings of ICASSP.
+Prabhavalkar et al. (2016). Rohit Prabhavalkar, Ouais Alsharif, Antoine Bruguier, and Ian McGraw. 2016. On the Compression of Recurrent Neural Networks with an Application to LVCSR Acoustic Modeling for Embedded Speech Recognition. In Proceedings of ICASSP.
 
-\[40\]. Adriana Romero, Nicolas Ballas, Samira Ebrahimi Kahou, Antoine Chassang, Carlo Gatta, and Yoshua Bengio. 2015. FitNets: Hints for Thin Deep Nets. In Proceedings of ICLR.
+Romero et al. (2015). Adriana Romero, Nicolas Ballas, Samira Ebrahimi Kahou, Antoine Chassang, Carlo Gatta, and Yoshua Bengio. 2015. FitNets: Hints for Thin Deep Nets. In Proceedings of ICLR.
 
-\[41\]. Stephane Ross, Geoffrey J. Gordon, and Drew Bagnell. 2011. A Reduction of Imitation Learning and Structured Prediction to No-Regret Online Learning. In Proceedings of AISTATS.
+Ross et al. (2011). Stephane Ross, Geoffrey J. Gordon, and Drew Bagnell. 2011. A Reduction of Imitation Learning and Structured Prediction to No-Regret Online Learning. In Proceedings of AISTATS.
 
-\[42\]. Alexander M. Rush, Sumit Chopra, and Jason Weston. 2015. A Neural Attention Model for Abstractive Sentence Summarization. In Proceedings of EMNLP.
+Rush et al. (2015). Alexander M. Rush, Sumit Chopra, and Jason Weston. 2015. A Neural Attention Model for Abstractive Sentence Summarization. In Proceedings of EMNLP.
 
-\[43\]. Abigail See, Minh-Thang Luong, and Christopher D. Manning. 2016. Compression of Neural Machine Translation via Pruning. In Proceedings of CoNLL.
+See et al. (2016). Abigail See, Minh-Thang Luong, and Christopher D. Manning. 2016. Compression of Neural Machine Translation via Pruning. In Proceedings of CoNLL.
 
-\[44\]. Iulian V. Serban, Allesandro Sordoni, Yoshua Bengio, Aaron Courville, and Joelle Pineau. 2016. Building End-to-End Dialogue Systems Using Generative Hierarchical Neural Network Models. In Proceedings of AAAI.
+Serban et al. (2016). Iulian V. Serban, Allesandro Sordoni, Yoshua Bengio, Aaron Courville, and Joelle Pineau. 2016. Building End-to-End Dialogue Systems Using Generative Hierarchical Neural Network Models. In Proceedings of AAAI.
 
-\[45\]. Shiqi Shen, Yong Cheng, Zhongjun He, Wei He, Hua Wu, Masong Sun, and Yang Liu. 2016. Minimum Risk Training for Neural Machine Translation. In Proceedings of ACL.
+Shen et al. (2016). Shiqi Shen, Yong Cheng, Zhongjun He, Wei He, Hua Wu, Masong Sun, and Yang Liu. 2016. Minimum Risk Training for Neural Machine Translation. In Proceedings of ACL.
 
-\[46\]. Suraj Srinivas and R. Venkatesh Babu. 2015. Data-free Parameter Pruning for Deep Neural Networks. BMVC.
+Srinivas and Babu (2015). Suraj Srinivas and R. Venkatesh Babu. 2015. Data-free Parameter Pruning for Deep Neural Networks. BMVC.
 
-\[47\]. Nitish Srivastava, Elman Mansimov, and Ruslan Salakhutdinov. 2015. Unsupervised Learning of Video Representations using LSTMs. Proceedings of ICML.
+Srivastava et al. (2015). Nitish Srivastava, Elman Mansimov, and Ruslan Salakhutdinov. 2015. Unsupervised Learning of Video Representations using LSTMs. Proceedings of ICML.
 
-\[48\]. Ilya Sutskever, Oriol Vinyals, and Quoc Le. 2014. Sequence to Sequence Learning with Neural Networks. In Proceedings of NIPS.
+Sutskever et al. (2014). Ilya Sutskever, Oriol Vinyals, and Quoc Le. 2014. Sequence to Sequence Learning with Neural Networks. In Proceedings of NIPS.
 
-\[49\]. Oriol Vinyals and Quoc Le. 2015. A Neural Conversational Model. In Proceedings of ICML Deep Learning Workshop.
+Vinyals and Le (2015). Oriol Vinyals and Quoc Le. 2015. A Neural Conversational Model. In Proceedings of ICML Deep Learning Workshop.
 
-\[50\]. Oriol Vinyals, Lukasz Kaiser, Terry Koo, Slave Petrov, Ilya Sutskever, and Geoffrey Hinton. 2015a. Grammar as a Foreign Language. In Proceedings of NIPS.
+Vinyals et al. (2015a). Oriol Vinyals, Lukasz Kaiser, Terry Koo, Slave Petrov, Ilya Sutskever, and Geoffrey Hinton. 2015a. Grammar as a Foreign Language. In Proceedings of NIPS.
 
-\[51\]. Oriol Vinyals, Alexander Toshev, Samy Bengio, and Dumitru Erhan. 2015b. Show and Tell: A Neural Image Caption Generator. In Proceedings of CVPR.
+Vinyals et al. (2015b). Oriol Vinyals, Alexander Toshev, Samy Bengio, and Dumitru Erhan. 2015b. Show and Tell: A Neural Image Caption Generator. In Proceedings of CVPR.
 
-\[52\]. Kelvin Xu, Jimma Ba, Ryan Kiros, Kyunghyun Cho, Aaron Courville, Ruslan Salakhutdinov, Richard Zemel, and Yoshua Bengio. 2015. Show, Attend and Tell: Neural Image Caption Generation with Visual Attention. In Proceedings of ICML.
+Xu et al. (2015). Kelvin Xu, Jimma Ba, Ryan Kiros, Kyunghyun Cho, Aaron Courville, Ruslan Salakhutdinov, Richard Zemel, and Yoshua Bengio. 2015. Show, Attend and Tell: Neural Image Caption Generation with Visual Attention. In Proceedings of ICML.
 
-\[53\]. Jie Zhou, Ying Cao, Xuguang Wang, Peng Li, and Wei Xu. 2016. Deep Recurrent Models with Fast-Forward Connections for Neural Machine Translation. In Proceedings of TACL.
+Zhou et al. (2016). Jie Zhou, Ying Cao, Xuguang Wang, Peng Li, and Wei Xu. 2016. Deep Recurrent Models with Fast-Forward Connections for Neural Machine Translation. In Proceedings of TACL.
 
 [^1]: https://github.com/harvardnlp/nmt-android
 

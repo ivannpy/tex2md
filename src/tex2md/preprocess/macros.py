@@ -5,7 +5,7 @@ import os
 import re
 
 from tex2md.util.io import read
-from tex2md.util.tex import balanced_end
+from tex2md.util.tex import balanced_end, bracket_end, skip_ws
 
 SIZES = r"(tiny|scriptsize|footnotesize|small|normalsize|large|Large|LARGE|huge|Huge)"
 
@@ -91,7 +91,7 @@ def local_style_macros(text, bdir):
                     break
                 i = m.end()
                 # skip argument specs up to the body's opening brace
-                while i < len(sty) and sty[i] != "{" or (i > 0 and sty[i - 1] == "\\"):
+                while i < len(sty) and (sty[i] != "{" or sty[i - 1] == "\\"):
                     if sty[i] == "\n" and sty[i + 1:i + 2] == "\n":
                         break
                     i += 1
@@ -193,45 +193,93 @@ def text_in_macro_bodies(text):
     return "".join(out)
 
 
-_PAIRED = re.compile(r"\\DeclarePairedDelimiter\*?\s*(?:\{\s*\\(?P<n1>[a-zA-Z]+)\s*\}|\\(?P<n2>[a-zA-Z]+))\s*(?=\{)")
+_PAIRED = re.compile(r"\\DeclarePairedDelimiter(?P<x>X(?:PP)?)?\*?\s*(?:\{\s*\\(?P<n1>[a-zA-Z]+)\s*\}|\\(?P<n2>[a-zA-Z]+))"
+                     r"\s*(?:\[(?P<nargs>\d)\])?\s*(?=\{)")
+
+
+def _one_line(body):
+    """A macro body without the "%" that end its lines in the source."""
+    return re.sub(r"%[^\n]*\n\s*", "", body + "\n").strip()
+
+
+def _glue(left, right):
+    """left + right, with a blank when that would otherwise join a control word and a letter (\\lVert + x)."""
+    return left + (" " if re.search(r"\\[a-zA-Z]+$", left) and re.match(r"[a-zA-Z]", right) else "") + right
 
 
 def expand_paired_delimiters(text):
     r"""mathtools ``\DeclarePairedDelimiter\parentheses{(}{)}``: pandoc ignores it and leaves ``\parentheses*{x}``
     in the equations. Drop the declaration and expand the uses: ``\name{x}`` -> ``( x )``, the starred form
-    ``\name*{x}`` -> ``\left( x \right)`` and ``\name[\big]{x}`` -> ``\bigl( x \bigr)``."""
+    ``\name*{x}`` -> ``\left( x \right)`` and ``\name[\big]{x}`` -> ``\bigl( x \bigr)``.
+    ``\DeclarePairedDelimiterX\name[2]{(}{)}{#1\,\delimsize\|\,#2}`` is expanded the same way, with its body
+    between the delimiters and ``\delimsize`` set to the size of the form used."""
     defs = {}
     while True:
         m = _PAIRED.search(text)
         if not m:
             break
-        e1 = balanced_end(text, m.end())
-        e2 = balanced_end(text, e1) if e1 > 0 and text[e1:e1 + 1] == "{" else -1
-        if e2 < 0:
+        ends, i = [], m.end()
+        # X: {left}{right}{body}; XPP: {pre}{left}{right}{post}{body}
+        for _ in range({None: 2, "X": 3, "XPP": 5}[m.group("x")]):
+            e = balanced_end(text, i) if text[i:i + 1] == "{" else -1
+            if e < 0:
+                break
+            ends.append((i, e))
+            i = skip_ws(text, e)
+        if len(ends) < {None: 2, "X": 3, "XPP": 5}[m.group("x")]:
             text = text[:m.start()] + text[m.end():]
             continue
-        defs[m.group("n1") or m.group("n2")] = (text[m.end() + 1:e1 - 1], text[e1 + 1:e2 - 1])
-        text = text[:m.start()] + text[e2:]
-    for name, (left, right) in defs.items():
+        parts = [text[a + 1:b - 1] for a, b in ends]
+        if m.group("x") == "XPP":
+            pre, left, right, post, body = parts
+        else:
+            pre, post = "", ""
+            left, right, body = (parts + [None])[:3]
+        defs[m.group("n1") or m.group("n2")] = (left, right, body, int(m.group("nargs") or 1), pre, post)
+        text = text[:m.start()] + text[ends[-1][1]:]
+    for name, (left, right, body, nargs, pre, post) in defs.items():
         use = re.compile(r"\\" + name + r"(?![a-zA-Z])(\*)?\s*(?:\[\s*(\\[a-zA-Z]+)\s*\])?\s*(?=\{)")
         pos = 0
         while True:
             m = use.search(text, pos)
             if not m:
                 break
-            e = balanced_end(text, m.end())
-            if e < 0:
+            args, e = [], m.end()
+            for _ in range(nargs):
+                j = skip_ws(text, e)
+                e2 = balanced_end(text, j) if text[j:j + 1] == "{" else -1
+                if e2 < 0:
+                    break
+                args.append(text[j + 1:e2 - 1])
+                e = e2
+            if len(args) < nargs:
                 pos = m.end()
                 continue
-            arg = text[m.end() + 1:e - 1]
+            size = m.group(2) or ""
+            inner = args[0]
+            if body is not None:
+                inner = _one_line(body)
+                for k, arg in enumerate(args, 1):
+                    inner = inner.replace(f"#{k}", arg)
+                middle = "\\middle" if m.group(1) else size
+                inner = re.sub(r"\\delimsize(?![a-zA-Z])\s*", lambda _m, mid=middle: mid, inner)
             if m.group(1):
-                rep = "\\left" + left + " " + arg + " \\right" + right
-            elif m.group(2):
-                rep = m.group(2) + "l" + left + " " + arg + " " + m.group(2) + "r" + right
+                rep = "\\left" + left + " " + inner + " \\right" + right
+            elif size:
+                rep = size + "l" + left + " " + inner + " " + size + "r" + right
             else:
-                rep = left + arg + right
-            text = text[:m.start()] + rep + text[e:]
+                rep = _glue(_glue(left, inner), right)
+            rep = _glue(_glue(pre, rep), post)
+            # "\\norm{x}y": the closing \\rVert must not run into the letter that follows the use
+            text = text[:m.start()] + _glue(rep, text[e:e + 1])[:-1 if e < len(text) else None] + text[e:]
             pos = m.start()
+        if re.search(r"\\" + name + r"(?![a-zA-Z])", text):
+            # still named inside another macro (\newcommand{\kl}{\operatorname{KL}\klxy}): a plain definition
+            # pandoc can expand when it expands that macro
+            inner = "#1" if body is None else re.sub(r"\\delimsize(?![a-zA-Z])\s*", "", _one_line(body))
+            plain = _glue(_glue(pre, _glue(_glue(left, inner), right)), post)
+            at = max(text.find("\\begin{document}"), 0)
+            text = text[:at] + "\\newcommand{\\" + name + "}[" + str(nargs) + "]{" + plain + "}\n" + text[at:]
     return text
 
 
@@ -253,3 +301,108 @@ def expand_delimited_macros(text):
         text = text[:m.start()] + text[e:]
         use = re.compile(r"\\" + name + r"(?![a-zA-Z])\s*(.*?)\\" + end + r"(?![a-zA-Z])", re.S)
         text = use.sub(lambda mm, body=body: body.replace("#1", mm.group(1)), text)
+
+
+_XSTRING = re.compile(r"\\(IfBeginWith|IfEndWith|IfSubStr|IfEq|IfStrEq|IfInteger|IfBlankTF)(?![a-zA-Z@])\*?")
+_NEWCOMMAND = re.compile(r"\\(?:re)?newcommand\*?\s*\{?\\(?P<name>[a-zA-Z]+)\}?\s*(?:\[(?P<n>\d)\])?\s*(?=\{)")
+
+
+def _xstring_value(cmd, args):
+    a, b = args[0].strip(), args[1].strip()
+    if cmd == "IfBeginWith":
+        return a.startswith(b)
+    if cmd == "IfEndWith":
+        return a.endswith(b)
+    if cmd == "IfSubStr":
+        return b in a
+    if cmd in ("IfEq", "IfStrEq"):
+        return a == b
+    if cmd == "IfInteger":
+        return bool(re.fullmatch(r"[+-]?\d+", a))
+    return not a      # IfBlankTF
+
+
+def expand_conditional_macros(text):
+    r"""A macro whose body decides with an xstring test (``\newcommand{\valdelta}[2]{#1\IfBeginWith{#2}{-}{red}{green}}``)
+    loses its arguments in pandoc, which does not know ``\IfBeginWith``: the delta printed next to every value of a
+    results table disappears. Those macros (and the ones that call them) are expanded here at each use, the tests
+    are decided on their now literal arguments, and the definitions are dropped."""
+    defs = {}
+    for m in _NEWCOMMAND.finditer(text):
+        end = balanced_end(text, m.end())
+        if end > 0:
+            defs[m.group("name")] = (int(m.group("n") or 0), text[m.end() + 1:end - 1], m.start(), end)
+    target = {n for n, d in defs.items() if _XSTRING.search(d[1])}
+    if not target:
+        return text
+    grew = True
+    while grew:       # a macro that calls one of them needs the same treatment
+        grew = False
+        for n, d in defs.items():
+            if n not in target and any(re.search(r"\\" + t + r"(?![a-zA-Z@])", d[1]) for t in target):
+                target.add(n)
+                grew = True
+    for _, _, start, end in sorted((defs[n] for n in target), key=lambda d: d[2], reverse=True):
+        text = text[:start] + text[end:]
+    use = re.compile(r"\\(" + "|".join(sorted(map(re.escape, target), key=len, reverse=True)) + r")(?![a-zA-Z@])")
+    for _ in range(20000):                 # a recursive macro would never end: give up on it
+        m = use.search(text)
+        if not m:
+            break
+        nargs, body, _, _ = defs[m.group(1)]
+        args, i = [], m.end()
+        for _k in range(nargs):
+            i = skip_ws(text, i)
+            e = balanced_end(text, i) if text[i:i + 1] == "{" else -1
+            if e < 0:
+                break
+            args.append(text[i + 1:e - 1])
+            i = e
+        if len(args) < nargs:
+            text = text[:m.start()] + text[m.end():]
+            continue
+        expanded = re.sub(r"#(\d)", lambda k, args=args: args[int(k.group(1)) - 1] if int(k.group(1)) <= len(args) else k.group(0), body)
+        text = text[:m.start()] + "{" + expanded + "}" + text[i:]
+    else:
+        return text
+    pos = 0
+    while True:                             # decide the tests whose arguments are literal
+        m = _XSTRING.search(text, pos)
+        if not m:
+            return text
+        groups, i = [], m.end()
+        for _k in range(4 if m.group(1) != "IfInteger" and m.group(1) != "IfBlankTF" else 3):
+            i = skip_ws(text, i)
+            e = balanced_end(text, i) if text[i:i + 1] == "{" else -1
+            if e < 0:
+                break
+            groups.append(text[i + 1:e - 1])
+            i = e
+        need = 3 if m.group(1) in ("IfInteger", "IfBlankTF") else 4
+        if len(groups) < need or any("#" in g for g in groups[:need - 2]) or any("\\" in g for g in groups[:need - 2]):
+            pos = m.end()
+            continue
+        chosen = groups[need - 2] if _xstring_value(m.group(1), groups) else groups[need - 1]
+        text = text[:m.start()] + chosen + text[i:]
+        pos = m.start()
+
+
+def drop_newcolumntype(text):
+    r"""``\newcolumntype{x}[1]{>{\centering}p{#1pt}}``: only LaTeX's own tabular reads it. The column letters it
+    defines are already turned into ``c`` (``centered_column_types``), and pandoc stops at its ``#1``."""
+    pos = 0
+    head = re.compile(r"\\newcolumntype\*?\s*(?=\{)")
+    while True:
+        m = head.search(text, pos)
+        if not m:
+            return text
+        end = balanced_end(text, m.end())          # {x}
+        i = skip_ws(text, end) if end > 0 else -1
+        if i >= 0 and text[i:i + 1] == "[":
+            i = skip_ws(text, bracket_end(text, i))
+        end = balanced_end(text, i) if i >= 0 and text[i:i + 1] == "{" else -1
+        if end < 0:
+            pos = m.end()
+            continue
+        text = text[:m.start()] + text[end:]
+        pos = m.start()

@@ -62,7 +62,12 @@ def cmd_frontmatter(a):
     if fm is not None:
         raise SystemExit(f"{a.file} already has front matter")
     meta = arxiv_meta(a.arxiv)
-    mn = [tuple(x.split("::", 1)) for x in a.mn]
+    mn = []
+    for value in a.mn:
+        book, sep, path = value.partition("::")
+        if not sep:
+            raise SystemExit(f"--mn expects BOOKMD5::PATH, got: {value}")
+        mn.append((book, path))
     new = build_frontmatter(meta, mn, a.source) + "\n" + text
     tmp = a.file + ".tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
@@ -76,7 +81,9 @@ def cmd_add_mn(a):
     fm, body = split_frontmatter(text)
     if fm is None:
         raise SystemExit(f"{a.file} has no front matter")
-    b, p = a.entry.split("::", 1)
+    b, sep, p = a.entry.partition("::")
+    if not sep:
+        raise SystemExit(f"expected BOOKMD5::PATH, got: {a.entry}")
     if b in fm:
         return
     entry = "  - bookmd5: " + b + "\n    path: " + yaml_str(p)
@@ -109,7 +116,8 @@ def cmd_check(a):
             print(f"NO MARGINNOTE    {f}")
             bad += 1
         for m in mn:
-            if not os.path.exists(os.path.join(MN_ROOT, m.get("path", ""))):
+            # an entry without path would join to the MarginNote folder itself, which always exists
+            if not m.get("path") or not os.path.exists(os.path.join(MN_ROOT, m["path"])):
                 print(f"MISSING PDF      {f}  {m['bookmd5'][:12]}  {m.get('path')}")
                 bad += 1
     print(f"{bad} problems")

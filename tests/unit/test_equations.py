@@ -46,3 +46,18 @@ def test_alignat_argument_and_multline():
 def test_align_with_an_author_label_and_nonumber_is_left_alone():
     src = r"\begin{align}\label{eq:a}x&=1\nonumber\\y&=2\end{align}"
     assert labels(src) == src
+
+
+def test_comments_are_not_read_as_equations_labels_or_row_ends():
+    src = ("%\\begin{equation}\n\\begin{align}\n a &= b % old: c \\\\\n   &+ c \\\\\n d &= e % \\label{no}\n\\end{align}\n"
+           "%\\end{equation}\n\\begin{equation} z % \\nonumber\n\\end{equation}")
+    out, nxt = label_numbered_equations(src)
+    assert out.count("\\label{tex2md-eq-") == 3 and nxt == 4
+    assert "% old: c \\\\\n   &+ c \\label{tex2md-eq-1}\\\\" in out        # the "\\" in the comment ends no row
+    assert "%\\begin{equation}" in out and "%\\end{equation}" in out
+
+
+def test_latex_shown_in_a_listing_is_not_labelled():
+    src = "\\begin{verbatim}\n\\begin{equation} shown \\end{equation}\n\\end{verbatim}\n\\begin{equation}x\\end{equation}"
+    out, nxt = label_numbered_equations(src)
+    assert out.count("\\label{tex2md-eq-") == 1 and "shown \\end{equation}" in out and nxt == 2

@@ -154,3 +154,56 @@ def test_a_figure_that_is_a_grid_of_images_stays_a_caption(tmp_path):
             r"\includegraphics{c.png}&\includegraphics{d.png}\end{tabular}\caption{Four panels.}\end{figure}")
     md = convert(tmp_path, body)
     assert md.strip() == "**Figura 1.** Four panels."
+
+
+def test_the_caption_lines_of_the_panels_are_kept_with_the_figure(tmp_path):
+    body = (r"\begin{figure}\includegraphics{a.png}\par\textit{(a) Sub one}\par \includegraphics{b.png}\par\textit{(b) Sub two}\par"
+            r"\caption{Main cap}\end{figure}")
+    md = convert(tmp_path, body)
+    assert "*(a) Sub one*" in md and "*(b) Sub two*" in md and "**Figura 1.** Main cap" in md
+    assert md.index("(a) Sub one") < md.index("(b) Sub two") < md.index("Main cap")
+
+
+def test_sample_texts_boxed_in_a_tabular_inside_a_figure_are_kept_in_full(tmp_path):
+    sample = "First paragraph of the sample text, long enough to be real text and not a label of an image.\n\nSecond paragraph of the sample, again with plenty of words in it.\n\nThird one that ends the sample text."
+    body = r"\begin{figure}\begin{tabular}{c}{" + sample + r"}\\\end{tabular}\caption{Samples from X}\label{f:s}\end{figure}"
+    md = convert(tmp_path, body, labels={"f:s": {"num": "17", "type": "figure"}})
+    assert "First paragraph of the sample text" in md and "Third one that ends the sample text." in md
+    assert captions(md) == ["Figura 17"] and "<table" not in md
+
+
+def test_a_one_cell_box_around_paragraphs_is_just_those_paragraphs(tmp_path):
+    body = r"\begin{table}\caption{Prompt}\begin{tabular}{c}{Please answer the question below.\par Then explain why.}\end{tabular}\end{table}"
+    md = convert(tmp_path, body)
+    assert md == "**Tabla 1.** Prompt\n\nPlease answer the question below.\n\nThen explain why.\n"
+
+
+def test_a_tabular_nested_in_a_cell_is_part_of_that_cell_and_gets_no_caption_line(tmp_path):
+    body = (r"\begin{table}\caption{Outer}\begin{tabular}{cc}\includegraphics{a} & \includegraphics{b} \\"
+            r"\begin{tabular}{l}(a) Linear \\ $X_t$\end{tabular} & \begin{tabular}{l}(b) Rectified\end{tabular} \\ plain & cell \\ \end{tabular}\end{table}")
+    md = convert(tmp_path, body)
+    assert captions(md) == ["Tabla 1"] and "<table" not in md
+    assert r"(a) Linear $X_t$" in md.replace(r"\(a\)", "(a)") and "plain" in md
+
+
+def test_a_listing_keeps_its_language_and_gets_its_caption_with_the_pdf_number(tmp_path):
+    body = (r"\begin{lstlisting}[language=Python, caption={\textbf{My} cap}, label={lst:x}]" "\ndef f(): pass\n" r"\end{lstlisting}"
+            "\n\n" r"\begin{lstlisting}[style=prompt]" "\nA prompt $5\n" r"\end{lstlisting}")
+    md = convert(tmp_path, body, labels={"lst:x": {"num": "2", "type": "lstlisting"}})
+    assert "**Listado 2.** **My** cap" in md and "``` python\ndef f(): pass\n```" in md
+    assert "style=" not in md and "{.python" not in md and "language=" not in md
+
+
+def test_a_cell_with_line_breaks_stays_in_a_pipe_table_with_br(tmp_path):
+    body = (r"\begin{table}\caption{Prompts}\begin{tabular}{ll}\toprule Use & Prompt \\ \midrule "
+            r"Rewrite & Summary:\newline ``''\newline body \\ \bottomrule\end{tabular}\end{table}")
+    md = convert(tmp_path, body)
+    assert "<table" not in md and "| Rewrite " in md and "<br>" in md
+
+
+def test_a_table_without_a_header_row_gets_its_first_row_as_header(tmp_path):
+    body = (r"\begin{table}\caption{No header}\begin{tabular}{lcc} Model & A & B \\ Ours & 1 & 2 \\ \end{tabular}\end{table}"
+            r"\begin{table}\caption{Spaced}\begin{tabular}{lcc} & & \\ Model & A & B \\ Ours & 1 & 2 \\ \end{tabular}\end{table}")
+    md = convert(tmp_path, body)
+    assert md.count("| Model |") == 2 and "|       |     |     |" not in md
+    assert md.count("|:------|:---:|:---:|") == 2

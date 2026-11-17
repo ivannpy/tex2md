@@ -1,6 +1,7 @@
 """Publisher / PubMed Central JATS XML -> Markdown body, converted with pandoc."""
 from __future__ import annotations
 
+import html
 import os
 import re
 import subprocess
@@ -27,9 +28,10 @@ def jats_body(src):
         inner = (b.group(1) if b else inner).strip()
         inner = re.sub(r"^\$\$?|\$\$?$", "", inner).strip()
         return mm.group(1) + inner + mm.group(3)
+    # a CDATA section is literal text: without its markers "<" and "&" must be escaped to stay valid XML
+    xml = re.sub(r"<!\[CDATA\[(.*?)\]\]>", lambda mm: html.escape(mm.group(1), quote=False), xml, flags=re.S)
     # PMC wraps every formula in a full LaTeX document
     xml = re.sub(r"(<tex-math[^>]*>)(.*?)(</tex-math>)", tex, xml, flags=re.S)
-    xml = re.sub(r"<!\[CDATA\[|\]\]>", "", xml)
     with tempfile.TemporaryDirectory() as tmp:
         path = os.path.join(tmp, "article.xml")
         with open(path, "w", encoding="utf-8") as fh:

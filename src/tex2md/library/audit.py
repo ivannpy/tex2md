@@ -15,6 +15,7 @@ from tex2md.config import CACHE
 from tex2md.diagnostics import SEVERITIES, Diagnostic, scan_markdown
 
 KINDS = (("table", "Tabla"), ("figure", "Figura"))
+_CAPTION_LINE = r"^[ \t>]*\*\*"        # a caption can sit in a list item or a quote: indented, or after ">"
 
 
 @dataclass
@@ -34,7 +35,7 @@ def audit_file(path: str | Path) -> Audit | None:
     aid = re.search(r'^arxiv: "([^"]+)"', text, re.M)
     ver = re.search(r'^arxiv_version: "([^"]+)"', text, re.M)
     result = Audit(file=os.path.basename(str(path)))
-    result.unnumbered = len(re.findall(r"^\*\*(?:Tabla|Figura)\.\*\*", text, re.M))
+    result.unnumbered = len(re.findall(_CAPTION_LINE + r"(?:Tabla|Figura)\.\*\*", text, re.M))
     result.diagnostics = scan_markdown(text.split("\n---\n", 1)[-1])
     if not aid:
         result.no_data = True
@@ -46,7 +47,7 @@ def audit_file(path: str | Path) -> Audit | None:
         return result
     for kind, word in KINDS:
         expected = [f["num"] for f in floats if f["kind"] == kind]
-        got = set(re.findall(r"^\*\*" + word + r" ([A-Z0-9.]+)\.\*\*", text, re.M))
+        got = set(re.findall(_CAPTION_LINE + word + r" ([A-Z0-9.]+)\.\*\*", text, re.M))
         if not expected:
             continue
         result.missing += [f"{word} {n}" for n in expected if n not in got]

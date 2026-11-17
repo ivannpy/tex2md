@@ -5,19 +5,32 @@ import contextlib
 import re
 
 from tex2md.preprocess.algorithms import _brace_args
-from tex2md.util.tex import balanced_end, group, unwrap
+from tex2md.util.tex import balanced_end, bracket_end, group, unwrap
 
 
 def escape_citation_ampersands(text):
     """Author-year labels such as "(Wang & Cho, 2019)" inside a tabular add a phantom column."""
     return re.sub(r"\\begin\{tabular\*?\}.*?\\end\{tabular\*?\}",
-                  lambda m: re.sub(r"\(([^()&\\]*?)\s&\s([^()&\\]*?)\)", r"(\1 \\& \2)", m.group(0)),
+                  lambda m: re.sub(r"\(([^()&\\]*?)\s&\s((?:[^()&\\]|\([^()&\\]*\))*?)\)", r"(\1 \\& \2)", m.group(0)),
                   text, flags=re.S)
+
+
+def _skip_column_args(spec, i):
+    """Index after the ``[..]`` / ``{..}`` arguments of a column type (``S[table-format=2.1]``, ``w{c}{2cm}``)."""
+    while i < len(spec) and spec[i] in "[{":
+        if spec[i] == "[":
+            end = spec.find("]", i)
+            i = end + 1 if end >= 0 else len(spec)
+        else:
+            end = balanced_end(spec, i)
+            i = end if end > 0 else len(spec)
+    return i
 
 
 def simple_colspec(spec):
     """Reduce a tabular column spec to plain l/c/r letters: drops @{..} !{..} >{..} <{..} and |,
-    maps p/m/b{..} to l, expands *{n}{..}, and treats any other letter (C, Y, X, ...) as c."""
+    maps p/m/b{..} to l, expands *{n}{..}, and treats any other letter (C, Y, X, S, ...) as c,
+    together with the arguments it takes (``S[table-format=2.1]``, ``w{c}{2cm}``, ``X[2,l]``)."""
     out, i = [], 0
     while i < len(spec):
         c = spec[i]
@@ -41,13 +54,13 @@ def simple_colspec(spec):
             i += 1
         elif c == "L":
             out.append("l")
-            i += 1
+            i = _skip_column_args(spec, i + 1)
         elif c == "R":
             out.append("r")
-            i += 1
+            i = _skip_column_args(spec, i + 1)
         elif c.isalpha():
             out.append("c")
-            i += 1
+            i = i + 1 if c == "c" else _skip_column_args(spec, i + 1)
         else:
             i += 1
     return "".join(out) or "c"
@@ -56,7 +69,8 @@ def simple_colspec(spec):
 def normalize_tabulars(text):
     """Make every tabular readable by pandoc: plain column specs, and one-cell tabulars used to
     stack lines inside a cell (\\begin{tabular}{@{}c@{}}a\\\\b\\end{tabular}) or \\makecell become plain text."""
-    head = re.compile(r"\\begin\{(tabular\*?)\}(?:\{[^{}]*\})?(?:\[[a-z]\])?(?=\{)")
+    # tabular* takes a width before the column spec; a plain tabular does not (its next group is the first cell)
+    head = re.compile(r"\\begin\{(tabular\*\}\s*\{[^{}]*|tabular)\}\s*(?:\[[a-z]\])?\s*(?=\{)")
     pos = 0
     while True:
         m = head.search(text, pos)
@@ -68,10 +82,11 @@ def normalize_tabulars(text):
             continue
         spec = text[m.end() + 1:e - 1]
         if re.fullmatch(r"@\{\}[lcr]@\{\}", spec):
-            end = text.find("\\end{" + m.group(1) + "}", e)
+            close = "\\end{tabular*}" if m.group(1).startswith("tabular*") else "\\end{tabular}"
+            end = text.find(close, e)
             if end > 0 and "\\begin{tabular" not in text[e:end]:
                 body = re.sub(r"\\\\(?:\[[^\]]*\])?", " ", text[e:end])
-                text = text[:m.start()] + body + text[end + len("\\end{" + m.group(1) + "}"):]
+                text = text[:m.start()] + body + text[end + len(close):]
                 pos = m.start()
                 continue
         new = simple_colspec(spec)
@@ -189,3 +204,57 @@ def simplify_longtable_specs(text):
         new = "\\begin{longtable}{" + simple_colspec(text[start + 1:e - 1]) + "}"
         text = text[:m.start()] + new + text[e:]
         pos = m.start() + len(new)
+
+
+def cr_to_row_end(text):
+    r"""``\cr`` ends a row in plain TeX tables (and in some authors' tabulars): LaTeX takes it, pandoc does not and the
+    whole table turns into a paragraph of cells. Inside a tabular it becomes ``\\``."""
+    def one(m):
+        return re.sub(r"\\cr(?![a-zA-Z@])", lambda _m: "\\\\", m.group(0))
+    return re.sub(r"\\begin\{(tabular\*?|longtable\*?|tabularx|tabulary|array|NiceTabular\*?)\}.*?\\end\{\1\}", one, text, flags=re.S)
+
+
+_ARGS_GLUED = {"multicolumn": 3, "multirow": 3}
+
+
+def tighten_span_arguments(text):
+    r"""``\multicolumn{1}{l}`` + a line break + ``{Text}``: LaTeX reads the three arguments across the break, pandoc stops
+    at it and turns the whole table into a paragraph (caption and numbers lost). The blanks between the arguments of
+    ``\multicolumn`` and ``\multirow`` are taken out (an optional ``[..]`` of ``\multirow`` is kept)."""
+    pattern = re.compile(r"\\(multicolumn|multirow)(?![a-zA-Z@])\*?")
+    out, pos = [], 0
+    for m in pattern.finditer(text):
+        if m.start() < pos:
+            continue
+        i, parts, groups, ok = m.end(), [], 0, True
+        while groups < _ARGS_GLUED[m.group(1)]:
+            j = i
+            while j < len(text) and text[j] in " \t\n":
+                j += 1
+            if text[j:j + 1] == "[" and m.group(1) == "multirow" and not parts:       # \multirow[vpos]{n}{width}{text}
+                k = bracket_end(text, j)
+                if k < 0:
+                    ok = False
+                    break
+                parts.append(text[j:k])
+                i = k
+                continue
+            e = balanced_end(text, j) if text[j:j + 1] == "{" else -1
+            if e < 0:
+                if groups == _ARGS_GLUED[m.group(1)] - 1 and text[j:j + 1] in ("&", "}", "\\"):
+                    parts.append("{}")           # \multirow{2}{*} with no text: the cell ends where the text should be
+                    groups += 1
+                    i = j
+                    break
+                ok = False
+                break
+            parts.append(text[j:e])
+            groups += 1
+            i = e
+        if not ok:
+            continue
+        parts[-1] = tighten_span_arguments(parts[-1])       # (a \multirow inside the text of a \multicolumn)
+        out.append(text[pos:m.end()] + "".join(parts))
+        pos = i
+    out.append(text[pos:])
+    return "".join(out)

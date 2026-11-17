@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: ed3f1b07f041e91fa507d541a6880ca7bdcdaaf16202a30dbc19401537baa508
     path: "PCIC/Tesis/OPD/Reinforcement Learning from Human Feedback A short introduction to RLHF and post-training focused on language models.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-16
+converted: 2026-11-17
 ---
 
 # Reinforcement Learning from Human Feedback
@@ -387,9 +387,7 @@ For a richer example with continuous dynamics, consider the classic *CartPole* (
 
 - **State ($s_t$)**: the cart position/velocity and pole angle/angular velocity:
 
-  
-
-$$\begin{equation}
+  $$\begin{equation}
   \tag{4}{s_t = (x_t,\,\dot{x}_t,\,\theta_t,\,\dot{\theta}_t).}
   \end{equation}$$
 
@@ -399,31 +397,21 @@ $$\begin{equation}
 
 - **Dynamics / transition ($p(s_{t+1}\mid s_t,a_t)$)**: in many environments the dynamics are deterministic (so $p$ is a point mass) and can be written as $s_{t+1} = f(s_t,a_t)$ via Euler integration with step size $\Delta t$. A standard simplified CartPole update uses the constants cart mass $m_c$, pole mass $m_p$, pole half-length $l$, and gravity $g$ ($\alpha$ is a mass-normalized intermediate with acceleration units):
 
-  
-
-$$\begin{equation}
+  $$\begin{equation}
   \tag{5}{\alpha = \frac{a_t + m_p l\,\dot{\theta}_t^2\sin\theta_t}{m_c + m_p}}
   \end{equation}$$
 
-  
-
-$$\begin{equation}
+  $$\begin{equation}
   \tag{6}{\ddot{\theta}_t = \frac{g\sin\theta_t - \cos\theta_t\,\alpha}{l\left(\tfrac{4}{3} - \frac{m_p\cos^2\theta_t}{m_c + m_p}\right)}}
   \end{equation}$$
 
-  
-
-$$\begin{equation}
+  $$\begin{equation}
   \tag{7}{\ddot{x}_t = \alpha - \frac{m_p l\,\ddot{\theta}_t\cos\theta_t}{m_c + m_p}}
   \end{equation}$$
 
-  
-
-$$\begin{equation}
+  $$\begin{equation}
   \tag{8}{x_{t+1}=x_t+\Delta t\,\dot{x}_t,\quad \dot{x}_{t+1}=\dot{x}_t+\Delta t\,\ddot{x}_t,}
-  \end{equation}$$
-
-$$\begin{equation}
+  \end{equation}$$ $$\begin{equation}
   \tag{9}{\theta_{t+1}=\theta_t+\Delta t\,\dot{\theta}_t,\quad \dot{\theta}_{t+1}=\dot{\theta}_t+\Delta t\,\ddot{\theta}_t.}
   \end{equation}$$
 
@@ -582,7 +570,7 @@ Instruction fine-tuning generally is covered extensively elsewhere and is superv
 
 The post-training process begins with defining a pattern to format user queries so that they are easily readable by a language model that processes information through a tokenizer. When using a pretrained language model, the prompting is quite simple. The model only knows a few tokens: a beginning-of-sequence token (e.g., `<bos_token>`), an end-of-sequence token (e.g., `<eos_token>`), and a padding token (to manage training on batches with empty components). This means, to prompt a base model, the user inputs a sequence of tokens for the model to continue from, such as:
 
-\<bos_token\> The capital of the United States is
+    <bos_token> The capital of the United States is
 
 Then, the model would generate tokens until it runs out of its context window, or it generates the end-of-sequence token.
 
@@ -590,15 +578,40 @@ All post-training stages, from instruction tuning to RLHF and other methods, rel
 
 An example which we will break down is below:
 
-{% if messages\[0\]\['role'\] == 'system' %} {# If the conversation begins with a system message, treat it as a special first turn. We set an offset so the user/assistant alternation check lines up correctly. #} {% set offset = 1 %} {% else %} {# No system message: user should be the first non-empty turn. #} {% set offset = 0 %} {% endif %}
+    {% if messages[0]['role'] == 'system' %}
+        {# If the conversation begins with a system message, treat it as a special first turn.
+           We set an offset so the user/assistant alternation check lines up correctly. #}
+        {% set offset = 1 %}
+    {% else %}
+        {# No system message: user should be the first non-empty turn. #}
+        {% set offset = 0 %}
+    {% endif %}
 
-{# Emit the beginning-of-sequence token (model-specific). #} {{ bos_token }}
+    {# Emit the beginning-of-sequence token (model-specific). #}
+    {{ bos_token }}
 
-{# Serialize each message into the model's chat-markup tokens. #} {% for message in messages %} {# Enforce role alternation: (system), user, assistant, user, assistant, ... The boolean expression compares "is this a user message?" against whether the current index (plus offset) is expected to be user or assistant. #} {% if (message\['role'\] == 'user') != (loop.index0 % 2 == offset) %} {{ raise_exception('Conversation roles must alternate user/assistant/user/assistant/...') }} {% endif %}
+    {# Serialize each message into the model's chat-markup tokens. #}
+    {% for message in messages %}
+        {# Enforce role alternation: (system), user, assistant, user, assistant, ...
+           The boolean expression compares "is this a user message?" against whether the
+           current index (plus offset) is expected to be user or assistant. #}
+        {% if (message['role'] == 'user') != (loop.index0 % 2 == offset) %}
+            {{ raise_exception('Conversation roles must alternate user/assistant/user/assistant/...') }}
+        {% endif %}
 
-{# Wrap each message with special tokens: - \<\|im_start\|\>\<role\>\\n - message content (trimmed) - \<\|im_end\|\>\\n This produces a single flat token sequence the LM can train on. #} {{ '\<\|im_start\|\>' + message\['role'\] + '\\n' + message\['content'\] \| trim + '\<\|im_end\|\>\\n' }} {% endfor %}
+        {# Wrap each message with special tokens:
+           - <|im_start|><role>\n
+           - message content (trimmed)
+           - <|im_end|>\n
+           This produces a single flat token sequence the LM can train on. #}
+        {{ '<|im_start|>' + message['role'] + '\n' + message['content'] | trim + '<|im_end|>\n' }}
+    {% endfor %}
 
-{# Optionally append an "assistant" start tag with no content. This cues generation to continue from the assistant role. #} {% if add_generation_prompt %} {{ '\<\|im_start\|\>assistant\\n' }} {% endif %}
+    {# Optionally append an "assistant" start tag with no content.
+       This cues generation to continue from the assistant role. #}
+    {% if add_generation_prompt %}
+        {{ '<|im_start|>assistant\n' }}
+    {% endif %}
 
 This is the raw code for transforming a list of dictionaries in Python containing messages and roles into tokens that a language model can predict from.
 
@@ -610,15 +623,27 @@ Next, the two other roles are straightforward: **user** holds the messages from 
 
 In order to translate all this information into tokens, we use the code listing above that we started with. The model has a series of *special tokens* that separate the various messages from each other. If we run the above code with the example query “How many helicopters can a human eat in one sitting?”, the token sequence passed into the model would look as follows:
 
-\<\|im_start\|\>system You are a friendly chatbot who always responds in the style of a pirate\<\|im_end\|\> \<\|im_start\|\>user How many helicopters can a human eat in one sitting?\<\|im_end\|\> \<\|im_start\|\>assistant
+    <|im_start|>system
+    You are a friendly chatbot who always responds in the style of a pirate<|im_end|>
+    <|im_start|>user
+    How many helicopters can a human eat in one sitting?<|im_end|>
+    <|im_start|>assistant
 
-Notice how the final tokens in the sequence are `<im_start>assistant`. This is how the model knows to continue generating tokens until it finally generates its end-of-sequence token, which in this case is `<im_end>`.
+Notice how the final tokens in the sequence are `<|im_start|>assistant`. This is how the model knows to continue generating tokens until it finally generates its end-of-sequence token, which in this case is `<|im_end|>`.
 
 By packing all question-answer pair data (and downstream preference tuning data) into this format, modern language models follow it with perfect consistency. This is the language that instruction-tuned models use to exchange information with users and the models running on GPUs or other computing devices.
 
 The behavior can be extended naively to multiple turns, as shown below:
 
-\<\|im_start\|\>system You are a friendly chatbot who always responds in the style of a pirate\<\|im_end\|\> \<\|im_start\|\>user How many helicopters can a human eat in one sitting?\<\|im_end\|\> \<\|im_start\|\>assistant Oh just 6.\<\|im_end\|\> \<\|im_start\|\>user Are you sure about that?\<\|im_end\|\> \<\|im_start\|\>assistant
+    <|im_start|>system
+    You are a friendly chatbot who always responds in the style of a pirate<|im_end|>
+    <|im_start|>user
+    How many helicopters can a human eat in one sitting?<|im_end|>
+    <|im_start|>assistant
+    Oh just 6.<|im_end|>
+    <|im_start|>user
+    Are you sure about that?<|im_end|>
+    <|im_start|>assistant
 
 In the open ecosystem, the standard method for applying the chat template to a list of messages uses a Jinja snippet stored in the tokenizer configuration, as `apply_chat_template`.
 
@@ -626,11 +651,18 @@ The above chat template is a derivative of OpenAI’s Chat Markup Language (Chat
 
 Many other chat templates exist. Some other examples include Zephyr’s \[26\]:
 
-\<\|system\|\> You are a friendly chatbot who always responds in the style of a pirate\</s\> \<\|user\|\> How many helicopters can a human eat in one sitting?\</s\> \<\|assistant\|\>
+    <|system|>
+    You are a friendly chatbot who always responds in the style of a pirate</s>
+    <|user|>
+    How many helicopters can a human eat in one sitting?</s>
+    <|assistant|>
 
 Or Tülu’s:
 
-\<\|user\|\> How are you doing? \<\|assistant\|\> I'm just a computer program, so I don't have feelings, but I'm functioning as expected. How can I assist you today?\<\|endoftext\|\>
+    <|user|>
+    How are you doing?
+    <|assistant|>
+    I'm just a computer program, so I don't have feelings, but I'm functioning as expected. How can I assist you today?<|endoftext|>
 
 Beyond this, many chat templates include formatting and other tokens for tasks such as tool-use.
 
@@ -670,9 +702,10 @@ The companion code repository includes a small SFT training script in `code/inst
 
 1.  **Run the canonical SFT example and watch the base$\to$assistant transition.** Run:
 
-    cd code/ uv run python -m instruction_tuning.train --config instruction_tuning/configs/sft_olmo2_1b.yaml
+        cd code/
+        uv run python -m instruction_tuning.train --config instruction_tuning/configs/sft_olmo2_1b.yaml
 
-    This trains `allenai/OLMo-2-0425-1B` (base) on `HuggingFaceH4/no_robots` and prints generations for a fixed prompt pool every 50 optimizer steps. At step 0 the base model rambles, repeats the prompt, and emits malformed role markers; after a few hundred steps the same prompts produce concise answers that terminate at `<endoftext>`. This is the sanity check for instruction tuning — the same loss function as pretraining, but applied to a chat template with prompt tokens masked.
+    This trains `allenai/OLMo-2-0425-1B` (base) on `HuggingFaceH4/no_robots` and prints generations for a fixed prompt pool every 50 optimizer steps. At step 0 the base model rambles, repeats the prompt, and emits malformed role markers; after a few hundred steps the same prompts produce concise answers that terminate at `<|endoftext|>`. This is the sanity check for instruction tuning — the same loss function as pretraining, but applied to a chat template with prompt tokens masked.
 
 2.  **Sweep the learning rate.** Copy `sft_olmo2_1b.yaml` and try `lr` values of `1e-6`, `5e-6`, and `5e-5` while holding everything else fixed. Inspect at which learning rate the model first answers and stops cleanly versus when it overfits and starts producing template-shaped slop. This is the practical version of the “one to two orders of magnitude below pretraining” guidance above.
 
@@ -768,27 +801,68 @@ Other implementation options exist, such as just taking a linear layer directly 
 
 Implementing the reward modeling loss is quite simple. More of the implementation challenge is on setting up a separate data loader and inference pipeline. Given the correct dataloader with tokenized, chosen and rejected prompts with completions, the loss is implemented as:
 
-**import** torch.nn **as** nn *\# inputs_chosen / inputs_rejected include the prompt tokens x and the respective* *\# completion tokens (y_c or y_r) that the reward model scores jointly.* rewards_chosen = model(\*\*inputs_chosen) rewards_rejected = model(\*\*inputs_rejected)
+    import torch.nn as nn
+    # inputs_chosen / inputs_rejected include the prompt tokens x and the respective
+    # completion tokens (y_c or y_r) that the reward model scores jointly.
+    rewards_chosen = model(**inputs_chosen)
+    rewards_rejected = model(**inputs_rejected)
 
-loss = -nn.functional.logsigmoid(rewards_chosen - rewards_rejected).mean()
+    loss = -nn.functional.logsigmoid(rewards_chosen - rewards_rejected).mean()
 
 As for the bigger picture, this is often within a causal language model (a model that generates tokens left-to-right, predicting each token conditioned on all previous ones) that has an additional head added (and learned with the above loss) that transitions from the final hidden state to the score of the inputs. The code takes in standard transformer inputs – `input_ids` (tokenized text) and `attention_mask` (which marks real tokens vs. padding) – and extracts the hidden state (the model’s internal representation of the input) at the last real token, which is then passed through a linear layer to produce a scalar reward. This model will have a structure as follows:
 
-**import** torch **import** torch.nn **as** nn **import** torch.nn.functional **as** F
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
 
-**class** BradleyTerryRewardModel(nn.Module): *"""* *Standard scalar reward model for Bradley-Terry preference learning.*
+    class BradleyTerryRewardModel(nn.Module):
+        """
+        Standard scalar reward model for Bradley-Terry preference learning.
 
-*Usage (pairwise BT loss):* *rewards_chosen = model(\*\*inputs_chosen) \# (batch,)* *rewards_rejected = model(\*\*inputs_rejected) \# (batch,)* *loss = -F.logsigmoid(rewards_chosen - rewards_rejected).mean()* *"""* **def** \_\_init\_\_(self, base_lm): super().\_\_init\_\_() self.lm = base_lm *\# e.g., AutoModelForCausalLM* self.head = nn.Linear(self.lm.config.hidden_size, 1)
+        Usage (pairwise BT loss):
+            rewards_chosen = model(**inputs_chosen)    # (batch,)
+            rewards_rejected = model(**inputs_rejected)  # (batch,)
+            loss = -F.logsigmoid(rewards_chosen - rewards_rejected).mean()
+        """
+        def __init__(self, base_lm):
+            super().__init__()
+            self.lm = base_lm  # e.g., AutoModelForCausalLM
+            self.head = nn.Linear(self.lm.config.hidden_size, 1)
 
-**def** \_sequence_rep(self, hidden, attention_mask): *"""* *Get a single vector per sequence to score.* *Default: last non-padding token (EOS token); if no mask, last token.* *hidden: (batch, seq_len, hidden_size)* *attention_mask: (batch, seq_len)* *"""*
+        def _sequence_rep(self, hidden, attention_mask):
+            """
+            Get a single vector per sequence to score.
+            Default: last non-padding token (EOS token); if no mask, last token.
+            hidden: (batch, seq_len, hidden_size)
+            attention_mask: (batch, seq_len)
+            """
 
-*\# Index of last non-pad token in each sequence* *\# attention_mask is 1 for real tokens, 0 for padding* lengths = attention_mask.sum(dim=1) - 1 *\# (batch,)* batch_idx = torch.arange(hidden.size(0), device=hidden.device) **return** hidden\[batch_idx, lengths\] *\# (batch, hidden_size)*
+            # Index of last non-pad token in each sequence
+            # attention_mask is 1 for real tokens, 0 for padding
+            lengths = attention_mask.sum(dim=1) - 1  # (batch,)
+            batch_idx = torch.arange(hidden.size(0), device=hidden.device)
+            return hidden[batch_idx, lengths]  # (batch, hidden_size)
 
-**def** forward(self, input_ids, attention_mask): *"""* *A forward pass designed to show inference structure of a standard reward model.* *To train one, this function will need to be modified to compute rewards from both* *chosen and rejected inputs, applying the loss above.* *"""* outputs = self.lm( input_ids=input_ids, attention_mask=attention_mask, output_hidden_states=True, return_dict=True, ) *\# Final hidden states: (batch, seq_len, hidden_size)* hidden = outputs.hidden_states\[-1\]
+        def forward(self, input_ids, attention_mask):
+            """
+            A forward pass designed to show inference structure of a standard reward model.
+            To train one, this function will need to be modified to compute rewards from both
+             chosen and rejected inputs, applying the loss above.
+            """
+            outputs = self.lm(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                output_hidden_states=True,
+                return_dict=True,
+            )
+            # Final hidden states: (batch, seq_len, hidden_size)
+            hidden = outputs.hidden_states[-1]
 
-*\# One scalar reward per sequence: (batch,)* seq_repr = self.\_sequence_rep(hidden, attention_mask) rewards = self.head(seq_repr).squeeze(-1)
+            # One scalar reward per sequence: (batch,)
+            seq_repr = self._sequence_rep(hidden, attention_mask)
+            rewards = self.head(seq_repr).squeeze(-1)
 
-**return** rewards
+            return rewards
 
 In this section and what follows, most of the implementation complexity for reward models (and much of post-training) is around constructing the data-loaders correctly and distributed learning systems. Note, when training reward models, the most common practice is to train for only 1 epoch to avoid overfitting.
 
@@ -832,19 +906,62 @@ Implementing an outcome reward model (and other types, as we’ll see with the P
 
 The model structure could follow as:
 
-**import** torch.nn **as** nn **import** torch.nn.functional **as** F
+    import torch.nn as nn
+    import torch.nn.functional as F
 
-**class** OutcomeRewardModel(nn.Module): **def** \_\_init\_\_(self, base_lm): super().\_\_init\_\_() self.lm = base_lm *\# e.g., AutoModelForCausalLM* self.head = nn.Linear(self.lm.config.hidden_size, 1)
+    class OutcomeRewardModel(nn.Module):
+        def __init__(self, base_lm):
+            super().__init__()
+            self.lm = base_lm  # e.g., AutoModelForCausalLM
+            self.head = nn.Linear(self.lm.config.hidden_size, 1)
 
-**def** forward(self, input_ids, attention_mask=None, labels=None): *"""* *input_ids contains a full prompt+completion sequence.* *labels is token-aligned: prompt tokens are -100, and each completion* *token repeats the sequence outcome label (1=correct, 0=incorrect).* *If labels=None, this is an inference-only forward pass and the loss is* *returned as None.* *"""* outputs = self.lm( input_ids=input_ids, attention_mask=attention_mask, output_hidden_states=True, return_dict=True, ) *\# Final hidden states: (batch, seq_len, hidden_size)* hidden = outputs.hidden_states\[-1\] *\# One scalar logit per token: (batch, seq_len)* logits = self.head(hidden).squeeze(-1)
+        def forward(self, input_ids, attention_mask=None, labels=None):
+            """
+            input_ids contains a full prompt+completion sequence.
+            labels is token-aligned: prompt tokens are -100, and each completion
+             token repeats the sequence outcome label (1=correct, 0=incorrect).
+            If labels=None, this is an inference-only forward pass and the loss is
+             returned as None.
+            """
+            outputs = self.lm(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                output_hidden_states=True,
+                return_dict=True,
+            )
+            # Final hidden states: (batch, seq_len, hidden_size)
+            hidden = outputs.hidden_states[-1]
+            # One scalar logit per token: (batch, seq_len)
+            logits = self.head(hidden).squeeze(-1)
 
-*\# Inference-only forward pass: no loss is computed.* **if** labels **is** None: **return** None, logits *\# Only compute loss on completion tokens (labels 0 or 1)* *\# Prompt tokens have labels = -100* mask = labels != -100 loss = None **if** mask.any(): loss = F.binary_cross_entropy_with_logits( logits\[mask\], labels\[mask\].float() ) **else**: loss = logits.sum() \* 0 **return** loss, logits
+            # Inference-only forward pass: no loss is computed.
+            if labels is None:
+                return None, logits
+            # Only compute loss on completion tokens (labels 0 or 1)
+            # Prompt tokens have labels = -100
+            mask = labels != -100
+            loss = None
+            if mask.any():
+                loss = F.binary_cross_entropy_with_logits(
+                    logits[mask], labels[mask].float()
+                )
+            else:
+                loss = logits.sum() * 0
+            return loss, logits
 
 A simplified version of the loss follows:
 
-*\# Feed the full prompt+completion sequence once; no token sampling happens here.* *\# Assume model already has: model.lm (backbone) + model.head* hidden = model.lm(\*\*inputs, output_hidden_states=True).hidden_states\[-1\] logits_per_token = model.head(hidden).squeeze(-1) *\# (batch, seq_len)* *\# This will sometimes be compressed as model.forward() in other implementations*
+    # Feed the full prompt+completion sequence once; no token sampling happens here.
+    # Assume model already has: model.lm (backbone) + model.head
+    hidden = model.lm(**inputs, output_hidden_states=True).hidden_states[-1]
+    logits_per_token = model.head(hidden).squeeze(-1)  # (batch, seq_len)
+    # This will sometimes be compressed as model.forward() in other implementations
 
-*\# Binary labels: 1=correct, 0=incorrect (prompt tokens masked as -100)* mask = labels != -100 loss = F.binary_cross_entropy_with_logits( logits_per_token\[mask\], labels\[mask\].float() )
+    # Binary labels: 1=correct, 0=incorrect (prompt tokens masked as -100)
+    mask = labels != -100
+    loss = F.binary_cross_entropy_with_logits(
+        logits_per_token[mask], labels[mask].float()
+    )
 
 The important intuition here is that an ORM will output a probability of correctness at every token in the sequence (judged only by the final answer – reasoning errors are not captured in the ORM training process). This can be a noisy process, as the updates and loss propagate per token depending on outcomes and attention mappings.
 
@@ -870,9 +987,12 @@ where $s$ is a sampled chain-of-thought with $K$ annotated steps, $y_{s_i} \in \
 
 Here’s an example of how this per-step label can be packaged in a trainer, from Hugging Face’s TRL (Transformer Reinforcement Learning) \[47\]:
 
-*\# Get the ID of the separator token and add it to the completions* separator_ids = tokenizer.encode(step_separator, add_special_tokens=False) completions_ids = \[completion + separator_ids **for** completion **in** completions_ids\]
+    # Get the ID of the separator token and add it to the completions
+    separator_ids = tokenizer.encode(step_separator, add_special_tokens=False)
+    completions_ids = [completion + separator_ids for completion in completions_ids]
 
-*\# Create the label* labels = \[\[-100\] \* (len(completion) - 1) + \[label\] **for** completion, label **in** zip(completions_ids, labels)\]
+    # Create the label 
+    labels = [[-100] * (len(completion) - 1) + [label] for completion, label in zip(completions_ids, labels)]
 
 Traditionally PRMs are trained with a language modeling head that outputs a token only at the end of a reasoning step, e.g. at the token corresponding to a double new line or other special token. These predictions tend to be -1 for incorrect, 0 for neutral, and 1 for correct. These labels do not necessarily tie to whether or not the model is on the right path, but rather to whether the step is correct.
 
@@ -880,19 +1000,60 @@ Traditionally PRMs are trained with a language modeling head that outputs a toke
 
 An example construction of a PRM is shown below.
 
-**import** torch.nn **as** nn **import** torch.nn.functional **as** F
+    import torch.nn as nn
+    import torch.nn.functional as F
 
-**class** ProcessRewardModel(nn.Module): **def** \_\_init\_\_(self, base_lm, num_classes=3): super().\_\_init\_\_() self.lm = base_lm *\# e.g., AutoModelForCausalLM* self.head = nn.Linear(self.lm.config.hidden_size, num_classes)
+    class ProcessRewardModel(nn.Module):
+        def __init__(self, base_lm, num_classes=3):
+            super().__init__()
+            self.lm = base_lm  # e.g., AutoModelForCausalLM
+            self.head = nn.Linear(self.lm.config.hidden_size, num_classes)
 
-**def** forward(self, input_ids, attention_mask=None, labels=None): *"""* *The inputs are tokenized prompts and completions, where the end of a* *"reasoning step" is denoted by a designated separator token such as a* *newline or other special marker rather than batch padding.* *labels will be a list of labels, True, False, and Neutral (3 labels) which* *will be predicted by the model.* *If labels=None, this is an inference-only forward pass and the loss is* *returned as None.* *"""* outputs = self.lm( input_ids=input_ids, attention_mask=attention_mask, output_hidden_states=True, return_dict=True, ) *\# Final hidden states: (batch, seq_len, hidden_size)* hidden = outputs.hidden_states\[-1\] *\# One logit vector per token: (batch, seq_len, num_classes)* logits = self.head(hidden)
+        def forward(self, input_ids, attention_mask=None, labels=None):
+            """
+            The inputs are tokenized prompts and completions, where the end of a
+             "reasoning step" is denoted by a designated separator token such as a
+             newline or other special marker rather than batch padding.
+            labels will be a list of labels, True, False, and Neutral (3 labels) which
+             will be predicted by the model.
+            If labels=None, this is an inference-only forward pass and the loss is
+             returned as None.
+            """
+            outputs = self.lm(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                output_hidden_states=True,
+                return_dict=True,
+            )
+            # Final hidden states: (batch, seq_len, hidden_size)
+            hidden = outputs.hidden_states[-1]
+            # One logit vector per token: (batch, seq_len, num_classes)
+            logits = self.head(hidden)
 
-*\# Inference-only forward pass: no loss is computed.* **if** labels **is** None: **return** None, logits *\# Only compute loss at step boundaries (where labels != -100)* *\# Labels map: -1 -\> 0, 0 -\> 1, 1 -\> 2 (class indices)* mask = labels != -100 loss = None **if** mask.any(): loss = F.cross_entropy( logits\[mask\], labels\[mask\] ) **else**: loss = logits.sum() \* 0 **return** loss, logits
+            # Inference-only forward pass: no loss is computed.
+            if labels is None:
+                return None, logits
+            # Only compute loss at step boundaries (where labels != -100)
+            # Labels map: -1 -> 0, 0 -> 1, 1 -> 2 (class indices)
+            mask = labels != -100
+            loss = None
+            if mask.any():
+                loss = F.cross_entropy(
+                    logits[mask], labels[mask]
+                )
+            else:
+                loss = logits.sum() * 0
+            return loss, logits
 
 The core loss function looks very similar to outcome reward models, with the labels being applied at different intervals.
 
-*\# Assume model outputs 3-class logits per token* hidden = model.lm(\*\*inputs, output_hidden_states=True).hidden_states\[-1\] logits = model.head(hidden) *\# (batch, seq_len, 3)*
+    # Assume model outputs 3-class logits per token
+    hidden = model.lm(**inputs, output_hidden_states=True).hidden_states[-1]
+    logits = model.head(hidden)  # (batch, seq_len, 3)
 
-*\# 3-class labels at step boundaries only: 0=-1, 1=0, 2=1 (others masked as -100)* mask = labels != -100 loss = F.cross_entropy(logits\[mask\], labels\[mask\])
+    # 3-class labels at step boundaries only: 0=-1, 1=0, 2=1 (others masked as -100)
+    mask = labels != -100
+    loss = F.cross_entropy(logits[mask], labels[mask])
 
 ## 5.4 Comparing Reward Model Types (and Value Functions)
 
@@ -1017,7 +1178,24 @@ When $K = 2$, this reduces to the Bradley-Terry (BT) model for pairwise comparis
 
 With the cost of preference data, a large research area emerged to use existing language models as a judge of human preferences or in other evaluation settings \[85\]. The core idea is to prompt a language model with instructions on how to judge, a prompt, and two completions (much as would be done with human labelers). An example prompt, from one of the seminal works here for the chat evaluation MT-Bench \[85\], follows:
 
-Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user question displayed below. You should choose the assistant that follows the user's instructions and answers the user's question better. Your evaluation should consider factors such as the helpfulness, relevance, accuracy, depth, creativity, and level of detail of their responses. Begin your evaluation by comparing the two responses and provide a short explanation. Avoid any position biases and ensure that the order in which the responses were presented does not influence your decision. Do not allow the length of the responses to influence your evaluation. Do not favor certain names of the assistants. Be as objective as possible. After providing your explanation, output your final verdict by strictly following this format: "\[\[A\]\]" if assistant A is better, "\[\[B\]\]" if assistant B is better, and "\[\[C\]\]" for a tie. \[User Question\] {question} \[The Start of Assistant A's Answer\] {answer_a} \[The End of Assistant A's Answer\] \[The Start of Assistant B's Answer\] {answer_b} \[The End of Assistant B's Answer\]
+    [System]
+    Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user question displayed below.
+    You should choose the assistant that follows the user's instructions and answers the user's question better.
+    Your evaluation should consider factors such as the helpfulness, relevance, accuracy, depth, creativity, and level of detail of their responses.
+    Begin your evaluation by comparing the two responses and provide a short explanation.
+    Avoid any position biases and ensure that the order in which the responses were presented does not influence your decision.
+    Do not allow the length of the responses to influence your evaluation.
+    Do not favor certain names of the assistants.
+    Be as objective as possible.
+    After providing your explanation, output your final verdict by strictly following this format: "[[A]]" if assistant A is better, "[[B]]" if assistant B is better, and "[[C]]" for a tie.
+    [User Question]
+    {question}
+    [The Start of Assistant A's Answer]
+    {answer_a}
+    [The End of Assistant A's Answer]
+    [The Start of Assistant B's Answer]
+    {answer_b}
+    [The End of Assistant B's Answer]
 
 Given the efficacy of LLM-as-a-judge for evaluation, which spawned many other evaluations such as AlpacaEval \[86\], Arena-Hard \[87\], and WildBench \[88\], many began using LLM-as-a-judge instead of reward models to create and use preference data.
 
@@ -1049,13 +1227,16 @@ The companion code repository includes small reward model training scripts in `c
 
 1.  **Train a Bradley-Terry preference reward model on UltraFeedback.** Run:
 
-    cd code/ uv run python -m reward_models.train_preference_rm --config reward_models/configs/preference_rm.yaml
+        cd code/
+        uv run python -m reward_models.train_preference_rm --config reward_models/configs/preference_rm.yaml
 
     Watch whether the reward margin between chosen and rejected responses grows in the demo and W&B logs. Then vary `samples`, `lr`, and `model_id` in the yaml config to see when the signal becomes noisy or unstable.
 
 2.  **Compare outcome and process supervision.** Run the GSM8K outcome reward model and the PRM800K process reward model:
 
-    cd code/ uv run python -m reward_models.train_orm --config reward_models/configs/orm.yaml uv run python -m reward_models.train_prm --samples 500 --epochs 2
+        cd code/
+        uv run python -m reward_models.train_orm --config reward_models/configs/orm.yaml
+        uv run python -m reward_models.train_prm --samples 500 --epochs 2
 
     Compare what each model can score after training: the ORM should distinguish correct and incorrect final answers, while the PRM should assign scores across intermediate reasoning steps. This is the practical version of the distinction between sequence-level, outcome-level, and process-level supervision.
 
@@ -1236,7 +1417,9 @@ $$\begin{equation}
 
 Reaching this equation is a crucial point in the implementation. Here, we have gone far enough to see that the gradient of the trajectory distribution reduces to a sum of gradients from language model policy probabilities (which are just the probabilities of tokens given by the model we’re training). In practice, this results in a common form of the policy gradient equations. They end up looking like a sum of log-probabilities in the loss, and then we compute the gradients via autodiff. A short snippet you’ll see again and again roughly follows:
 
-seq_log_probs = (token_log_probs \* completion_mask).sum(dim=-1) loss = -(seq_log_probs \* advantages).mean() loss.backward()
+    seq_log_probs = (token_log_probs * completion_mask).sum(dim=-1)
+    loss = -(seq_log_probs * advantages).mean()
+    loss.backward()
 
 You’ll see this throughout the chapter. Now, back to the formal policy gradient mathematics.
 
@@ -1582,23 +1765,53 @@ There are a few different methods (or targets) used to learn the value functions
 
 A simple example implementation of a value network loss is shown below.
 
-*\# Basic PPO critic targets & loss (no GAE)* *\#* *\# B: Batch Size* *\# L: Completion Length* *\# Inputs:* *\# rewards: (B, L) post-KL per-token rewards; EOS row includes outcome* *\# done_mask: (B, L) 1.0 at terminal token (EOS or truncation if penalized), else 0.0* *\# completion_mask: (B, L) 1.0 on response tokens to supervise (ignore the prompt)* *\# values: (B, L) current critic predictions V_theta(s_t)* *\# because a value network is a running update* *\# old_values: (B, L) critic predictions at rollout time V\_{theta_old}(s_t)* *\# gamma: discount factor, float (often 1.0 for LM RLHF)* *\# epsilon_v: float value clip range (e.g., 0.2), similar to PPO Loss Update itself, optional* *\#* *\# Returns:* *\# value_loss: scalar; advantages: (B, L) detached (for policy loss)*
+    # Basic PPO critic targets & loss (no GAE)
+    #
+    # B: Batch Size
+    # L: Completion Length
+    # Inputs:
+    #   rewards: (B, L) post-KL per-token rewards; EOS row includes outcome
+    #   done_mask: (B, L) 1.0 at terminal token (EOS or truncation if penalized), else 0.0
+    #   completion_mask: (B, L) 1.0 on response tokens to supervise (ignore the prompt)
+    #   values: (B, L) current critic predictions V_theta(s_t)
+    #       because a value network is a running update
+    #   old_values: (B, L) critic predictions at rollout time V_{theta_old}(s_t)
+    #   gamma: discount factor, float (often 1.0 for LM RLHF)
+    #   epsilon_v: float value clip range (e.g., 0.2), similar to PPO Loss Update itself, optional
+    #
+    # Returns:
+    #   value_loss: scalar; advantages: (B, L) detached (for policy loss)
 
-B, L = rewards.shape
+    B, L = rewards.shape
 
-*\# 1) Monte Carlo returns per token (reset at terminals)* *\# Apply discounting, if enabled* returns = torch.zeros_like(rewards) running = torch.zeros(B, device=rewards.device, dtype=rewards.dtype) **for** t **in** reversed(range(L)): running = rewards\[:, t\] + gamma \* (1.0 - done_mask\[:, t\]) \* running returns\[:, t\] = running
+    # 1) Monte Carlo returns per token (reset at terminals)
+    # Apply discounting, if enabled
+    returns = torch.zeros_like(rewards)
+    running = torch.zeros(B, device=rewards.device, dtype=rewards.dtype)
+    for t in reversed(range(L)):
+        running = rewards[:, t] + gamma * (1.0 - done_mask[:, t]) * running
+        returns[:, t] = running
 
-targets = returns *\# y_t = G_t (post-KL)*
+    targets = returns  # y_t = G_t (post-KL)
 
-*\# 2) PPO-style value clipping (optional)* v_pred = values v_old = old_values v_clip = torch.clamp(v_pred, v_old - epsilon_v, v_old + epsilon_v)
+    # 2) PPO-style value clipping (optional)
+    v_pred = values
+    v_old  = old_values
+    v_clip = torch.clamp(v_pred, v_old - epsilon_v, v_old + epsilon_v)
 
-vf_unclipped = 0.5 \* (v_pred - targets) \*\* 2 vf_clipped = 0.5 \* (v_clip - targets) \*\* 2 vf_loss_tok = torch.max(vf_unclipped, vf_clipped)
+    vf_unclipped = 0.5 * (v_pred - targets) ** 2
+    vf_clipped   = 0.5 * (v_clip - targets) ** 2
+    vf_loss_tok  = torch.max(vf_unclipped, vf_clipped)
 
-*\# 3) Mask to response tokens and aggregate* denom = completion_mask.sum(dim=1).clamp_min(1) value_loss = ((vf_loss_tok \* completion_mask).sum(dim=1) / denom).mean()
+    # 3) Mask to response tokens and aggregate
+    denom = completion_mask.sum(dim=1).clamp_min(1)
+    value_loss = ((vf_loss_tok * completion_mask).sum(dim=1) / denom).mean()
 
-*\# 4) Advantages for policy loss (no GAE): A_t = G_t - V(s_t)* advantages = (targets - v_pred).detach()
+    # 4) Advantages for policy loss (no GAE): A_t = G_t - V(s_t)
+    advantages = (targets - v_pred).detach()
 
-*\# The value loss is applied later, often with the PG loss, e.g.* *\# total_loss = policy_loss + vf_coef \* value_loss*
+    # The value loss is applied later, often with the PG loss, e.g.
+    # total_loss = policy_loss + vf_coef * value_loss
 
 ### 6.2.8 Group Relative Policy Optimization (GRPO)
 
@@ -1807,7 +2020,7 @@ For more details on implementation details for RLHF, see \[134\]. For further in
 
 A simple implementation of policy gradient, using advantages to estimate the gradient to prepare for advanced algorithms such as PPO and GRPO follows:
 
-pg_loss = -advantages \* ratio
+    pg_loss = -advantages * ratio
 
 Ratio here is the (per-token) probability ratio (often computed from a log-probability difference) of the new policy model probabilities relative to the old policy that generated the batch.
 
@@ -1831,7 +2044,9 @@ $$\begin{equation}
 
 Each sequence contributes equally to the batch loss, regardless of length. In code:
 
-*\# Strategy 1: Per-sequence normalization* sequence_loss = ((per_token_loss \* completion_mask).sum(dim=1) / \\ completion_mask.sum(dim=1)).mean()
+    # Strategy 1: Per-sequence normalization
+    sequence_loss = ((per_token_loss * completion_mask).sum(dim=1) / \
+                 completion_mask.sum(dim=1)).mean()
 
 **Strategy 2: Per-token normalization** (DAPO \[136\])
 
@@ -1841,7 +2056,9 @@ $$\begin{equation}
 
 Each token contributes equally; longer sequences have proportionally more influence on the gradient. In code:
 
-*\# Strategy 2: Per-token normalization* token_loss = ((per_token_loss \* completion_mask).sum() / \\ completion_mask.sum())
+    # Strategy 2: Per-token normalization
+    token_loss = ((per_token_loss * completion_mask).sum() / \
+                completion_mask.sum())
 
 **Strategy 3: Fixed-length normalization** (Dr. GRPO \[125\])
 
@@ -1851,7 +2068,9 @@ $$\begin{equation}
 
 Normalizes by max sequence length $L_{\max}$, equalizing the per-token scale across sequences while still letting longer sequences contribute more total gradient because they contain more active tokens. In code:
 
-*\# Strategy 3: Fixed-length normalization* fixed_len_loss = ((per_token_loss \* completion_mask).sum(dim=1) / \\ L_max).mean()
+    # Strategy 3: Fixed-length normalization 
+    fixed_len_loss = ((per_token_loss * completion_mask).sum(dim=1) / \
+                L_max).mean()
 
 Where $L_{\max}$ is typically a global constant during the entire training procedure, which specifies the maximum number of generation tokens.
 
@@ -1861,7 +2080,8 @@ Note that `completion_mask` in the code above is a matrix of 1s and 0s, where th
 
 Intuitively, per-sequence normalization (Strategy 1) seems best since we care about *outcomes*, not individual tokens. However, this introduces subtle biases based on sequence length, which can cause the model to overthink or down-weight strategies that naturally need to use more tokens, depending on the direction of the bias. Consider two sequences of different lengths with per-token losses:
 
-seq_1_losses = \[1, 1, 1, 1, 10\] *\# 5 tokens, mean = 2.8* seq_2_losses = \[1, 1, 1, 1, 1, 1, 1, 1, 1, 10\] *\# 10 tokens, mean = 1.9*
+    seq_1_losses = [1, 1, 1, 1, 10]  # 5 tokens, mean = 2.8
+    seq_2_losses = [1, 1, 1, 1, 1, 1, 1, 1, 1, 10]  # 10 tokens, mean = 1.9
 
 With **Strategy 1** (per-sequence): The batch loss is $(2.8 + 1.9)/2 = 2.35$, and crucially, each token in the short sequence receives a larger gradient than tokens in the long sequence.
 
@@ -1871,31 +2091,75 @@ With **Strategy 3** (fixed-length with $L_{\max}=10$): The short sequence contri
 
 For a more complete example showing how these strategies affect gradients, see the script below.
 
-**from** typing **import** Optional **import** torch
+    from typing import Optional
+    import torch
 
-**def** masked_mean(values: torch.Tensor, mask: torch.Tensor, axis: Optional\[int\] = None) -\> torch.Tensor: *"""Compute mean of tensor with masked values."""* **if** axis **is** **not** None: **return** (values \* mask).sum(axis=axis) / mask.sum(axis=axis) **else**: **return** (values \* mask).sum() / mask.sum()
+    def masked_mean(values: torch.Tensor, mask: torch.Tensor, axis: Optional[int] = None) -> torch.Tensor:
+        """Compute mean of tensor with masked values."""
+        if axis is not None:
+            return (values * mask).sum(axis=axis) / mask.sum(axis=axis)
+        else:
+            return (values * mask).sum() / mask.sum()
 
-**def** masked_sum( values: torch.Tensor, mask: torch.Tensor, axis: Optional\[int\] = None, constant_normalizer: float = 1.0, ) -\> torch.Tensor: *"""Compute sum of tensor with masked values. Use a constant to normalize."""* **if** axis **is** **not** None: **return** (values \* mask).sum(axis=axis) / constant_normalizer **else**: **return** (values \* mask).sum() / constant_normalizer
+    def masked_sum(
+            values: torch.Tensor,
+            mask: torch.Tensor,
+            axis: Optional[int] = None,
+            constant_normalizer: float = 1.0,
+        ) -> torch.Tensor:
+        """Compute sum of tensor with masked values. Use a constant to normalize."""
+        if axis is not None:
+            return (values * mask).sum(axis=axis) / constant_normalizer
+        else:
+            return (values * mask).sum() / constant_normalizer
 
-ratio = torch.tensor(\[ \[1., 1, 1, 1, 1, 1, 1,\], \[1, 1, 1, 1, 1, 1, 1,\], \], requires_grad=True)
+    ratio = torch.tensor([
+        [1., 1, 1, 1, 1, 1, 1,],
+        [1, 1, 1, 1, 1, 1, 1,],
+    ], requires_grad=True)
 
-advs = torch.tensor(\[ \[2, 2, 2, 2, 2, 2, 2,\], \[2, 2, 2, 2, 2, 2, 2,\], \])
+    advs = torch.tensor([
+        [2, 2, 2, 2, 2, 2, 2,],
+        [2, 2, 2, 2, 2, 2, 2,],
+    ])
 
-masks = torch.tensor(\[ *\# generation 1: 4 tokens* \[1, 1, 1, 1, 0, 0, 0,\], *\# generation 2: 7 tokens* \[1, 1, 1, 1, 1, 1, 1,\], \])
+    masks = torch.tensor([
+        # generation 1: 4 tokens
+        [1, 1, 1, 1, 0, 0, 0,],
+        # generation 2: 7 tokens
+        [1, 1, 1, 1, 1, 1, 1,],
+    ])
 
-max_gen_len = 7
+    max_gen_len = 7
 
-masked_mean_result = masked_mean(ratio \* advs, masks, axis=1) masked_mean_token_level = masked_mean(ratio, masks, axis=None) masked_sum_result = masked_sum(ratio \* advs, masks, axis=1, constant_normalizer=max_gen_len)
+    masked_mean_result = masked_mean(ratio * advs, masks, axis=1)
+    masked_mean_token_level = masked_mean(ratio, masks, axis=None)
+    masked_sum_result = masked_sum(ratio * advs, masks, axis=1, constant_normalizer=max_gen_len)
 
-print("masked_mean", masked_mean_result) print("masked_sum", masked_sum_result) print("masked_mean_token_level", masked_mean_token_level)
+    print("masked_mean", masked_mean_result)
+    print("masked_sum", masked_sum_result)
+    print("masked_mean_token_level", masked_mean_token_level)
 
-*\# masked_mean tensor(\[2., 2.\], grad_fn=\<DivBackward0\>)* *\# masked_sum tensor(\[1.1429, 2.0000\], grad_fn=\<DivBackward0\>)* *\# masked_mean_token_level tensor(1., grad_fn=\<DivBackward0\>)*
+    # masked_mean tensor([2., 2.], grad_fn=<DivBackward0>)
+    # masked_sum tensor([1.1429, 2.0000], grad_fn=<DivBackward0>)
+    # masked_mean_token_level tensor(1., grad_fn=<DivBackward0>)
 
-masked_mean_result.mean().backward() print("ratio.grad", ratio.grad) ratio.grad.zero\_() *\# ratio.grad tensor(\[\[0.2500, 0.2500, 0.2500, 0.2500, 0.0000, 0.0000, 0.0000\],* *\# \[0.1429, 0.1429, 0.1429, 0.1429, 0.1429, 0.1429, 0.1429\]\])*
+    masked_mean_result.mean().backward()
+    print("ratio.grad", ratio.grad)
+    ratio.grad.zero_()
+    # ratio.grad tensor([[0.2500, 0.2500, 0.2500, 0.2500, 0.0000, 0.0000, 0.0000],
+    # [0.1429, 0.1429, 0.1429, 0.1429, 0.1429, 0.1429, 0.1429]])
 
-masked_sum_result.mean().backward() print("ratio.grad", ratio.grad) ratio.grad.zero\_() *\# ratio.grad tensor(\[\[0.1429, 0.1429, 0.1429, 0.1429, 0.0000, 0.0000, 0.0000\],* *\# \[0.1429, 0.1429, 0.1429, 0.1429, 0.1429, 0.1429, 0.1429\]\])*
+    masked_sum_result.mean().backward()
+    print("ratio.grad", ratio.grad)
+    ratio.grad.zero_()
+    # ratio.grad tensor([[0.1429, 0.1429, 0.1429, 0.1429, 0.0000, 0.0000, 0.0000],
+    # [0.1429, 0.1429, 0.1429, 0.1429, 0.1429, 0.1429, 0.1429]])
 
-masked_mean_token_level.mean().backward() print("ratio.grad", ratio.grad) *\# ratio.grad tensor(\[\[0.0909, 0.0909, 0.0909, 0.0909, 0.0000, 0.0000, 0.0000\],* *\# \[0.0909, 0.0909, 0.0909, 0.0909, 0.0909, 0.0909, 0.0909\]\])*
+    masked_mean_token_level.mean().backward()
+    print("ratio.grad", ratio.grad)
+    # ratio.grad tensor([[0.0909, 0.0909, 0.0909, 0.0909, 0.0000, 0.0000, 0.0000],
+    # [0.0909, 0.0909, 0.0909, 0.0909, 0.0909, 0.0909, 0.0909]])
 
 The output shows that with Strategy 1 (`masked_mean`), the short sequence has larger per-token gradients (0.25) than the long sequence (0.14). Strategies 2 and 3 equalize the per-token gradients across sequences. Note that these results can vary substantially if gradient accumulation is used, where the gradients are summed across multiple minibatches before taking a backward step—in this case, the balance between shorter and longer sequences can flip.
 
@@ -1911,9 +2175,21 @@ Note that many GRPO implementations use a bandit-style advantage *and* add a sep
 
 An example comparison highlighting the two approaches is below:
 
-*\# === Bandit-style (sequence-level) ===* *\# One scalar reward per sequence; advantage broadcast to all tokens* reward = torch.tensor(\[3.0, 1.0\]) *\# (B,) e.g., reward model scores* baseline = reward.mean() *\# simple baseline (RLOO uses leave-one-out)* advantage_seq = reward - baseline *\# (B,)* advantages = advantage_seq\[:, None\].expand(-1, seq_len) *\# (B, L)* *\# tensor(\[\[ 1., 1., 1., 1.\], \<- same advantage for all tokens* *\# \[-1., -1., -1., -1.\]\])*
+    # === Bandit-style (sequence-level) ===
+    # One scalar reward per sequence; advantage broadcast to all tokens
+    reward = torch.tensor([3.0, 1.0])       # (B,) e.g., reward model scores
+    baseline = reward.mean()                 # simple baseline (RLOO uses leave-one-out)
+    advantage_seq = reward - baseline        # (B,)
+    advantages = advantage_seq[:, None].expand(-1, seq_len)  # (B, L)
+    # tensor([[ 1.,  1.,  1.,  1.],    <- same advantage for all tokens
+    #         [-1., -1., -1., -1.]])
 
-*\# === MDP-style (token-level) ===* *\# Per-token rewards + learned V(s_t); each token gets its own advantage* *\# (could also use per-token KL shaping, format rewards, or other token-level signals)* advantages = gae(per_token_rewards, values, done_mask, gamma=1.0, lam=0.95) *\# tensor(\[\[ 0.2, 0.5, 0.8, 1.5\], \<- varies by position* *\# \[-0.3, -0.5, -0.8, -1.4\]\])*
+    # === MDP-style (token-level) ===
+    # Per-token rewards + learned V(s_t); each token gets its own advantage
+    # (could also use per-token KL shaping, format rewards, or other token-level signals)
+    advantages = gae(per_token_rewards, values, done_mask, gamma=1.0, lam=0.95)
+    # tensor([[ 0.2,  0.5,  0.8,  1.5],    <- varies by position
+    #         [-0.3, -0.5, -0.8, -1.4]])
 
 This framing distinction also explains why the discount factor $\gamma$ is set to 1.0 in virtually all RLHF implementations. In standard RL, discounting ($\gamma < 1$) is essential: it balances the optimization between short-term and long-term reward across a multi-step episode, which is crucial for the agent to learn effective behavior over time. But in the RLHF setting, even when using the token-level MDP view, the inductive bias of the optimization is the quality of the collective completion – the reward signal scores the entire response, not individual tokens. Discounting earlier tokens would arbitrarily down-weight their contribution with no principled justification. As agentic RL settings mature – where models take real multi-step actions such as tool calls, code execution, and web browsing – discounting may become relevant again, since these involve genuinely distinct sequential decisions whose long-term consequences differ.
 
@@ -1971,11 +2247,15 @@ Here $\pi_{\theta_\text{old}} \neq \pi_\text{gen}$: the old logprobs come from t
 
 In practice, LLM RL systems apply TIS as a per-token correction weight on the policy-gradient loss:
 
-*\# Shape: (B\*G, L)* C = 2.0 *\# TIS cap*
+    # Shape: (B*G, L)
+    C = 2.0  # TIS cap
 
-logratio = learner_logprobs - sampler_logprobs logratio = logratio.clamp(-10.0, 10.0) *\# numerical safety* tis_weight = torch.exp(logratio).clamp(max=C) *\# one-sided truncation*
+    logratio = learner_logprobs - sampler_logprobs
+    logratio = logratio.clamp(-10.0, 10.0)              # numerical safety
+    tis_weight = torch.exp(logratio).clamp(max=C)        # one-sided truncation
 
-*\# Use as a fixed correction weight on the per-token PG loss* per_token_pg_loss = per_token_pg_loss \* tis_weight.detach()
+    # Use as a fixed correction weight on the per-token PG loss
+    per_token_pg_loss = per_token_pg_loss * tis_weight.detach()
 
 The $[-10, 10]$ clamp is only for numerical stability before exponentiation; the actual truncated-importance-sampling step is the one-sided cap at $C$. In practice, the bookkeeping around these logprobs — storing sampler logprobs from generation, recomputing learner logprobs at the old checkpoint, and tracking current logprobs during gradient steps — is a substantial part of the scaffolding in distributed RL frameworks. Unlike GSPO, this correction is token-level because it addresses token-level numerical mismatch rather than sequence-level reward granularity. TIS for the learner–sampler ratio has been adopted across major open-source RL frameworks (VeRL, TRL, OpenRLHF, SkyRL, OAT, and Open Instruct, which uses $C = 2$), and becomes increasingly important for long reasoning traces (Chapter 7), where small per-token differences compound over thousands of generated tokens.
 
@@ -1985,35 +2265,65 @@ There are many, many implementations of PPO available. The core *loss* computati
 
 Note that the reference policy (or old logprobs) here are from the time the generations were sampled and not necessarily the reference policy. The reference policy is only used for the KL distance constraint/penalty.
 
-*\# B: Batch Size, L: Sequence Length, G: Num of Generations* *\# Apply KL penalty to rewards* rewards = rewards - self.beta \* per_token_kl *\# Shape: (B\*G, L)*
+    # B: Batch Size, L: Sequence Length, G: Num of Generations
+    # Apply KL penalty to rewards
+    rewards = rewards - self.beta * per_token_kl  # Shape: (B*G, L)
 
-*\# Get value predictions* values = value_net(completions) *\# Shape: (B\*G, L)*
+    # Get value predictions
+    values = value_net(completions)  # Shape: (B*G, L)
 
-*\# Compute returns via backward pass (gamma typically 1.0 for LM RLHF)* *\# Mask rewards to avoid padding tokens (which may have KL penalties) leaking into returns* returns = torch.zeros_like(rewards) running = torch.zeros(rewards.shape\[0\], device=rewards.device, dtype=rewards.dtype) **for** t **in** reversed(range(rewards.shape\[1\])): *\# Zero out padding: only accumulate rewards/returns for valid completion tokens* running = (rewards\[:, t\] + self.gamma \* running) \* completion_mask\[:, t\] returns\[:, t\] = running
+    # Compute returns via backward pass (gamma typically 1.0 for LM RLHF)
+    # Mask rewards to avoid padding tokens (which may have KL penalties) leaking into returns
+    returns = torch.zeros_like(rewards)
+    running = torch.zeros(rewards.shape[0], device=rewards.device, dtype=rewards.dtype)
+    for t in reversed(range(rewards.shape[1])):
+        # Zero out padding: only accumulate rewards/returns for valid completion tokens
+        running = (rewards[:, t] + self.gamma * running) * completion_mask[:, t]
+        returns[:, t] = running
 
-*\# Compute advantages: A_t = G_t - V(s_t)* advantages = returns - values.detach() *\# Shape: (B\*G, L)* *\# Note: We detach the value network here to not update the parameters of* *\# the value function when computing the policy-gradient loss*
+    # Compute advantages: A_t = G_t - V(s_t)
+    advantages = returns - values.detach()  # Shape: (B*G, L)
+    # Note: We detach the value network here to not update the parameters of
+    # the value function when computing the policy-gradient loss
 
-*\# Normalize advantages (optional but stable)* advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+    # Normalize advantages (optional but stable)
+    advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
-*\# Compute probability ratio between new and old policies* ratio = torch.exp(new_per_token_logps - per_token_logps) *\# Shape: (B\*G, L)*
+    # Compute probability ratio between new and old policies
+    ratio = torch.exp(new_per_token_logps - per_token_logps)  # Shape: (B*G, L)
 
-*\# PPO clipping objective* eps = self.cliprange *\# e.g. 0.2* pg_losses1 = -advantages \* ratio *\# Shape: (B\*G, L)* pg_losses2 = -advantages \* torch.clamp(ratio, 1.0 - eps, 1.0 + eps) *\# Shape: (B\*G, L)* pg_loss_max = torch.max(pg_losses1, pg_losses2) *\# Shape: (B\*G, L)*
+    # PPO clipping objective
+    eps = self.cliprange  # e.g. 0.2
+    pg_losses1 = -advantages * ratio  # Shape: (B*G, L)
+    pg_losses2 = -advantages * torch.clamp(ratio, 1.0 - eps, 1.0 + eps)  # Shape: (B*G, L)
+    pg_loss_max = torch.max(pg_losses1, pg_losses2)  # Shape: (B*G, L)
 
-*\# Value function loss: predict returns* vf_loss = 0.5 \* ((returns - values) \*\* 2) *\# Shape: (B\*G, L)*
+    # Value function loss: predict returns
+    vf_loss = 0.5 * ((returns - values) ** 2)  # Shape: (B*G, L)
 
-*\# Combine policy and value losses* per_token_loss = pg_loss_max + self.vf_coef \* vf_loss *\# Shape: (B\*G, L)*
+    # Combine policy and value losses
+    per_token_loss = pg_loss_max + self.vf_coef * vf_loss  # Shape: (B*G, L)
 
-*\# Apply completion mask and compute final loss* loss = ((per_token_loss \* completion_mask).sum(dim=1) / completion_mask.sum(dim=1)).mean() *\# Scalar*
+    # Apply completion mask and compute final loss
+    loss = ((per_token_loss * completion_mask).sum(dim=1) / completion_mask.sum(dim=1)).mean()
+     # Scalar
 
-*\# Compute metrics for logging* **with** torch.no_grad(): *\# Compute clipping fraction* clip_frac = ((pg_losses2 \> pg_losses1).float() \* completion_mask).sum() / completion_mask.sum()
-
-*\# Compute approximate KL* approx_kl = (0.5 \* ((new_per_token_logps - per_token_logps)\*\*2) \* completion_mask).sum() / completion_mask.sum()
-
-*\# Compute value loss for logging* value_loss = vf_loss.mean()
+    # Compute metrics for logging
+    with torch.no_grad():
+        # Compute clipping fraction
+        clip_frac = ((pg_losses2 > pg_losses1).float() * completion_mask).sum() / completion_mask.sum()
+        
+        # Compute approximate KL
+        approx_kl = (0.5 * ((new_per_token_logps - per_token_logps)**2) * completion_mask).sum() / completion_mask.sum()
+        
+        # Compute value loss for logging
+        value_loss = vf_loss.mean()
 
 The core piece to understand with PPO is how the policy gradient loss is updated. Focus on these three lines:
 
-pg_losses1 = -advantages \* ratio *\# Shape: (B\*G, L)* pg_losses2 = -advantages \* torch.clamp(ratio, 1.0 - eps, 1.0 + eps) *\# Shape: (B\*G, L)* pg_loss_max = torch.max(pg_losses1, pg_losses2) *\# Shape: (B\*G, L)*
+    pg_losses1 = -advantages * ratio  # Shape: (B*G, L)
+    pg_losses2 = -advantages * torch.clamp(ratio, 1.0 - eps, 1.0 + eps)  # Shape: (B*G, L)
+    pg_loss_max = torch.max(pg_losses1, pg_losses2)  # Shape: (B*G, L)
 
 `pg_losses1` is the vanilla advantage-weighted policy gradient loss. `pg_losses2` applies the same formula but with the probability ratio clamped to the range $[1-\varepsilon, 1+\varepsilon]$, limiting how much the policy can change in a single update.
 
@@ -2045,23 +2355,45 @@ However, there are multiple ways to implement this. Traditionally, the KL distan
 
 Putting it together, using the first loss accumulation, the pseudocode can be written as below.
 
-*\# B: Batch Size, L: Sequence Length, G: Number of Generations* *\# Compute group-wise rewards \# Shape: (B,)* mean_grouped_rewards = rewards.view(-1, self.num_generations).mean(dim=1) std_grouped_rewards = rewards.view(-1, self.num_generations).std(dim=1)
+    # B: Batch Size, L: Sequence Length, G: Number of Generations
+    # Compute group-wise rewards # Shape: (B,)
+    mean_grouped_rewards = rewards.view(-1, self.num_generations).mean(dim=1)
+    std_grouped_rewards = rewards.view(-1, self.num_generations).std(dim=1)    
 
-*\# Normalize the rewards to compute the advantages* mean_grouped_rewards = mean_grouped_rewards.repeat_interleave(self.num_generations, dim=0) std_grouped_rewards = std_grouped_rewards.repeat_interleave(self.num_generations, dim=0) *\# Shape: (B\*G,)*
+    # Normalize the rewards to compute the advantages
+    mean_grouped_rewards = mean_grouped_rewards.repeat_interleave(self.num_generations, dim=0)
+    std_grouped_rewards = std_grouped_rewards.repeat_interleave(self.num_generations, dim=0)
+    # Shape: (B*G,)
 
-*\# Compute advantages* advantages = (rewards - mean_grouped_rewards) / (std_grouped_rewards + 1e-4) advantages = advantages.unsqueeze(1) *\# Shape: (B\*G, 1)*
+    # Compute advantages
+    advantages = (rewards - mean_grouped_rewards) / (std_grouped_rewards + 1e-4)
+    advantages = advantages.unsqueeze(1)
+    # Shape: (B*G, 1)
 
-*\# Compute probability ratio between new and old policies* ratio = torch.exp(new_per_token_logps - per_token_logps) *\# Shape: (B\*G, L)*
+    # Compute probability ratio between new and old policies
+    ratio = torch.exp(new_per_token_logps - per_token_logps)  # Shape: (B*G, L)
 
-*\# PPO clipping objective* eps = self.cliprange *\# e.g. 0.2* pg_losses1 = -advantages \* ratio *\# Shape: (B\*G, L)* pg_losses2 = -advantages \* torch.clamp(ratio, 1.0 - eps, 1.0 + eps) *\# Shape: (B\*G, L)* pg_loss_max = torch.max(pg_losses1, pg_losses2) *\# Shape: (B\*G, L)*
+    # PPO clipping objective
+    eps = self.cliprange  # e.g. 0.2
+    pg_losses1 = -advantages * ratio  # Shape: (B*G, L)
+    pg_losses2 = -advantages * torch.clamp(ratio, 1.0 - eps, 1.0 + eps)  # Shape: (B*G, L)
+    pg_loss_max = torch.max(pg_losses1, pg_losses2)  # Shape: (B*G, L)
 
-*\# important to GRPO -- PPO applies this in reward traditionally* *\# Combine with KL penalty* per_token_loss = pg_loss_max + self.beta \* per_token_kl *\# Shape: (B\*G, L)*
+    # important to GRPO -- PPO applies this in reward traditionally
+    # Combine with KL penalty
+    per_token_loss = pg_loss_max + self.beta * per_token_kl  # Shape: (B*G, L)
 
-*\# Apply completion mask and compute final loss* loss = ((per_token_loss \* completion_mask).sum(dim=1) / completion_mask.sum(dim=1)).mean() *\# Scalar*
+    # Apply completion mask and compute final loss
+    loss = ((per_token_loss * completion_mask).sum(dim=1) / completion_mask.sum(dim=1)).mean()
+     # Scalar
 
-*\# Compute core metric for logging (KL, reward, etc. also logged)* **with** torch.no_grad(): *\# Compute clipping fraction* clip_frac = ((pg_losses2 \> pg_losses1).float() \* completion_mask).sum() / completion_mask.sum()
-
-*\# Compute approximate KL* approx_kl = (0.5 \* ((new_per_token_logps - per_token_logps)\*\*2) \* completion_mask).sum() / completion_mask.sum()
+    # Compute core metric for logging (KL, reward, etc. also logged)
+    with torch.no_grad():
+        # Compute clipping fraction
+        clip_frac = ((pg_losses2 > pg_losses1).float() * completion_mask).sum() / completion_mask.sum()
+        
+        # Compute approximate KL
+        approx_kl = (0.5 * ((new_per_token_logps - per_token_logps)**2) * completion_mask).sum() / completion_mask.sum()
 
 For more details on how to interpret this code, see the PPO section above. The core differences from the PPO example are:
 
@@ -2075,13 +2407,19 @@ For more details on how to interpret this code, see the PPO section above. The c
 
 The advantage updates for RLOO follow GRPO very closely, highlighting the conceptual similarity of the algorithm when taken separately from the PPO style clipping and KL penalty details. Specifically, for RLOO, the advantage is computed relative to a baseline that is extremely similar to that of GRPO – the completion reward relative to the others for that same question. Concisely, the RLOO advantage estimate follows as (expanded from [TRL](https://github.com/huggingface/trl/blob/bfe20756082488350091352d1cdc19c172e42cd8/trl/trainer/rloo_trainer.py#L433)’s implementation):
 
-*\# rloo_k --\> number of completions per prompt* *\# rlhf_reward --\> Initially a flat tensor of total rewards for all completions. Length B = N x k* rlhf_reward = rlhf_reward.reshape(rloo_k, -1) *\#* *\# Now, Shape: (k, N), each column j contains the k rewards for prompt j.*
+    # rloo_k --> number of completions per prompt 
+    # rlhf_reward --> Initially a flat tensor of total rewards for all completions. Length B = N x k
+    rlhf_reward = rlhf_reward.reshape(rloo_k, -1) # 
+    # Now, Shape: (k, N), each column j contains the k rewards for prompt j.
 
-baseline = (rlhf_reward.sum(0) - rlhf_reward) / (rloo_k - 1) *\# baseline --\> Leave-one-out baseline rewards. Shape: (k, N)* *\# baseline\[i, j\] is the avg reward of samples i' != i for prompt j.*
+    baseline = (rlhf_reward.sum(0) - rlhf_reward) / (rloo_k - 1)
+    # baseline --> Leave-one-out baseline rewards. Shape: (k, N)
+    #  baseline[i, j] is the avg reward of samples i' != i for prompt j.
 
-advantages = rlhf_reward - baseline *\# advantages --\> Same Shape: (k, N)*
+    advantages = rlhf_reward - baseline
+    # advantages --> Same Shape: (k, N)
 
-advantages = advantages.flatten() *\# Same shape as original tensor*
+    advantages = advantages.flatten() # Same shape as original tensor
 
 The rest of the implementation details for RLOO follow the other trade-offs of implementing policy-gradient.
 
@@ -2130,11 +2468,31 @@ $$\begin{equation}
 
 Intuitively, this can be used to average multi-step estimates of Advantage in an elegant fashion. An example implementation is shown below:
 
-*\# GAE (token-level) for LM RLHF* *\#* *\# B: Batch Size* *\# L: Length* *\# Inputs:* *\# rewards: (B, L) post-KL per-token rewards* *\# values: (B, L) current V_theta(s_t)* *\# done_mask: (B, L) 1.0 at terminal token (EOS or penalized trunc), else 0.0* *\# gamma: float (often 1.0),* *\# lam (short for lambda): float in \[0,1\]* *\# (Padding beyond terminal should have rewards=0, values=0)* B, L = rewards.shape advantages = torch.zeros_like(rewards) next_v = torch.zeros(B, device=rewards.device, dtype=rewards.dtype) gae = torch.zeros(B, device=rewards.device, dtype=rewards.dtype)
+    # GAE (token-level) for LM RLHF
+    #
+    # B: Batch Size
+    # L: Length
+    # Inputs:
+    #   rewards: (B, L) post-KL per-token rewards
+    #   values:  (B, L) current V_theta(s_t)
+    #   done_mask: (B, L) 1.0 at terminal token (EOS or penalized trunc), else 0.0
+    #   gamma: float (often 1.0), 
+    #   lam (short for lambda): float in [0,1]
+    #   (Padding beyond terminal should have rewards=0, values=0)
+    B, L = rewards.shape
+    advantages = torch.zeros_like(rewards)
+    next_v = torch.zeros(B, device=rewards.device, dtype=rewards.dtype)
+    gae = torch.zeros(B, device=rewards.device, dtype=rewards.dtype)
 
-**for** t **in** reversed(range(L)): not_done = 1.0 - done_mask\[:, t\] delta = rewards\[:, t\] + gamma \* not_done \* next_v - values\[:, t\] gae = delta + gamma \* lam \* not_done \* gae advantages\[:, t\] = gae next_v = values\[:, t\]
+    for t in reversed(range(L)):
+        not_done = 1.0 - done_mask[:, t]
+        delta = rewards[:, t] + gamma * not_done * next_v - values[:, t]
+        gae = delta + gamma * lam * not_done * gae
+        advantages[:, t] = gae
+        next_v = values[:, t]
 
-targets = advantages + values *\# y_t for value regression* advantages = advantages.detach() *\# for policy loss*
+    targets = advantages + values      # y_t for value regression
+    advantages = advantages.detach()   # for policy loss
 
 The backward loop accumulates temporal-difference (TD) errors ($\delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)$), which measure how much better or worse the actual outcome was compared to the value function’s prediction, with exponential decay $(\gamma\lambda)^l$. At terminal tokens, `not_done=0` prevents bootstrapping from future states and resets the GAE accumulator, so each episode’s advantages are computed independently (since the loop runs backward, the terminal token cleanly stops the exponentially-weighted accumulation at episode boundaries—this makes the implementation packing-friendly, correctly handling multiple sequences concatenated into one). The final `targets` serve as regression targets for the separate value function learned outside this GAE loop, while the detached `advantages` weight the policy gradient—detached so that policy updates don’t backpropagate through the value network. In RLHF for language models, $\gamma=1.0$ is common because episodes are short token sequences where undiscounted credit assignment is preferred (and often all of the tokens in one).
 
@@ -2174,13 +2532,17 @@ The companion implementation in `code/policy_gradients/` is designed for small, 
 
 1.  **Run the word reversal task with GRPO.**
 
-    cd code/ uv run python -m policy_gradients.train --config policy_gradients/configs/grpo.yaml
+        cd code/
+        uv run python -m policy_gradients.train --config policy_gradients/configs/grpo.yaml
 
     Track `avg_correctness`, `avg_format`, and `avg_binary`. The useful first question is whether each prompt group contains contrast: if all sampled completions are right or all are wrong, a group-relative update has little learning signal.
 
 2.  **Compare group-relative and single-sample estimators.** Run the matched starting configs:
 
-    cd code/ uv run python -m policy_gradients.train --config policy_gradients/configs/reinforce.yaml uv run python -m policy_gradients.train --config policy_gradients/configs/rloo.yaml uv run python -m policy_gradients.train --config policy_gradients/configs/grpo.yaml
+        cd code/
+        uv run python -m policy_gradients.train --config policy_gradients/configs/reinforce.yaml
+        uv run python -m policy_gradients.train --config policy_gradients/configs/rloo.yaml
+        uv run python -m policy_gradients.train --config policy_gradients/configs/grpo.yaml
 
     Compare how quickly the correctness signal improves and how noisy the loss is. RLOO and GRPO should make the role of within-prompt baselines much more concrete than the equations alone.
 
@@ -2682,13 +3044,21 @@ There is a long list of other DAA variants, such as Direct Nash Optimization (DN
 
 DAAs such as DPO are implemented very differently than policy gradient optimizers. The DPO loss, taken from the original implementation, largely can be summarized as follows \[25\]:
 
-*\# Log-probability gaps for the policy and the frozen reference model* pi_logratios = policy_chosen_logps - policy_rejected_logps ref_logratios = reference_chosen_logps - reference_rejected_logps
+    # Log-probability gaps for the policy and the frozen reference model
+    pi_logratios = policy_chosen_logps - policy_rejected_logps
+    ref_logratios = reference_chosen_logps - reference_rejected_logps
 
-*\# Difference of log-ratios: positive when the policy* *\# shifts probability toward the chosen completion* logits = pi_logratios - ref_logratios
+    # Difference of log-ratios: positive when the policy
+    # shifts probability toward the chosen completion
+    logits = pi_logratios - ref_logratios
 
-*\# DPO loss: negative log-sigmoid drives the policy to* *\# widen the gap between chosen and rejected* losses = -F.logsigmoid(beta \* logits)
+    # DPO loss: negative log-sigmoid drives the policy to
+    # widen the gap between chosen and rejected
+    losses = -F.logsigmoid(beta * logits)
 
-*\# Implicit rewards (detached -- used for logging only)* chosen_rewards = beta \* (policy_chosen_logps - reference_chosen_logps).detach() rejected_rewards = beta \* (policy_rejected_logps - reference_rejected_logps).detach()
+    # Implicit rewards (detached -- used for logging only)
+    chosen_rewards = beta * (policy_chosen_logps - reference_chosen_logps).detach()
+    rejected_rewards = beta * (policy_rejected_logps - reference_rejected_logps).detach()
 
 This can be used in standard language model training stacks as this information is already collated during the forward pass of a model (with the addition of a reference model).
 
@@ -2724,19 +3094,25 @@ The companion code in `code/direct_alignment/` trains DPO and several related lo
 
 1.  **Train a small DPO run on UltraFeedback.**
 
-    cd code/ uv run python -m direct_alignment.train --loss dpo --max_samples 1000
+        cd code/
+        uv run python -m direct_alignment.train --loss dpo --max_samples 1000
 
     Watch `loss`, `accuracy`, `margins`, `chosen_rewards`, and `rejected_rewards`. The main sanity check is that the implicit reward margin should move in the desired direction without the model’s sample generations collapsing.
 
 2.  **Compare DPO, IPO, and length-normalized DPO.**
 
-    cd code/ uv run python -m direct_alignment.train --config direct_alignment/configs/dpo.yaml uv run python -m direct_alignment.train --config direct_alignment/configs/ipo.yaml uv run python -m direct_alignment.train --config direct_alignment/configs/dpo_norm.yaml
+        cd code/
+        uv run python -m direct_alignment.train --config direct_alignment/configs/dpo.yaml
+        uv run python -m direct_alignment.train --config direct_alignment/configs/ipo.yaml
+        uv run python -m direct_alignment.train --config direct_alignment/configs/dpo_norm.yaml
 
     Compare the margin scale and the learning rate sensitivity. IPO’s loss is not on the same numeric scale as DPO, so read it through `accuracy` and margin behavior rather than raw loss alone.
 
 3.  **Try the reference-free variants carefully.** Run SimPO or ORPO from their configs, then inspect the generated samples that are logged during training. These losses are more sensitive to log-probability scaling and learning rate, which makes them useful debugging exercises.
 
-    cd code/ uv run python -m direct_alignment.train --config direct_alignment/configs/simpo.yaml uv run python -m direct_alignment.train --config direct_alignment/configs/orpo.yaml
+        cd code/
+        uv run python -m direct_alignment.train --config direct_alignment/configs/simpo.yaml
+        uv run python -m direct_alignment.train --config direct_alignment/configs/orpo.yaml
 
 4.  **Change the data before changing the loss.** Keep the loss fixed and vary `--max_samples`, `--max_length`, or the preference dataset. If the results move more than changing between DPO-like objectives, that is an empirical reminder of a central theme in preference tuning: data usually dominates small algorithmic differences.
 
@@ -2938,13 +3314,21 @@ Mapping these back to our original matrix:
 
 Here is a code snippet showing how the selection methods could be implemented.
 
-**import** numpy **as** np
+    import numpy as np
 
-x = np.random.randint(10, size=10) print(f"{x=}") sorted_indices = np.argsort(x) x_sorted = x\[sorted_indices\] print(f"{x_sorted=}")
+    x = np.random.randint(10, size=10)
+    print(f"{x=}")
+    sorted_indices = np.argsort(x)
+    x_sorted = x[sorted_indices]
+    print(f"{x_sorted=}")
 
-*\# first way to recover the original array* i_rev = np.zeros(10, dtype=int) i_rev\[sorted_indices\] = np.arange(10) np.allclose(x, x_sorted\[i_rev\])
+    # first way to recover the original array
+    i_rev = np.zeros(10, dtype=int)
+    i_rev[sorted_indices] = np.arange(10)
+    np.allclose(x, x_sorted[i_rev])
 
-*\# second way to recover the original array* np.allclose(x, x_sorted\[np.argsort(sorted_indices)\])
+    # second way to recover the original array
+    np.allclose(x, x_sorted[np.argsort(sorted_indices)])
 
 ### 9.1.3 Fine-Tuning
 
@@ -2996,13 +3380,23 @@ The companion implementation in `code/rejection_sampling/` runs a complete GSM8K
 
 1.  **Build the rollout cache once.**
 
-    cd code/ uv run python -m rejection_sampling.preprocess \\ --config rejection_sampling/configs/top_per_prompt.yaml
+        cd code/
+        uv run python -m rejection_sampling.preprocess \
+            --config rejection_sampling/configs/top_per_prompt.yaml
 
     This generates and scores completions for the shared GSM8K slice. Subsequent training configs reuse the cache as long as the generation and scoring settings stay unchanged.
 
 2.  **Compare reward selection against random controls.**
 
-    cd code/ uv run python -m rejection_sampling.train \\ --config rejection_sampling/configs/top_per_prompt.yaml uv run python -m rejection_sampling.train \\ --config rejection_sampling/configs/random_per_prompt.yaml uv run python -m rejection_sampling.train \\ --config rejection_sampling/configs/top_k_overall.yaml uv run python -m rejection_sampling.train \\ --config rejection_sampling/configs/random_k_overall.yaml
+        cd code/
+        uv run python -m rejection_sampling.train \
+            --config rejection_sampling/configs/top_per_prompt.yaml
+        uv run python -m rejection_sampling.train \
+            --config rejection_sampling/configs/random_per_prompt.yaml
+        uv run python -m rejection_sampling.train \
+            --config rejection_sampling/configs/top_k_overall.yaml
+        uv run python -m rejection_sampling.train \
+            --config rejection_sampling/configs/random_k_overall.yaml
 
     Read results in matched pairs: `top_per_prompt` versus `random_per_prompt`, and `top_k_overall` versus `random_k_overall`. If the reward-selected run does not beat its random baseline, the reward model or sampled completions are not giving useful signal on that slice.
 
@@ -3501,7 +3895,8 @@ The companion code in `code/distillation/` implements SDPO \[297\], the on-polic
 
 1.  **Run the SDPO string-reversal example.**
 
-    cd code/ uv run python -m distillation.train --config distillation/configs/sdpo.yaml
+        cd code/
+        uv run python -m distillation.train --config distillation/configs/sdpo.yaml
 
     Watch `reward`, `loss`, and `skipped`, along with the teacher/student rollout samples printed in the loop. The `skipped` count is the number of polled prompts whose sampled group contained no correct rollout; as the student improves, fewer prompts are skipped and `reward` climbs toward 1.
 
@@ -3573,43 +3968,100 @@ AI feedback’s role in training grew in late 2024 and into 2025 as the field lo
 
 An example rubric is shown below with its associated prompt \[328\]:
 
-\*\*Prompt\*\*: As a museum curator, can you suggest five obscure artifacts that would be perfect for a "Mysteries of the Ancient World" exhibit? Each artifact should come from a different culture and time period, with a brief description of their historical significance and mysterious origins. These artifacts should leave visitors wondering about the secrets and lost knowledge of our past. Thank you for your expertise in bringing this exhibit to life.
+    **Prompt**: As a museum curator, can you suggest five obscure artifacts that would be perfect for a "Mysteries of the Ancient World" exhibit? Each artifact should come from a different culture and time period, with a brief description of their historical significance and mysterious origins. These artifacts should leave visitors wondering about the secrets and lost knowledge of our past. Thank you for your expertise in bringing this exhibit to life.
 
-\*\* Rubric\*\*: 1. The response includes exactly five distinct artifacts as requested. \[Hard Rule\] 2. The response ensures each artifact originates from a different culture and time period. \[Hard Rule\] 3. The response provides a brief description of each artifact's historical significance. \[Hard Rule\] 4. The response provides a brief description of each artifact's mysterious origins or unexplained aspects. \[Hard Rule\] 5. The response conveys a sense of intrigue and mystery that aligns with the theme of the exhibit. \[Hard Rule\] 6. The response clearly and accurately communicates information in a well-organized and coherent manner. \[Principle\] 7. The response demonstrates precision and clarity by avoiding unnecessary or irrelevant details. \[Principle\] 8. The response uses informative and engaging language that stimulates curiosity and critical thinking. \[Principle\] 9. The response shows thoughtful selection by ensuring each example contributes uniquely to the overall theme without redundancy. \[Principle\] 10. The response maintains consistency in style and format to enhance readability and comprehension. \[Principle\]
+    ** Rubric**: 
+    1. The response includes exactly five distinct artifacts as requested. [Hard Rule] 
+    2. The response ensures each artifact originates from a different culture and time period. [Hard Rule] 
+    3. The response provides a brief description of each artifact's historical significance. [Hard Rule] 
+    4. The response provides a brief description of each artifact's mysterious origins or unexplained aspects. [Hard Rule] 
+    5. The response conveys a sense of intrigue and mystery that aligns with the theme of the exhibit. [Hard Rule] 
+    6. The response clearly and accurately communicates information in a well-organized and coherent manner. [Principle] 
+    7. The response demonstrates precision and clarity by avoiding unnecessary or irrelevant details. [Principle] 
+    8. The response uses informative and engaging language that stimulates curiosity and critical thinking. [Principle] 
+    9. The response shows thoughtful selection by ensuring each example contributes uniquely to the overall theme without redundancy. [Principle] 
+    10. The response maintains consistency in style and format to enhance readability and comprehension. [Principle]
 
 The `[``Hard Rule``]` and `[``Principle``]` are specific tags to denote the priority of a certain piece of feedback. Other methods of indicating importance can be used, such as simple priority numbers.
 
 Rubric generation is generally done per-prompt in the training data, which accumulates meaningful synthetic data costs in preparation. To alleviate this, a general rubric is often applied as a starting point per-domain, and then the fine-grained rubric scores per-prompt are assigned by a supervising language model to guide the feedback for training. An example prompt to generate a rubric for a science task is shown below \[325\]:
 
-You are an expert rubric writer for science questions in the domains of Biology, Physics, and Chemistry. Your job is to generate a self-contained set of evaluation criteria ("rubrics") for judging how good a response is to a given question in one of these domains. Rubrics can cover aspects such as factual correctness, depth of reasoning, clarity, completeness, style, helpfulness, and common pitfalls. Each rubric item must be fully self-contained so that non-expert readers need not consult any external information.
+    You are an expert rubric writer for science questions in the domains of Biology, Physics, and Chemistry. 
+    Your job is to generate a self-contained set of evaluation criteria ("rubrics") for judging how good a response is to a given question in one of these domains. 
+    Rubrics can cover aspects such as factual correctness, depth of reasoning, clarity, completeness, style, helpfulness, and common pitfalls. 
+    Each rubric item must be fully self-contained so that non-expert readers need not consult
+    any external information.
 
-Inputs: - question: The full question text. - reference_answer: The ideal answer, including any key facts or explanations.
+    Inputs:
+    - question: The full question text.
+    - reference_answer: The ideal answer, including any key facts or explanations.
 
-Total items: - Choose 7-20 rubric items based on question complexity.
+    Total items:
+    - Choose 7-20 rubric items based on question complexity.
 
-Each rubric item must include exactly three keys: 1. title (2-4 words) 2. description: One sentence beginning with its category prefix, explicitly stating what to look for.
+    Each rubric item must include exactly three keys:
+    1. title (2-4 words)
+    2. description: One sentence beginning with its category prefix, explicitly stating what to look for. 
 
-For example: - Essential Criteria: States that in the described closed system, the total mechanical energy (kinetic plus potential) before the event equals the total mechanical energy after the event. - Important Criteria: Breaks down numerical energy values for each stage, demonstrating that initial kinetic energy plus initial potential energy equals final kinetic energy plus final potential energy. - Optional Criteria: Provides a concrete example, such as a pendulum converting between kinetic and potential energy, to illustrate how energy shifts within the system. - Pitfall Criteria: Does not mention that frictional or air-resistance losses are assumed negligible when applying conservation of mechanical energy.
+    For example:
+    - Essential Criteria: States that in the described closed system, the total mechanical energy (kinetic plus potential)
+    before the event equals the total mechanical energy after the event.
+    - Important Criteria: Breaks down numerical energy values for each stage, demonstrating that initial kinetic
+    energy plus initial potential energy equals final kinetic energy plus final potential energy.
+    - Optional Criteria: Provides a concrete example, such as a pendulum converting between kinetic and potential
+    energy, to illustrate how energy shifts within the system.
+    - Pitfall Criteria: Does not mention that frictional or air-resistance losses are assumed negligible when applying
+    conservation of mechanical energy.
 
-3\. weight: For Essential/Important/Optional, use 1-5 (5 = most important); for Pitfall, use -1 or -2.
+    3. weight: For Essential/Important/Optional, use 1-5 (5 = most important); for Pitfall, use -1 or -2.
 
-Category guidance: - Essential: Critical facts or safety checks; omission invalidates the response. - Important: Key reasoning or completeness; strongly affects quality. - Optional: Nice-to-have style or extra depth. - Pitfall: Common mistakes or omissions; highlight things often missed.
+    Category guidance:
+    - Essential: Critical facts or safety checks; omission invalidates the response.
+    - Important: Key reasoning or completeness; strongly affects quality.
+    - Optional: Nice-to-have style or extra depth.
+    - Pitfall: Common mistakes or omissions; highlight things often missed.
 
-Format notes: - When referring to answer choices, explicitly say "Identifies (A)", "Identifies (B)", etc. - If a clear conclusion is required (e.g. "The final answer is (B)"), include an Essential Criteria for it. - If reasoning should precede the final answer, include an Important Criteria to that effect. - If brevity is valued, include an Optional Criteria about conciseness.
+    Format notes:
+    - When referring to answer choices, explicitly say "Identifies (A)", "Identifies (B)", etc.
+    - If a clear conclusion is required (e.g. "The final answer is (B)"), include an Essential Criteria for it.
+    - If reasoning should precede the final answer, include an Important Criteria to that effect.
+    - If brevity is valued, include an Optional Criteria about conciseness.
 
-Output: Provide a JSON array of rubric objects. Each object must contain exactly three keys-title, description, and weight. Do not copy large blocks of the question or reference_answer into the text. Each description must begin with its category prefix, and no extra keys are allowed. Now, given the question and reference_answer, generate the rubric as described. The reference answer is an ideal response but not necessarily exhaustive; use it only as guidance.
+    Output: Provide a JSON array of rubric objects. Each object must contain exactly three keys-title, description, and weight.
+    Do not copy large blocks of the question or reference_answer into the text. Each description must begin with its category
+    prefix, and no extra keys are allowed.
+    Now, given the question and reference_answer, generate the rubric as described. 
+    The reference answer is an ideal response but not necessarily exhaustive; use it only as guidance.
 
 Another, simpler example follows as \[327\]:
 
-SYSTEM: You generate evaluation rubrics for grading an assistant's response to a user prompt.
+    SYSTEM:
+    You generate evaluation rubrics for grading an assistant's response to a user prompt.
 
-Rubric design rules: - Each criterion must be atomic (one thing), objective as possible, and written so a grader can apply it consistently. - Avoid redundant/overlapping criteria; prefer criteria that partition different failure modes. - Make criteria self-contained (don't rely on unstated context). - Include an importance weight for each criterion.
+    Rubric design rules:
+    - Each criterion must be atomic (one thing), objective as possible, and written so a grader can apply it consistently.
+    - Avoid redundant/overlapping criteria; prefer criteria that partition different failure modes.
+    - Make criteria self-contained (don't rely on unstated context).
+    - Include an importance weight for each criterion.
 
-Output format (JSON only): { "initial_reasoning": "\<brief rationale for what matters for this prompt\>", "rubrics": \[ { "reasoning": "\<why this criterion matters\>", "criterion": "\<clear, testable criterion\>", "weight": \<integer 1-10\> }, ... \] }
+    Output format (JSON only):
+    {
+      "initial_reasoning": "<brief rationale for what matters for this prompt>",
+      "rubrics": [
+        {
+          "reasoning": "<why this criterion matters>",
+          "criterion": "<clear, testable criterion>",
+          "weight": <integer 1-10>
+        },
+        ...
+      ]
+    }
 
-USER: User prompt: {prompt}
+    USER:
+    User prompt:
+    {prompt}
 
-Generate the rubric JSON now.
+    Generate the rubric JSON now.
 
 As you can see, the prompts can be very detailed and are tuned to the training setup.
 
@@ -3639,13 +4091,28 @@ Before diving deeper, it is useful to distinguish related terms that are often u
 
 An AI model uses any external tools by outputting special tokens to trigger a certain endpoint. These can be anything from highly specific tools, such as functions that return the weather at a specific place, to code interpreters or search engines that act as fundamental building blocks of complex behaviors. Our first example showcased where language models need more up-to-date information to complement the fixed nature of their weights trained on past data, but there are also tools such as code execution, which lets language models get around their probabilistic, generative nature and return precise answers. Consider the task of printing an approximation of pi to 50 digits (without reciting it from memory and risking hallucination). A language model with tools can do the following:
 
-\<code\> from decimal import Decimal, getcontext getcontext().prec = 60
+    <code>
+    from decimal import Decimal, getcontext
+    getcontext().prec = 60
 
-def compute_pi(): \# Chudnovsky algorithm for computing pi C = 426880 \* Decimal(10005).sqrt() K, M, X, L, S = 0, 1, 1, 13591409, Decimal(13591409) for i in range(1, 100): M = M \* (K\*\*3 - 16\*K) // ((i)\*\*3) K += 12 L += 545140134 X \*= -262537412640768000 S += Decimal(M \* L) / X return C / S
+    def compute_pi():
+        # Chudnovsky algorithm for computing pi
+        C = 426880 * Decimal(10005).sqrt()
+        K, M, X, L, S = 0, 1, 1, 13591409, Decimal(13591409)
+        for i in range(1, 100):
+            M = M * (K**3 - 16*K) // ((i)**3)
+            K += 12
+            L += 545140134
+            X *= -262537412640768000
+            S += Decimal(M * L) / X
+        return C / S
 
-print(str(compute_pi())\[:52\]) \</code\>
+    print(str(compute_pi())[:52])
+    </code>
 
-\<output\> 3.14159265358979323846264338327950288419716939937510 \</output\>
+    <output>
+    3.14159265358979323846264338327950288419716939937510
+    </output>
 
 This chapter provides an overview of the origins of tool-use in modern language models, its fundamentals and formatting, and current trade-offs in utilizing tools well in leading models.
 
@@ -3661,29 +4128,108 @@ Evaluating tool-use models involves multiple dimensions: exact-match metrics for
 
 Training data for function calling looks much like other post-training data, with one addition: a system prompt that instructs the model what tools it has available. An example formatted data point with the system prompt and tools available in JSON format is shown below:
 
-\<**system**\> You are a function-calling AI model. You are provided with function signatures within \<**functions**\>\</**functions**\> XML tags. You may call one or more functions to assist with the user query. Don't make assumptions about what values to plug into functions. \</**system**\>
+    <system>
+    You are a function-calling AI model. You are provided with function signatures within <functions></functions> XML tags. You may call one or more functions to assist with the user query. Don't make assumptions about what values to plug into functions.
+    </system>
 
-\<**functions**\> \[ { "name": "search_movies", "description": "Search for movies by title and return matching results with IDs.", "parameters": { "type": "object", "properties": { "query": { "type": "string", "description": "The search string for the movie title." } }, "required": \["query"\] } }, { "name": "get_movie_details", "description": "Fetch detailed information about a movie including cast, runtime, and synopsis.", "parameters": { "type": "object", "properties": { "movie_id": { "type": "string", "description": "The unique identifier for the movie." } }, "required": \["movie_id"\] } }, { "name": "get_showtimes", "description": "Get movie showtimes for a given location and date.", "parameters": { "type": "object", "properties": { "movie_id": { "type": "string", "description": "The unique identifier for the movie." }, "zip_code": { "type": "string", "description": "ZIP code for theater location." }, "date": { "type": "string", "description": "Date for showtimes in YYYY-MM-DD format." } }, "required": \["movie_id", "zip_code"\] } } \] \</**functions**\>
+    <functions>
+    [
+      {
+        "name": "search_movies",
+        "description": "Search for movies by title and return matching results with IDs.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "The search string for the movie title."
+            }
+          },
+          "required": ["query"]
+        }
+      },
+      {
+        "name": "get_movie_details",
+        "description": "Fetch detailed information about a movie including cast, runtime, and synopsis.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "movie_id": {
+              "type": "string",
+              "description": "The unique identifier for the movie."
+            }
+          },
+          "required": ["movie_id"]
+        }
+      },
+      {
+        "name": "get_showtimes",
+        "description": "Get movie showtimes for a given location and date.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "movie_id": {
+              "type": "string",
+              "description": "The unique identifier for the movie."
+            },
+            "zip_code": {
+              "type": "string",
+              "description": "ZIP code for theater location."
+            },
+            "date": {
+              "type": "string",
+              "description": "Date for showtimes in YYYY-MM-DD format."
+            }
+          },
+          "required": ["movie_id", "zip_code"]
+        }
+      }
+    ]
+    </functions>
 
-\<**user**\> ... \</**user**\>
+    <user>
+    ...
+    </user>
 
 Although the language model is generating a completion, if it is following this example, it would generate the tokens `search_movies("Star Wars")` to search for Star Wars. This is often encoded inside special formatting tokens, and then the next tokens inserted into the sequence will contain the tool outputs. With this, models can learn to accomplish more challenging tasks than many simple standalone models.
 
 A popular form of tool use is code-execution, allowing the model to get precise answers to complex logic or mathematics problems. For example, code-execution within a language model execution can occur during the thinking tokens of a reasoning model. As with function calling, there are tags first for the code to execute (generated by the model) and then a separate tag for output.
 
-\<\|user\|\> What is the 50th Fibonacci number? (Use the standard F_0=0, F_1=1 indexing.)\</s\> \<\|assistant\|\> \<think\> Okay, I will compute the 50th Fibonacci number with a simple loop, then return the result.
+    <|user|>
+    What is the 50th Fibonacci number? (Use the standard F_0=0, F_1=1 indexing.)</s>
+    <|assistant|>
+    <think>
+    Okay, I will compute the 50th Fibonacci number with a simple loop, then return the result.
 
-\<code\> def fib(n): a, b = 0, 1 for \_ in range(n): a, b = b, a + b return a
+    <code>
+    def fib(n):
+        a, b = 0, 1
+        for _ in range(n):
+            a, b = b, a + b
+        return a
 
-fib(50) \</code\>
+    fib(50)
+    </code>
 
-\<output\> 12586269025 \</output\> \</think\> \<answer\> The 50th Fibonacci number is 12 586 269 025. \</answer\>
+    <output>
+    12586269025
+    </output>
+    </think>
+    <answer>
+    The 50th Fibonacci number is 12 586 269 025.
+    </answer>
 
 What is happening under the hood is the language model is interleaving tool inputs and outputs with standard autoregressively generated tokens. The orchestration loop that makes this possible looks something like:
 
-messages = \[...\] **while** True: response = model(messages, tools=tools) **if** **not** response.tool_calls: **return** response.text
+    messages = [...]
+    while True:
+        response = model(messages, tools=tools)
+        if not response.tool_calls:
+            return response.text
 
-**for** call **in** response.tool_calls: result = execute_tool(call.name, call.args) messages.append({"role": "tool", "tool_call_id": call.id, "content": result})
+        for call in response.tool_calls:
+            result = execute_tool(call.name, call.args)
+            messages.append({"role": "tool", "tool_call_id": call.id, "content": result})
 
 **Figura 42.** Tool use interleaves model generation with external execution: the model generates tokens until it emits a tool call (orange), an external system executes the tool and injects the output (purple) into the sequence, then the model continues generating. Models can emit multiple tool calls in a single generation. During training, tool call and output tokens are typically masked from the loss.
 
@@ -3715,17 +4261,45 @@ MCP enables developers of tool-use models to use the same infrastructure to atta
 
 An MCP server exposes tools to clients through a standardized JSON schema:
 
-{ "name": "get_weather", "description": "Get current weather for a location", "inputSchema": { "type": "object", "properties": { "location": { "type": "string", "description": "City name or coordinates" } }, "required": \["location"\] } }
+    {
+      "name": "get_weather",
+      "description": "Get current weather for a location",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "City name or coordinates"
+          }
+        },
+        "required": ["location"]
+      }
+    }
 
 A minimal Python MCP server implementing this tool:
 
-**from** mcp.server **import** Server **from** mcp.types **import** Tool, TextContent
+    from mcp.server import Server
+    from mcp.types import Tool, TextContent
 
-server = Server("weather-server")
+    server = Server("weather-server")
 
-\@server.list_tools() **async** **def** list_tools(): **return** \[Tool( name="get_weather", description="Get current weather", inputSchema={ "type": "object", "properties": {"location": {"type": "string"}}, "required": \["location"\] } )\]
+    @server.list_tools()
+    async def list_tools():
+        return [Tool(
+            name="get_weather",
+            description="Get current weather",
+            inputSchema={
+                "type": "object",
+                "properties": {"location": {"type": "string"}},
+                "required": ["location"]
+            }
+        )]
 
-\@server.call_tool() **async** **def** call_tool(name: str, arguments: dict): **if** name == "get_weather": weather = fetch_weather(arguments\["location"\]) **return** \[TextContent(type="text", text=weather)\]
+    @server.call_tool()
+    async def call_tool(name: str, arguments: dict):
+        if name == "get_weather":
+            weather = fetch_weather(arguments["location"])
+            return [TextContent(type="text", text=weather)]
 
 ## 13.5 Implementation Details
 
@@ -3737,7 +4311,28 @@ There are multiple formatting and masking decisions when implementing a tool-use
 
 - **Multi-turn formatting for tool invocations**: It is common practice when implementing tool-calling models to add more structure to the data-loading format. Standard practice for post-training datasets is a list of messages alternating between user and assistant (and often a system message). The overall structure is the same for tool-use, but the turns of the model are split into subsections of content delimited by each tool call. An example is below.
 
-messages = \[ { "content": "You are a function calling AI model. You are provided with function signatures within \<functions\>\</functions\> XML tags. You may call one or more functions to assist with the user query. Don't make assumptions about what values to plug into functions.", "function_calls": null, "functions": "\[{\\"name\\": \\"live_giveaways_by_type\\", \\"description\\": \\"Retrieve live giveaways from the GamerPower API based on the specified type.\\", \\"parameters\\": {\\"type\\": {\\"description\\": \\"The type of giveaways to retrieve (e.g., game, loot, beta).\\", \\"type\\": \\"str\\", \\"default\\": \\"game\\"}}}\]", "role": "system" }, { "content": "Where can I find live giveaways for beta access and games?", "function_calls": null, "functions": null, "role": "user" }, { "content": null, "function_calls": "live_giveaways_by_type(type='beta')\\nlive_giveaways_by_type(type='game')", "functions": null, "role": "assistant" } \]
+<!-- -->
+
+    messages = [
+    {
+    "content": "You are a function calling AI model. You are provided with function signatures within <functions></functions> XML tags. You may call one or more functions to assist with the user query. Don't make assumptions about what values to plug into functions.",
+    "function_calls": null,
+    "functions": "[{\"name\": \"live_giveaways_by_type\", \"description\": \"Retrieve live giveaways from the GamerPower API based on the specified type.\", \"parameters\": {\"type\": {\"description\": \"The type of giveaways to retrieve (e.g., game, loot, beta).\", \"type\": \"str\", \"default\": \"game\"}}}]",
+    "role": "system"
+    },
+    {
+    "content": "Where can I find live giveaways for beta access and games?",
+    "function_calls": null,
+    "functions": null,
+    "role": "user"
+    },
+    {
+    "content": null,
+    "function_calls": "live_giveaways_by_type(type='beta')\nlive_giveaways_by_type(type='game')",
+    "functions": null,
+    "role": "assistant"
+    }
+    ]
 
 - **Tokenization and message format details**: Tool calls in OpenAI messages format often undergo tokenization through chat templates (the code for controlling the format of messages sent to the model), converting structured JSON representations into raw token streams. This process varies across model architectures—some use special tokens to demarcate tool calls, while others maintain structured formatting within the token stream itself. [Chat template playgrounds](https://huggingface.co/spaces/huggingfacejs/chat-template-playground?modelId=Qwen/Qwen3-8B) provide an interactive environment to explore how different models convert message formats to token streams.
 
@@ -3907,17 +4502,27 @@ $$\begin{equation}
 
 This sample-based form is far simpler to implement, particularly when dealing directly with log probabilities used frequently in language model training.
 
-*\# Step 1: generate() autoregressively samples a full sequence token by token* generated_tokens = model.generate(inputs)
+    # Step 1: generate() autoregressively samples a full sequence token by token
+    generated_tokens = model.generate(inputs)
 
-*\# Step 2: forward() runs a single pass over the sequence to get per-token logits (no sampling)* logits = model.forward(generated_tokens\[:, :-1\]).logits ref_logits = ref_model.forward(generated_tokens\[:, :-1\]).logits
+    # Step 2: forward() runs a single pass over the sequence to get per-token logits (no sampling)
+    logits       = model.forward(generated_tokens[:, :-1]).logits
+    ref_logits   = ref_model.forward(generated_tokens[:, :-1]).logits
 
-*\# Step 3: Convert logits to log-probabilities* logprobs = F.log_softmax(logits, dim=-1) ref_logprobs = F.log_softmax(ref_logits, dim=-1)
+    # Step 3: Convert logits to log-probabilities
+    logprobs     = F.log_softmax(logits, dim=-1)
+    ref_logprobs = F.log_softmax(ref_logits, dim=-1)
 
-*\# Step 4: Gather the probability each model assigns to the tokens that were actually generated* token_logprobs = logprobs.gather(-1, generated_tokens\[:, 1:\].unsqueeze(-1)).squeeze(-1) ref_token_logprobs = ref_logprobs.gather(-1, generated_tokens\[:, 1:\].unsqueeze(-1)).squeeze(-1)
+    # Step 4: Gather the probability each model assigns to the tokens that were actually generated
+    token_logprobs     = logprobs.gather(-1, generated_tokens[:, 1:].unsqueeze(-1)).squeeze(-1)
+    ref_token_logprobs = ref_logprobs.gather(-1, generated_tokens[:, 1:].unsqueeze(-1)).squeeze(-1)
 
-*\# Step 5: Sum to get sequence-level log-probs; their difference approximates KL* seq_logprob = token_logprobs.sum(dim=-1) ref_seq_logprob = ref_token_logprobs.sum(dim=-1)
+    # Step 5: Sum to get sequence-level log-probs; their difference approximates KL
+    seq_logprob     = token_logprobs.sum(dim=-1)
+    ref_seq_logprob = ref_token_logprobs.sum(dim=-1)
 
-kl_approx = seq_logprob - ref_seq_logprob kl_full = F.kl_div(ref_logprobs, logprobs, reduction='batchmean')
+    kl_approx = seq_logprob - ref_seq_logprob
+    kl_full   = F.kl_div(ref_logprobs, logprobs, reduction='batchmean')
 
 Some example implementations include [TRL](https://github.com/huggingface/trl/blob/5c21de30ae210e4251ead85517ba8dfe3f210e81/trl/trainer/ppo_trainer.py#L1150) and [Hamish Ivison’s JAX code](https://github.com/hamishivi/EasyLM/blob/main/EasyLM/models/llama/llama_train_ppo.py#L278).
 
@@ -4148,33 +4753,57 @@ Prompting well with modern language models can involve preparing an entire repor
 
 Early language models were only used as intelligent autocomplete. In order to use these models in a more open ended way, multiple examples were shown to the model and then a prompt that is an incomplete phrase. This was called few-shot or in-context learning \[69\], and at the time instruction tuning or RLHF was not involved. In the case of popular evaluations, this would look like:
 
-\# Few-Shot Prompt for a Question-Answering Task You are a helpful assistant. Below are example interactions to guide your style:
+    # Few-Shot Prompt for a Question-Answering Task
+    You are a helpful assistant. Below are example interactions to guide your style:
 
-\### Example 1 User: "What is the capital of France?" Assistant: "The capital of France is Paris."
+    ### Example 1
+    User: "What is the capital of France?"
+    Assistant: "The capital of France is Paris."
 
-\### Example 2 User: "Who wrote the novel '1984'?" Assistant: "George Orwell wrote '1984.'"
+    ### Example 2
+    User: "Who wrote the novel '1984'?"
+    Assistant: "George Orwell wrote '1984.'"
 
-\# Now continue the conversation using the same style. User: "Can you explain what a neural network is?" Assistant:
+    # Now continue the conversation using the same style.
+    User: "Can you explain what a neural network is?"
+    Assistant:
 
 Here, there are multiple ways to evaluate an answer. If we consider a question in the style of MMLU, where the model has to choose between multiple answers:
 
-\# Few-Shot Prompt
+    # Few-Shot Prompt
 
-Below are examples of MMLU-style questions and answers:
+    Below are examples of MMLU-style questions and answers:
 
-\### Example 1 Q: A right triangle has legs of lengths 3 and 4. What is the length of its hypotenuse? Choices: (A) 5 (B) 6 (C) 7 (D) 8
+    ### Example 1
+    Q: A right triangle has legs of lengths 3 and 4. What is the length of its hypotenuse?
+    Choices:
+    (A) 5
+    (B) 6
+    (C) 7
+    (D) 8
 
-Correct Answer: (A)
+    Correct Answer: (A)
 
-\### Example 2 Q: Which of the following is the chemical symbol for Sodium? Choices: (A) Na (B) S (C) N (D) Ca
+    ### Example 2
+    Q: Which of the following is the chemical symbol for Sodium?
+    Choices:
+    (A) Na
+    (B) S
+    (C) N
+    (D) Ca
 
-Correct Answer: (A)
+    Correct Answer: (A)
 
-\### Now answer the new question in the same style:
+    ### Now answer the new question in the same style:
 
-Q: Which theorem states that if a function f is continuous on a closed interval \[a,b\], then f must attain both a maximum and a minimum on that interval? Choices: (A) The Mean Value Theorem (B) The Intermediate Value Theorem (C) The Extreme Value Theorem (D) Rolle's Theorem
+    Q: Which theorem states that if a function f is continuous on a closed interval [a,b], then f must attain both a maximum and a minimum on that interval?
+    Choices:
+    (A) The Mean Value Theorem
+    (B) The Intermediate Value Theorem
+    (C) The Extreme Value Theorem
+    (D) Rolle's Theorem
 
-Correct Answer:
+    Correct Answer:
 
 To have a language model provide an answer here one could either generate a token based on some sampling parameters and see if the answer is correct, A, B, C, or D (formatting above like this proposed in \[377\]), or one could look at the log-probabilities of each token and mark the task as correct if the correct answer is more likely.
 
@@ -4190,27 +4819,30 @@ Returning to the history of evaluation. Regardless of the setting used above, a 
 
 Within the evolution of few-shot prompting came the idea of including chain-of-thought examples for the model to follow. This comes in the form of examples where the in-context examples have written-out reasoning, such as below (which later was superseded by explicit prompting to generate reasoning steps) \[378\]:
 
-\# standard prompting Q: Roger has 5 tennis balls. He buys 2 more cans of tennis balls. Each can has 3 tennis balls. How many tennis balls does he have now?
+    # standard prompting
+    Q: Roger has 5 tennis balls. He buys 2 more cans of tennis balls. Each can has 3 tennis balls. How many tennis balls does he have now?
 
-A: The answer is 11.
+    A: The answer is 11.
 
-Q: The cafeteria had 23 apples. If they used 20 to make lunch and bought 6 more, how many apples do they have?
+    Q: The cafeteria had 23 apples. If they used 20 to make lunch and bought 6 more, how many apples do they have?
 
-A: The answer is ...
+    A: The answer is ...
 
-\# chain-of-thought prompting Q: Roger has 5 tennis balls. He buys 2 more cans of tennis balls. Each can has 3 tennis balls. How many tennis balls does he have now?
+    # chain-of-thought prompting
+    Q: Roger has 5 tennis balls. He buys 2 more cans of tennis balls. Each can has 3 tennis balls. How many tennis balls does he have now?
 
-A: Roger started with 5 balls. 2 cans of 3 tennis balls each is 6 tennis balls. 5 + 6 = 11. The answer is 11.
+    A: Roger started with 5 balls. 2 cans of 3 tennis balls each is 6 tennis balls. 5 + 6 = 11. The answer is 11.
 
-Q: The cafeteria had 23 apples. If they used 20 to make lunch and bought 6 more, how many apples do they have?
+    Q: The cafeteria had 23 apples. If they used 20 to make lunch and bought 6 more, how many apples do they have?
 
-A: The cafeteria had 23 apples originally. They...
+    A: The cafeteria had 23 apples originally. They...
 
 ### 16.1.3 Zero-Shot Instruction Following
 
 Over time, as language models became stronger, they evolved to zero-shot evaluation, a.k.a. “zero-shot learners” \[71\]. FLAN showed that language models fine-tuned on specific tasks, as a precursor to modern instruction tuning, could generalize to zero-shot questions they were not trained on \[71\] (similar results are also found in T0 \[72\]). This is the emergence of instruction fine-tuning (IFT), an important precursor to RLHF and post-training. A zero-shot question would look like:
 
-User: "What is the capital of France?" Assistant:
+    User: "What is the capital of France?"
+    Assistant:
 
 From here in 2022, the timeline begins to include key early RLHF works, such as InstructGPT. The core capability and use-case shift that accompanied these models is even more open-ended usage. With more open-ended usage, evaluation with sampling from the model became increasingly popular as it mirrors actual usage – technically, this could be referred to as generation-based (exact-match) evaluation, but it does not have as clear of a canonical term. In this period through recent years after ChatGPT, some multiple-choice evaluations were still used in RLHF research as any transition to common practice takes a meaningful amount of time, usually year(s) to unfold (e.g. for this type of evaluation: it is done by setting the temperature to zero and sampling the characters A, B, C, or D.).
 
@@ -4220,11 +4852,15 @@ With the rise of reasoning models at the end of 2024 and the beginning of 2025, 
 
 For example, in some setups, for every question or category there are specially designed prompts to help extract behavior from the model. Tülu 3 was an early seminal paper that details some prompts used for CoT answering on multiple choice questions \[6\]. Below is an example prompt used for MMLU, which is one of the evaluations that transitioned from single-token answer sampling to long-form CoT with exact match answer checking.
 
-Answer the following multiple-choice question by giving the correct answer letter in parentheses. Provide CONCISE reasoning for the answer, and make sure to finish the response with "Therefore, the answer is (ANSWER_LETTER)" where (ANSWER_LETTER) is one of (A), (B), (C), (D), (E), etc.
+    Answer the following multiple-choice question by giving the correct answer letter in parentheses.
+    Provide CONCISE reasoning for the answer, and make sure to finish the response with "Therefore, the answer is (ANSWER_LETTER)" where (ANSWER_LETTER) is one of (A), (B), (C), (D), (E), etc.
 
-Question: {question} (A) {choice_A} (B) {choice_B} (C) ...
+    Question: {question}
+    (A) {choice_A}
+    (B) {choice_B}
+    (C) ...
 
-Answer the above question and REMEMBER to finish your response with the exact phrase "Therefore, the answer is (ANSWER_LETTER)" where (ANSWER_LETTER) is one of (A), (B), (C), (D), (E), etc.
+    Answer the above question and REMEMBER to finish your response with the exact phrase "Therefore, the answer is (ANSWER_LETTER)" where (ANSWER_LETTER) is one of (A), (B), (C), (D), (E), etc.
 
 This, especially when the models use special formatting to separate thinking tokens from answer tokens, necessitated the most recent major update to evaluation regimes. Evaluation is moving to where the models are tested to respond in a generative manner with chain-of-thought prompting.
 
@@ -6228,9 +6864,7 @@ $$\begin{equation}
 
 - **Expectation of Reward Optimization**: The primary goal in RL, which involves maximizing the expected cumulative reward:
 
-  
-
-$$\begin{equation}
+  $$\begin{equation}
   \tag{157}{\max_{\theta} \mathbb{E}_{s \sim \rho_\pi, a \sim \pi_\theta}\left[\sum_{t=0}^{\infty} \gamma^t r_t\right]}
   \end{equation}$$
 
@@ -6238,9 +6872,7 @@ $$\begin{equation}
 
 - **Finite Horizon Reward ($J(\pi_\theta)$)**: The expected finite-horizon discounted return of the policy $\pi_\theta$, parameterized by $\theta$, is defined as:
 
-  
-
-$$\begin{equation}
+  $$\begin{equation}
   \tag{158}{J(\pi_\theta) = \mathbb{E}_{\tau \sim \pi_\theta} \left[ \sum_{t=0}^T \gamma^t r_t \right]}
   \end{equation}$$
 
@@ -6294,45 +6926,51 @@ The second reason is that many people missed the fact that well-done RLHF boosts
 
 Throughout this appendix, the term “chattiness” is used to encompass the growing length of responses from models trained with RLHF, but it also encompasses techniques like heavy Markdown use, emojis, and formatting the answer in bulleted lists. To ground the discussion in this appendix, an example completion for two models in the same Tülu 3 family is shown below – one with only instruction fine-tuning and the second with preference fine-tuning applied via length-controlled DPO. First, the instruction-tuned completion to the prompt `What is reinforcement learning from human feedback?` (the exact model is [Llama 3.1 Tulu 3 70B SFT](https://huggingface.co/allenai/Llama-3.1-Tulu-3-70B-SFT)) \[6\]:
 
-Reinforcement learning from human feedback, also known as human-in-the-loop reinforcement learning, is a subfield of machine learning where the primary goal is to train reinforcement learning agents to perform tasks by incorporating feedback from humans. This feedback can come in various forms, such as binary rewards (e.g., right or wrong), scalar rewards, preferences between actions, demonstrations, natural language instructions, or corrections to the agent's behavior.
+    Reinforcement learning from human feedback, also known as human-in-the-loop reinforcement learning, is a subfield of machine learning where the primary goal is to train reinforcement learning agents to perform tasks by incorporating feedback from humans. This feedback can come in various forms, such as binary rewards (e.g., right or wrong), scalar rewards, preferences between actions, demonstrations, natural language instructions, or corrections to the agent's behavior.
 
-The idea behind reinforcement learning from human feedback is to leverage human intuition and decision-making abilities to guide the learning process of the agent. In traditional reinforcement learning, an agent learns to make decisions by interacting with an environment and receiving rewards or punishments based on the outcomes of those interactions. However, defining a suitable reward function can be challenging and time-consuming, often leading to reward shaping or reward hacking, where the agent finds unexpected and often unintended ways to maximize the reward.
+    The idea behind reinforcement learning from human feedback is to leverage human intuition and decision-making abilities to guide the learning process of the agent. In traditional reinforcement learning, an agent learns to make decisions by interacting with an environment and receiving rewards or punishments based on the outcomes of those interactions. However, defining a suitable reward function can be challenging and time-consuming, often leading to reward shaping or reward hacking, where the agent finds unexpected and often unintended ways to maximize the reward.
 
-By using human feedback, reinforcement learning can address some of these issues by allowing humans to directly influence the learning process. Human trainers can provide real-time feedback, scale their feedback to match the complexity of the task, and update their feedback based on the agent's progress. This approach can lead to more robust and generalized agents, as they are guided not by handcrafted reward functions but by the nuanced understanding and experience of human trainers.
+    By using human feedback, reinforcement learning can address some of these issues by allowing humans to directly influence the learning process. Human trainers can provide real-time feedback, scale their feedback to match the complexity of the task, and update their feedback based on the agent's progress. This approach can lead to more robust and generalized agents, as they are guided not by handcrafted reward functions but by the nuanced understanding and experience of human trainers.
 
-However, reinforcement learning from human feedback faces several challenges, such as the high cost of obtaining human feedback, subjective and inconsistent feedback, scaling issues, and methods for efficient and effective integration of human feedback into learning algorithms. Despite these challenges, the research in this area has shown promising results in various applications, including robotics, video games, prosthetics control, natural language processing, and many more.
+    However, reinforcement learning from human feedback faces several challenges, such as the high cost of obtaining human feedback, subjective and inconsistent feedback, scaling issues, and methods for efficient and effective integration of human feedback into learning algorithms. Despite these challenges, the research in this area has shown promising results in various applications, including robotics, video games, prosthetics control, natural language processing, and many more.
 
 And the post-RLHF completion from [Llama 3.1 Tulu 3 70B DPO](https://huggingface.co/allenai/Llama-3.1-Tulu-3-70B-DPO):
 
-Reinforcement learning from human feedback (RLHF) is a subset of reinforcement learning (RL) where the rewards that guide the learning process are provided by humans, rather than a pre-specified numerical reward function. This is particularly useful in situations where it is hard or infeasible to design a suitable reward function, or where the desired performance involves subjective judgments that humans are uniquely equipped to provide.
+    Reinforcement learning from human feedback (RLHF) is a subset of reinforcement learning (RL) where the rewards that guide the learning process are provided by humans, rather than a pre-specified numerical reward function. This is particularly useful in situations where it is hard or infeasible to design a suitable reward function, or where the desired performance involves subjective judgments that humans are uniquely equipped to provide.
 
-In traditional reinforcement learning, an agent interacts with an environment. With each interaction, the agent performs an action, receives an observation, and gets a numerical reward that tells it how well it performed in that situation. Through many such interactions, the agent learns to maximize the cumulative reward.
+    In traditional reinforcement learning, an agent interacts with an environment. With each interaction, the agent performs an action, receives an observation, and gets a numerical reward that tells it how well it performed in that situation. Through many such interactions, the agent learns to maximize the cumulative reward.
 
-In contrast, in reinforcement learning from human feedback:
+    In contrast, in reinforcement learning from human feedback:
 
-1\. \*\*Human Input:\*\* Instead of a predefined reward function, the feedback comes from human evaluators, who provide qualitative, subjective judgments about the agent's performance. This feedback can be in various forms, such as numerical ratings, binary preference signals, natural language feedback, or even demonstrations showing how to improve.
+    1. **Human Input:** Instead of a predefined reward function, the feedback comes from human evaluators, who provide qualitative, subjective judgments about the agent's performance. This feedback can be in various forms, such as numerical ratings, binary preference signals, natural language feedback, or even demonstrations showing how to improve.
 
-2\. \*\*Feedback Loop:\*\* Human evaluators observe the agent's actions or outcomes and provide feedback in real-time (or close to real-time). The agent learns through this iterative feedback loop, gradually adapting its behavior to align more closely with human preferences.
+    2. **Feedback Loop:** Human evaluators observe the agent's actions or outcomes and provide feedback in real-time (or close to real-time). The agent learns through this iterative feedback loop, gradually adapting its behavior to align more closely with human preferences.
 
-3\. \*\*Reward Shaping:\*\* Because raw human feedback is not always directly usable in learning algorithms due to variability and potential bias, a reward shaping process may be involved, whereby human feedback is converted into a more stable signal that guides learning.
+    3. **Reward Shaping:** Because raw human feedback is not always directly usable in learning algorithms due to variability and potential bias, a reward shaping process may be involved, whereby human feedback is converted into a more stable signal that guides learning.
 
-4\. \*\*Preference-based RL:\*\* One common approach within RLHF is preference-based reinforcement learning, where the agent is trained by comparing pairs of actions (or outcomes) and receiving human feedback on which one is better. From these pairwise comparisons, the agent infers a reward function that it can use to guide its actions.
+    4. **Preference-based RL:** One common approach within RLHF is preference-based reinforcement learning, where the agent is trained by comparing pairs of actions (or outcomes) and receiving human feedback on which one is better. From these pairwise comparisons, the agent infers a reward function that it can use to guide its actions.
 
-5\. \*\*Inverse Reinforcement Learning (IRL):\*\* Another technique used in RLHF is IRL, which aims to infer the underlying reward function that could explain human actions or decisions, and then use that reward function to train the agent.
+    5. **Inverse Reinforcement Learning (IRL):** Another technique used in RLHF is IRL, which aims to infer the underlying reward function that could explain human actions or decisions, and then use that reward function to train the agent.
 
-\*\*Applications:\*\*
+    **Applications:**
 
-Reinforcement Learning from human feedback has found applications in:
+    Reinforcement Learning from human feedback has found applications in:
 
-\- \*\*Robotics:\*\* Teaching robots to perform tasks that are difficult to specify with predefined reward functions. - \*\*Game playing:\*\* Human feedback can guide AI agents to better emulate human-like strategies or behaviors. - \*\*Language and content generation:\*\* For example, suggestively guiding AI models to generate more coherent, creative, or helpful content. - \*\*Recommendation systems:\*\* Human feedback can help adjust and refine the recommendations provided to users.
+    - **Robotics:** Teaching robots to perform tasks that are difficult to specify with predefined reward functions.
+    - **Game playing:** Human feedback can guide AI agents to better emulate human-like strategies or behaviors.
+    - **Language and content generation:** For example, suggestively guiding AI models to generate more coherent, creative, or helpful content.
+    - **Recommendation systems:** Human feedback can help adjust and refine the recommendations provided to users.
 
-\*\*Challenges:\*\*
+    **Challenges:**
 
-Using human feedback introduces some specific challenges:
+    Using human feedback introduces some specific challenges:
 
-1\. \*\*Scalability:\*\* Human feedback is time-consuming and expensive to collect, and it's hard to scale to complex or high-dimensional tasks. 2. \*\*Bias and Noise:\*\* Human feedback can be noisy, inconsistent, and biased, leading to suboptimal learning outcomes. 3. \*\*Alignment:\*\* Ensuring that the reinforcement learning agent aligns with the true preferences of the human evaluator(s) and not just the superficial feedback is difficult. 4. \*\*Safety and Misuse:\*\* There can be concerns about the safety and ethical implications of using potentially flawed human feedback, especially if the feedback process is corrupted or gamed.
+    1. **Scalability:** Human feedback is time-consuming and expensive to collect, and it's hard to scale to complex or high-dimensional tasks.
+    2. **Bias and Noise:** Human feedback can be noisy, inconsistent, and biased, leading to suboptimal learning outcomes.
+    3. **Alignment:** Ensuring that the reinforcement learning agent aligns with the true preferences of the human evaluator(s) and not just the superficial feedback is difficult.
+    4. **Safety and Misuse:** There can be concerns about the safety and ethical implications of using potentially flawed human feedback, especially if the feedback process is corrupted or gamed.
 
-Researchers are actively working on techniques to mitigate these challenges and improve RLHF approaches. One such approach is leveraging machine learning models to amplify the efficacy of the human feedback, for example, by learning to generalize from sparse human input or by synthesizing plausible feedback in situations where direct human input is not available.
+    Researchers are actively working on techniques to mitigate these challenges and improve RLHF approaches. One such approach is leveraging machine learning models to amplify the efficacy of the human feedback, for example, by learning to generalize from sparse human input or by synthesizing plausible feedback in situations where direct human input is not available.
 
 The response from the DPO model has similar information, as both models are trained on the same pretrained base model, but the preference fine-tuning adds more structure, formatting, and of course length, which has been shown repeatedly to be associated with general notions of human preference for language models. For more examples like this, see the completions library associated with this book at [https://www.rlhfbook.com/library](https://rlhfbook.com/library).
 

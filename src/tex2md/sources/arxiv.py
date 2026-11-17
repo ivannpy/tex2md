@@ -6,6 +6,7 @@ import io
 import json
 import os
 import re
+import shutil
 import tarfile
 import time
 import xml.etree.ElementTree as ET
@@ -26,13 +27,31 @@ def arxiv_meta(aid):
     return meta
 
 
+API_GAP = 3.0       # seconds between two requests to the arXiv API: its terms of use, and it answers 429 otherwise
+
+
+def _pace_api():
+    """Wait until ``API_GAP`` seconds have passed since the last API request of any run (a loop that converts one
+    paper after another used to be refused after a dozen)."""
+    path = os.path.join(CACHE, "meta", ".last_request")
+    try:
+        with open(path) as fh:
+            last = float(fh.read())
+    except (OSError, ValueError):
+        last = 0.0
+    wait = last + API_GAP - time.time()
+    if wait > 0:
+        time.sleep(wait)
+    with open(path, "w") as fh:
+        fh.write(str(time.time()))
+
+
 def arxiv_meta_batch(ids):
     """Fetch and cache metadata for many ids in one API call per 50 ids."""
     out = {}
     os.makedirs(os.path.join(CACHE, "meta"), exist_ok=True)
     for i in range(0, len(ids), 50):
-        if i:
-            time.sleep(3)
+        _pace_api()
         xml = http_get("https://export.arxiv.org/api/query?max_results=100&id_list=" + ",".join(ids[i:i + 50]))
         for e in ET.fromstring(xml).findall("a:entry", ATOM):
             if e.find("a:title", ATOM) is None:
@@ -63,14 +82,20 @@ def fetch_source(aid, dest):
     if os.path.isdir(src) and os.listdir(src):
         return True
     data = http_get("https://arxiv.org/e-print/" + aid)
-    os.makedirs(src, exist_ok=True)
     if data[:4] == b"%PDF":
         return False
     raw = gzip.decompress(data) if data[:2] == b"\x1f\x8b" else data
+    # unpack beside the final place and rename: an interrupted or refused extraction must not leave a
+    # half-filled src/ that the next run would take for the whole source
+    partial = src + ".partial"
+    shutil.rmtree(partial, ignore_errors=True)
+    os.makedirs(partial)
     try:
         with tarfile.open(fileobj=io.BytesIO(raw)) as tf:
-            tf.extractall(src, filter="data")
+            tf.extractall(partial, filter="data")
     except tarfile.ReadError:
-        with open(os.path.join(src, "main.tex"), "wb") as fh:
+        with open(os.path.join(partial, "main.tex"), "wb") as fh:
             fh.write(raw)
+    shutil.rmtree(src, ignore_errors=True)
+    os.replace(partial, src)
     return True

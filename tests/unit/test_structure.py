@@ -28,3 +28,9 @@ def test_quad_before_digits_is_replaced_in_text_but_not_in_math():
 def test_quad_is_kept_inside_math_environments():
     src = "\\begin{align}x \\quad 0 \\le y\\end{align} and \\[a\\qquad 1\\]"
     assert quad_before_digits(src) == src
+
+
+def test_comment_lines_are_dropped_but_not_inside_verbatim():
+    from tex2md.preprocess.structure import strip_comment_lines
+    src = "a\n% c\nb\n\\begin{verbatim}\n% keep\n\\end{verbatim}\n  % d\ne\n"
+    assert strip_comment_lines(src) == "a\nb\n\\begin{verbatim}\n% keep\n\\end{verbatim}\ne\n"

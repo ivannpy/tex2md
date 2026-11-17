@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: 28983dbec601de9236fc81944d1489f95bf9a390c596b38d984e10e9f0b2a8c8
     path: "PCIC/Tesis/ar-diff/SDAR- A Synergistic Diffusion-AutoRegression Paradigm for Scalable Sequence Generation.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-16
+converted: 2026-11-17
 ---
 
 # SDAR: A Synergistic Diffusion-AutoRegression Paradigm for Scalable Sequence Generation
@@ -277,29 +277,29 @@ Our comprehensive evaluation reveals several key insights about the scaling beha
 
 | **Model** | **AR-Chat Model** |  |  |  | **SDAR-Chat Model** |  |  |  |
 |:---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| 2-5 (l)6-9 scale | Qwen3-1.7B$^\dag$ | Qwen3-4B$^\dag$ | Qwen3-8B$^\dag$ | Qwen3-30BA3B$^\dag$ | SDAR-1.7B | SDAR-4B | SDAR-8B | SDAR-30BA3B |
+| scale | Qwen3-1.7B$^\dag$ | Qwen3-4B$^\dag$ | Qwen3-8B$^\dag$ | Qwen3-30BA3B$^\dag$ | SDAR-1.7B | SDAR-4B | SDAR-8B | SDAR-30BA3B |
 | Reasoning, Knowledge & Instruction Following |  |  |  |  |  |  |  |  |
-| ARC-C | 81.0 | 89.5 | 91.9 | 93.9 | **85.4** | **90.5** | **91.9** | 93.2 |
-| TriviaQA | 45.0 | 57.9 | 68.2 | 66.5 | 42.6 | 57.2 | **69.2** | **75.9** |
-| MMLU | 63.8 | 74.8 | 77.5 | 82.2 | 62.9 | **74.9** | **78.6** | **82.8** |
-| MMLU-Pro | 39.0 | 52.8 | 56.6 | 63.8 | 37.0 | 50.9 | **56.9** | 61.5 |
-| GPQA-diamond | 28.6 | 31.4 | 37.0 | 37.3 | **29.8** | **33.0** | **40.2** | 36.7 |
-| IFEval | 43.3 | 58.4 | 60.8 | 57.7 | **43.4** | 56.6 | **61.4** | **60.6** |
+| ARC-C | 81.0 | 89.5 | 91.9 | 93.9 |  **85.4**  (+4.4) |  **90.5**  (+1.0) |  **91.9**  (0.0) |  93.2  (-0.7) |
+| TriviaQA | 45.0 | 57.9 | 68.2 | 66.5 |  42.6  (-2.4) |  57.2  (-0.7) |  **69.2**  (+1.0) |  **75.9**  (+9.4) |
+| MMLU | 63.8 | 74.8 | 77.5 | 82.2 |  62.9  (-0.9) |  **74.9**  (+0.1) |  **78.6**  (+1.1) |  **82.8**  (+0.6) |
+| MMLU-Pro | 39.0 | 52.8 | 56.6 | 63.8 |  37.0  (-2.0) |  50.9  (-1.9) |  **56.9**  (+0.3) |  61.5  (-2.3) |
+| GPQA-diamond | 28.6 | 31.4 | 37.0 | 37.3 |  **29.8**  (+1.2) |  **33.0**  (+1.6) |  **40.2**  (+3.2) |  36.7  (-0.6) |
+| IFEval | 43.3 | 58.4 | 60.8 | 57.7 |  **43.4**  (+0.1) |  56.6  (-1.8) |  **61.4**  (+0.6) |  **60.6**  (+2.9) |
 | Mathematics |  |  |  |  |  |  |  |  |
-| GSM8K | 81.1 | 90.7 | 92.8 | 92.7 | 80.1 | 89.9 | 91.3 | 91.4 |
-| Math500 | 62.0 | 74.1 | 78.4 | 76.8 | **63.2** | 72.8 | **78.6** | **77.8** |
-| MathBench | 60.5 | 70.6 | 73.5 | 78.4 | **63.6** | **74.7** | **76.9** | **79.3** |
-| AIME-24 | 7.1 | 12.9 | 10.0 | 15.4 | **10.0** | **10.0** | 10.0 | **16.7** |
-| AIME-25 | 3.3 | 5.0 | 7.5 | 10.8 | 2.1 | **7.5** | **10.0** | 10.8 |
-| LMB-Hard | 9.2 | 11.6 | 15.7 | 15.5 | 6.6 | 6.9 | 8.9 | 13.7 |
+| GSM8K | 81.1 | 90.7 | 92.8 | 92.7 |  80.1  (-1.0) |  89.9  (-0.8) |  91.3  (-1.5) |  91.4  (-1.3) |
+| Math500 | 62.0 | 74.1 | 78.4 | 76.8 |  **63.2**  (+1.2) |  72.8  (-1.3) |  **78.6**  (+0.2) |  **77.8**  (+1.0) |
+| MathBench | 60.5 | 70.6 | 73.5 | 78.4 |  **63.6**  (+3.1) |  **74.7**  (+4.1) |  **76.9**  (+3.4) |  **79.3**  (+0.9) |
+| AIME-24 | 7.1 | 12.9 | 10.0 | 15.4 |  **10.0**  (+2.9) |  **10.0**  (-2.9) |  10.0  (0.0) |  **16.7**  (+1.3) |
+| AIME-25 | 3.3 | 5.0 | 7.5 | 10.8 |  2.1  (-5.9) |  **7.5**  (+2.5) |  **10.0**  (+2.5) |  10.8  (+0.0) |
+| LMB-Hard | 9.2 | 11.6 | 15.7 | 15.5 |  6.6  (-2.6) |  6.9  (-4.7) |  8.9  (-6.8) |  13.7  (-1.8) |
 | Code Generation |  |  |  |  |  |  |  |  |
-| HumanEval | 65.9 | 73.4 | 80.7 | 84.8 | 61.6 | 72.8 | 78.7 | **87.2** |
-| MBPP | 61.9 | 67.1 | 75.1 | 75.1 | 61.1 | 65.4 | 72.0 | **71.6** |
-| HumanEval-X | 47.0 | 60.9 | 63.5 | 63.5 | 45.2 | **62.3** | **64.9** | **66.3** |
-| LCB-v6 | 8.6 | 10.3 | 20.5 | 23.4 | 5.7 | **13.1** | 16.6 | 21.7 |
+| HumanEval | 65.9 | 73.4 | 80.7 | 84.8 |  61.6  (-4.3) |  72.8  (-0.6) |  78.7  (-2.0) |  **87.2**  (+2.4) |
+| MBPP | 61.9 | 67.1 | 75.1 | 75.1 |  61.1  (-0.8) |  65.4  (-1.7) |  72.0  (-3.1) |  **71.6**  (+3.5) |
+| HumanEval-X | 47.0 | 60.9 | 63.5 | 63.5 |  45.2  (-1.8) |  **62.3**  (+1.4) |  **64.9**  (+1.4) |  **66.3**  (+2.8) |
+| LCB-v6 | 8.6 | 10.3 | 20.5 | 23.4 |  5.7  (-2.9) |  **13.1**  (+2.8) |  16.6  (-3.9) |  21.7  (-1.7) |
 | Language |  |  |  |  |  |  |  |  |
-| MMMLU-lite | 36.7 | 44.4 | 55.2 | 52.9 | 40.9 | **50.7** | **55.3** | 57.2 |
-| CMMLU | 60.7 | 72.6 | 76.2 | 82.0 | 60.2 | 71.3 | 75.7 | 81.0 |
+| MMMLU-lite | 36.7 | 44.4 | 55.2 | 52.9 |  40.9  (+4.2) |  **50.7**  (+6.3) |  **55.3**  (+0.1) |  57.2  (+4.3) |
+| CMMLU | 60.7 | 72.6 | 76.2 | 82.0 |  60.2  (-0.5) |  71.3  (-1.3) |  75.7  (-0.5) |  81.0  (-1.0) |
 
 #### Scaling Without Compromise
 
@@ -501,19 +501,19 @@ On general reasoning and mathematics (Table 4), SDAR performs on par with the A
 
 **Tabla 4.** Strict comparison between AR-30B-A3B-Sci and SDAR-30B-A3B-Sci on non-science benchmarks. (G = greedy decoding, S = sampling). Bold numbers indicate improvements over the AR baseline, with $\Delta$ shown in a smaller font (green = improvement, red = drop).
 
-| Model                | MMLU-pro | AIME2024 | AIME2025 | LMB-hard | LCB-v5 |  LCB-v6  |
-|:---------------------|:--------:|:--------:|:--------:|:--------:|:------:|:--------:|
-| AR-30B-A3B-Sci       |   78.3   |   74.9   |   60.7   |   55.4   |  51.5  |   46.3   |
-| SDAR-30B-A3B-Sci (G) |   78.1   |   76.7   | **60.0** | **60.7** |  40.7  |   42.3   |
-| SDAR-30B-A3B-Sci (S) |   77.9   | **73.4** |   59.2   | **58.7** |  49.1  | **51.4** |
+| Model | MMLU-pro | AIME2024 | AIME2025 | LMB-hard | LCB-v5 | LCB-v6 |
+|:---|:--:|:--:|:--:|:--:|:--:|:--:|
+| AR-30B-A3B-Sci | 78.3 | 74.9 | 60.7 | 55.4 | 51.5 | 46.3 |
+| SDAR-30B-A3B-Sci (G) |  78.1  (-0.2) |  76.7  (+1.8) |  **60.0**  (-0.7) |  **60.7**  (+5.3) |  40.7  (-10.8) |  42.3  (-4.0) |
+| SDAR-30B-A3B-Sci (S) |  77.9  (-0.4) |  **73.4**  (-1.5) |  59.2  (-1.5) |  **58.7**  (+3.3) |  49.1  (-2.4) |  **51.4**  (+5.1) |
 
 **Tabla 5.** Strict comparison between AR-30B-A3B-Sci and SDAR-30B-A3B-Sci on science benchmarks.
 
 | **Model** | **GPQA-diamond** | **ChemBench** | **PHYSICS** | **ProteinLMBench** |
 |:---|:--:|:--:|:--:|:--:|
 | AR-30B-A3B-Sci | 61.2 | 60.5 | 39.0 | 59.5 |
-| SDAR-30B-A3B-Sci (G) | **66.7** | **72.3** | **37.9** | **59.9** |
-| SDAR-30B-A3B-Sci (S) | 66.0 | **72.8** | **38.2** | **59.6** |
+| SDAR-30B-A3B-Sci (G) |  **66.7**  (+5.5) |  **72.3**  (+11.8) |  **37.9**  (-1.1) |  **59.9**  (+0.4) |
+| SDAR-30B-A3B-Sci (S) |  66.0  (+4.8) |  **72.8**  (+12.3) |  **38.2**  (-0.8) |  **59.6**  (+0.1) |
 
 #### Achieving State-of-the-Art Performance in Scientific Domains
 
@@ -526,7 +526,7 @@ Beyond this AR comparison, SDAR-30B-A3B-Sci also proves competitive against much
 | **Category** | **Model** | **MMLU-pro** | **AIME2025** | **GPQA-diamond** | **ChemBench** | **PHYSICS** | **ProteinLMBench** |
 |:---|:---|:--:|:--:|:--:|:--:|:--:|:--:|
 | **Ours** | AR-30B-A3B-Sci | 78.3 | 60.7 | 61.2 | 60.5 | 39.0 | 59.5 |
-|  | SDAR-30B-A3B-Sci(S) | 77.9 | 59.2 | **66.7** | **72.8** | 38.2 | **59.6** |
+|  | SDAR-30B-A3B-Sci(S) |  77.9  (-0.4) |  59.2  (-1.5) |  **66.7**  (+5.5) |  **72.8**  (+12.3) |  38.2  (-0.8) |  **59.6**  (+0.1) |
 | **Open-source** | InternVL3-78B | 73.0 | 10.7 | 49.9 | 61.3 | 23.1 | 61.6 |
 |  | Qwen2.5-VL-72B | 72.1 | 10.9 | 49.0 | 61.6 | 15.7 | 61.0 |
 |  | DS-R1-0528 | 83.4 | 87.5 | 80.6 | 75.6 | – | 61.4 |
@@ -539,12 +539,13 @@ Beyond this AR comparison, SDAR-30B-A3B-Sci also proves competitive against much
 
 **Tabla 7.** Strict comparison between AR-30B-A3B-Sci and SDAR-30B-A3B-Sci. (G = greedy decoding, S = sampling). Bold numbers indicate best performance in each column among the main models.
 
-colspec = l c c c c, row4-6 = bg=groupcolor, row1 = font=, Model & GPQA-diamond & AIME2024 & AIME2025 & LMB-hard\
-AR-30B-A3B-Sci & 61.2 & 74.9 & 60.7 & 55.4\
-SDAR-30B-A3B-Sci (G) & 66.7 & 76.7 & 60.0 & 60.7\
-SDAR-30B-A3B-Sci (S) & 66.0 & 73.4 & 59.2 & 58.7\
-w/ Majority & 68.2 & 86.7 & 80.0 & 71.1\
-w/ pass@k & 84.3 & 93.3 & 86.7 & 87.5\
+| Model | GPQA-diamond | AIME2024 | AIME2025 | LMB-hard |
+|:---|:--:|:--:|:--:|:--:|
+| AR-30B-A3B-Sci | 61.2 | 74.9 | 60.7 | 55.4 |
+| SDAR-30B-A3B-Sci (G) |  66.7  (+5.9) |  76.7  (+1.8) |  60.0  (-0.7) |  60.7  (+5.3) |
+| SDAR-30B-A3B-Sci (S) |  66.0  (+4.8) |  73.4  (-1.5) |  59.2  (-1.5) |  58.7  (+3.3) |
+| w/ Majority |  68.2  (+7.0) |  86.7  (+11.8) |  80.0  (+19.3) |  71.1  (+15.7) |
+| w/ pass@k |  84.3  (+23.1) |  93.3  (+18.4) |  86.7  (+26.0) |  87.5  (+32.1) |
 
 The application of test-time scaling techniques further amplifies SDAR’s inherent reasoning advantages, revealing its exceptional potential when combined with advanced inference strategies. As demonstrated in Table 7, our SDAR model exhibits remarkable performance gains when augmented with ensemble methods. The majority voting approach yields substantial improvements across all benchmarks, with particularly striking gains on mathematical reasoning tasks: **+11.8%** on AIME-2024, **+19.3%** on AIME-2025, and **+15.7%** on LiveMathBench-hard compared to the AR baseline. Even more impressive are the results achieved with the pass@k methodology, which pushes performance to unprecedented levels—reaching **84.3%** on GPQA-diamond (**+23.1%** over baseline), **93.3%** on AIME-2024 (**+18.4%**), **86.7%** on AIME-2025 (**+26.0%**), and **87.5%** on LiveMathBench-hard (**+32.1%**). These improvements highlight an important observation: SDAR’s parallel generation paradigm tends to produce more diverse and complementary reasoning trajectories when sampling multiple candidates, suggesting stronger synergy with test-time scaling strategies such as majority voting or pass@k evaluation. This interplay between SDAR’s architectural design and test-time scaling methods points to a promising new direction for enhancing machine reasoning efficiency—indicating that the combined effect of these techniques can extend beyond what either alone achieves in isolation.
 
@@ -1272,17 +1273,17 @@ AIME (2025). AIME. AIME problems and solutions, 2025. URL https://artofproblemso
 
 Arriola et al. (2025). Marianne Arriola, Aaron Gokaslan, Justin T Chiu, Zhihan Yang, Zhixuan Qi, Jiaqi Han, Subham Sekhar Sahoo, and Volodymyr Kuleshov. Block diffusion: Interpolating between autoregressive and diffusion language models. arXiv preprint arXiv:2503.09573, 2025.
 
-Austin et al. (2021a). Jacob Austin, Daniel D Johnson, Jonathan Ho, Daniel Tarlow, and Rianne Van Den Berg. Structured denoising diffusion models in discrete state-spaces. Advances in neural information processing systems, 34:0 17981–17993, 2021a.
+Austin et al. (2021a). Jacob Austin, Daniel D Johnson, Jonathan Ho, Daniel Tarlow, and Rianne Van Den Berg. Structured denoising diffusion models in discrete state-spaces. Advances in neural information processing systems, 34:17981–17993, 2021a.
 
 Austin et al. (2021b). Jacob Austin, Augustus Odena, Maxwell Nye, Maarten Bosma, Henryk Michalewski, David Dohan, Ellen Jiang, Carrie Cai, Michael Terry, Quoc Le, et al. Program synthesis with large language models. arXiv preprint arXiv:2108.07732, 2021b.
 
 Bachmann and Nagarajan (2024). Gregor Bachmann and Vaishnavh Nagarajan. The pitfalls of next-token prediction. In International Conference on Machine Learning, pages 2296–2318. PMLR, 2024.
 
-Bengio et al. (2003). Yoshua Bengio, Réjean Ducharme, Pascal Vincent, and Christian Jauvin. A neural probabilistic language model. Journal of machine learning research, 30 (Feb):0 1137–1155, 2003.
+Bengio et al. (2003). Yoshua Bengio, Réjean Ducharme, Pascal Vincent, and Christian Jauvin. A neural probabilistic language model. Journal of machine learning research, 3 (Feb):1137–1155, 2003.
 
 Bhatnagar et al. (2025). Aadyot Bhatnagar, Sarthak Jain, Joel Beazer, Samuel C Curran, Alexander M Hoffnagle, Kyle Ching, Michael Martyn, Stephen Nayfach, Jeffrey A Ruffolo, and Ali Madani. Scaling unlocks broader generation and deeper functional understanding of proteins. bioRxiv, pages 2025–04, 2025.
 
-Brown et al. (2020). Tom Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared D Kaplan, Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell, et al. Language models are few-shot learners. Advances in neural information processing systems, 33:0 1877–1901, 2020.
+Brown et al. (2020). Tom Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared D Kaplan, Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell, et al. Language models are few-shot learners. Advances in neural information processing systems, 33:1877–1901, 2020.
 
 Chen et al. (2021). Mark Chen, Jerry Tworek, Heewoo Jun, Qiming Yuan, Henrique Ponde de Oliveira Pinto, Jared Kaplan, Harri Edwards, Yuri Burda, Nicholas Joseph, Greg Brockman, Alex Ray, Raul Puri, Gretchen Krueger, Michael Petrov, Heidy Khlaaf, Girish Sastry, Pamela Mishkin, Brooke Chan, Scott Gray, Nick Ryder, Mikhail Pavlov, Alethea Power, Lukasz Kaiser, Mohammad Bavarian, Clemens Winter, Philippe Tillet, Felipe Petroski Such, Dave Cummings, Matthias Plappert, Fotios Chantzis, Elizabeth Barnes, Ariel Herbert-Voss, William Hebgen Guss, Alex Nichol, Alex Paino, Nikolas Tezak, Jie Tang, Igor Babuschkin, Suchir Balaji, Shantanu Jain, William Saunders, Christopher Hesse, Andrew N. Carr, Jan Leike, Josh Achiam, Vedant Misra, Evan Morikawa, Alec Radford, Matthew Knight, Miles Brundage, Mira Murati, Katie Mayer, Peter Welinder, Bob McGrew, Dario Amodei, Sam McCandlish, Ilya Sutskever, and Wojciech Zaremba. Evaluating large language models trained on code. 2021.
 
@@ -1302,7 +1303,7 @@ Gong et al. (2025). Shansan Gong, Ruixiang Zhang, Huangjie Zheng, Jiatao Gu, Nav
 
 Grattafiori et al. (2024). Aaron Grattafiori, Abhimanyu Dubey, Abhinav Jauhri, Abhinav Pandey, Abhishek Kadian, Ahmad Al-Dahle, Aiesha Letman, Akhil Mathur, Alan Schelten, Alex Vaughan, et al. The llama 3 herd of models. arXiv preprint arXiv:2407.21783, 2024.
 
-Gulrajani and Hashimoto (2023). Ishaan Gulrajani and Tatsunori B Hashimoto. Likelihood-based diffusion language models. Advances in Neural Information Processing Systems, 36:0 16693–16715, 2023.
+Gulrajani and Hashimoto (2023). Ishaan Gulrajani and Tatsunori B Hashimoto. Likelihood-based diffusion language models. Advances in Neural Information Processing Systems, 36:16693–16715, 2023.
 
 Guo et al. (2025). Daya Guo, Dejian Yang, Haowei Zhang, Junxiao Song, Ruoyu Zhang, Runxin Xu, Qihao Zhu, Shirong Ma, Peiyi Wang, Xiao Bi, et al. Deepseek-r1: Incentivizing reasoning capability in llms via reinforcement learning. arXiv preprint arXiv:2501.12948, 2025.
 
@@ -1338,7 +1339,7 @@ Liu et al. (2025). Ke Liu, Shuaike Shen, and Hao Chen. From sentences to sequenc
 
 Lou et al. (2024). Aaron Lou, Chenlin Meng, and Stefano Ermon. Discrete diffusion modeling by estimating the ratios of the data distribution. In Proceedings of the 41st International Conference on Machine Learning, pages 32819–32848, 2024.
 
-Madani et al. (2023). Ali Madani, Ben Krause, Eric R Greene, Subu Subramanian, Benjamin P Mohr, James M Holton, Jose Luis Olmos Jr, Caiming Xiong, Zachary Z Sun, Richard Socher, et al. Large language models generate functional protein sequences across diverse families. Nature biotechnology, 410 (8):0 1099–1106, 2023.
+Madani et al. (2023). Ali Madani, Ben Krause, Eric R Greene, Subu Subramanian, Benjamin P Mohr, James M Holton, Jose Luis Olmos Jr, Caiming Xiong, Zachary Z Sun, Richard Socher, et al. Large language models generate functional protein sequences across diverse families. Nature biotechnology, 41(8):1099–1106, 2023.
 
 Meier et al. (2021). Joshua Meier, Roshan Rao, Robert Verkuil, Jason Liu, Tom Sercu, and Alexander Rives. Language models enable zero-shot prediction of the effects of mutations on protein function. bioRxiv, 2021. 10.1101/2021.07.09.450648. URL https://www.biorxiv.org/content/10.1101/2021.07.09.450648v1.
 
@@ -1348,19 +1349,19 @@ Nie et al. (2024). Shen Nie, Fengqi Zhu, Chao Du, Tianyu Pang, Qian Liu, Guangta
 
 Nie et al. (2025). Shen Nie, Fengqi Zhu, Zebin You, Xiaolu Zhang, Jingyang Ou, Jun Hu, Jun Zhou, Yankai Lin, Ji-Rong Wen, and Chongxuan Li. Large language diffusion models. arXiv preprint arXiv:2502.09992, 2025.
 
-Nijkamp et al. (2023). Erik Nijkamp, Jeffrey A Ruffolo, Eli N Weinstein, Nikhil Naik, and Ali Madani. Progen2: exploring the boundaries of protein language models. Cell systems, 140 (11):0 968–978, 2023.
+Nijkamp et al. (2023). Erik Nijkamp, Jeffrey A Ruffolo, Eli N Weinstein, Nikhil Naik, and Ali Madani. Progen2: exploring the boundaries of protein language models. Cell systems, 14(11):968–978, 2023.
 
 Radford et al. (2018). Alec Radford, Karthik Narasimhan, Tim Salimans, Ilya Sutskever, et al. Improving language understanding by generative pre-training. 2018.
 
-Radford et al. (2019). Alec Radford, Jeffrey Wu, Rewon Child, David Luan, Dario Amodei, Ilya Sutskever, et al. Language models are unsupervised multitask learners. OpenAI blog, 10 (8):0 9, 2019.
+Radford et al. (2019). Alec Radford, Jeffrey Wu, Rewon Child, David Luan, Dario Amodei, Ilya Sutskever, et al. Language models are unsupervised multitask learners. OpenAI blog, 1(8):9, 2019.
 
 Rein et al. (2024). David Rein, Betty Li Hou, Asa Cooper Stickland, Jackson Petty, Richard Yuanzhe Pang, Julien Dirani, Julian Michael, and Samuel R Bowman. Gpqa: A graduate-level google-proof q&a benchmark. In First Conference on Language Modeling, 2024.
 
-Sahoo et al. (2024). Subham Sahoo, Marianne Arriola, Yair Schiff, Aaron Gokaslan, Edgar Marroquin, Justin Chiu, Alexander Rush, and Volodymyr Kuleshov. Simple and effective masked diffusion language models. Advances in Neural Information Processing Systems, 37:0 130136–130184, 2024.
+Sahoo et al. (2024). Subham Sahoo, Marianne Arriola, Yair Schiff, Aaron Gokaslan, Edgar Marroquin, Justin Chiu, Alexander Rush, and Volodymyr Kuleshov. Simple and effective masked diffusion language models. Advances in Neural Information Processing Systems, 37:130136–130184, 2024.
 
 Shen et al. (2024). Yiqing Shen, Zan Chen, Michail Mamalakis, Luhan He, Haiyang Xia, Tianbin Li, Yanzhou Su, Junjun He, and Yu Guang Wang. A fine-tuning dataset and benchmark for large language models for protein understanding. In 2024 IEEE International Conference on Bioinformatics and Biomedicine (BIBM), pages 2390–2395. IEEE, 2024.
 
-Shi et al. (2024). Jiaxin Shi, Kehang Han, Zhe Wang, Arnaud Doucet, and Michalis Titsias. Simplified and generalized masked diffusion for discrete data. Advances in neural information processing systems, 37:0 103131–103167, 2024.
+Shi et al. (2024). Jiaxin Shi, Kehang Han, Zhe Wang, Arnaud Doucet, and Michalis Titsias. Simplified and generalized masked diffusion for discrete data. Advances in neural information processing systems, 37:103131–103167, 2024.
 
 Song et al. (2025). Yuxuan Song, Zheng Zhang, Cheng Luo, Pengyang Gao, Fan Xia, Hao Luo, Zheng Li, Yuehang Yang, Hongli Yu, Xingwei Qu, et al. Seed diffusion: A large-scale diffusion language model with high-speed inference. arXiv preprint arXiv:2508.02193, 2025.
 
@@ -1368,7 +1369,7 @@ Strudel et al. (2022). Robin Strudel, Corentin Tallec, Florent Altché, Yilun Du
 
 Suzgun et al. (2022). Mirac Suzgun, Nathan Scales, Nathanael Schärli, Sebastian Gehrmann, Yi Tay, Hyung Won Chung, Aakanksha Chowdhery, Quoc V Le, Ed H Chi, Denny Zhou, , and Jason Wei. Challenging big-bench tasks and whether chain-of-thought can solve them. arXiv preprint arXiv:2210.09261, 2022.
 
-Vaswani et al. (2017). Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, ukasz Kaiser, and Illia Polosukhin. Attention is all you need. Advances in neural information processing systems, 30, 2017.
+Vaswani et al. (2017). Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, and Illia Polosukhin. Attention is all you need. Advances in neural information processing systems, 30, 2017.
 
 Wang et al. (2024a). Xinyou Wang, Zaixiang Zheng, Fei Ye, Dongyu Xue, Shujian Huang, and Quanquan Gu. Dplm-2: A multimodal diffusion protein language model. arXiv preprint arXiv:2410.13782, 2024a.
 

@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: b35e166b9d9b557a1f7cb2d58cc3d93be065b054b6f46e64e5bc169951cd5918
     path: "PCIC/Tesis/core/A Reparameterized Discrete Diffusion Model for Text Generation.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-16
+converted: 2026-11-17
 ---
 
 # A Reparameterized Discrete Diffusion Model for Text Generation
@@ -27,6 +27,10 @@ This work studies discrete diffusion probabilistic models with applications to n
 Diffusion-based generative models (Sohl-Dickstein et al., 2015; Ho et al., 2020; Song et al., 2021b), or diffusion models for short, have achieved remarkable progress and shown great success in generating high-quality and photo-realistic images (Ramesh et al., 2022; Saharia et al., 2022; Rombach et al., 2022; Balaji et al., 2022; Peebles & Xie, 2022). Researchers have successfully extended diffusion models to various data modalities beyond 2D images, including audio (Kong et al., 2021), video (Ho et al., 2022), as well as molecule generation (Hoogeboom et al., 2022b; Jo et al., 2022). There has also been a surge of interest in extending diffusion models to natural languages (Hoogeboom et al., 2021; Austin et al., 2021; Li et al., 2022b; Dieleman et al., 2022). Diffusion-based language models are appealing in that the generation process is typically conducted in a non-autoregressive manner, which features in-parallel decoding by design and potentially a faster runtime (Hoogeboom et al., 2021; Austin et al., 2021). In addition, due to the iterative reconstruction process in diffusion-based models, it is often possible to refine the previously generated texts (Savinov et al., 2022). As a result, compared with the conventional auto-regressive models, diffusion-based language models are more flexible and attain better trade-offs between generation quality and efficiency.
 
 However, there are noticeably fewer success cases in employing diffusion models for large-scale text generation tasks. This is possibly due to the discrete nature of natural languages, while most conventional diffusion models focus on continuous-valued contents. To bridge the discrepancy, a recent line of work suggests conducting continuous diffusion processes over token embeddings (Li et al., 2022b; Gong et al., 2022; Strudel et al., 2022; Dieleman et al., 2022) or logits (Han et al., 2022; Richemond et al., 2022). Nevertheless, these approaches often require designing a well-crafted rounding scheme to convert the diffused continuous vectors to the actual discrete tokens. In addition, existing continuous diffusion models often require a large number of sampling iterations to achieve the desired performance. This issue is exacerbated in the case of modeling texts, as the diffusing steps over text embeddings are hard to be translated to significant movements of token states due to the rounding quantization. This results in a considerably slower runtime than auto-regressive models. For example, a recent continuous text diffusion model (DiffuSeq; Gong et al., 2022) runs several orders of magnitude slower than the auto-regressive baseline of a similar scale, as shown in Figure 2b. Different from the above, another research direction focuses on diffusion processes that directly operate on discrete state spaces (Sohl-Dickstein et al., 2015; Hoogeboom et al., 2021; Austin et al., 2021, see Section 2). However, they are relatively under-explored and often achieve inferior results in text generation.
+
+*(a) *Conventional* discrete diffusion.*
+
+*(b) *Reparameterized* discrete diffusion.*
 
 **Figura 1.** Graphical models of backward diffusion processes.
 
@@ -56,13 +60,7 @@ $$\begin{align*}
     \log p_{\mathbf{\theta}}(\mathbf{x}_0) \geq \mathcal{L}_1(\mathbf{\theta}) - \sum_{t=2}^T \mathcal{L}_t(\mathbf{\theta}) + \text{const.},
 \end{align*}$$
 
-with $\mathcal{L}_t(\mathbf{\theta}) \coloneqq 
-   \ifthenelse{ \equal{\operatorname{KL}\klxy{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})}}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_t|\mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_t|\mathbf{x}_0)}\left[\operatorname{KL}\klxy{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})}\right]}$. For the case $t=1$, we have $\mathcal{L}_1(\mathbf{\theta}) \coloneqq 
-   \ifthenelse{ \equal{\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_1|\mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_1|\mathbf{x}_0)}\left[\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)\right]}$. The ELBO decomposes into a sum of KL divergences between the *conditional backward transition* $q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)$ and $p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})$ at each time step $t$. Note that $q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0) \propto q(\mathbf{x}_{t}|\mathbf{x}_{t-1})q(\mathbf{x}_{t-1}|\mathbf{x}_0)$ can be calculated analytically for most discrete diffusion models. To define the distribution $p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})$, previous work (Hoogeboom et al., 2021) suggests that it can be parameterized similarly to $q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \mathbf{x}_0)$ by letting $p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t}) = q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, f(\mathbf{x}_t;\mathbf{\theta}))$, where a neural network $f(\mathbf{x}_t;\mathbf{\theta})$ is adopted to predict $\mathbf{x}_0$. Typically $f(\mathbf{x}_t;\mathbf{\theta}) \in (0,1)^K$ is the model output normalized by a softmax function, representing the probability vector for each token. For text generation, each discrete text token within an input sequence is often assumed to be diffused independently. Thus to avoid cluttering the discussion, we focus initially on the diffusion process of a single token and address the entire sequence later in Section 4.2 and Section 4.3. A more detailed discussion about the related work and derivations about discrete diffusion models are provided in Appendixs A and B, respectively.
+with $\mathcal{L}_t(\mathbf{\theta}) \coloneqq \mathbb{E}_{q(\mathbf{x}_t|\mathbf{x}_0)}\left[\operatorname{KL}(q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)\;\|\;p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t}))\right]$. For the case $t=1$, we have $\mathcal{L}_1(\mathbf{\theta}) \coloneqq \mathbb{E}_{q(\mathbf{x}_1|\mathbf{x}_0)}\left[\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)\right]$. The ELBO decomposes into a sum of KL divergences between the *conditional backward transition* $q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)$ and $p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})$ at each time step $t$. Note that $q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0) \propto q(\mathbf{x}_{t}|\mathbf{x}_{t-1})q(\mathbf{x}_{t-1}|\mathbf{x}_0)$ can be calculated analytically for most discrete diffusion models. To define the distribution $p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})$, previous work (Hoogeboom et al., 2021) suggests that it can be parameterized similarly to $q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \mathbf{x}_0)$ by letting $p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t}) = q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, f(\mathbf{x}_t;\mathbf{\theta}))$, where a neural network $f(\mathbf{x}_t;\mathbf{\theta})$ is adopted to predict $\mathbf{x}_0$. Typically $f(\mathbf{x}_t;\mathbf{\theta}) \in (0,1)^K$ is the model output normalized by a softmax function, representing the probability vector for each token. For text generation, each discrete text token within an input sequence is often assumed to be diffused independently. Thus to avoid cluttering the discussion, we focus initially on the diffusion process of a single token and address the entire sequence later in Section 4.2 and Section 4.3. A more detailed discussion about the related work and derivations about discrete diffusion models are provided in Appendixs A and B, respectively.
 
 # 3 Reparameterizing the Backward Processes
 
@@ -114,10 +112,7 @@ q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_{t}, \mathbf{x}_0) &= \begin{c
 \end{cases}\tag{4}
 \end{align*}$$
 
-Note that $b_t = \mathbf{1}_{\mathbf{x}_t = \mathbf{x}_0}$. This can be considered as a standard discrete diffusion model augmented with step-wise routing indicators $\{\mathbf{v}_{t-1}\}_{t=1}^T$ (see Figure 1). It closely relates to the conventional formulation (Eq. (2)) in that the original backward process amounts to marginalizing out $\mathbf{v}_{t-1}$ at each time step: $q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \mathbf{x}_0) = 
-   \ifthenelse{ \equal{q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_{t}, \mathbf{x}_0)}{} }
-      {\mathbb{E}\left[q(\mathbf{v}_{t-1})\right]}
-      {\mathbb{E}_{q(\mathbf{v}_{t-1})}\left[q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_{t}, \mathbf{x}_0)\right]}$. Since the distribution over $\mathbf{v}_{t-1}$ is explicitly considered, this joint diffusion model offers improved flexibility and expressiveness. We refer to this class of models as *reparameterized discrete diffusion models* (RDMs), as it yields an equivalent sampling process to the original formulation but via a reparameterized path.
+Note that $b_t = \mathbf{1}_{\mathbf{x}_t = \mathbf{x}_0}$. This can be considered as a standard discrete diffusion model augmented with step-wise routing indicators $\{\mathbf{v}_{t-1}\}_{t=1}^T$ (see Figure 1). It closely relates to the conventional formulation (Eq. (2)) in that the original backward process amounts to marginalizing out $\mathbf{v}_{t-1}$ at each time step: $q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \mathbf{x}_0) = \mathbb{E}_{q(\mathbf{v}_{t-1})}\left[q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_{t}, \mathbf{x}_0)\right]$. Since the distribution over $\mathbf{v}_{t-1}$ is explicitly considered, this joint diffusion model offers improved flexibility and expressiveness. We refer to this class of models as *reparameterized discrete diffusion models* (RDMs), as it yields an equivalent sampling process to the original formulation but via a reparameterized path.
 
 ## 4.2 Training
 
@@ -125,19 +120,14 @@ Similar to previous diffusion models (Section 2), we define a joint generative 
 
 $$\begin{align*}
     \log p(\mathbf{x}_0) \geq 
-   \ifthenelse{ \equal{\log \frac{p_{\mathbf{\theta}}(\mathbf{x}_0, \mathbf{x}_{1:T}, \mathbf{v}_{1:T})}{q(\mathbf{x}_{1:T}, \mathbf{v}_{1:T}|\mathbf{x}_0)}}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_{1:T}, \mathbf{v}_{1:T}|\mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_{1:T}, \mathbf{v}_{1:T}|\mathbf{x}_0)}\left[\log \frac{p_{\mathbf{\theta}}(\mathbf{x}_0, \mathbf{x}_{1:T}, \mathbf{v}_{1:T})}{q(\mathbf{x}_{1:T}, \mathbf{v}_{1:T}|\mathbf{x}_0)}\right]}
+   \mathbb{E}_{q(\mathbf{x}_{1:T}, \mathbf{v}_{1:T}|\mathbf{x}_0)}\left[\log \frac{p_{\mathbf{\theta}}(\mathbf{x}_0, \mathbf{x}_{1:T}, \mathbf{v}_{1:T})}{q(\mathbf{x}_{1:T}, \mathbf{v}_{1:T}|\mathbf{x}_0)}\right]
  \coloneqq \mathcal{L}_1(\mathbf{\theta}) - \sum_{t=2}^T \mathcal{L}_t(\mathbf{\theta}) + \text{const.}.
 \end{align*}$$
 
-Following standard practices in diffusion models (Hoogeboom et al., 2021; Austin et al., 2021), we randomly sample a time step $t$ and optimize $\mathbf{\theta}$ with respect to $\mathcal{L}_t(\mathbf{\theta})$. In our case, $\mathcal{L}_1(\mathbf{\theta}) = 
-   \ifthenelse{ \equal{\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_{1}|\mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_{1}|\mathbf{x}_0)}\left[\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)\right]}$; for $t > 1$, $\mathcal{L}_t$ decomposes into a sum of two expected KL divergences over $\mathbf{v}_{t-1}$ and $\mathbf{x}_{t-1}$ respectively (see Appendix D for the full derivation), 
+Following standard practices in diffusion models (Hoogeboom et al., 2021; Austin et al., 2021), we randomly sample a time step $t$ and optimize $\mathbf{\theta}$ with respect to $\mathcal{L}_t(\mathbf{\theta})$. In our case, $\mathcal{L}_1(\mathbf{\theta}) = \mathbb{E}_{q(\mathbf{x}_{1}|\mathbf{x}_0)}\left[\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)\right]$; for $t > 1$, $\mathcal{L}_t$ decomposes into a sum of two expected KL divergences over $\mathbf{v}_{t-1}$ and $\mathbf{x}_{t-1}$ respectively (see Appendix D for the full derivation), 
 
 $$\begin{align*}
-    \mathcal{L}_t(\mathbf{\theta}) = \mathbb{E}\left[\operatorname{KL}\klxy{q(\mathbf{v}_{t-1})}{p_{\mathbf{\theta}}(\mathbf{v}_{t-1})}\right] + \mathbb{E}\left[\operatorname{KL}\klxy{q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_t, \mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{v}_{t-1}, \mathbf{x}_t)}\right], \tag{5}
+    \mathcal{L}_t(\mathbf{\theta}) = \mathbb{E}\left[\operatorname{KL}(q(\mathbf{v}_{t-1})\;\|\;p_{\mathbf{\theta}}(\mathbf{v}_{t-1}))\right] + \mathbb{E}\left[\operatorname{KL}(q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_t, \mathbf{x}_0)\;\|\;p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{v}_{t-1}, \mathbf{x}_t))\right], \tag{5}
 \end{align*}$$
 
 where the expectations are with respect to $q(\mathbf{x}_t|\mathbf{x}_0)$ and $q(\mathbf{x}_t|\mathbf{x}_0)q(\mathbf{v}_{t-1})$, respectively.
@@ -168,8 +158,6 @@ where the expectations are with respect to $q(\mathbf{x}_t|\mathbf{x}_0)$ and $q
 
 **until** converged
 
-**Figura.**
-
 #### Parameterization.
 
 The decomposition in Eq. (5) suggests parameterizing each conditional of $p_{\mathbf{\theta}}(\mathbf{x}_{t-1}, \mathbf{v}_{t-1} | \mathbf{x}_t) = p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_t)p_{\mathbf{\theta}}( \mathbf{v}_{t-1} | \mathbf{x}_t)$ separately. To simplify the model representation, we constrain $p_{\mathbf{\theta}}(\mathbf{v}_{t-1}| \mathbf{x}_t)$ to be the same as $q(\mathbf{v}_{t-1})$ so that the first KL term vanishes. In terms of $p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_t)$, it needs to approximate $q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_t, \mathbf{x}_0)$ for both $\mathbf{x}_0$ and $b_t = \mathbf{1}_{\mathbf{x}_t=\mathbf{x}_0}$. For the former, we approximate $\mathbf{x}_0$ with a neural network output $f(\mathbf{x}_t;\mathbf{\theta})$ (Section 2); for the latter, it is circumvented via a *teacher-forcing* approach. We leverage the fact that $b_t = \mathbf{1}_{\mathbf{x}_t=\mathbf{x}_0}$ is readily available during training and plug the oracle into $p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_t)$, which works well empirically and yields interesting implications as presented below.
@@ -180,16 +168,11 @@ The discussion so far focuses on the diffusion process over a single token. We n
 
 $$\begin{align*}
     \mathcal{L}_t(\mathbf{\theta}) =
-   \ifthenelse{ \equal{-\lambda_{t-1}^{(2)}\sum_{n=1}^N (1-b_{t,n})\mathbf{x}_{0,n}^\top\log f\left(\mathbf{x}_{t,n};\mathbf{\theta}\right)}{} }
-      {\mathbb{E}\left[p_{\text{data}}(\mathbf{x}_{0,1:N})\prod_{n=1}^N q(\mathbf{x}_{t,n}|\mathbf{x}_{0,n})\right]}
-      {\mathbb{E}_{p_{\text{data}}(\mathbf{x}_{0,1:N})\prod_{n=1}^N q(\mathbf{x}_{t,n}|\mathbf{x}_{0,n})}\left[-\lambda_{t-1}^{(2)}\sum_{n=1}^N (1-b_{t,n})\mathbf{x}_{0,n}^\top\log f\left(\mathbf{x}_{t,n};\mathbf{\theta}\right)\right]}
+   \mathbb{E}_{p_{\text{data}}(\mathbf{x}_{0,1:N})\prod_{n=1}^N q(\mathbf{x}_{t,n}|\mathbf{x}_{0,n})}\left[-\lambda_{t-1}^{(2)}\sum_{n=1}^N (1-b_{t,n})\mathbf{x}_{0,n}^\top\log f\left(\mathbf{x}_{t,n};\mathbf{\theta}\right)\right]
 .\tag{6}
 \end{align*}$$
 
-Based on this result, training RDMs is equivalent to optimizing the standard *multi-class cross-entropy* loss function, which is evaluated over noisy tokens and weighted by $\lambda_{t-1}^{(2)} = 
-   \ifthenelse{ \equal{\mathbf{v}_{t-1}^{(2)}}{} }
-      {\mathbb{E}\left[\right]}
-      {\mathbb{E}_{}\left[\mathbf{v}_{t-1}^{(2)}\right]}$. This formulation is conceptually simpler than that of the original discrete diffusion, which requires evaluating the KL divergence between two complicated categoricals (Hoogeboom et al., 2021). Besides, this formulation establishes the discrete analog of *reweighting training strategies*, which are recognized as common practices for training continuous-domain diffusion models (Ho et al., 2020; Nichol & Dhariwal, 2021; Vahdat et al., 2021; Karras et al., 2022). In particular, we can adjust the weight $\lambda_{t-1}^{(2)}$ to reweigh the cross-entropy function so that it is more amenable for training.
+Based on this result, training RDMs is equivalent to optimizing the standard *multi-class cross-entropy* loss function, which is evaluated over noisy tokens and weighted by $\lambda_{t-1}^{(2)} = \mathbb{E}_{}\left[\mathbf{v}_{t-1}^{(2)}\right]$. This formulation is conceptually simpler than that of the original discrete diffusion, which requires evaluating the KL divergence between two complicated categoricals (Hoogeboom et al., 2021). Besides, this formulation establishes the discrete analog of *reweighting training strategies*, which are recognized as common practices for training continuous-domain diffusion models (Ho et al., 2020; Nichol & Dhariwal, 2021; Vahdat et al., 2021; Karras et al., 2022). In particular, we can adjust the weight $\lambda_{t-1}^{(2)}$ to reweigh the cross-entropy function so that it is more amenable for training.
 
 More importantly, we note that the training loss function can be *invariant* with respect to $q(\mathbf{v}_{t-1})$ up to reweighting, where different $q(\mathbf{v}_{t-1})$ lead to the same shared objective except for the weight $\lambda_{t-1}^{(2)}$. This makes it possible to train the neural network with one amenable distribution of $\mathbf{v}_{t-1}$ but share the trained model for sampling among a broad family of diffusion processes indexed by $q(\mathbf{v}_{t-1})$.
 
@@ -251,8 +234,6 @@ Intuitively, $b_{t,1:N}$ represents a frontier set that stores the denoised toke
 
 **Return** $\mathbf{x}_{0,1:N}$.
 
-**Figura.**
-
 #### Generating $\mathbf{v}_{t-1}$.
 
 As shown in Eq. (4), a naïve approach of generating $\mathbf{v}_{t-1}$ is by drawing $\mathbf{v}_{t-1,n} \sim \operatorname{Bernoulli}\left(\mathbf{\lambda}_{t-1}\right)$ for each token $n$. However, this assigns equal routing probability $\mathbf{\lambda}_{t-1}$ to all tokens, which may be sub-optimal for routing different tokens to distinct states. This observation motivates us to employ a more discriminative routing mechanism, where only tokens with high confidence from neural networks are denoised (Ghazvininejad et al., 2019; Savinov et al., 2022; Chang et al., 2022). At each step, assume $\mathbf{v}_{t-1,n}^{(1)}$ and $\mathbf{v}_{t-1,n}^{(2)}$ are set to $1$ and $0$ by default, respectively. We feed the noisy sequence $\mathbf{x}_{t,1:N}$ into the neural network and collect the output $f(\mathbf{x}_{t,n};\mathbf{\theta})$ for each token $n$. After that, We obtain token scores $s_{t,n}$ by taking the maximum value of $f(\mathbf{x}_{t,n};\mathbf{\theta}) \in (0,1)^K$, which reflects the model confidence. $\mathbf{v}_{t-1,n}$ is then set to 1 only when $s_{t,n}$ is among the $k$ largest scores. Formally, 
@@ -283,9 +264,8 @@ As seen from Table 1, existing discrete diffusion models usually perform badly 
 
 **Tabla 1.** BLEU score comparisons on `IWSLT14``DE-EN`, `WMT14``EN-DE`, and `WMT16``EN-RO` benchmarks. ^\*^ denotes results reported from previous work.
 
-|  |  |  |  |  |  |  |  |  |
-|:---|:---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
 |  | Model | \# Iterations | `IWSLT14``DE-EN` |  | `WMT16``EN-RO` |  | `WMT14``EN-DE` |  |
+|:---|:---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
 |  |  |  | Vanilla | Reparam. | Vanilla | Reparam. | Vanilla | Reparam. |
 | **Continuous Diffusion** | CDCD (Dieleman et al., 2022) | 200 | – |  | – |  | 20.0^\*^ |  |
 | **Discrete Diffusion** | Multinomial Diffusion (Hoogeboom et al., 2021) | 2 | 23.05 |  28.01 | 26.61 |  30.16 | 4.28 |  21.43 |
@@ -293,16 +273,16 @@ As seen from Table 1, existing discrete diffusion models usually perform badly 
 |  |  | 10 | 21.28 |  32.23 | 25.25 |  33.00 | 6.94 |  25.63 |
 |  |  | 16 | 20.59 |  32.58 | 24.36 |  33.11 | 6.07 |  25.64 |
 |  |  | 25 | 20.06 |  32.84 | 23.94 |  33.31 | 3.69 |  26.04 |
-| 2-9 | Absorbing Diffusion (Austin et al., 2021) | 2 | 25.24 |  27.60 | 27.24 |  30.72 | 16.46 |  21.00 |
+|  | Absorbing Diffusion (Austin et al., 2021) | 2 | 25.24 |  27.60 | 27.24 |  30.72 | 16.46 |  21.00 |
 |  |  | 4 | 26.93 |  31.47 | 29.16 |  32.60 | 19.48 |  24.26 |
 |  |  | 10 | 28.32 |  33.91 | 30.41 |  33.38 | 21.62 |  26.96 |
 |  |  | 16 | 28.38 |  34.41 | 30.79 |  33.82 | 22.07 |  27.58 |
 |  |  | 25 | 28.93 |  34.49 | 30.56 |  33.99 | 22.52 |  **27.59** |
 | Non-autoregressive Models | CMLM (Ghazvininejad et al., 2019) | 16 | 32.18 |  | 32.90 |  | 25.00 |  |
-| 2-9 | CMLM+SMART (Ghazvininejad et al., 2020) | 10 | 30.74^\*^ |  | 32.71^\*^ |  | 25.10^\*^ |  |
-| 2-9 | Levenshtein Transformer (Gu et al., 2019) | Adaptive | \- |  | \- |  | 25.20^\*^ |  |
-| 2-9 | DisCo (Kasai et al., 2020) | Adaptive | \- |  | \- |  | 25.64^\*^ |  |
-| 2-9 | CMLMC (Huang et al., 2022) | 10 | 34.28^\*^ |  | 34.14^\*^ |  | 26.40^\*^ |  |
+|  | CMLM+SMART (Ghazvininejad et al., 2020) | 10 | 30.74^\*^ |  | 32.71^\*^ |  | 25.10^\*^ |  |
+|  | Levenshtein Transformer (Gu et al., 2019) | Adaptive | \- |  | \- |  | 25.20^\*^ |  |
+|  | DisCo (Kasai et al., 2020) | Adaptive | \- |  | \- |  | 25.64^\*^ |  |
+|  | CMLMC (Huang et al., 2022) | 10 | 34.28^\*^ |  | 34.14^\*^ |  | 26.40^\*^ |  |
 | **Autoregressive Models** | Transformer-base (Vaswani et al., 2017) | n.a. | **34.51** |  | **34.16** |  | 27.53 |  |
 
 ## 5.2 Question Generation and Paraphrasing
@@ -329,6 +309,10 @@ We report comparisons among discrete diffusion, continuous diffusion, and auto-r
 
 This section explores the impact of improved training and decoding techniques developed for RDMs. Concerning the *training* aspect, we compare the derived loss objective, which takes the form of a reweighting cross-entropy function (Section 4.2), with that of traditional discrete diffusion models. As for *decoding*, we evaluate the effectiveness of the discriminative routing mechanism (Section 4.3) against the vanilla strategy that randomly denoises tokens. The overall comparison is presented in Figure 2a (as well as Figures 3a and 3b in Appendix H.4). The results indicate that adopting either the improved training or decoding scheme leads to a significant performance boost over vanilla baselines, which can be further amplified by integrating both. In particular, we discover that the inferior performance of vanilla multinomial diffusion stems from *both* inadequate training and ineffective decoding. Improving either the training or decoding process results in gains of over 10‘ 20 BLEU points, allowing the model to scale well for more decoding steps. Besides, we also ablate the design choice of reweighting strategies (Section 4.2) in Table 2, and observe that a linear heuristic proposed in (Bond-Taylor et al., 2022) yields large improvements in performance on `IWSLT14``DE-EN`. Therefore, this reweighting scheme is adopted by default unless specified otherwise.
 
+*(a)*
+
+*(b)*
+
 **Figura 2.** **Left**: ablation study of improved training and decoding strategies on `WMT14``EN-DE` test set for absorbing and multinomial diffusion, respectively. **Right**: The quality-speed comparison among different models for `QQP` dataset. The number annotation indicates the iteration *steps* except for GPT2-base and Transformer-base, which generate auto-regressively and do not have a fixed number of iterations. The horizontal axis is in log scale.
 
 #### On Decoding Speed.
@@ -349,9 +333,7 @@ We also demonstrate the down-sampled dynamics during the generation of DiffuSeq.
 
 **Tabla 3.** Comparisons among different text generators on `QG` and `QQP`. ^†^ numbers are taken from Gong et al. (2022). All discrete diffusion models are run with 10 steps.
 
-| Task | Model | BLEU $\uparrow$ | ROUGE-L $\uparrow$ | BERTScore $\uparrow$ | Dist-$1
-
-$$\uparrow$ |
+| Task | Model | BLEU $\uparrow$ | ROUGE-L $\uparrow$ | BERTScore $\uparrow$ | Dist-$1 \uparrow$ |
 |:---|:---|:--:|:--:|:--:|:--:|
 | `QG` | Transformer-base^†^ | 0.1663 | 0.3441 | 0.6307 | 0.9309 |
 |  | GPT2-base FT^†^ | 0.0741 | 0.2714 | 0.6052 | 0.9602 |
@@ -359,7 +341,7 @@ $$\uparrow$ |
 |  | GPVAE-T5^†^ | 0.1251 | 0.3390 | 0.6308 | 0.9381 |
 |  | NAR-LevT^†^ | 0.0930 | 0.2893 | 0.5491 | 0.8914 |
 |  | DiffuSeq^†^ | 0.1731 | **0.3665** | 0.6123 | 0.9056 |
-| 2-6 | Absorbing | 0.1738 | 0.3503 | 0.6312 | 0.9095 |
+|  | Absorbing | 0.1738 | 0.3503 | 0.6312 | 0.9095 |
 |  | RDM-absorbing | 0.1791 | 0.3565 | **0.6393** | 0.9202 |
 |  | Multinomial | 0.1696 | 0.3429 | 0.6188 | 0.8990 |
 |  | RDM-multinomial | **0.1802** | 0.3550 | 0.6310 | 0.9082 |
@@ -369,30 +351,29 @@ $$\uparrow$ |
 |  | GPVAE-T5^†^ | 0.2409 | 0.5886 | 0.8466 | 0.9688 |
 |  | NAR-LevT^†^ | 0.2268 | 0.5795 | 0.8344 | 0.9790 |
 |  | DiffuSeq^†^ | 0.2413 | 0.5880 | 0.8365 | 0.9807 |
-| 2-6 | Absorbing | 0.2382 | 0.5834 | 0.8294 | 0.9566 |
+|  | Absorbing | 0.2382 | 0.5834 | 0.8294 | 0.9566 |
 |  | RDM-absorbing | 0.2510 | **0.5945** | **0.8472** | **0.9849** |
 |  | Multinomial | 0.2070 | 0.5539 | 0.7985 | 0.9175 |
 |  | RDM-multinomial | 0.2498 | 0.5886 | 0.8466 | 0.9817 |
 
-**Tabla 4.** Qualitative samples of test paraphrases generated from different diffusion models on `QQP` dataset. texts are truncated to fit into the table. Words are in lower case.
+**Tabla 4.** Qualitative samples of test paraphrases generated from different diffusion models on `QQP` dataset. ^‡^ texts are truncated to fit into the table. Words are in lower case.
 
-|  |  |  |
-|:---|:--:|:---|
 | **Source:** how can one increase concentration? |  |  |
+|:---|:--:|:---|
 | **Reference:** how can i improve my concentration? |  |  |
 |  | \# Iter. | Decodes |
-|  | 0 | $\circ$ skeptical coli ##zam gael erika calves wharf \[unused791\] |
-|  | 500 | $\circ$ cessna i perez newark ? venezuelan regeneration 283 zhejiang |
+| DiffuSeq | 0 | $\circ$ skeptical coli ##zam gael erika calves wharf \[unused791\]^‡^ |
+|  | 500 | $\circ$ cessna i perez newark ? venezuelan regeneration 283 zhejiang^‡^ |
 |  | 1000 | $\circ$ johanna 730 i improve terminals ? |
 |  | 1500 | $\circ$ how do i improve concentration ? |
 |  | 2000 | $\circ$ how do i improve concentration ? |
-|  | 0 | $\circ$ ##tly distances outline ##cera khmer curvature question ##tl |
+| Multinomial | 0 | $\circ$ ##tly distances outline ##cera khmer curvature question ##tl |
 |  | 1 | $\circ$ how can i improve focus in concentration ? |
 |  | 2 | $\circ$ how can i improve focus in concentration ? |
 |  | 3 | $\circ$ how can i improve focus in concentration ? |
 |  | 4 | $\circ$ how can i improve focus in concentration ? |
 |  | 5 | $\circ$ how can i improve focus in concentration ? |
-|  | 0 | $\circ$ lungs ##down intensity cortes ##lden ufo oldies |
+| RDM-multinomial | 0 | $\circ$ lungs ##down intensity cortes ##lden ufo oldies |
 |  | 1 | $\circ$ worker blurted i ##kal caledonia concentration ##vb |
 |  | 2 | $\circ$ how trait i ##kal my concentration ##vb |
 |  | 3 | $\circ$ how trait i increase my concentration ? |
@@ -439,49 +420,33 @@ Discrete diffusion has been applied to a variety of tasks, including graph gener
 
 ## B.1 The derivation of ELBO
 
-Discrete diffusion models are typically trained by maximizing a lower bound of its marginal log-likelihood, defined below, $$
+Discrete diffusion models are typically trained by maximizing a lower bound of its marginal log-likelihood, defined below, 
 
-\begin{align*}
+$$\begin{align*}
     &\log p_{\mathbf{\theta}}(\mathbf{x}_0) \\
     &= \log \int p_{\mathbf{\theta}}(\mathbf{x}_0, \mathbf{x}_1, \dots, \mathbf{x}_T) d\mathbf{x}_1\cdots d\mathbf{x}_T \\
     &= \log \int \frac{p_{\mathbf{\theta}}(\mathbf{x}_0, \mathbf{x}_1, \dots, \mathbf{x}_T)}{q(\mathbf{x}_1, \dots, \mathbf{x}_T | \mathbf{x}_0)}q(\mathbf{x}_1, \dots, \mathbf{x}_T | \mathbf{x}_0) d\mathbf{x}_1\cdots d\mathbf{x}_T \\
-    &= \log %
-   \ifthenelse{ \equal{\frac{p_{\mathbf{\theta}}(\mathbf{x}_0, \mathbf{x}_1, \dots, \mathbf{x}_T)}{q(\mathbf{x}_1, \dots, \mathbf{x}_T | \mathbf{x}_0)}}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_1, \dots, \mathbf{x}_T | \mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_1, \dots, \mathbf{x}_T | \mathbf{x}_0)}\left[\frac{p_{\mathbf{\theta}}(\mathbf{x}_0, \mathbf{x}_1, \dots, \mathbf{x}_T)}{q(\mathbf{x}_1, \dots, \mathbf{x}_T | \mathbf{x}_0)}\right]}
+    &= \log 
+   \mathbb{E}_{q(\mathbf{x}_1, \dots, \mathbf{x}_T | \mathbf{x}_0)}\left[\frac{p_{\mathbf{\theta}}(\mathbf{x}_0, \mathbf{x}_1, \dots, \mathbf{x}_T)}{q(\mathbf{x}_1, \dots, \mathbf{x}_T | \mathbf{x}_0)}\right]
 \\
-    &\geq %
-   \ifthenelse{ \equal{\log\frac{p_{\mathbf{\theta}}(\mathbf{x}_0, \mathbf{x}_1, \dots, \mathbf{x}_T)}{q(\mathbf{x}_1, \dots, \mathbf{x}_T | \mathbf{x}_0)}}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_1, \dots, \mathbf{x}_T | \mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_1, \dots, \mathbf{x}_T | \mathbf{x}_0)}\left[\log\frac{p_{\mathbf{\theta}}(\mathbf{x}_0, \mathbf{x}_1, \dots, \mathbf{x}_T)}{q(\mathbf{x}_1, \dots, \mathbf{x}_T | \mathbf{x}_0)}\right]}
+    &\geq 
+   \mathbb{E}_{q(\mathbf{x}_1, \dots, \mathbf{x}_T | \mathbf{x}_0)}\left[\log\frac{p_{\mathbf{\theta}}(\mathbf{x}_0, \mathbf{x}_1, \dots, \mathbf{x}_T)}{q(\mathbf{x}_1, \dots, \mathbf{x}_T | \mathbf{x}_0)}\right]
 \\
-    &= %
-   \ifthenelse{ \equal{\log\frac{p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)p_{\mathbf{\theta}}(\mathbf{x}_T)  \prod_{t = 2}^T p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})}{q(\mathbf{x}_T | \mathbf{x}_0) \prod_{t=2}^T q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_1, \dots, \mathbf{x}_T | \mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_1, \dots, \mathbf{x}_T | \mathbf{x}_0)}\left[\log\frac{p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)p_{\mathbf{\theta}}(\mathbf{x}_T)  \prod_{t = 2}^T p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})}{q(\mathbf{x}_T | \mathbf{x}_0) \prod_{t=2}^T q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}\right]}
+    &= 
+   \mathbb{E}_{q(\mathbf{x}_1, \dots, \mathbf{x}_T | \mathbf{x}_0)}\left[\log\frac{p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)p_{\mathbf{\theta}}(\mathbf{x}_T)  \prod_{t = 2}^T p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})}{q(\mathbf{x}_T | \mathbf{x}_0) \prod_{t=2}^T q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}\right]
 \\
-    &= %
-   \ifthenelse{ \equal{\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1) - \sum_{t=2}^T \log \frac{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})} - \log \frac{q(\mathbf{x}_T | \mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_T)} }{} }
-      {\mathbb{E}\left[q(\mathbf{x}_1, \dots, \mathbf{x}_T | \mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_1, \dots, \mathbf{x}_T | \mathbf{x}_0)}\left[\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1) - \sum_{t=2}^T \log \frac{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})} - \log \frac{q(\mathbf{x}_T | \mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_T)} \right]}
+    &= 
+   \mathbb{E}_{q(\mathbf{x}_1, \dots, \mathbf{x}_T | \mathbf{x}_0)}\left[\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1) - \sum_{t=2}^T \log \frac{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})} - \log \frac{q(\mathbf{x}_T | \mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_T)} \right]
 \\
-    &= %
-   \ifthenelse{ \equal{\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1) - \sum_{t=2}^T \operatorname{KL}\klxy{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})} - \operatorname{KL}\klxy{q(\mathbf{x}_T | \mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_T)}}{} }
-      {\mathbb{E}\left[q\right]}
-      {\mathbb{E}_{q}\left[\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1) - \sum_{t=2}^T \operatorname{KL}\klxy{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})} - \operatorname{KL}\klxy{q(\mathbf{x}_T | \mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_T)}\right]}
+    &= 
+   \mathbb{E}_{q}\left[\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1) - \sum_{t=2}^T \operatorname{KL}(q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)\;\|\;p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})) - \operatorname{KL}(q(\mathbf{x}_T | \mathbf{x}_0)\;\|\;p_{\mathbf{\theta}}(\mathbf{x}_T))\right]
  \\
-    &= \underbrace{%
-   \ifthenelse{ \equal{\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_1|\mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_1|\mathbf{x}_0)}\left[\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)\right]}
-}_{\mathcal{L}_1(\mathbf{\theta})} - \sum_{t=2}^T \underbrace{%
-   \ifthenelse{ \equal{\operatorname{KL}\klxy{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})}}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_t|\mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_t|\mathbf{x}_0)}\left[\operatorname{KL}\klxy{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})}\right]}
+    &= \underbrace{
+   \mathbb{E}_{q(\mathbf{x}_1|\mathbf{x}_0)}\left[\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)\right]
+}_{\mathcal{L}_1(\mathbf{\theta})} - \sum_{t=2}^T \underbrace{
+   \mathbb{E}_{q(\mathbf{x}_t|\mathbf{x}_0)}\left[\operatorname{KL}(q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)\;\|\;p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t}))\right]
 }_{\mathcal{L}_t(\mathbf{\theta})} + \text{const}. \tag{9}
-\end{align*}
-
-$$
+\end{align*}$$
 
 ## B.2 Parameterization
 
@@ -495,22 +460,20 @@ This section provides separate derivations for the original backward transition 
 
 The absorbing diffusion (Austin et al., 2021) defines a Markov chain where a token goes into an absorbing mask state denoted by $[M]$ with some probability at each time step and stays the same thereafter. The forward transition probability is defined as $q(\mathbf{x}_t | \mathbf{x}_{t-1}) = \beta_t\mathbf{x}_{t-1} + (1 - \beta_t)q_\text{noise}$, where $q_\text{noise} = [M]$ is the point mass with all of the probability on an absorbing state (the mask state \[M\] is denoted as a one-hot vector).
 
-Regarding the conditional backward transition probability $q(\mathbf{x}_{t-1}|\mathbf{x}_{t}, \mathbf{x}_0)$, $\mathbf{x}_t$ can only stay in either state $\mathbf{x}_0$ or state $[M]$. If $\mathbf{x}_t = \mathbf{x}_0$, then $\mathbf{x}_{t-1}$ must also be in state $\mathbf{x}_0$ since it is not absorbed yet; while if $\mathbf{x}_t = \mathbf{e}_{[M]}$, we have $$
+Regarding the conditional backward transition probability $q(\mathbf{x}_{t-1}|\mathbf{x}_{t}, \mathbf{x}_0)$, $\mathbf{x}_t$ can only stay in either state $\mathbf{x}_0$ or state $[M]$. If $\mathbf{x}_t = \mathbf{x}_0$, then $\mathbf{x}_{t-1}$ must also be in state $\mathbf{x}_0$ since it is not absorbed yet; while if $\mathbf{x}_t = \mathbf{e}_{[M]}$, we have 
 
-\begin{align*}
+$$\begin{align*}
     q(\mathbf{x}_{t-1}= [M] | \mathbf{x}_{t} = [M], \mathbf{x}_0) &= \frac{q(\mathbf{x}_{t} = [M] | \mathbf{x}_{t-1} = [M])q(\mathbf{x}_{t-1} = [M]|\mathbf{x}_0)}{q(\mathbf{x}_{t} = [M] | \mathbf{x}_0)} \\
     &= \frac{1 \cdot \left(1 - \alpha_{t-1}\right)}{1 - \alpha_t} = \frac{1 - \alpha_{t-1}}{1 - \alpha_t};\\
     q(\mathbf{x}_{t-1}= \mathbf{x}_0 | \mathbf{x}_{t} = [M], \mathbf{x}_0) &= \frac{q(\mathbf{x}_{t} = [M] | \mathbf{x}_{t-1} = \mathbf{x}_0)q(\mathbf{x}_{t-1} = \mathbf{x}_0|\mathbf{x}_0)}{q(\mathbf{x}_{t} = [M] | \mathbf{x}_0)} \\
     &= \frac{(1-\beta_t) \alpha_{t-1}}{1 - \alpha_{t}} = \frac{\alpha_{t-1} - \alpha_t}{1 - \alpha_{t}}.
-\end{align*}
+\end{align*}$$
 
-$$ The actual generative process is defined as $p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t}) \propto \sum_{\widetilde{\mathbf{x}}_0} q(\mathbf{x}_{t-1}, \mathbf{x}_{t} | \widetilde{\mathbf{x}}_0) p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0|\mathbf{x}_t)$, where we predict the probability vector $p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0|\mathbf{x}_t) \coloneqq f_{\widetilde{\mathbf{x}}_0}(\mathbf{x}_t;\mathbf{\theta})$ from a Transformer. As shown in Austin et al. (2021), this formulation has a simple expression. Suppose $k \neq [M]$ is one of the $K$ possible states. Note that
+The actual generative process is defined as $p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t}) \propto \sum_{\widetilde{\mathbf{x}}_0} q(\mathbf{x}_{t-1}, \mathbf{x}_{t} | \widetilde{\mathbf{x}}_0) p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0|\mathbf{x}_t)$, where we predict the probability vector $p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0|\mathbf{x}_t) \coloneqq f_{\widetilde{\mathbf{x}}_0}(\mathbf{x}_t;\mathbf{\theta})$ from a Transformer. As shown in Austin et al. (2021), this formulation has a simple expression. Suppose $k \neq [M]$ is one of the $K$ possible states. Note that
 
 - if $\mathbf{x}_{t} = k \neq [M]$, then due to the joint $q(\mathbf{x}_{t-1}, \mathbf{x}_{t} | \widetilde{\mathbf{x}}_0)$ there is only one entry that is non-zero within the sum $q(\mathbf{x}_{t-1}=k, \mathbf{x}_{t}=k | \widetilde{\mathbf{x}}_0=k) p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0=k|\mathbf{x}_t)$. As a result, the reverse distribution becomes a point mass over position $k$;
 
-- if $\mathbf{x}_{t} = [M]$, we have $$
-
-\begin{align*}
+- if $\mathbf{x}_{t} = [M]$, we have $$\begin{align*}
       p_{\mathbf{\theta}}(\mathbf{x}_{t-1}= [M] | \mathbf{x}_{t} = [M]) &\propto \sum_{\widetilde{\mathbf{x}}_0} q(\mathbf{x}_{t} = [M] | \mathbf{x}_{t-1} = [M])q(\mathbf{x}_{t-1} = [M]|\widetilde{\mathbf{x}}_0) p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0|\mathbf{x}_t) \\
       &= \sum_{\widetilde{\mathbf{x}}_0} (1 - \alpha_{t-1}) p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0|\mathbf{x}_t) \\
       &= (1 - \alpha_{t-1}) \sum_{\widetilde{\mathbf{x}}_0} p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0|\mathbf{x}_t) \\
@@ -518,241 +481,189 @@ $$ The actual generative process is defined as $p_{\mathbf{\theta}}(\mathbf{x}_{
       p_{\mathbf{\theta}}(\mathbf{x}_{t-1}= k | \mathbf{x}_{t} = [M]) &\propto \sum_{\widetilde{\mathbf{x}}_0} q(\mathbf{x}_{t} = [M] | \mathbf{x}_{t-1} = k)q(\mathbf{x}_{t-1} = k|\widetilde{\mathbf{x}}_0) p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0|\mathbf{x}_t) \\
       &= q(\mathbf{x}_{t} = [M] | \mathbf{x}_{t-1} = k)q(\mathbf{x}_{t-1} = k|\widetilde{\mathbf{x}}_0 = k) p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0 = k|\mathbf{x}_t) \\
       &= (\alpha_{t-1}-\alpha_t)  p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0 = k|\mathbf{x}_t).
-  \end{align*}
-
-$$ They can be easily normalized as well, $$
-
-\begin{align*}
+  \end{align*}$$ They can be easily normalized as well, $$\begin{align*}
           p_{\mathbf{\theta}}(\mathbf{x}_{t-1}= [M] | \mathbf{x}_{t} = [M]) &= \frac{1 - \alpha_{t-1}}{1 - \alpha_{t}} \\
           p_{\mathbf{\theta}}(\mathbf{x}_{t-1}= k | \mathbf{x}_{t} = [M]) &= \frac{(\alpha_{t-1}-\alpha_t) p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0 = k|\mathbf{x}_t)}{1 - \alpha_{t}}.
-  \end{align*}
+  \end{align*}$$
 
-$$
+This can be written in a more compact way, where $p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0 = k|\mathbf{x}_t) \coloneqq f_{k}(\mathbf{x}_t;\mathbf{\theta})$ and $q_\text{noise} = \text{[M]}$ is a point mass with all the probability put over the absorbing state \[M\]. 
 
-This can be written in a more compact way, where $p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0 = k|\mathbf{x}_t) \coloneqq f_{k}(\mathbf{x}_t;\mathbf{\theta})$ and $q_\text{noise} = \text{[M]}$ is a point mass with all the probability put over the absorbing state \[M\]. $$
-
-\begin{align*}
+$$\begin{align*}
     p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t}) = \begin{cases}
         \left(1 - \frac{1 - \alpha_{t-1}}{1 - \alpha_{t}}\right)f(\mathbf{x}_t;\mathbf{\theta}) + \frac{1 - \alpha_{t-1}}{1 - \alpha_{t}} q_\text{noise}, &\text{ if } \mathbf{x}_t = [M] \\
         \mathbf{x}_t, &\text{ if } \mathbf{x}_t \neq [M].
     \end{cases} \tag{10}
-\end{align*}
+\end{align*}$$
 
-$$ We can also generalize this result for $0 < s < t \leq T$. For the forward transition, we have $q(\mathbf{x}_t | \mathbf{x}_s = \mathbf{x}_0) = \prod_{i=s+1}^t \beta_i \mathbf{x}_0 + \left(1 - \prod_{i=s+1}^t \beta_i\right) q_\text{noise} = \frac{\alpha_t}{\alpha_s}\mathbf{x}_0 + \frac{\alpha_s - \alpha_t}{\alpha_s}q_\text{noise}$. Thus the backward transition can be derived as well according to Bayes’ rule, $$
+We can also generalize this result for $0 < s < t \leq T$. For the forward transition, we have $q(\mathbf{x}_t | \mathbf{x}_s = \mathbf{x}_0) = \prod_{i=s+1}^t \beta_i \mathbf{x}_0 + \left(1 - \prod_{i=s+1}^t \beta_i\right) q_\text{noise} = \frac{\alpha_t}{\alpha_s}\mathbf{x}_0 + \frac{\alpha_s - \alpha_t}{\alpha_s}q_\text{noise}$. Thus the backward transition can be derived as well according to Bayes’ rule, 
 
-\begin{align*}
+$$\begin{align*}
     q(\mathbf{x}_{s} | \mathbf{x}_{t}, \mathbf{x}_0) = \begin{cases}
         \frac{\alpha_s - \alpha_t}{1 - \alpha_t} \mathbf{x}_0 + \frac{1 - \alpha_s}{1 - \alpha_t} q_\text{noise}, &\text{ if } \mathbf{x}_t = [M] \\
         \mathbf{x}_t, &\text{ if } \mathbf{x}_t \neq [M].
     \end{cases} \tag{11}
-\end{align*}
+\end{align*}$$
 
-$$ $$
-
-\begin{align*}
+$$\begin{align*}
     p_{\mathbf{\theta}}(\mathbf{x}_{s} | \mathbf{x}_{t}) = \begin{cases}
         \frac{\alpha_s - \alpha_t}{1 - \alpha_t} f(\mathbf{x}_t;\mathbf{\theta}) + \frac{1 - \alpha_s}{1 - \alpha_t} q_\text{noise}, &\text{ if } \mathbf{x}_t = [M] \\
         \mathbf{x}_t, &\text{ if } \mathbf{x}_t \neq [M].
     \end{cases} \tag{12}
-\end{align*}
-
-$$
+\end{align*}$$
 
 #### Multinomial Diffusion.
 
-In multinomial diffusion (Hoogeboom et al., 2021), the forward transition probability is defined as $q(\mathbf{x}_t | \mathbf{x}_{t-1}) = \beta_t\mathbf{x}_{t-1} + (1 - \beta_t)q_\text{noise}$, where $q_{\text{noise}} = \mathbf{1}/K$ is a uniform distribution over $\{1,2,\dots,K\}$ with $\mathbf{1}$ is a $K$-dimensional vector with all ones. The backward transition probability conditional on the original data $\mathbf{x}_0$ can be derived according to Bayes’ rule and in closed form: $$
+In multinomial diffusion (Hoogeboom et al., 2021), the forward transition probability is defined as $q(\mathbf{x}_t | \mathbf{x}_{t-1}) = \beta_t\mathbf{x}_{t-1} + (1 - \beta_t)q_\text{noise}$, where $q_{\text{noise}} = \mathbf{1}/K$ is a uniform distribution over $\{1,2,\dots,K\}$ with $\mathbf{1}$ is a $K$-dimensional vector with all ones. The backward transition probability conditional on the original data $\mathbf{x}_0$ can be derived according to Bayes’ rule and in closed form: 
 
-\begin{align*}
+$$\begin{align*}
     &q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \mathbf{x}_0) \\
     &= \frac{q(\mathbf{x}_{t} | \mathbf{x}_{t-1}) q(\mathbf{x}_{t-1}|\mathbf{x}_0)}{q(\mathbf{x}_{t}|\mathbf{x}_0)}\\
     &=\frac{\left(\beta_t \mathbf{x}_{t} + (1 - \beta_t)\frac{\mathbf{1}}{K}\right)\odot\left(\alpha_{t-1} \mathbf{x}_{0} + (1 - \alpha_{t-1})\frac{\mathbf{1}}{K}\right)}{\mathbf{x}_t^\top \left(\alpha_{t} \mathbf{x}_{0} + (1 - \alpha_{t})\frac{\mathbf{1}}{K}\right)}\\
     &= \frac{\alpha_t \mathbf{x}_t \odot \mathbf{x}_0 + \frac{1}{K}\beta_t(1-\alpha_{t-1})\mathbf{x}_t + \frac{1}{K}(1-\beta_t)\alpha_{t-1}\mathbf{x}_0 + \frac{1}{K^2}(1-\beta_t)(1-\alpha_{t-1})\mathbf{1}}{\alpha_{t} \mathbf{x}_t^\top\mathbf{x}_{0} + \frac{1}{K}(1 - \alpha_{t})}. \tag{13}
-\end{align*}
+\end{align*}$$
 
-$$ Multinomial diffusion (Hoogeboom et al., 2021) learns a parameterized distribution $p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{x}_t)$ to approximate $q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \mathbf{x}_0)$ at each time step, which is defined as $p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{x}_t) = q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \tilde{\mathbf{x}}_0)$ with $\tilde{\mathbf{x}}_0 = f(\mathbf{x}_t;\mathbf{\theta})$ being the output by a Transformer model. $$
+Multinomial diffusion (Hoogeboom et al., 2021) learns a parameterized distribution $p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{x}_t)$ to approximate $q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \mathbf{x}_0)$ at each time step, which is defined as $p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{x}_t) = q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \tilde{\mathbf{x}}_0)$ with $\tilde{\mathbf{x}}_0 = f(\mathbf{x}_t;\mathbf{\theta})$ being the output by a Transformer model. 
 
-\begin{align*}
+$$\begin{align*}
     &p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t}) \\
     &= 
     \frac{\alpha_t \mathbf{x}_t \odot f(\mathbf{x}_t;\mathbf{\theta}) + \frac{1}{K}\beta_t(1-\alpha_{t-1})\mathbf{x}_t + \frac{1}{K}(1-\beta_t)\alpha_{t-1}f(\mathbf{x}_t;\mathbf{\theta}) + \frac{1}{K^2}(1-\beta_t)(1-\alpha_{t-1})\mathbf{1}}{\alpha_{t} \mathbf{x}_t^\top f(\mathbf{x}_t;\mathbf{\theta}) + \frac{1}{K}(1 - \alpha_{t})}. \tag{14}
-\end{align*}
-
-$$
+\end{align*}$$
 
 # C Derivation for Theorem 3.1
 
 In this section, we provide the derivation for Eq. (2) based on Bayes’ rule.
 
-*Proof.* We denote $\mathbf{P}_t \in \mathbb{R}^{K \times K}$ as the probability transition matrix for the $t$-th step, where $[\mathbf{P}_t]_{ij} = p(\mathbf{x}_t = j|\mathbf{x}_{x-1} = i)$ and thus the probability distribution in the forward process can be described as $q(\mathbf{x}_t | \mathbf{x}_{t-1}) = \operatorname{Categorical}\left(\mathbf{x}_t;\mathbf{P}_t^\top \mathbf{x}_{t-1}\right)$. It is then easy to see that $$
+*Proof.* We denote $\mathbf{P}_t \in \mathbb{R}^{K \times K}$ as the probability transition matrix for the $t$-th step, where $[\mathbf{P}_t]_{ij} = p(\mathbf{x}_t = j|\mathbf{x}_{x-1} = i)$ and thus the probability distribution in the forward process can be described as $q(\mathbf{x}_t | \mathbf{x}_{t-1}) = \operatorname{Categorical}\left(\mathbf{x}_t;\mathbf{P}_t^\top \mathbf{x}_{t-1}\right)$. It is then easy to see that 
 
-\begin{align*}
+$$\begin{align*}
     q(\mathbf{x}_t | \mathbf{x}_0) &= \sum_{\mathbf{x}_{t-1},\mathbf{x}_{t-2}, \dots, \mathbf{x}_1} q(\mathbf{x}_t, \mathbf{x}_{t-1},\mathbf{x}_{t-2}, \dots, \mathbf{x}_1|\mathbf{x}_0) = \operatorname{Categorical}\left(\mathbf{x}_t;\overline{\mathbf{P}}_t^\top \mathbf{x}_0\right)
-\end{align*}
+\end{align*}$$
 
-$$ with $\overline{\mathbf{P}}_t = \mathbf{P}_1\mathbf{P}_2\dots\mathbf{P}_t$. Returning to our case where the forward transition takes the form $q(\mathbf{x}_t | \mathbf{x}_{t-1}) = \beta_t\mathbf{x}_{t-1} + (1 - \beta_t)q_\text{noise}$. The transition matrix can be represented by $\mathbf{P}_t = \beta_t \mathbf{I}+ (1 - \beta_t)\mathbf{1}q_\text{noise}^\top$, and thus $\overline{\mathbf{P}}_t = \mathbf{P}_1\mathbf{P}_2\dots\mathbf{P}_t = \alpha_t \mathbf{I}+ (1 - \alpha_t) \mathbf{1}q_\text{noise}^\top$. Equipped with these results, we can proceed with the derivation as follows, $$
+with $\overline{\mathbf{P}}_t = \mathbf{P}_1\mathbf{P}_2\dots\mathbf{P}_t$. Returning to our case where the forward transition takes the form $q(\mathbf{x}_t | \mathbf{x}_{t-1}) = \beta_t\mathbf{x}_{t-1} + (1 - \beta_t)q_\text{noise}$. The transition matrix can be represented by $\mathbf{P}_t = \beta_t \mathbf{I}+ (1 - \beta_t)\mathbf{1}q_\text{noise}^\top$, and thus $\overline{\mathbf{P}}_t = \mathbf{P}_1\mathbf{P}_2\dots\mathbf{P}_t = \alpha_t \mathbf{I}+ (1 - \alpha_t) \mathbf{1}q_\text{noise}^\top$. Equipped with these results, we can proceed with the derivation as follows, 
 
-\begin{align*}
+$$\begin{align*}
     &q(\mathbf{x}_{t-1}|\mathbf{x}_t,\mathbf{x}_0) \\
     &=\! \frac{q(\mathbf{x}_t|\mathbf{x}_{t-1})q(\mathbf{x}_{t-1}|\mathbf{x}_0)}{q(\mathbf{x}_{t}|\mathbf{x}_0)} = \frac{\mathbf{P}_t \mathbf{x}_t \odot \overline{\mathbf{P}}_{t-1}^\top \mathbf{x}_0}{\mathbf{x}_t^\top\overline{\mathbf{P}}_{t}^\top \mathbf{x}_0} \\
     &=\! \frac{\left[\beta_t \mathbf{x}_t + (1 - \beta_t)\sigma_{\mathbf{x}_t}\mathbf{1}\right] \odot \left[\alpha_{t-1} \mathbf{x}_0 + (1 - \alpha_{t-1}) q_\text{noise}\right]}{\alpha_t \mathbf{x}_t^\top \mathbf{x}_0 + (1-\alpha_t)\mathbf{x}_t^\top q_\text{noise}} \\
     &=\! \frac{\beta_t \alpha_{t-1} \textcolor{keywords}{\mathbf{x}_t \!\odot\! \mathbf{x}_0} \!+\! \beta_t (1 \!-\! \alpha_{t-1})\textcolor{keywords}{\mathbf{x}_t \!\odot\! q_\text{noise}} \!+\! (1 \!-\! \beta_t) \alpha_{t-1}\sigma_{\mathbf{x}_t}\!\textcolor{keywords}{\mathbf{1}\!\odot\! \mathbf{x}_0} \!+\! (1 \!-\! \beta_t) (1 \!-\! \alpha_{t-1})\sigma_{\mathbf{x}_t}\!\textcolor{keywords}{\mathbf{1}\!\odot\! q_\text{noise}} }{\alpha_t \mathbf{x}_t^\top \mathbf{x}_0 + (1-\alpha_t)\textcolor{keywords}{\mathbf{x}_t^\top q_\text{noise}}}\\
     &=\! \frac{\beta_t \alpha_{t-1} \textcolor{keywords}{\mathbf{x}_t \!\odot\! \mathbf{x}_0} + \beta_t (1 \!-\! \alpha_{t-1})\textcolor{keywords}{\sigma_{\mathbf{x}_t}\mathbf{x}_t} + (1 \!-\! \beta_t) \alpha_{t-1}\sigma_{\mathbf{x}_t}\textcolor{keywords}{\mathbf{x}_0}  + (1 \!-\! \beta_t) (1 \!-\! \alpha_{t-1})\sigma_{\mathbf{x}_t}\textcolor{keywords}{q_\text{noise}}}{\alpha_t \mathbf{x}_t^\top \mathbf{x}_0 + (1-\alpha_t)\textcolor{keywords}{\sigma_{\mathbf{x}_t}}}.
-\end{align*}
+\end{align*}$$
 
-$$ Here we denote $\odot$ as element-wise product and $\sigma_{\mathbf{x}_t} \coloneqq q_\text{noise}(\mathbf{u}=\mathbf{x}_t)$ to represent the probability of noise drawn from $q_\text{noise}$ being equal to $\mathbf{x}_t$. The need to differentiate between $\mathbf{x}_t$ and $\mathbf{x}_0$ emerges when we calculate $\mathbf{x}_t \odot \mathbf{x}_0$, which would be an all-zero vector $\mathbf{0}$ except that it would be one if $\mathbf{x}_t = \mathbf{x}_0$. Thus the computation of backward transition probabilities breaks down into two cases:
+Here we denote $\odot$ as element-wise product and $\sigma_{\mathbf{x}_t} \coloneqq q_\text{noise}(\mathbf{u}=\mathbf{x}_t)$ to represent the probability of noise drawn from $q_\text{noise}$ being equal to $\mathbf{x}_t$. The need to differentiate between $\mathbf{x}_t$ and $\mathbf{x}_0$ emerges when we calculate $\mathbf{x}_t \odot \mathbf{x}_0$, which would be an all-zero vector $\mathbf{0}$ except that it would be one if $\mathbf{x}_t = \mathbf{x}_0$. Thus the computation of backward transition probabilities breaks down into two cases:
 
-If $\mathbf{x}_t = \mathbf{x}_0$, we have $\mathbf{x}_t \odot \mathbf{x}_0 = \mathbf{x}_t$, $\mathbf{x}_t\top \mathbf{x}_0 = 1$ and thus $$
+If $\mathbf{x}_t = \mathbf{x}_0$, we have $\mathbf{x}_t \odot \mathbf{x}_0 = \mathbf{x}_t$, $\mathbf{x}_t\top \mathbf{x}_0 = 1$ and thus 
 
-\begin{align*}
+$$\begin{align*}
         &q(\mathbf{x}_{t-1}|\mathbf{x}_t,\mathbf{x}_0) \\
         &= \frac{\beta_t \alpha_{t-1} \mathbf{x}_t + \beta_t (1 - \alpha_{t-1})\sigma_{\mathbf{x}_t}\mathbf{x}_t + (1 - \beta_t) \alpha_{t-1}\sigma_{\mathbf{x}_t}\mathbf{x}_t  + (1 - \beta_t) (1 - \alpha_{t-1})\sigma_{\mathbf{x}_t}q_\text{noise}}{\alpha_t + (1-\alpha_t)\sigma_{\mathbf{x}_t}}\\
         &=  \frac{\beta_t \alpha_{t-1} + \beta_t (1 - \alpha_{t-1})\sigma_{\mathbf{x}_t} + (1 - \beta_t) \alpha_{t-1}\sigma_{\mathbf{x}_t}}{\alpha_t + (1-\alpha_t)\sigma_{\mathbf{x}_t}}\mathbf{x}_t + \frac{(1 - \beta_t) (1 - \alpha_{t-1})\sigma_{\mathbf{x}_t}}{\alpha_t + (1-\alpha_t)\sigma_{\mathbf{x}_t}}q_\text{noise}.
-\end{align*}
+\end{align*}$$
 
-$$
+If $\mathbf{x}_t \neq \mathbf{x}_0$, we have $\mathbf{x}_t \odot \mathbf{x}_0 = \mathbf{0}$, $\mathbf{x}_t\top \mathbf{x}_0 = 0$ and thus 
 
-If $\mathbf{x}_t \neq \mathbf{x}_0$, we have $\mathbf{x}_t \odot \mathbf{x}_0 = \mathbf{0}$, $\mathbf{x}_t\top \mathbf{x}_0 = 0$ and thus $$
-
-\begin{align*}
+$$\begin{align*}
         q(\mathbf{x}_{t-1}|\mathbf{x}_t,\mathbf{x}_0) &= \frac{\beta_t (1 - \alpha_{t-1})\sigma_{\mathbf{x}_t}\mathbf{x}_t + (1 - \beta_t) \alpha_{t-1}\sigma_{\mathbf{x}_t}\mathbf{x}_0  + (1 - \beta_t) (1 - \alpha_{t-1})\sigma_{\mathbf{x}_t}q_\text{noise}}{(1-\alpha_t)\sigma_{\mathbf{x}_t}}\\
         &= \frac{\beta_t (1 - \alpha_{t-1})\mathbf{x}_t + (1 - \beta_t) \alpha_{t-1}\mathbf{x}_0  + (1 - \beta_t) (1 - \alpha_{t-1})q_\text{noise}}{1-\alpha_t}\\
         &= \frac{(1 - \beta_t) \alpha_{t-1}}{1-\alpha_t}\mathbf{x}_0 + \frac{\beta_t (1 - \alpha_{t-1})}{1-\alpha_t}\mathbf{x}_t + \frac{(1 - \beta_t) (1 - \alpha_{t-1})}{1-\alpha_t}q_\text{noise}\\
         &= \frac{(1 - \beta_t) \alpha_{t-1}}{1-\alpha_t}\mathbf{x}_0 + \frac{1 - \alpha_{t-1}}{1-\alpha_t}\left[\beta_t \mathbf{x}_t + (1 - \beta_t)q_\text{noise}\right] \\
         &= \frac{\alpha_{t-1} - \alpha_{t}}{1-\alpha_t}\mathbf{x}_0 + \left(1 - \frac{\alpha_{t-1} - \alpha_{t}}{1-\alpha_t}\right)\left[\beta_t \mathbf{x}_t + (1 - \beta_t)q_\text{noise}\right].
-\end{align*}
+\end{align*}$$
 
-$$
+Putting them together, we arrive at the resulting formulation, 
 
-Putting them together, we arrive at the resulting formulation, $$
-
-\begin{align*}
+$$\begin{align*}
     q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \mathbf{x}_0) = \begin{cases}
         \lambda^{(1)}_{t-1}\mathbf{x}_t + \left(1-\lambda^{(1)}_{t-1}\right) q_\text{noise}, &\text{ if } \mathbf{x}_t = \mathbf{x}_0 \\
         \lambda^{(2)}_{t-1}\mathbf{x}_0 + \left(1-\lambda^{(2)}_{t-1}\right) q_\text{noise}(\mathbf{x}_t), &\text{ if } \mathbf{x}_t \neq \mathbf{x}_0.
     \end{cases}
-\end{align*}
+\end{align*}$$
 
-$$ Here $\lambda^{(1)}_{t-1} \coloneqq 1 - \frac{(1-\beta_t)(1-\alpha_{t-1})q_\text{noise}(\mathbf{u}=\mathbf{x}_t)}{\alpha_{t} + (1 - \alpha_{t})q_\text{noise}(\mathbf{u}=\mathbf{x}_t)}$, $\lambda^{(2)}_{t-1} \coloneqq \frac{\alpha_{t-1} - \alpha_{t}}{1-\alpha_t}$, and $q_\text{noise}(\mathbf{x}_t) = \beta_t \mathbf{x}_t + (1 - \beta_t) q_\text{noise}$ denotes a noise distribution that interpolates between $\mathbf{x}_t$ and $q_\text{noise}$, both of which are possibly noisy.
+Here $\lambda^{(1)}_{t-1} \coloneqq 1 - \frac{(1-\beta_t)(1-\alpha_{t-1})q_\text{noise}(\mathbf{u}=\mathbf{x}_t)}{\alpha_{t} + (1 - \alpha_{t})q_\text{noise}(\mathbf{u}=\mathbf{x}_t)}$, $\lambda^{(2)}_{t-1} \coloneqq \frac{\alpha_{t-1} - \alpha_{t}}{1-\alpha_t}$, and $q_\text{noise}(\mathbf{x}_t) = \beta_t \mathbf{x}_t + (1 - \beta_t) q_\text{noise}$ denotes a noise distribution that interpolates between $\mathbf{x}_t$ and $q_\text{noise}$, both of which are possibly noisy.
 
 #### Generalization.
 
-Similar to vanilla diffusion models, we can also derive backward transition processes with a gap $\Delta_t$; that is, we consider $q(\mathbf{x}_{s} | \mathbf{x}_{t}, \mathbf{x}_0)$ with $s = t - \Delta_t$. It can be easily seen that $$
+Similar to vanilla diffusion models, we can also derive backward transition processes with a gap $\Delta_t$; that is, we consider $q(\mathbf{x}_{s} | \mathbf{x}_{t}, \mathbf{x}_0)$ with $s = t - \Delta_t$. It can be easily seen that 
 
-\begin{align*}
+$$\begin{align*}
     q(\mathbf{x}_{s} | \mathbf{x}_{t}, \mathbf{x}_0) = \begin{cases}
         \lambda^{(1)}_{s}\mathbf{x}_t + \left(1-\lambda^{(1)}_{s}\right) q_\text{noise}, &\text{ if } \mathbf{x}_t = \mathbf{x}_0 \\
         \lambda^{(2)}_{s}\mathbf{x}_0 + \left(1-\lambda^{(2)}_{s}\right) q_\text{noise}(\mathbf{x}_t), &\text{ if } \mathbf{x}_t \neq \mathbf{x}_0,
     \end{cases} \tag{15}
-\end{align*}
+\end{align*}$$
 
-$$ with $\lambda^{(1)}_{s} \coloneqq 1 - \frac{(1-\frac{\alpha_t}{\alpha_s})(1-\alpha_{s})q_\text{noise}(\mathbf{u}=\mathbf{x}_t)}{\alpha_{t} + (1 - \alpha_{t})q_\text{noise}(\mathbf{u}=\mathbf{x}_t)}$ and $\lambda^{(2)}_{s} \coloneqq \frac{\alpha_{s} - \alpha_{t}}{1-\alpha_t}$. ◻
+with $\lambda^{(1)}_{s} \coloneqq 1 - \frac{(1-\frac{\alpha_t}{\alpha_s})(1-\alpha_{s})q_\text{noise}(\mathbf{u}=\mathbf{x}_t)}{\alpha_{t} + (1 - \alpha_{t})q_\text{noise}(\mathbf{u}=\mathbf{x}_t)}$ and $\lambda^{(2)}_{s} \coloneqq \frac{\alpha_{s} - \alpha_{t}}{1-\alpha_t}$. ◻
 
 # D Derivations for the ELBO of RDMs
 
-The following provides the derivation for the loss objective of RDMs. Specifically, $$
+The following provides the derivation for the loss objective of RDMs. Specifically, 
 
-\begin{align*}
+$$\begin{align*}
     &\log p(\mathbf{x}_0) \\
-    &\geq %
-   \ifthenelse{ \equal{\log \frac{p_{\mathbf{\theta}}(\mathbf{x}_0, \mathbf{x}_{1:T}, \mathbf{v}_{1:T})}{q(\mathbf{x}_{1:T}, \mathbf{v}_{1:T}|\mathbf{x}_0)}}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_{1:T}, \mathbf{v}_{1:T}|\mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_{1:T}, \mathbf{v}_{1:T}|\mathbf{x}_0)}\left[\log \frac{p_{\mathbf{\theta}}(\mathbf{x}_0, \mathbf{x}_{1:T}, \mathbf{v}_{1:T})}{q(\mathbf{x}_{1:T}, \mathbf{v}_{1:T}|\mathbf{x}_0)}\right]}
+    &\geq 
+   \mathbb{E}_{q(\mathbf{x}_{1:T}, \mathbf{v}_{1:T}|\mathbf{x}_0)}\left[\log \frac{p_{\mathbf{\theta}}(\mathbf{x}_0, \mathbf{x}_{1:T}, \mathbf{v}_{1:T})}{q(\mathbf{x}_{1:T}, \mathbf{v}_{1:T}|\mathbf{x}_0)}\right]
  \\
-    &= %
-   \ifthenelse{ \equal{\log \frac{p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1) \prod_{t=2}^Tp_{\mathbf{\theta}}(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t})p(\mathbf{x}_{T}, \mathbf{v}_{T})}{\prod_{t=2}^Tq(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t},\mathbf{x}_0)q(\mathbf{x}_{T}, \mathbf{v}_{T}|\mathbf{x}_0)}}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_{1:T}, \mathbf{v}_{1:T}|\mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_{1:T}, \mathbf{v}_{1:T}|\mathbf{x}_0)}\left[\log \frac{p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1) \prod_{t=2}^Tp_{\mathbf{\theta}}(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t})p(\mathbf{x}_{T}, \mathbf{v}_{T})}{\prod_{t=2}^Tq(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t},\mathbf{x}_0)q(\mathbf{x}_{T}, \mathbf{v}_{T}|\mathbf{x}_0)}\right]}
+    &= 
+   \mathbb{E}_{q(\mathbf{x}_{1:T}, \mathbf{v}_{1:T}|\mathbf{x}_0)}\left[\log \frac{p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1) \prod_{t=2}^Tp_{\mathbf{\theta}}(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t})p(\mathbf{x}_{T}, \mathbf{v}_{T})}{\prod_{t=2}^Tq(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t},\mathbf{x}_0)q(\mathbf{x}_{T}, \mathbf{v}_{T}|\mathbf{x}_0)}\right]
  \\
-    &= %
-   \ifthenelse{ \equal{\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1) + \sum_{t=2}^T\log\frac{p_{\mathbf{\theta}}(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t})}{q(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t},\mathbf{x}_0)} + \log \frac{p(\mathbf{x}_{T}, \mathbf{v}_{T})}{q(\mathbf{x}_{T}, \mathbf{v}_{T}|\mathbf{x}_0)}}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_{1:T}, \mathbf{v}_{1:T}|\mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_{1:T}, \mathbf{v}_{1:T}|\mathbf{x}_0)}\left[\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1) + \sum_{t=2}^T\log\frac{p_{\mathbf{\theta}}(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t})}{q(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t},\mathbf{x}_0)} + \log \frac{p(\mathbf{x}_{T}, \mathbf{v}_{T})}{q(\mathbf{x}_{T}, \mathbf{v}_{T}|\mathbf{x}_0)}\right]}
+    &= 
+   \mathbb{E}_{q(\mathbf{x}_{1:T}, \mathbf{v}_{1:T}|\mathbf{x}_0)}\left[\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1) + \sum_{t=2}^T\log\frac{p_{\mathbf{\theta}}(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t})}{q(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t},\mathbf{x}_0)} + \log \frac{p(\mathbf{x}_{T}, \mathbf{v}_{T})}{q(\mathbf{x}_{T}, \mathbf{v}_{T}|\mathbf{x}_0)}\right]
  \\
     &\coloneqq \mathcal{L}_1(\mathbf{\theta}) - \sum_{t=2}^T \mathcal{L}_t(\mathbf{\theta}) + \text{const.}
-\end{align*}
+\end{align*}$$
 
-$$ Here we denote $\mathcal{L}_1(\mathbf{\theta}) \coloneqq 
-   \ifthenelse{ \equal{\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_{1}|\mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_{1}|\mathbf{x}_0)}\left[\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)\right]}$, and for $t > 1$, $\mathcal{L}_t(\mathbf{\theta}) \coloneqq 
-   \ifthenelse{ \equal{\operatorname{KL}\klxy{q(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t},\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t})}}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_{t}|\mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_{t}|\mathbf{x}_0)}\left[\operatorname{KL}\klxy{q(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t},\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t})}\right]}$. We can push the decomposition of $\mathcal{L}_t(\mathbf{\theta})$ for time step $t>1$ further, $$
+Here we denote $\mathcal{L}_1(\mathbf{\theta}) \coloneqq \mathbb{E}_{q(\mathbf{x}_{1}|\mathbf{x}_0)}\left[\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)\right]$, and for $t > 1$, $\mathcal{L}_t(\mathbf{\theta}) \coloneqq \mathbb{E}_{q(\mathbf{x}_{t}|\mathbf{x}_0)}\left[\operatorname{KL}(q(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t},\mathbf{x}_0)\;\|\;p_{\mathbf{\theta}}(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t}))\right]$. We can push the decomposition of $\mathcal{L}_t(\mathbf{\theta})$ for time step $t>1$ further, 
 
-\begin{align*}
+$$\begin{align*}
     &\mathcal{L}_t(\mathbf{\theta}) \\
-    &\!=\! %
-   \ifthenelse{ \equal{\operatorname{KL}\klxy{q(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t},\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t})}}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_{t}|\mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_{t}|\mathbf{x}_0)}\left[\operatorname{KL}\klxy{q(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t},\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t})}\right]}
+    &\!=\! 
+   \mathbb{E}_{q(\mathbf{x}_{t}|\mathbf{x}_0)}\left[\operatorname{KL}(q(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t},\mathbf{x}_0)\;\|\;p_{\mathbf{\theta}}(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t}))\right]
  \\
-    &\!=\! %
-   \ifthenelse{ \equal{\sum_{\mathbf{x}_{t-1}, \mathbf{v}_{t-1}}q(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t}, \mathbf{x}_0) \log \frac{q(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t}, \mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t})}}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_{t}|\mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_{t}|\mathbf{x}_0)}\left[\sum_{\mathbf{x}_{t-1}, \mathbf{v}_{t-1}}q(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t}, \mathbf{x}_0) \log \frac{q(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t}, \mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t})}\right]}
+    &\!=\! 
+   \mathbb{E}_{q(\mathbf{x}_{t}|\mathbf{x}_0)}\left[\sum_{\mathbf{x}_{t-1}, \mathbf{v}_{t-1}}q(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t}, \mathbf{x}_0) \log \frac{q(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t}, \mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t})}\right]
 \\
-    &\!=\! %
-   \ifthenelse{ \equal{\sum_{\mathbf{x}_{t-1}, \mathbf{v}_{t-1}}q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_t, \mathbf{x}_0) q(\mathbf{v}_{t-1}) \left[\log \frac{q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_t, \mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{v}_{t-1}, \mathbf{x}_t)} + \log\frac{q(\mathbf{v}_{t-1})}{p_{\mathbf{\theta}}(\mathbf{v}_{t-1})}\right]}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_{t}|\mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_{t}|\mathbf{x}_0)}\left[\sum_{\mathbf{x}_{t-1}, \mathbf{v}_{t-1}}q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_t, \mathbf{x}_0) q(\mathbf{v}_{t-1}) \left[\log \frac{q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_t, \mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{v}_{t-1}, \mathbf{x}_t)} + \log\frac{q(\mathbf{v}_{t-1})}{p_{\mathbf{\theta}}(\mathbf{v}_{t-1})}\right]\right]}
+    &\!=\! 
+   \mathbb{E}_{q(\mathbf{x}_{t}|\mathbf{x}_0)}\left[\sum_{\mathbf{x}_{t-1}, \mathbf{v}_{t-1}}q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_t, \mathbf{x}_0) q(\mathbf{v}_{t-1}) \left[\log \frac{q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_t, \mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{v}_{t-1}, \mathbf{x}_t)} + \log\frac{q(\mathbf{v}_{t-1})}{p_{\mathbf{\theta}}(\mathbf{v}_{t-1})}\right]\right]
 \\
-    &\!=\! %
-   \ifthenelse{ \equal{%
-   \ifthenelse{ \equal{\operatorname{KL}\klxy{q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_t, \mathbf{x}_0)\!\!}{\!p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{v}_{t-1}, \mathbf{x}_t)}}{} }
-      {\mathbb{E}\left[q(\mathbf{v}_{t-1})\right]}
-      {\mathbb{E}_{q(\mathbf{v}_{t-1})}\left[\operatorname{KL}\klxy{q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_t, \mathbf{x}_0)\!\!}{\!p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{v}_{t-1}, \mathbf{x}_t)}\right]}
- \!+\! \operatorname{KL}\klxy{q(\mathbf{v}_{t-1})\!\!}{\!p_{\mathbf{\theta}}(\mathbf{v}_{t-1})}}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_{t}|\mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_{t}|\mathbf{x}_0)}\left[%
-   \ifthenelse{ \equal{\operatorname{KL}\klxy{q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_t, \mathbf{x}_0)\!\!}{\!p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{v}_{t-1}, \mathbf{x}_t)}}{} }
-      {\ensuremath{\mathbb{E}\left[q(\mathbf{v}_{t-1})\right]}}
-      {\ensuremath{\mathbb{E}_{q(\mathbf{v}_{t-1})}\left[\operatorname{KL}\klxy{q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_t, \mathbf{x}_0)\!\!}{\!p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{v}_{t-1}, \mathbf{x}_t)}\right]}}
- \!+\! \operatorname{KL}\klxy{q(\mathbf{v}_{t-1})\!\!}{\!p_{\mathbf{\theta}}(\mathbf{v}_{t-1})}\right]}
+    &\!=\! 
+   \mathbb{E}_{q(\mathbf{x}_{t}|\mathbf{x}_0)}\left[
+   \ensuremath{\mathbb{E}_{q(\mathbf{v}_{t-1})}\left[\operatorname{KL}(q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_t, \mathbf{x}_0)\!\!\;\|\;\!p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{v}_{t-1}, \mathbf{x}_t))\right]}
+ \!+\! \operatorname{KL}(q(\mathbf{v}_{t-1})\!\!\;\|\;\!p_{\mathbf{\theta}}(\mathbf{v}_{t-1}))\right]
 .
-\end{align*}
-
-$$
+\end{align*}$$
 
 # E Derivation for Eq. (6) and Discussions
 
-*Proof.* We first consider the loss objective at each step for *each token* at $n$-th position, which can be expanded as follows, $$
+*Proof.* We first consider the loss objective at each step for *each token* at $n$-th position, which can be expanded as follows, 
 
-\begin{align*}
+$$\begin{align*}
     \mathcal{L}_t^n(\mathbf{\theta})
-    &= %
-   \ifthenelse{ \equal{%
-   \ifthenelse{ \equal{\operatorname{KL}\klxy{q(\mathbf{x}_{t-1,n} | \mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n})}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1,n}|\mathbf{v}_{t-1,n}, \mathbf{x}_{t,n})}}{} }
-      {\mathbb{E}\left[q(\mathbf{v}_{t-1,n})\right]}
-      {\mathbb{E}_{q(\mathbf{v}_{t-1,n})}\left[\operatorname{KL}\klxy{q(\mathbf{x}_{t-1,n} | \mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n})}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1,n}|\mathbf{v}_{t-1,n}, \mathbf{x}_{t,n})}\right]}
-}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_{t,n}|\mathbf{x}_{0,n})\right]}
-      {\mathbb{E}_{q(\mathbf{x}_{t,n}|\mathbf{x}_{0,n})}\left[%
-   \ifthenelse{ \equal{\operatorname{KL}\klxy{q(\mathbf{x}_{t-1,n} | \mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n})}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1,n}|\mathbf{v}_{t-1,n}, \mathbf{x}_{t,n})}}{} }
-      {\ensuremath{\mathbb{E}\left[q(\mathbf{v}_{t-1,n})\right]}}
-      {\ensuremath{\mathbb{E}_{q(\mathbf{v}_{t-1,n})}\left[\operatorname{KL}\klxy{q(\mathbf{x}_{t-1,n} | \mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n})}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1,n}|\mathbf{v}_{t-1,n}, \mathbf{x}_{t,n})}\right]}}
-\right]}
+    &= 
+   \mathbb{E}_{q(\mathbf{x}_{t,n}|\mathbf{x}_{0,n})}\left[
+   \ensuremath{\mathbb{E}_{q(\mathbf{v}_{t-1,n})}\left[\operatorname{KL}(q(\mathbf{x}_{t-1,n} | \mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n})\;\|\;p_{\mathbf{\theta}}(\mathbf{x}_{t-1,n}|\mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}))\right]}
+\right]
 .
-\end{align*}
+\end{align*}$$
 
-$$ Typically we draw a Monte Carlo sample $\mathbf{x}_{t,n}\sim q(\mathbf{x}_{t,n}|\mathbf{x}_{0,n})$ to estimate the outermost expectation above. For the inner term, recall that $b_{t,n} = \mathbf{1}_{\mathbf{x}_{t,n}=\mathbf{x}_{0,n}}$ and $q(\mathbf{x}_{t-1,n} | \mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n})$ takes the form as $$
+Typically we draw a Monte Carlo sample $\mathbf{x}_{t,n}\sim q(\mathbf{x}_{t,n}|\mathbf{x}_{0,n})$ to estimate the outermost expectation above. For the inner term, recall that $b_{t,n} = \mathbf{1}_{\mathbf{x}_{t,n}=\mathbf{x}_{0,n}}$ and $q(\mathbf{x}_{t-1,n} | \mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n})$ takes the form as 
 
-\begin{align*}
+$$\begin{align*}
         q(\mathbf{x}_{t-1,n} | \mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n}) = \begin{cases}
         v^{(1)}_{t-1,n}\mathbf{x}_{t,n} + \left(1-v^{(1)}_{t-1,n}\right) q_\text{noise}, &\text{ if } b_{t,n} = 1\\
         v^{(2)}_{t-1,n}\mathbf{x}_{0,n} + \left(1 - v^{(2)}_{t-1,n}\right)q_\text{noise}(\mathbf{x}_{t,n}), &\text{ if } b_{t,n} = 0.
     \end{cases}
-\end{align*}
+\end{align*}$$
 
-$$ Since we use the teacher-forcing approach that employs the same oracle $b_{t,n}$ for $p_{\mathbf{\theta}}(\mathbf{x}_{t-1,n}|\mathbf{v}_{t-1,n}, \mathbf{x}_{t,n})$ as well, it can also be written in a similar manner, $$
+Since we use the teacher-forcing approach that employs the same oracle $b_{t,n}$ for $p_{\mathbf{\theta}}(\mathbf{x}_{t-1,n}|\mathbf{v}_{t-1,n}, \mathbf{x}_{t,n})$ as well, it can also be written in a similar manner, 
 
-\begin{align*}
+$$\begin{align*}
         p_{\mathbf{\theta}}(\mathbf{x}_{t-1,n}|\mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}) = \begin{cases}
         v^{(1)}_{t-1,n}\mathbf{x}_{t,n} + \left(1-v^{(1)}_{t-1,n}\right) q_\text{noise}, &\text{ if } b_{t,n} = 1 \\
         v^{(2)}_{t-1,n}f(\mathbf{x}_{t,n};\mathbf{\theta}) + \left(1 - v^{(2)}_{t-1,n}\right)q_\text{noise}(\mathbf{x}_{t,n}), &\text{ if } b_{t,n} = 0.
     \end{cases}
-\end{align*}
+\end{align*}$$
 
-$$ The derivation then breaks down into two cases with respect to $b_{t,n}$:
+The derivation then breaks down into two cases with respect to $b_{t,n}$:
 
 #### If $b_{t,n} = 1$.
 
@@ -760,43 +671,39 @@ In this case, $q(\mathbf{x}_{t-1,n} | \mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}, \mat
 
 #### If $b_{t,n} = 0$.
 
-In this scenario, we have $q(\mathbf{x}_{t-1,n} | b_{t-1}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n}) = v^{(2)}_{t-1,n}\mathbf{x}_{0,n} + \left(1 - v^{(2)}_{t-1,n}\right)q_\text{noise}(\mathbf{x}_{t,n})$ and $v^{(2)}_{t-1,n}f(\mathbf{x}_{t,n};\mathbf{\theta}) + \left(1 - v^{(2)}_{t-1,n}\right)q_\text{noise}(\mathbf{x}_{t,n})$. We then enumerate all the possible outcomes for $v^{(2)}_{t-1,n}$. If $v^{(2)}_{t-1,n} = 1$, $q(\mathbf{v}_{t-1,n}) = \lambda_{t-1}^{(2)}$ and $$
+In this scenario, we have $q(\mathbf{x}_{t-1,n} | b_{t-1}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n}) = v^{(2)}_{t-1,n}\mathbf{x}_{0,n} + \left(1 - v^{(2)}_{t-1,n}\right)q_\text{noise}(\mathbf{x}_{t,n})$ and $v^{(2)}_{t-1,n}f(\mathbf{x}_{t,n};\mathbf{\theta}) + \left(1 - v^{(2)}_{t-1,n}\right)q_\text{noise}(\mathbf{x}_{t,n})$. We then enumerate all the possible outcomes for $v^{(2)}_{t-1,n}$. If $v^{(2)}_{t-1,n} = 1$, $q(\mathbf{v}_{t-1,n}) = \lambda_{t-1}^{(2)}$ and 
 
-\begin{align*}
-        \operatorname{KL}\klxy{q(\mathbf{x}_{t-1,n} | \mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n})}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1,n}|\mathbf{v}_{t-1,n}, \mathbf{x}_{t,n})} &= \operatorname{KL}\klxy{\mathbf{x}_{0,n}}{f(\mathbf{x}_{t,n};\mathbf{\theta})} \\
+$$\begin{align*}
+        \operatorname{KL}(q(\mathbf{x}_{t-1,n} | \mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n})\;\|\;p_{\mathbf{\theta}}(\mathbf{x}_{t-1,n}|\mathbf{v}_{t-1,n}, \mathbf{x}_{t,n})) &= \operatorname{KL}(\mathbf{x}_{0,n}\;\|\;f(\mathbf{x}_{t,n};\mathbf{\theta})) \\
         &= -\mathbf{x}_{0,n}^\top\log f\left(\mathbf{x}_{t,n};\mathbf{\theta}\right).
-\end{align*}
+\end{align*}$$
 
-$$ If $v^{(2)}_{t-1,n} = 0$, then $q(\mathbf{v}_{t-1,n}) = 1 - \lambda_{t-1}^{(2)}$ and $$
+If $v^{(2)}_{t-1,n} = 0$, then $q(\mathbf{v}_{t-1,n}) = 1 - \lambda_{t-1}^{(2)}$ and 
 
-\begin{align*}
-        \operatorname{KL}\klxy{q(\mathbf{x}_{t-1,n} | \mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n})}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1,n}|\mathbf{v}_{t-1,n}, \mathbf{x}_{t,n})} &= \operatorname{KL}\klxy{q_\text{noise}(\mathbf{x}_{t,n})}{q_\text{noise}(\mathbf{x}_{t,n})} \\
+$$\begin{align*}
+        \operatorname{KL}(q(\mathbf{x}_{t-1,n} | \mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n})\;\|\;p_{\mathbf{\theta}}(\mathbf{x}_{t-1,n}|\mathbf{v}_{t-1,n}, \mathbf{x}_{t,n})) &= \operatorname{KL}(q_\text{noise}(\mathbf{x}_{t,n})\;\|\;q_\text{noise}(\mathbf{x}_{t,n})) \\
         &= 0.
-\end{align*}
+\end{align*}$$
 
-$$ Putting them together, we have $$
+Putting them together, we have 
 
-\begin{align*}
-        &%
-   \ifthenelse{ \equal{\operatorname{KL}\klxy{q(\mathbf{x}_{t-1,n} | \mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n})}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1,n}|\mathbf{v}_{t-1,n}, \mathbf{x}_{t,n})}}{} }
-      {\mathbb{E}\left[q(\mathbf{v}_{t-1,n})\right]}
-      {\mathbb{E}_{q(\mathbf{v}_{t-1,n})}\left[\operatorname{KL}\klxy{q(\mathbf{x}_{t-1,n} | \mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n})}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1,n}|\mathbf{v}_{t-1,n}, \mathbf{x}_{t,n})}\right]}
+$$\begin{align*}
+        &
+   \mathbb{E}_{q(\mathbf{v}_{t-1,n})}\left[\operatorname{KL}(q(\mathbf{x}_{t-1,n} | \mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n})\;\|\;p_{\mathbf{\theta}}(\mathbf{x}_{t-1,n}|\mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}))\right]
  \\
         &= -\lambda_{t-1}^{(2)}\mathbf{x}_{0,n}^\top\log f\left(\mathbf{x}_{t,n};\mathbf{\theta}\right) + (1 - \lambda_{t-1}^{(2)}) \cdot 0 \\
         &= -\lambda_{t-1}^{(2)}\mathbf{x}_{0,n}^\top\log f\left(\mathbf{x}_{t,n};\mathbf{\theta}\right).
-\end{align*}
+\end{align*}$$
 
-$$ Since each token is modeled conditionally independently, we can add all computed losses for each token, arriving at the final expression for the whole sequence, $$
+Since each token is modeled conditionally independently, we can add all computed losses for each token, arriving at the final expression for the whole sequence, 
 
-\begin{align*}
-        \mathcal{L}_t(\mathbf{\theta}) = \sum_{n=1}^N \mathcal{L}_t^n(\mathbf{\theta}) = %
-   \ifthenelse{ \equal{-\lambda_{t-1}^{(2)}\sum_{n=1}^N (1-b_{t,n})\mathbf{x}_{0,n}^\top\log f\left(\mathbf{x}_{t,n};\mathbf{\theta}\right)}{} }
-      {\mathbb{E}\left[p_{\text{data}}(\mathbf{x}_{0,1:N})\prod_{n=1}^N q(\mathbf{x}_{t,n}|\mathbf{x}_{0,n})\right]}
-      {\mathbb{E}_{p_{\text{data}}(\mathbf{x}_{0,1:N})\prod_{n=1}^N q(\mathbf{x}_{t,n}|\mathbf{x}_{0,n})}\left[-\lambda_{t-1}^{(2)}\sum_{n=1}^N (1-b_{t,n})\mathbf{x}_{0,n}^\top\log f\left(\mathbf{x}_{t,n};\mathbf{\theta}\right)\right]}
+$$\begin{align*}
+        \mathcal{L}_t(\mathbf{\theta}) = \sum_{n=1}^N \mathcal{L}_t^n(\mathbf{\theta}) = 
+   \mathbb{E}_{p_{\text{data}}(\mathbf{x}_{0,1:N})\prod_{n=1}^N q(\mathbf{x}_{t,n}|\mathbf{x}_{0,n})}\left[-\lambda_{t-1}^{(2)}\sum_{n=1}^N (1-b_{t,n})\mathbf{x}_{0,n}^\top\log f\left(\mathbf{x}_{t,n};\mathbf{\theta}\right)\right]
 .
-\end{align*}
+\end{align*}$$
 
-$$ ◻
+ ◻
 
 #### Connections to D3PMs.
 
@@ -889,8 +796,8 @@ The detailed configuration for the optimization hyper-parameters is listed in Ta
 
 | Conditioned training | Absorbing | Multinomial | RDM-absorbing | RDM-multinomial |
 |:--------------------:|:---------:|:-----------:|:-------------:|:---------------:|
-|                      |   28.32   |    21.28    |     33.73     |      31.99      |
-|                      | **29.67** |  **23.58**  |   **33.91**   |    **32.23**    |
+|          ✗           |   28.32   |    21.28    |     33.73     |      31.99      |
+|          ✓           | **29.67** |  **23.58**  |   **33.91**   |    **32.23**    |
 
 ## F.4 Decoding
 
@@ -914,48 +821,30 @@ To perform conditional generation, we delegate the full task of conditioning to 
 
 # G Extension: Improved Training with Conditioning
 
-Training discrete diffusion models usually involves a heavy amount of randomness. For instance, at each training iteration, one has to sample a time step and corrupt a random subset of sequence tokens for denoising. To control the introduced variance, we adopt a simple yet effective conditioning strategy that uses multiple samples to perform training. The key idea is conceptually simple: we start with sampling two *i.i.d.* time steps $s, t \sim \operatorname{Uniform}(T)$ (without the loss of generality, we assume $s < t$). After that, we draw $\mathbf{x}_t \sim q(\mathbf{x}_t | \mathbf{x}_0)$ as usual, but condition the sample at step $s$ by drawing from $q(\mathbf{x}_{s} | \mathbf{x}_0) = 
-   \ifthenelse{ \equal{q(\mathbf{x}_s|\mathbf{x}_t,\mathbf{x}_0)}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_t|\mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_t|\mathbf{x}_0)}\left[q(\mathbf{x}_s|\mathbf{x}_t,\mathbf{x}_0)\right]}
- \approx q(\mathbf{x}_s|\mathbf{x}_t,\mathbf{x}_0)$. The losses (Eq. (6)) at step $s$ and $t$ are then estimated individually and averaged to obtain the final training objective. In case $s = t$, we simply drop the conditioning and sample $\mathbf{x}_s \sim (\mathbf{x}_s | \mathbf{x}_0)$ instead.
+Training discrete diffusion models usually involves a heavy amount of randomness. For instance, at each training iteration, one has to sample a time step and corrupt a random subset of sequence tokens for denoising. To control the introduced variance, we adopt a simple yet effective conditioning strategy that uses multiple samples to perform training. The key idea is conceptually simple: we start with sampling two *i.i.d.* time steps $s, t \sim \operatorname{Uniform}(T)$ (without the loss of generality, we assume $s < t$). After that, we draw $\mathbf{x}_t \sim q(\mathbf{x}_t | \mathbf{x}_0)$ as usual, but condition the sample at step $s$ by drawing from $q(\mathbf{x}_{s} | \mathbf{x}_0) = \mathbb{E}_{q(\mathbf{x}_t|\mathbf{x}_0)}\left[q(\mathbf{x}_s|\mathbf{x}_t,\mathbf{x}_0)\right] \approx q(\mathbf{x}_s|\mathbf{x}_t,\mathbf{x}_0)$. The losses (Eq. (6)) at step $s$ and $t$ are then estimated individually and averaged to obtain the final training objective. In case $s = t$, we simply drop the conditioning and sample $\mathbf{x}_s \sim (\mathbf{x}_s | \mathbf{x}_0)$ instead.
 
-This method utilizes multiple samples to estimate the loss objective while remaining unbiased. To see this, note that $$
+This method utilizes multiple samples to estimate the loss objective while remaining unbiased. To see this, note that 
 
-\begin{align*}
+$$\begin{align*}
     &-\left(\mathcal{L}_s + \mathcal{L}_t\right) \\
-    &= %
-   \ifthenelse{ \equal{\log \frac{q(\mathbf{x}_{s-1} | \mathbf{x}_{s} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{s-1} | \mathbf{x}_{s})} + \log \frac{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})}}{} }
-      {\mathbb{E}\left[q\right]}
-      {\mathbb{E}_{q}\left[\log \frac{q(\mathbf{x}_{s-1} | \mathbf{x}_{s} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{s-1} | \mathbf{x}_{s})} + \log \frac{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})}\right]}
+    &= 
+   \mathbb{E}_{q}\left[\log \frac{q(\mathbf{x}_{s-1} | \mathbf{x}_{s} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{s-1} | \mathbf{x}_{s})} + \log \frac{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})}\right]
 \\
-    &= %
-   \ifthenelse{ \equal{\log \frac{q(\mathbf{x}_{s-1} | \mathbf{x}_{s} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{s-1} | \mathbf{x}_{s})} + \log \frac{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})}}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_{s-1}, \mathbf{x}_{s}, \mathbf{x}_{t-1}, \mathbf{x}_{t} | \mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_{s-1}, \mathbf{x}_{s}, \mathbf{x}_{t-1}, \mathbf{x}_{t} | \mathbf{x}_0)}\left[\log \frac{q(\mathbf{x}_{s-1} | \mathbf{x}_{s} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{s-1} | \mathbf{x}_{s})} + \log \frac{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})}\right]}
+    &= 
+   \mathbb{E}_{q(\mathbf{x}_{s-1}, \mathbf{x}_{s}, \mathbf{x}_{t-1}, \mathbf{x}_{t} | \mathbf{x}_0)}\left[\log \frac{q(\mathbf{x}_{s-1} | \mathbf{x}_{s} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{s-1} | \mathbf{x}_{s})} + \log \frac{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})}\right]
 \\
-    &= %
-   \ifthenelse{ \equal{\log \frac{q(\mathbf{x}_{s-1} | \mathbf{x}_{s} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{s-1} | \mathbf{x}_{s})}}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_{s-1}, \mathbf{x}_{s}, \mathbf{x}_{t-1}, \mathbf{x}_{t} | \mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_{s-1}, \mathbf{x}_{s}, \mathbf{x}_{t-1}, \mathbf{x}_{t} | \mathbf{x}_0)}\left[\log \frac{q(\mathbf{x}_{s-1} | \mathbf{x}_{s} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{s-1} | \mathbf{x}_{s})}\right]}
- +  %
-   \ifthenelse{ \equal{\log \frac{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})}}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_{t-1}, \mathbf{x}_{t} | \mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_{t-1}, \mathbf{x}_{t} | \mathbf{x}_0)}\left[\log \frac{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})}\right]}
+    &= 
+   \mathbb{E}_{q(\mathbf{x}_{s-1}, \mathbf{x}_{s}, \mathbf{x}_{t-1}, \mathbf{x}_{t} | \mathbf{x}_0)}\left[\log \frac{q(\mathbf{x}_{s-1} | \mathbf{x}_{s} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{s-1} | \mathbf{x}_{s})}\right]
+ +  
+   \mathbb{E}_{q(\mathbf{x}_{t-1}, \mathbf{x}_{t} | \mathbf{x}_0)}\left[\log \frac{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})}\right]
 \\
-    &= %
-   \ifthenelse{ \equal{\operatorname{KL}\klxy{q(\mathbf{x}_{s-1} | \mathbf{x}_{s} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{s-1} | \mathbf{x}_{s})}}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_{t} | \mathbf{x}_0)q(\mathbf{x}_{s}| \mathbf{x}_{t}, \mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_{t} | \mathbf{x}_0)q(\mathbf{x}_{s}| \mathbf{x}_{t}, \mathbf{x}_0)}\left[\operatorname{KL}\klxy{q(\mathbf{x}_{s-1} | \mathbf{x}_{s} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{s-1} | \mathbf{x}_{s})}\right]}
+    &= 
+   \mathbb{E}_{q(\mathbf{x}_{t} | \mathbf{x}_0)q(\mathbf{x}_{s}| \mathbf{x}_{t}, \mathbf{x}_0)}\left[\operatorname{KL}(q(\mathbf{x}_{s-1} | \mathbf{x}_{s} ,\mathbf{x}_0)\;\|\;p_{\mathbf{\theta}}(\mathbf{x}_{s-1} | \mathbf{x}_{s}))\right]
  + \\
-    &\qquad\quad %
-   \ifthenelse{ \equal{\operatorname{KL}\klxy{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})}}{} }
-      {\mathbb{E}\left[q(\mathbf{x}_{t} | \mathbf{x}_0)\right]}
-      {\mathbb{E}_{q(\mathbf{x}_{t} | \mathbf{x}_0)}\left[\operatorname{KL}\klxy{q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)}{p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})}\right]}
+    &\qquad\quad 
+   \mathbb{E}_{q(\mathbf{x}_{t} | \mathbf{x}_0)}\left[\operatorname{KL}(q(\mathbf{x}_{t-1} | \mathbf{x}_{t} ,\mathbf{x}_0)\;\|\;p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t}))\right]
 .
-\end{align*}
-
-$$
+\end{align*}$$
 
 This conditioned training brings several benefits. On the one hand, it introduces explicit coupling between $\mathbf{x}_s$ and $\mathbf{x}_t$, which can be seen as an application of Rao-blackwellization and constrains the degree of randomness while still maintaining unbiasedness; on the other hand, as we deal with samples from the simulated backward transition $q(\mathbf{x}_s|\mathbf{x}_t,\mathbf{x}_0)$ instead of $q(\mathbf{x}_s|\mathbf{x}_0)$, this formulation aligns better with the generation process. In practice, this technique can be applied to most existing diffusion processes, only amounts to double the batch size within a single model forward pass, and consistently brings large empirical improvements over vanilla discrete diffusion baselines (Table 7). However, the gains become marginal when switched to our reparameterized variants. We hypothesize that this is due to insufficient training in vanilla discrete diffusion models, which is already alleviated in our improved training scheme.
 
@@ -1013,9 +902,7 @@ Table 8 presents the comparison between text diffusion models under different n
 
 **Tabla 8.** Comparisons among different text generators on `QG` and `QQP` tasks. Numbers are taken from Gong et al. (2022). ^†^ denotes results due to our implementation. $m$ denotes the number of samples used for MBR decoding. RDM variants are run with 10 iterations.
 
-| Task | Model | BLEU $\uparrow$ | ROUGE-L $\uparrow$ | BERTScore $\uparrow$ | Dist-$1$$
-
-\uparrow$ |
+| Task | Model | BLEU $\uparrow$ | ROUGE-L $\uparrow$ | BERTScore $\uparrow$ | Dist-$1 \uparrow$ |
 |:---|:---|:--:|:--:|:--:|:--:|
 | `QG` | Transformer-base | 0.1663 | 0.3441 | 0.6307 | 0.9309 |
 |  | GPT2-base FT | 0.0741 | 0.2714 | 0.6052 | 0.9602 |
@@ -1023,10 +910,10 @@ Table 8 presents the comparison between text diffusion models under different n
 |  | GPVAE-T5 | 0.1251 | 0.3390 | 0.6308 | 0.9381 |
 |  | NAR-LevT | 0.0930 | 0.2893 | 0.5491 | 0.8914 |
 |  | DiffuSeq | 0.1731 | **0.3665** | 0.6123 | 0.9056 |
-| 2-6 | DiffuSeq^†^ ($m\!=\!1$) | 0.1405 | 0.3343 | 0.5783 | 0.9109 |
+|  | DiffuSeq^†^ ($m\!=\!1$) | 0.1405 | 0.3343 | 0.5783 | 0.9109 |
 |  | RDM-absorbing^†^ ($m\!=\!1$) | 0.1699 | 0.3517 | 0.6286 | 0.9098 |
 |  | RDM-multinomial^†^ ($m\!=\!1$) | 0.1768 | 0.3559 | 0.6305 | 0.9081 |
-| 2-6 | DiffuSeq^†^ ($m\!=\!10$) | 0.1569 | 0.3561 | 0.5945 | 0.9062 |
+|  | DiffuSeq^†^ ($m\!=\!10$) | 0.1569 | 0.3561 | 0.5945 | 0.9062 |
 |  | RDM-absorbing^†^ ($m\!=\!10$) | 0.1791 | 0.3565 | **0.6393** | 0.9202 |
 |  | RDM-multinomial^†^ ($m\!=\!10$) | **0.1802** | 0.3550 | 0.6310 | 0.9082 |
 | `QQP` | Transformer-base | **0.2722** | 0.5748 | 0.8381 | 0.9748 |
@@ -1035,10 +922,10 @@ Table 8 presents the comparison between text diffusion models under different n
 |  | GPVAE-T5 | 0.2409 | 0.5886 | 0.8466 | 0.9688 |
 |  | NAR-LevT | 0.2268 | 0.5795 | 0.8344 | 0.9790 |
 |  | DiffuSeq | 0.2413 | 0.5880 | 0.8365 | 0.9807 |
-| 2-6 | DiffuSeq^†^ ($m\!=\!1$) | 0.1845 | 0.5284 | 0.7936 | 0.9739 |
+|  | DiffuSeq^†^ ($m\!=\!1$) | 0.1845 | 0.5284 | 0.7936 | 0.9739 |
 |  | RDM-absorbing^†^ ($m\!=\!1$) | 0.2336 | 0.5789 | 0.8374 | 0.9805 |
 |  | RDM-multinomial^†^ ($m\!=\!1$) | 0.2291 | 0.5725 | 0.8366 | 0.9802 |
-| 2-6 | DiffuSeq^†^ ($m\!=\!10$) | 0.2371 | 0.5835 | 0.8327 | 0.9818 |
+|  | DiffuSeq^†^ ($m\!=\!10$) | 0.2371 | 0.5835 | 0.8327 | 0.9818 |
 |  | RDM-absorbing^†^ ($m\!=\!10$) | 0.2510 | **0.5945** | **0.8472** | **0.9849** |
 |  | RDM-multinomial^†^ ($m\!=\!10$) | 0.2498 | 0.5886 | 0.8466 | 0.9817 |
 
@@ -1048,9 +935,8 @@ Table 9 compares the decoding runtime between RDMs and prior non-autoregressive
 
 **Tabla 9.** Decoding runtime comparison between the non-autoregressive baseline CMLM and RDMs.
 
-|           |       |         |               |         |                 |         |
-|:---------:|:-----:|:-------:|:-------------:|:-------:|:---------------:|:-------:|
 | Iteration | CMLM  |         | RDM-absorbing |         | RDM-multinomial |         |
+|:---------:|:-----:|:-------:|:-------------:|:-------:|:---------------:|:-------:|
 |           | BLEU  | Runtime |     BLEU      | Runtime |      BLEU       | Runtime |
 |     2     | 19.73 |  13.4s  |     21.00     |  12.7s  |      21.43      |  14.4s  |
 |     4     | 22.91 |  17.1s  |     24.26     |  18.2s  |      24.05      |  18.1s  |
@@ -1087,100 +973,102 @@ We train three different models for comparison: auto-regressive language models,
 
 This section presents additional plots (Figure 3) that visualize the effect of different components in our model.
 
+*(a) `WMT16``EN-RO` dataset.*
+
+*(b) `IWSLT14``DE-EN` dataset.*
+
 **Figura 3.** The ablation study of improved training and decoding strategies for both absorbing diffusion and multinomial diffusion on `WMT16``EN-RO` and `IWSLT14``DE-EN` test sets.
 
 ## H.5 Extended Qualitative Analysis
 
-**Tabla 12.** A snapshot of all iterations for qualitative samples of test paraphrases generated from different diffusion models on `QQP` dataset. texts are truncated to fit into the table. Words are in lower case. \<M\> stands for mask states, and \## denotes the sub-word tokenization artifacts.
+**Tabla 12.** A snapshot of all iterations for qualitative samples of test paraphrases generated from different diffusion models on `QQP` dataset. ^‡^ texts are truncated to fit into the table. Words are in lower case. \<M\> stands for mask states, and \## denotes the sub-word tokenization artifacts.
 
-|  |  |  |
-|:---|:--:|:---|
 | **Source:** i have only 2 months for my ca cpt exams how do i prepare? |  |  |
+|:---|:--:|:---|
 | **Reference:** i want to crack ca cpt in 2 months. how should i study? |  |  |
 |  | \# Iter. | Decodes |
-|  | 0 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> |
+| Absorbing | 0 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> |
 |  | 1 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> ca \<M\> ca \<M\> \<M\> ca \<M\> \<M\> \<M\> \<M\> |
 |  | 2 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> ca \<M\> ca \<M\> \<M\> ca \<M\> \<M\> \<M\> \<M\> |
 |  | 3 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> ca - ca cp \<M\> ca \<M\> \<M\> exam \<M\> |
 |  | 4 | $\circ$ \<M\> can \<M\> prepare \<M\> ca - ca cp \<M\> ca \<M\> ##t exam ? |
 |  | 5 | $\circ$ how can i prepare for ca - ca cp ##t ca cp ##t exam ? |
-|  | 0 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> |
+| RDM-absorbing | 0 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> |
 |  | 1 | $\circ$ how \<M\> i \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> ? |
 |  | 2 | $\circ$ how \<M\> i prepare for ca \<M\> ##t \<M\> \<M\> \<M\> \<M\> \<M\> ? |
 |  | 3 | $\circ$ how \<M\> i prepare for ca cp ##t \<M\> \<M\> \<M\> months months ? |
 |  | 4 | $\circ$ how \<M\> i prepare for ca cp ##t exam in two months \<M\> ? |
 |  | 5 | $\circ$ how can i prepare for ca cp ##t exam in two months left ? |
-|  | 0 | $\circ$ glossy \[unused448\] raymond manga subjective questioning suriname masonic listen explored |
+| Multinomial | 0 | $\circ$ glossy \[unused448\] raymond manga subjective questioning suriname masonic listen explored |
 |  | 1 | $\circ$ how can i prepare for ca cp ##t months ? |
 |  | 2 | $\circ$ how can i prepare for ca cp ##t months ? |
 |  | 3 | $\circ$ how can i prepare for ca cp ##t months ? |
 |  | 4 | $\circ$ how can i prepare for ca cp ##t months ? |
 |  | 5 | $\circ$ how can i prepare for ca cp ##t months ? |
-|  | 0 | $\circ$ consonants ##nin leading elegance 406 173 militant teams ##nin dyke thee seafood |
+| RDM-multinomial | 0 | $\circ$ consonants ##nin leading elegance 406 173 militant teams ##nin dyke thee seafood |
 |  | 1 | $\circ$ how residues i ##fighting sentences malaysian jenkins remembers transatlantic universite ##rp monarch ? |
 |  | 2 | $\circ$ how can i cyril for malaysian jenkins goldberg transatlantic in relationships pursuing ? |
 |  | 3 | $\circ$ how can i chu for ca fashionable ##t exam in clerks months ? |
 |  | 4 | $\circ$ how can i prepare for ca cp ##t exam in 2 months ? |
 |  | 5 | $\circ$ how can i prepare for ca cp ##t exam in 2 months ? |
-|  | 0 | $\circ$ defective thereby evaluation michaels fragments primal electrically aground hostilities |
-|  | 10 | $\circ$ simulcast candidacy ##bner \[unused106\] ##wide subgenus dangerously sincerity resolving migrated menon ##lase |
-|  | 100 | $\circ$ westphalia ##tracted universite ##erly reissued neglect showcased \[unused574\] slade |
-|  | 250 | $\circ$ souza electronically compliant gerard priority townships ##neo hidalgo \[unused574\] |
-|  | 500 | $\circ$ spikes peptide ##ales borneo makeshift moi rebelled neglect textual 1899 erasmus publishes |
-|  | 750 | $\circ$ i reduces griffin ##ales bukit makeshift moi ##sław mcbride how ministries |
-| 2-3 | 1000 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca wastewater norton , how ministries can |
-|  | 1001 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can |
-|  | 1002 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can |
-|  | 1003 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can |
-|  | 1004 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can |
-|  | 1005 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can |
-|  | 1006 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can |
-|  | 1007 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can |
-|  | 1008 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can |
-|  | 1009 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can |
-| 2-3 | 1250 | $\circ$ i want to prepare ##cchi my ca glove henan rouen how synthesized can \[unused201\] ##yya exam ? |
+| DiffuSeq | 0 | $\circ$ defective thereby evaluation michaels fragments primal electrically aground hostilities^‡^ |
+|  | 10 | $\circ$ simulcast candidacy ##bner \[unused106\] ##wide subgenus dangerously sincerity resolving migrated menon ##lase ^‡^ |
+|  | 100 | $\circ$ westphalia ##tracted universite ##erly reissued neglect showcased \[unused574\] slade^‡^ |
+|  | 250 | $\circ$ souza electronically compliant gerard priority townships ##neo hidalgo \[unused574\] ^‡^ |
+|  | 500 | $\circ$ spikes peptide ##ales borneo makeshift moi rebelled neglect textual 1899 erasmus publishes ^‡^ |
+|  | 750 | $\circ$ i reduces griffin ##ales bukit makeshift moi ##sław mcbride how ministries ^‡^ |
+|  | 1000 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca wastewater norton , how ministries can^‡^ |
+|  | 1001 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can ^‡^ |
+|  | 1002 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can ^‡^ |
+|  | 1003 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can ^‡^ |
+|  | 1004 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can ^‡^ |
+|  | 1005 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can ^‡^ |
+|  | 1006 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can ^‡^ |
+|  | 1007 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can ^‡^ |
+|  | 1008 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can ^‡^ |
+|  | 1009 | $\circ$ i \[unused582\] to gazing monterrey makeshift ca iata norton , how ministries can ^‡^ |
+|  | 1250 | $\circ$ i want to prepare ##cchi my ca glove henan rouen how synthesized can \[unused201\] ##yya exam ? |
 |  | 1500 | $\circ$ i want to prepare for my ca cp exam , how transvaal can warmed ##yya exam ? |
 |  | 1750 | $\circ$ i want to prepare for my ca cp exam , how yun can get 2 exam ? |
 |  | 2000 | $\circ$ i want to prepare for my ca cp exam , how might can get 2 exam ? |
 
-**Tabla 13.** A snapshot of all iterations for qualitative samples of test paraphrases generated from different diffusion models on `QQP` dataset. texts are truncated to fit into the table. Words are in lower case. \<M\> stands for mask states, and \## denotes the sub-word tokenization artifacts.
+**Tabla 13.** A snapshot of all iterations for qualitative samples of test paraphrases generated from different diffusion models on `QQP` dataset. ^‡^ texts are truncated to fit into the table. Words are in lower case. \<M\> stands for mask states, and \## denotes the sub-word tokenization artifacts.
 
-|  |  |  |
-|:---|:--:|:---|
 | **Source:** how can one increase concentration? |  |  |
+|:---|:--:|:---|
 | **Reference:** how can i improve my concentration? |  |  |
 |  | \# Iter. | Decodes |
-|  | 0 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> |
+| Absorbing | 0 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> |
 |  | 1 | $\circ$ \<M\> can i increase \<M\> \<M\> \<M\> \<M\> |
 |  | 2 | $\circ$ how can i increase concentration \<M\> \<M\> \<M\> |
 |  | 3 | $\circ$ how can i increase concentration in studying \<M\> |
 |  | 4 | $\circ$ how can i increase concentration in studying \<M\> |
 |  | 5 | $\circ$ how can i increase concentration in studying ? |
-|  | 0 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> |
+| RDM-absorbing | 0 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> |
 |  | 1 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> concentration ? |
 |  | 2 | $\circ$ how \<M\> \<M\> \<M\> my concentration ? |
 |  | 3 | $\circ$ how \<M\> \<M\> increase my concentration ? |
 |  | 4 | $\circ$ how \<M\> i increase my concentration ? |
 |  | 5 | $\circ$ how can i increase my concentration ? |
-|  | 0 | $\circ$ ##tly distances outline ##cera khmer curvature question ##tl |
+| Multinomial | 0 | $\circ$ ##tly distances outline ##cera khmer curvature question ##tl |
 |  | 1 | $\circ$ how can i improve focus in concentration ? |
 |  | 2 | $\circ$ how can i improve focus in concentration ? |
 |  | 3 | $\circ$ how can i improve focus in concentration ? |
 |  | 4 | $\circ$ how can i improve focus in concentration ? |
 |  | 5 | $\circ$ how can i improve focus in concentration ? |
-|  | 0 | $\circ$ lungs ##down intensity cortes ##lden ufo oldies |
+| RDM-multinomial | 0 | $\circ$ lungs ##down intensity cortes ##lden ufo oldies |
 |  | 1 | $\circ$ worker blurted i ##kal caledonia concentration ##vb |
 |  | 2 | $\circ$ how trait i ##kal my concentration ##vb |
 |  | 3 | $\circ$ how trait i increase my concentration ? |
 |  | 4 | $\circ$ how trait i increase my concentration ? |
 |  | 5 | $\circ$ how do i increase my concentration ? |
-|  | 0 | $\circ$ skeptical coli ##zam gael erika calves wharf \[unused791\] ##pta vhf ##kley adoptive |
-|  | 10 | $\circ$ encompassing hesse informally campos cosmopolitan postmaster stabilization realised |
-|  | 100 | $\circ$ thump haitian i ##anov xiv ? ##\] norris illuminated ##had kilometers disagreed \[unused730\] |
-|  | 250 | $\circ$ fatal correlated trenton i ##anov exhibits ##\] scandinavia 1934 plaza leveled 910 |
-|  | 500 | $\circ$ cessna i perez newark ? venezuelan regeneration 283 zhejiang ##hectares \[PAD\] |
-|  | 750 | $\circ$ johanna cessna i perez shriek ? \[PAD\] \[PAD\] \[PAD\] \[PAD\] rahman \[PAD\] \[PAD\] \[PAD\] \[PAD\] postmaster |
-| 2-3 | 1000 | $\circ$ johanna 730 i improve terminals ? |
+| DiffuSeq | 0 | $\circ$ skeptical coli ##zam gael erika calves wharf \[unused791\] ##pta vhf ##kley adoptive ^‡^ |
+|  | 10 | $\circ$ encompassing hesse informally campos cosmopolitan postmaster stabilization realised ^‡^ |
+|  | 100 | $\circ$ thump haitian i ##anov xiv ? ##\] norris illuminated ##had kilometers disagreed \[unused730\]^‡^ |
+|  | 250 | $\circ$ fatal correlated trenton i ##anov exhibits ##\] scandinavia 1934 plaza leveled 910 ^‡^ |
+|  | 500 | $\circ$ cessna i perez newark ? venezuelan regeneration 283 zhejiang ##hectares \[PAD\] ^‡^ |
+|  | 750 | $\circ$ johanna cessna i perez shriek ? \[PAD\] \[PAD\] \[PAD\] \[PAD\] rahman \[PAD\] \[PAD\] \[PAD\] \[PAD\] postmaster^‡^ |
+|  | 1000 | $\circ$ johanna 730 i improve terminals ? |
 |  | 1001 | $\circ$ johanna 730 i improve terminals ? |
 |  | 1002 | $\circ$ johanna 730 i improve terminals ? |
 |  | 1003 | $\circ$ johanna 730 i improve terminals ? |
@@ -1190,19 +1078,18 @@ This section presents additional plots (Figure 3) that visualize the effect of 
 |  | 1007 | $\circ$ johanna 730 i improve terminals ? |
 |  | 1008 | $\circ$ johanna 730 i improve terminals ? |
 |  | 1009 | $\circ$ johanna 730 i improve terminals ? |
-| 2-3 | 1250 | $\circ$ how do i improve concentration ? |
+|  | 1250 | $\circ$ how do i improve concentration ? |
 |  | 1500 | $\circ$ how do i improve concentration ? |
 |  | 1750 | $\circ$ how do i improve concentration ? |
 |  | 2000 | $\circ$ how do i improve concentration ? |
 
 **Tabla 14.** A snapshot of all iterations for generated translates from different diffusion models on `IWSLT14``DE-EN` benchmark. Words are in lower case. \<M\> stands for mask states, and \## denotes the sub-word tokenization artifacts.
 
-|  |  |  |
-|:---|:--:|:---|
 | **Source:** alleine dieser flughafen hat eine fläche von 100 quadratkilometern . |  |  |
+|:---|:--:|:---|
 | **Reference:** this airport alone covers more than 100 square kilometers . |  |  |
 |  | \# Iter. | Decodes |
-|  | 0 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> |
+| Absorbing | 0 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> |
 |  | 1 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> has an an \<M\> of \<M\> \<M\> miles \<M\> |
 |  | 2 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> has an an \<M\> of \<M\> \<M\> miles \<M\> |
 |  | 3 | $\circ$ \<M\> \<M\> air## \<M\> \<M\> has an an \<M\> of \<M\> \<M\> miles \<M\> |
@@ -1213,7 +1100,7 @@ This section presents additional plots (Figure 3) that visualize the effect of 
 |  | 8 | $\circ$ \<M\> this air## port alone has an an \<M\> of 100 square miles . |
 |  | 9 | $\circ$ \<M\> this air## port alone has an an \<M\> of 100 square miles . |
 |  | 10 | $\circ$ and this air## port alone has an an area of 100 square miles . |
-|  | 0 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> |
+| RDM-absorbing | 0 | $\circ$ \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> |
 |  | 1 | $\circ$ \<M\> \<M\> air## \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> square \<M\> \<M\> |
 |  | 2 | $\circ$ \<M\> \<M\> air## \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> \<M\> square \<M\> . |
 |  | 3 | $\circ$ \<M\> \<M\> air## \<M\> alone \<M\> \<M\> area \<M\> 100 square kilometers . |
@@ -1224,7 +1111,7 @@ This section presents additional plots (Figure 3) that visualize the effect of 
 |  | 8 | $\circ$ \<M\> this air## port \<M\> has an area of 100 square kilometers . |
 |  | 9 | $\circ$ \<M\> this air## port alone has an area of 100 square kilometers . |
 |  | 10 | $\circ$ so this air## port alone has an area of 100 square kilometers . |
-|  | 0 | $\circ$ eher spending des## vagina drin production mili## inven## primi## open## freiheit sit schlüssel search |
+| Multinomial | 0 | $\circ$ eher spending des## vagina drin production mili## inven## primi## open## freiheit sit schlüssel search |
 |  | 1 | $\circ$ alone alone air## air## port has a a area of 100 square miles . |
 |  | 2 | $\circ$ alone alone air## air## port has a a area of 100 square miles . |
 |  | 3 | $\circ$ alone alone air## air## port has a a area of 100 square miles . |
@@ -1235,7 +1122,7 @@ This section presents additional plots (Figure 3) that visualize the effect of 
 |  | 8 | $\circ$ alone alone air## air## port has a a area of 100 square miles . |
 |  | 9 | $\circ$ alone alone air## air## port has a a area of 100 square miles . |
 |  | 10 | $\circ$ alone alone air## air## port has a a area of 100 square miles . |
-|  | 0 | $\circ$ beschreiben denk## architect mittleren words alism grou## hilft atoms pus he## jähri## enti## ball## generally |
+| RDM-multinomial | 0 | $\circ$ beschreiben denk## architect mittleren words alism grou## hilft atoms pus he## jähri## enti## ball## generally |
 |  | 1 | $\circ$ expe## standing nahme cted baum katastrop## bares tion later colle## haufen 100 anstatt zy . |
 |  | 2 | $\circ$ cognitive standing natürlich cted ution ity bares an later aus## informa## 100 square zy . |
 |  | 3 | $\circ$ cognitive standing llig port wieder oth has an later erhalten saal 100 square kilometers . |
@@ -1305,9 +1192,9 @@ Austin et al. (2021). Jacob Austin, Daniel D. Johnson, Jonathan Ho, Daniel Tarlo
 
 Balaji et al. (2022). Yogesh Balaji, Seungjun Nah, Xun Huang, Arash Vahdat, Jiaming Song, Karsten Kreis, Miika Aittala, Timo Aila, Samuli Laine, Bryan Catanzaro, et al. ediffi: Text-to-image diffusion models with an ensemble of expert denoisers. arXiv preprint arXiv:2211.01324, 2022.
 
-Bojar et al. (2014). OndBojar, Christian Buck, Christian Federmann, Barry Haddow, Philipp Koehn, Johannes Leveling, Christof Monz, Pavel Pecina, Matt Post, Herve Saint-Amand, Radu Soricut, Lucia Specia, and AleTamchyna. Findings of the 2014 workshop on statistical machine translation. In Proceedings of the Ninth Workshop on Statistical Machine Translation, pp. 12–58, Baltimore, Maryland, USA, June 2014. Association for Computational Linguistics. 10.3115/v1/W14-3302. URL https://aclanthology.org/W14-3302.
+Bojar et al. (2014). Ondřej Bojar, Christian Buck, Christian Federmann, Barry Haddow, Philipp Koehn, Johannes Leveling, Christof Monz, Pavel Pecina, Matt Post, Herve Saint-Amand, Radu Soricut, Lucia Specia, and Aleš Tamchyna. Findings of the 2014 workshop on statistical machine translation. In Proceedings of the Ninth Workshop on Statistical Machine Translation, pp. 12–58, Baltimore, Maryland, USA, June 2014. Association for Computational Linguistics. 10.3115/v1/W14-3302. URL https://aclanthology.org/W14-3302.
 
-Bojar et al. (2016). OndBojar, Rajen Chatterjee, Christian Federmann, Yvette Graham, Barry Haddow, Matthias Huck, Antonio Jimeno Yepes, Philipp Koehn, Varvara Logacheva, Christof Monz, Matteo Negri, Aurélie Névéol, Mariana Neves, Martin Popel, Matt Post, Raphael Rubino, Carolina Scarton, Lucia Specia, Marco Turchi, Karin Verspoor, and Marcos Zampieri. Findings of the 2016 conference on machine translation. In Proceedings of the First Conference on Machine Translation: Volume 2, Shared Task Papers, pp. 131–198, Berlin, Germany, August 2016. Association for Computational Linguistics. 10.18653/v1/W16-2301. URL https://aclanthology.org/W16-2301.
+Bojar et al. (2016). Ondřej Bojar, Rajen Chatterjee, Christian Federmann, Yvette Graham, Barry Haddow, Matthias Huck, Antonio Jimeno Yepes, Philipp Koehn, Varvara Logacheva, Christof Monz, Matteo Negri, Aurélie Névéol, Mariana Neves, Martin Popel, Matt Post, Raphael Rubino, Carolina Scarton, Lucia Specia, Marco Turchi, Karin Verspoor, and Marcos Zampieri. Findings of the 2016 conference on machine translation. In Proceedings of the First Conference on Machine Translation: Volume 2, Shared Task Papers, pp. 131–198, Berlin, Germany, August 2016. Association for Computational Linguistics. 10.18653/v1/W16-2301. URL https://aclanthology.org/W16-2301.
 
 Bond-Taylor et al. (2022). Sam Bond-Taylor, Peter Hessey, Hiroshi Sasaki, Toby P Breckon, and Chris G Willcocks. Unleashing transformers: parallel token prediction with discrete absorbing diffusion for fast high-resolution image generation from vector-quantized codes. In European Conference on Computer Vision, pp. 170–188. Springer, 2022.
 
@@ -1331,7 +1218,7 @@ Dhingra et al. (2017). Bhuwan Dhingra, Kathryn Mazaitis, and William W Cohen. Qu
 
 Dieleman et al. (2022). Sander Dieleman, Laurent Sartran, Arman Roshannai, Nikolay Savinov, Yaroslav Ganin, Pierre H Richemond, Arnaud Doucet, Robin Strudel, Chris Dyer, Conor Durkan, et al. Continuous diffusion for categorical data. arXiv preprint arXiv:2211.15089, 2022.
 
-Esser et al. (2021). Patrick Esser, Robin Rombach, Andreas Blattmann, and Bjorn Ommer. Imagebart: Bidirectional context with multinomial diffusion for autoregressive image synthesis. Advances in Neural Information Processing Systems, 34:0 3518–3532, 2021.
+Esser et al. (2021). Patrick Esser, Robin Rombach, Andreas Blattmann, and Bjorn Ommer. Imagebart: Bidirectional context with multinomial diffusion for autoregressive image synthesis. Advances in Neural Information Processing Systems, 34:3518–3532, 2021.
 
 Gao et al. (2022). Zhujin Gao, Junliang Guo, Xu Tan, Yongxin Zhu, Fang Zhang, Jiang Bian, and Linli Xu. Difformer: Empowering diffusion model on embedding space for text generation. arXiv preprint arXiv:2212.09412, 2022.
 
@@ -1363,7 +1250,7 @@ Hoogeboom et al. (2021). Emiel Hoogeboom, Didrik Nielsen, Priyank Jaini, Patrick
 
 Hoogeboom et al. (2022a). Emiel Hoogeboom, Alexey A. Gritsenko, Jasmijn Bastings, Ben Poole, Rianne van den Berg, and Tim Salimans. Autoregressive diffusion models. In International Conference on Learning Representations, 2022a. URL https://openreview.net/forum?id=Lm8T39vLDTE.
 
-Hoogeboom et al. (2022b). Emiel Hoogeboom, Vćtor Garcia Satorras, Clément Vignac, and Max Welling. Equivariant diffusion for molecule generation in 3D. In Kamalika Chaudhuri, Stefanie Jegelka, Le Song, Csaba Szepesvari, Gang Niu, and Sivan Sabato (eds.), Proceedings of the 39th International Conference on Machine Learning, volume 162 of Proceedings of Machine Learning Research, pp. 8867–8887. PMLR, 17–23 Jul 2022b. URL https://proceedings.mlr.press/v162/hoogeboom22a.html.
+Hoogeboom et al. (2022b). Emiel Hoogeboom, Víctor Garcia Satorras, Clément Vignac, and Max Welling. Equivariant diffusion for molecule generation in 3D. In Kamalika Chaudhuri, Stefanie Jegelka, Le Song, Csaba Szepesvari, Gang Niu, and Sivan Sabato (eds.), Proceedings of the 39th International Conference on Machine Learning, volume 162 of Proceedings of Machine Learning Research, pp. 8867–8887. PMLR, 17–23 Jul 2022b. URL https://proceedings.mlr.press/v162/hoogeboom22a.html.
 
 Hu et al. (2022a). Minghui Hu, Yujie Wang, Tat-Jen Cham, Jianfei Yang, and Ponnuthurai N Suganthan. Global context with discrete diffusion in vector quantised modelling for image generation. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pp. 11502–11511, 2022a.
 
@@ -1389,7 +1276,7 @@ Kong et al. (2021). Zhifeng Kong, Wei Ping, Jiaji Huang, Kexin Zhao, and Bryan C
 
 Kool et al. (2019). Wouter Kool, Herke Van Hoof, and Max Welling. Stochastic beams and where to find them: The gumbel-top-k trick for sampling sequences without replacement. In International Conference on Machine Learning, pp. 3499–3508. PMLR, 2019.
 
-Kool et al. (2020). Wouter Kool, Herke van Hoof, and Max Welling. Ancestral gumbel-top-k sampling for sampling without replacement. Journal of Machine Learning Research, 210 (47):0 1–36, 2020. URL http://jmlr.org/papers/v21/19-985.html.
+Kool et al. (2020). Wouter Kool, Herke van Hoof, and Max Welling. Ancestral gumbel-top-k sampling for sampling without replacement. Journal of Machine Learning Research, 21 (47):1–36, 2020. URL http://jmlr.org/papers/v21/19-985.html.
 
 Lee et al. (2018). Jason Lee, Elman Mansimov, and Kyunghyun Cho. Deterministic non-autoregressive neural sequence modeling by iterative refinement. In Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing, pp. 1173–1182, Brussels, Belgium, October-November 2018. Association for Computational Linguistics. 10.18653/v1/D18-1149. URL https://aclanthology.org/D18-1149.
 
@@ -1415,13 +1302,13 @@ Papineni et al. (2002). Kishore Papineni, Salim Roukos, Todd Ward, and Wei-Jing 
 
 Peebles & Xie (2022). William Peebles and Saining Xie. Scalable diffusion models with transformers. arXiv preprint arXiv:2212.09748, 2022.
 
-Pillutla et al. (2021). Krishna Pillutla, Swabha Swayamdipta, Rowan Zellers, John Thickstun, Sean Welleck, Yejin Choi, and Zaid Harchaoui. Mauve: Measuring the gap between neural text and human text using divergence frontiers. Advances in Neural Information Processing Systems, 34:0 4816–4828, 2021.
+Pillutla et al. (2021). Krishna Pillutla, Swabha Swayamdipta, Rowan Zellers, John Thickstun, Sean Welleck, Yejin Choi, and Zaid Harchaoui. Mauve: Measuring the gap between neural text and human text using divergence frontiers. Advances in Neural Information Processing Systems, 34:4816–4828, 2021.
 
 Post (2018). Matt Post. A call for clarity in reporting BLEU scores. In Proceedings of the Third Conference on Machine Translation: Research Papers, pp. 186–191, Brussels, Belgium, October 2018. Association for Computational Linguistics. 10.18653/v1/W18-6319. URL https://aclanthology.org/W18-6319.
 
 Qian et al. (2022). Lihua Qian, Mingxuan Wang, Yang Liu, and Hao Zhou. Diff-glat: Diffusion glancing transformer for parallel sequence to sequence learning. arXiv preprint arXiv:2212.10240, 2022.
 
-Radford et al. (2019). Alec Radford, Jeffrey Wu, Rewon Child, David Luan, Dario Amodei, Ilya Sutskever, et al. Language models are unsupervised multitask learners. OpenAI blog, 10 (8):0 9, 2019.
+Radford et al. (2019). Alec Radford, Jeffrey Wu, Rewon Child, David Luan, Dario Amodei, Ilya Sutskever, et al. Language models are unsupervised multitask learners. OpenAI blog, 1(8):9, 2019.
 
 Ramesh et al. (2022). Aditya Ramesh, Prafulla Dhariwal, Alex Nichol, Casey Chu, and Mark Chen. Hierarchical text-conditional image generation with clip latents. arXiv preprint arXiv:2204.06125, 2022.
 
@@ -1461,7 +1348,7 @@ Touvron et al. (2023). Hugo Touvron, Thibaut Lavril, Gautier Izacard, Xavier Mar
 
 Vahdat et al. (2021). Arash Vahdat, Karsten Kreis, and Jan Kautz. Score-based generative modeling in latent space. In A. Beygelzimer, Y. Dauphin, P. Liang, and J. Wortman Vaughan (eds.), Advances in Neural Information Processing Systems, 2021. URL https://openreview.net/forum?id=P9TYG0j-wtG.
 
-Vaswani et al. (2017). Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, ukasz Kaiser, and Illia Polosukhin. Attention is all you need. In Advances in neural information processing systems, pp. 5998–6008, 2017.
+Vaswani et al. (2017). Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, and Illia Polosukhin. Attention is all you need. In Advances in neural information processing systems, pp. 5998–6008, 2017.
 
 Vieira (2014). Tim Vieira. Gumbel-max trick and weighted reservoir sampling, 2014. URL http://timvieira.github.io/blog/post/2014/08/01/gumbel-max-trick-and-weighted-reservoir-sampling/.
 
@@ -1469,7 +1356,7 @@ Vignac et al. (2022). Clement Vignac, Igor Krawczuk, Antoine Siraudin, Bohan Wan
 
 Wang et al. (2022). Rose E Wang, Esin Durmus, Noah Goodman, and Tatsunori Hashimoto. Language modeling via stochastic processes. In International Conference on Learning Representations, 2022. URL https://openreview.net/forum?id=pMQwKL1yctf.
 
-Wu et al. (2023). Tong Wu, Zhihao Fan, Xiao Liu, Hai-Tao Zheng, Yeyun Gong, Jian Jiao, Juntao Li, Jian Guo, Nan Duan, Weizhu Chen, et al. Ar-diffusion: Auto-regressive diffusion model for text generation. Advances in Neural Information Processing Systems, 36:0 39957–39974, 2023.
+Wu et al. (2023). Tong Wu, Zhihao Fan, Xiao Liu, Hai-Tao Zheng, Yeyun Gong, Jian Jiao, Juntao Li, Jian Guo, Nan Duan, Weizhu Chen, et al. Ar-diffusion: Auto-regressive diffusion model for text generation. Advances in Neural Information Processing Systems, 36:39957–39974, 2023.
 
 Yang et al. (2022). Ling Yang, Zhilong Zhang, Yang Song, Shenda Hong, Runsheng Xu, Yue Zhao, Yingxia Shao, Wentao Zhang, Bin Cui, and Ming-Hsuan Yang. Diffusion models: A comprehensive survey of methods and applications. arXiv preprint arXiv:2209.00796, 2022.
 

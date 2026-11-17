@@ -1,4 +1,4 @@
-from tex2md.diagnostics import Diagnostic, counts, from_pandoc_stderr, scan_markdown
+from tex2md.diagnostics import Diagnostic, counts, from_pandoc_stderr, scan_lost_text, scan_markdown
 
 
 def codes(body):
@@ -56,3 +56,61 @@ def test_pandoc_warnings_are_grouped_and_counted():
 def test_counts_by_severity():
     ds = [Diagnostic("a", "error", "m"), Diagnostic("b", "info", "m"), Diagnostic("c", "info", "m")]
     assert counts(ds) == {"error": 1, "warning": 0, "info": 2}
+
+
+def test_a_paragraph_with_an_odd_number_of_dollars_is_an_error():
+    d = codes("fine $a$ and $b$.\n\nbroken $x = 1 for $y$ here.\n\nescaped \\$5 and \\$6 are fine.")["unbalanced-math"]
+    assert d.severity == "error" and d.count == 1 and d.examples[0].startswith("broken $x = 1")
+
+
+def test_unbalanced_dollars_in_code_and_html_tables_are_not_reported():
+    body = "```\ncost $5\n```\n\n    indented $5 code\n\n<table><tr><td>$x</td></tr></table>\n\nok $a$"
+    assert "unbalanced-math" not in codes(body)
+
+
+def test_mathtools_and_amssymb_commands_katex_knows_are_not_flagged():
+    body = r"$a \coloneq b \Coloneqq c \lessapprox d \preccurlyeq e \rightsquigarrow f \vcenter{x}$"
+    assert "unknown-math-macro" not in codes(body)
+
+
+def test_text_of_the_latex_that_is_not_in_the_markdown_is_reported():
+    from tex2md.diagnostics import scan_lost_text
+    tex = ("\\begin{document}\\maketitle\\begin{abstract}one two three four five six seven eight nine ten eleven twelve "
+           "thirteen fourteen fifteen sixteen\\end{abstract} \\noindent{hidden alpha beta gamma delta epsilon zeta eta theta iota "
+           "kappa lambda mu nu xi omicron pi rho}\\end{document}")
+    body = "one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen"
+    (d,) = scan_lost_text(tex, body)
+    assert d.code == "lost-text" and d.count >= 20 and "hidden alpha beta" in d.examples[0]
+    assert scan_lost_text(tex, body + " hidden alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho") == []
+
+
+def test_lost_text_ignores_math_the_branches_the_document_does_not_take_and_definitions():
+    from tex2md.diagnostics import scan_lost_text
+    tex = ("\\newif\\ifchecklist \\checklistfalse \\begin{document}\\maketitle One two three four five six seven eight nine ten "
+           "eleven twelve thirteen fourteen. $a b c d e f g h i j k l m n o p q r s t u v w x y z$ \\iffalse never shown text "
+           "that is long enough to be a run of words in the source file \\fi \\ifchecklist checklist words that are hidden "
+           "from the reader because the switch is off in this document\\fi \\newcommand{\\foo}{a long definition body with "
+           "many many words that is not text of the paper at all}\\end{document}")
+    body = "One two three four five six seven eight nine ten eleven twelve thirteen fourteen."
+    assert scan_lost_text(tex, body) == []
+
+
+def test_text_hidden_by_a_macro_defined_as_nothing_is_not_lost_text():
+    from tex2md.diagnostics import scan_lost_text
+    tex = ("\\newcommand{\\eat}[1]{}\\begin{document}\\maketitle One two three four five six seven eight nine ten eleven twelve "
+           "thirteen fourteen. \\eat{this long passage was cut from the paper by the authors but is still in the source file "
+           "and is longer than twelve words}\\end{document}")
+    assert scan_lost_text(tex, "One two three four five six seven eight nine ten eleven twelve thirteen fourteen.") == []
+
+
+def test_a_caption_without_number_is_found_inside_a_list_item_too():
+    out = {d.code: d for d in scan_markdown("1.  item\n\n    **Figura.** Panel (a).\n\n> **Tabla.** Quoted.\n\n**Figura.** Plain.\n")}
+    assert out["unnumbered-float"].count == 3
+
+
+def test_configuration_commands_with_deep_braces_are_not_lost_text():
+    tex = ("\\begin{document}\n\\lstdefinelanguage{Py}{\n  language=Python,\n  literate=*\n"
+           + "".join(f"    {{word{i}}}{{{{\\color{{codefunc}}word{i}\\_t}}}}{{1}}\n" for i in range(8))
+           + "}\nThe results are presented in the next section and they agree with the theory.\n\\end{document}")
+    body = "The results are presented in the next section and they agree with the theory."
+    assert not [d for d in scan_lost_text(tex, body) if d.code == "lost-text"]

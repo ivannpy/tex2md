@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 
+from tex2md.preprocess.symbols import TEXT_SYMBOLS
 from tex2md.util.tex import balanced_end, group, skip_ws, unwrap
 
 
@@ -34,13 +36,37 @@ def parse_bbl(t):
             if o.startswith("{") and o.endswith("}"):
                 o = o[1:-1]
             o = re.sub(r"\\natexlab\{([^}]*)\}", r"\1", o)
+            named = _named_label(o)
             mm = re.match(r"(.*?)\(([^()]*)\)", o, re.S)
-            if mm:
+            if named:
+                short, year = named
+            elif mm:
                 short, year = mm.group(1).strip(), mm.group(2).strip()
             else:
                 short = o
         out.append({"key": key, "short": short, "year": year, "num": n + 1, "body": body.strip()})
     return out
+
+
+def _named_label(label):
+    r"""(authors, year) of the labels written by the AAAI/``named`` and old ACL styles:
+    ``\protect\citeauthoryear{Ba and Caruana}{2014}`` (or ``{full list}{short}{year}``) and
+    ``\protect\citename{Bahdanau \bgroup et al.\egroup }2015``. None for any other label."""
+    m = re.match(r"(?:\\protect\s*)?\\(citeauthoryear|citename)\s*(?=\{)", label)
+    if not m:
+        return None
+    groups, i = [], m.end()
+    while i < len(label) and label[i] == "{":
+        g, i = group(label, i)
+        groups.append(g)
+    if m.group(1) == "citename":
+        authors, year = groups[0], label[i:]
+    elif len(groups) >= 2:
+        authors, year = groups[-2], groups[-1]
+    else:
+        return None
+    authors = re.sub(r"\\[be]group(?![a-zA-Z])\s*", "", authors).replace("\\mbox.", ".")
+    return " ".join(authors.split()), year.strip()
 
 
 def first_authors(body):
@@ -91,22 +117,33 @@ def resolve_cites(text, bib, stats):
             return "; ".join(a(b, k) for k, b in entries)
         if cmd == "citeyear":
             return ", ".join(y(b) for _, b in entries)
+        if cmd == "citeyearpar":
+            return "(" + ", ".join(y(b) for _, b in entries) + (", " + post if post else "") + ")"
         if cmd in ("citet", "Citet", "textcite", "Textcite", "citealt"):
             s = "; ".join(f"{a(b, k)} ({y(b)})" if cmd != "citealt" else f"{a(b, k)} {y(b)}" for k, b in entries)
             return s + (f" ({post})" if post else "")
         inner = "; ".join(f"{a(b, k)}, {y(b)}" for k, b in entries)
         inner = (pre + " " if pre else "") + inner + (", " + post if post else "")
-        return inner if cmd in ("citealp", "Citealp") else f"({inner})"
+        return inner if cmd in ("citealp", "Citealp", "citenum") else f"({inner})"
 
-    pat = re.compile(r"\\(cite|citep|citet|Citet|Citep|citealp|Citealp|citealt|citeauthor|Citeauthor|citeyear|parencite|textcite|Textcite|autocite|newcite)\*?\s*(\[[^\]]*\])?\s*(\[[^\]]*\])?\s*\{([^}]*)\}")
+    pat = re.compile(r"\\(cite|citep|citet|Citet|Citep|citealp|Citealp|citealt|Citealt|citeauthor|Citeauthor|citefullauthor"
+                     r"|citeyear|citeyearpar|citeyearNP|citenum|parencite|textcite|Textcite|autocite|footcite|newcite"
+                     r"|shortcite|citeA|citeN|citeNP|citeasnoun)\*?\s*(\[[^\]]*\])?\s*(\[[^\]]*\])?\s*\{([^}]*)\}")
+    # other packages' names for the natbib commands (apacite, chicago, harvard, aaai)
+    same_as = {"cite": "citep", "parencite": "citep", "autocite": "citep", "Citep": "citep", "citeA": "citet",
+               "citeN": "citet", "citeasnoun": "citet", "citeNP": "citealp", "Citealt": "citealt",
+               "shortcite": "citeyearpar", "citeyearNP": "citeyear", "citefullauthor": "citeauthor"}
 
     def sub(m):
         cmd, o1, o2, keys = m.groups()
         o1 = o1[1:-1] if o1 else ""
         o2 = o2[1:-1] if o2 else ""
         pre, post = (o1, o2) if m.group(3) else ("", o1)
-        cmd = {"cite": "citep", "parencite": "citep", "autocite": "citep", "Citep": "citep"}.get(cmd, cmd)
-        return cite(cmd, pre, post, keys)
+        if cmd == "footcite":
+            return "\\footnote{" + cite("citealp", pre, post, keys) + ".}"
+        if cmd == "citenum" and not author_year:      # the bare number, without brackets
+            return cite("citep", pre, post, keys).strip("[]")
+        return cite(same_as.get(cmd, cmd), pre, post, keys)
     return pat.sub(sub, text)
 
 
@@ -124,17 +161,47 @@ def plain_bib(s):
     return re.sub(r"TEXTWOMDMATH(\d+)X", lambda m: maths[int(m.group(1))], s)
 
 
+_COMBINING = {"`": "\u0300", "'": "\u0301", "^": "\u0302", "~": "\u0303", '"': "\u0308", "=": "\u0304",
+              ".": "\u0307", "u": "\u0306", "v": "\u030c", "H": "\u030b", "c": "\u0327", "k": "\u0328",
+              "r": "\u030a", "d": "\u0323", "b": "\u0331"}
+_LETTERS = {"o": "\u00f8", "O": "\u00d8", "l": "\u0142", "L": "\u0141", "ss": "\u00df", "ae": "\u00e6",
+            "AE": "\u00c6", "oe": "\u0153", "OE": "\u0152", "aa": "\u00e5", "AA": "\u00c5", "i": "\u0131",
+            "j": "\u0237", "dh": "\u00f0", "DH": "\u00d0", "th": "\u00fe", "TH": "\u00de", "dj": "\u0111",
+            "DJ": "\u0110", "ng": "\u014b", "NG": "\u014a"}
+_LETTER = re.compile(r"\\(" + "|".join(sorted(_LETTERS, key=len, reverse=True)) + r")(?![a-zA-Z@])(?:\{\}|\s*)")
+_BASE = "[a-zA-Z\u0131\u0237]"
+# \'e  \'{e}  \v{c}  \v c  (an accent named by a letter needs braces or a blank before its argument)
+_ACCENT = re.compile(r"\\(?:([`'^~\"=.])\s*(?:\{\s*(" + _BASE + r")\s*\}|(" + _BASE + r"))"
+                     r"|([uvHckrdb])(?:\s*\{\s*(" + _BASE + r")\s*\}|\s+(" + _BASE + r")))")
+
+
+def tex_accents(s):
+    r"""LaTeX accents and special letters as Unicode: ``{\L}ukasz`` -> Łukasz, ``Kydl{\'\i}{\v{c}}ek`` -> Kydlíček.
+    Left as commands, the clean-up below strips their braces and what is left is no longer LaTeX (``\vcek``)."""
+    s = _LETTER.sub(lambda m: _LETTERS[m.group(1)], s)
+
+    def accent(m):
+        mark = _COMBINING[m.group(1) or m.group(4)]
+        base = m.group(2) or m.group(3) or m.group(5) or m.group(6)
+        base = {"\u0131": "i", "\u0237": "j"}.get(base, base)     # an accent replaces the dot of i and j
+        return unicodedata.normalize("NFC", base + mark)
+    return _ACCENT.sub(accent, s)
+
+
 def _plain_bib_text(s):
     s = re.sub(r"\\newblock\b|\\urlprefix\b|\\BibitemOpen\b|\\bibAnnoteFile\{[^}]*\}", " ", s)
     s = re.sub(r"\\BibitemShut\s*\{[^}]*\}", "", s)
+    s = re.sub(r"\\penalty\s*-?\d+ ?", "", s)    # "34:\penalty0 17981": the digit is the argument, not text
     for cmd in ("href", "bibinfo", "bibfield", "Eprint"):
         s = unwrap(s, cmd, 1)
     s = re.sub(r"\\(url|doi|path)\s*\{([^}]*)\}", r"\2", s)
     for cmd in ("emph", "textit", "textbf", "textsc", "textrm", "textsf", "texttt", "mbox", "natexlab", "em", "it", "bf", "showarticletitle", "showeprint"):
         s = unwrap(s, cmd, 0)
     s = re.sub(r"\\(em|it|bf|sc|rm|sf|tt)\b\s*", "", s)
+    s = tex_accents(s)
+    s = re.sub(r"\\(" + "|".join(TEXT_SYMBOLS) + r")(?![a-zA-Z@])(?:\{\}|[ \t]*)", lambda m: TEXT_SYMBOLS[m.group(1)], s)
     # the result goes back into LaTeX: \% and \# stay escaped (a bare % would comment out the rest)
-    s = s.replace("~", " ").replace("\\&", "&").replace("\\_", "_")
+    s = re.sub(r"(?<!\\)~", " ", s).replace("\\&", "&").replace("\\_", "_")
     s = re.sub(r"\\(?![\"'`^~=.ucvHkrbdt]\W?)[a-zA-Z@]+\*?", "", s)
     s = re.sub(r"(?<!\\)[{}]", "", s)
     return re.sub(r"\s+", " ", s).strip()

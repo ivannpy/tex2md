@@ -1,5 +1,53 @@
 # Changelog
 
+## Audit pass (2026-11-17): the library and 65 arXiv papers that were not in it
+Method: reconvert the 124 library papers into a scratch folder (the library's `.md` files were not touched), convert
+65 more arXiv sources (2012–2025, classics and recent), and look for what pandoc does without saying: text that
+disappears, formulas whose `$` do not pair up, numbers of the PDF that are not in the Markdown, captions the `.aux`
+numbers and the `.md` does not. Result: 0 float differences against the compiled PDFs in the 65 new papers and one
+(known, false) in the library; test suite from 138 to 271 tests.
+
+- **Packaging bug**: `.gitignore` had `build/` and `dist/`, which also hid the package `src/tex2md/build/` (`latex.py`,
+  `aux.py`): it was never committed, so a fresh clone failed with `ModuleNotFoundError: tex2md.build`. The patterns are
+  anchored (`/build/`, `/dist/`); the new package files still have to be added to git.
+- **New diagnostics**: `unbalanced-math` (error: a paragraph whose `$` do not pair up), `lost-text` (warning: runs of
+  12+ words of the LaTeX that are nowhere in the Markdown; hidden branches, drawing code, configuration commands and
+  author blocks are left out), `unbalanced-braces` (a repaired brace), `dropped-definition`; the `.md` scan also
+  finds captions inside list items.
+- **Recovery**: besides environments, pandoc's recovery now drops the definition that holds the error
+  (`\newcolumntype{..}[1]{#1}`), every definition of a macro that expands into itself ("Loop encountered in expanding
+  macro"), and a preamble line it cannot read (`\global\setlength`). An empty pandoc output and PDF wrappers
+  (`\includepdf`) give a clear error; plain TeX and LaTeX 2.09 sources are reported as unsupported.
+- **Text pandoc used to lose without a warning** (new modules `preprocess/textloss.py`, `comments.py`,
+  `environments.py`, `symbols.py`, `braces.py`; rules went from 45 to 71): unknown commands (from a `.sty`)
+  swallow all their brace arguments; boxes (`\fbox`, `\framebox`, `\centerline`, `\raisebox`, `\rotatebox`…);
+  `\cellcolor{c}{x}` and `\rowcolor`; `\cmidrule` ranges; `\footnotetext`; `\ifthenelse`/`\iftoggle`; NeurIPS
+  checklist answers (`\answerYes`); `\acks{}` and `ack`; `\ding`, `\checkmark`, `\cmark`/`\xmark`; listings (`\lstinputlisting`
+  and files `\input` that latexpand leaves, `%` inside listings, `DefineVerbatimEnvironment`); `forest`/inline `\tikz`
+  code printed as text; `multicols`; `restatable`; `tblr`; glossaries (`\gls`); a `tabular` used as a piecewise
+  definition inside a formula; a stray `{` that swallowed the rest of a paper.
+- **Floats and numbering**: captions with paragraph breaks, lists or tabulars; several `\caption` in one float;
+  sub-captions that the document numbers as figures; `\captionsetup{type=table}` in a figure (also inside the
+  blocks of a `figure*`); alternating "table, caption, table, caption" loose captions; `\multicolumn{1}{l}` followed
+  by a line break; `NiceTabular`; algorithm numbers from the `loa` list (`A.1`); `\small{…}` font glue and
+  `\abovedisplayskip` noise in the `.aux` caption keys; captions of tables wrapped in `\resizebox`.
+- **Citations and references**: Unicode accents and letters in a `.bbl` (`{\L}ukasz`, `\'{e}`), `\penalty0`, author-year
+  labels, natbib/apacite variants (`\citeyearpar`, `\citeNP`, `\footcite`, `\shortcite`…), `\subref`, `\crefrange`,
+  `\labelcref`, `\namecref`.
+- **Math**: `$` lost after a comment at the end of a formula (`…}%$`), `|` and `\|` in table cells, code blocks and
+  list items left alone by the math clean-ups, display math inside list items and tables, `\nicefrac`/`\sfrac`,
+  `\mathbbm`, `\sl`, pictures inside formulas, paired delimiters that glued a command to the next letter,
+  algorithm2e `\;` inside `$…$`, `\eIf`, `\lIf`.
+- **Lua**: tables that are mostly text count as content; sub-captions kept inside figures; single-cell tables
+  unwrapped; header promotion skips blank spacing rows; code listings keep their language and a "Listado N" caption;
+  line breaks in cells as `<br>` (14 tables stayed HTML before, 1 does now).
+- **Sources and CLI**: e-print unpacked into a temporary folder and moved when complete (an interrupted download no
+  longer leaves a half-extracted cache); at least 3 s between requests to the arXiv API across runs, `Retry-After`
+  honoured, no retries on 4xx; network errors as one-line messages; `--mn` is validated; `arxiv` exits 1 when
+  the conversion failed; JATS CDATA escaped.
+- **Library `.md` files not regenerated**: the new output differs from them (checklist answers, "Acknowledgments"
+  headings, fewer HTML tables, more captions). Regenerate with `tests/regress.py` when the library is to be updated.
+
 ## 0.1.0 (refactor)
 - Package `tex2md` under `src/`; one CLI (`tex2md arxiv|jats|pdf|frontmatter|add-mn|check|index|fixmath|doctor`).
   `tex2md.py`, `papers.py` and `doc2md.py` remain as thin wrappers with the old arguments.

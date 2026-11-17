@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: 8d3d0ea335a109aec55a2cd939de369a6e19c304439fd6ef863ae8106e6dfcdf
     path: "PCIC/Tesis/ar-diff/Scaling Diffusion Language Models via Adaptation From Autoregressive Models.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-16
+converted: 2026-11-17
 ---
 
 # Scaling Diffusion Language Models via Adaptation from Autoregressive Models
@@ -154,8 +154,6 @@ Building on the connection between AR modeling and discrete diffusion processes,
 
 **until** end training
 
-**Figura.**
-
 **Algoritmo 2.** Sampling
 
 **Input:** Trained diffusion model $f_{\theta}$, sampling algorithm $\tau$, mask token $\boldsymbol{m}$, start token $\boldsymbol{s}$.
@@ -181,8 +179,6 @@ Building on the connection between AR modeling and discrete diffusion processes,
 **end for**
 
 **Return** $\boldsymbol{x}_0^{2:N}$
-
-**Figura.**
 
 #### 3.3 Attention Mask Annealing
 
@@ -220,18 +216,17 @@ in
 
 **Tabla 1.** Comprehensive evaluation of different diffusion language models and the same size pre-trained autoregressive models. There are 3 types of these models: AR for autoregressive, DD for discrete diffusion and CD for continuous diffusion. For the infilling task, we use ROUGE-1/2/L score; for other tasks, we use the accuracy (%) metric. $^*$ indicates we finetune GSM8K on models; other tasks are all in zero-shot setting. Numbers in the () indicate that AR models are only given prefix for infilling tasks. We bold the best performance among diffusion language models and underline results that surpass their base models.
 
-|  |  |  |  |  |  |  |  |  |  |  |  |
-|:---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
 | **Model** | **Size** | **Type** | **QA** | **Word** | **CommonSense Reasoning** |  |  |  | **Math** | **Infilling** |  |
+|:---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
 |  |  |  | TriQA | Lamb. | HSwag | Wino. | SIQA | PIQA | GSM8K$^*$ | ROCStories | Code |
-| 1-1 (lr)2-2 (lr)3-3 (lr)4-4 (lr)5-5 (lr)6-9 (lr)10-10 (lr)11-12 GPT2-S | 127M | AR | 4.0 | 25.9 | 29.9 | 48.5 | 35.7 | 62.1 | 44.8 | (7.8/0.8/7.4) | (1.6) |
+| GPT2-S | 127M | AR | 4.0 | 25.9 | 29.9 | 48.5 | 35.7 | 62.1 | 44.8 | (7.8/0.8/7.4) | (1.6) |
 | SEDD-S | 170M | DD | 1.5 | 12.4 | 30.2 | 50.1 | 34.4 | 55.6 | 45.3 | 11.9/0.7/10.9 | 0.7 |
 | DiffuGPT-S | 127M | DD | 2.0 | 21.6 | <u>33.4</u> | <u>50.8</u> | <u>37.0</u> | 57.7 | <u>50.2</u> | <u>13.7/1.4/12.6</u> | 0.3 |
 | GPT2-M | 355M | AR | 6.7 | 37.7 | 38.3 | 50.7 | 37.7 | 67.4 | 45.6 | (8.6/0.9/8.2) | (2.6) |
 | SEDD-M | 424M | DD | 1.8 | 23.1 | 31.5 | 49.0 | 35.4 | 56.1 | 53.5 | 13.1/1.4/12.2 | 0.5 |
 | DiffuGPT-M | 355M | DD | 3.8 | 30.3 | 37.2 | <u>52.6</u> | <u>39.0</u> | 59.6 | <u>61.8</u> | <u>18.7/2.7/17.0</u> | <u>2.9</u> |
 | Plaid1B | 1.3B | CD | 1.2 | 8.6 | 39.3 | 51.3 | 32.3 | 54.5 | 32.6 | 12.1/1.1/11.2 | 0.1 |
-| LLaMA2 | 7B | AR | 45.4 | 68.8 | 74.9 | 67.1 | 44.8 | 78.3 |  | (11.6/2.1/10.5) | (1.7) |
+| LLaMA2 | 7B | AR | 45.4 | 68.8 | 74.9 | 67.1 | 44.8 | 78.3 | 58.6 | (11.6/2.1/10.5) | (1.7) |
 | DiffuLLaMA | 7B | DD | **18.5** | **53.9** | **58.7** | **56.4** | **43.2** | **63.3** | <u>**63.1**</u> | <u>**23.3/5.5/21.2**</u> | <u>**15.5**</u> |
 
 **Tasks and Metrics** We consider TriviaQA (Joshi et al., 2017) to test the reading comprehension of models and last word completion task Lambada (Paperno et al., 2016) to test how models capture long-range dependencies in text. These two tasks are measured by exact match accuracy. We also test for common sense reasoning tasks HellaSwag (Zellers et al., 2019), Winogrande (Sakaguchi et al., 2021), SIQA (Sap et al., 2019) and PIQA (Bisk et al., 2020), all of which involve multiple-choice questions assessed by accuracy. On grade school math problems GSM8K (Cobbe et al., 2021), we follow Ye et al. (2024b) in finetuning setting using the augmented symbolic data to test the CoT (Wei et al., 2022b) math reasoning abilities of diffusion models. Following Shen et al. (2023), we also test the story infilling tasks using ROCStories (Mostafazadeh et al., 2016) and evaluate using ROUGE score (Lin, 2004). To test the code infilling, we adopt Humaneval (Bavarian et al., 2022a) single line infilling task, which is evaluated by pass@1 rate. We evaluate DiffuLLaMA’s math reasoning and in-context learning ability by evaluating on MAWPS (Koncel-Kedziorski et al., 2016) consisting of math word problems and SATMATH from AGI-eval consisting of math problems from SAT exam (Zhong et al., 2024). We base our implementation on `lm-evaluation-harness` (Gao et al., 2024) and re-implement all tasks across models to ensure a fair comparison.
@@ -842,7 +837,7 @@ Kaplan et al. (2020). Jared Kaplan, Sam McCandlish, Tom Henighan, Tom B Brown, B
 
 Ke et al. (2023). Zixuan Ke, Yijia Shao, Haowei Lin, Tatsuya Konishi, Gyuhak Kim, and Bing Liu. Continual pre-training of language models. In The Eleventh International Conference on Learning Representations, 2023.
 
-Kingma et al. (2021). Diederik Kingma, Tim Salimans, Ben Poole, and Jonathan Ho. Variational diffusion models. Advances in neural information processing systems, 34:0 21696–21707, 2021.
+Kingma et al. (2021). Diederik Kingma, Tim Salimans, Ben Poole, and Jonathan Ho. Variational diffusion models. Advances in neural information processing systems, 34:21696–21707, 2021.
 
 Koncel-Kedziorski et al. (2016). Rik Koncel-Kedziorski, Subhro Roy, Aida Amini, Nate Kushman, and Hannaneh Hajishirzi. MAWPS: A math word problem repository. In Kevin Knight, Ani Nenkova, and Owen Rambow (eds.), Proceedings of the 2016 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, pp. 1152–1157, San Diego, California, June 2016. Association for Computational Linguistics. 10.18653/v1/N16-1136.
 
@@ -850,7 +845,7 @@ Kou et al. (2024). Siqi Kou, Lanxiang Hu, Zhezhi He, Zhijie Deng, and Hao Zhang.
 
 Kuribayashi et al. (2021). Tatsuki Kuribayashi, Yohei Oseki, Takumi Ito, Ryo Yoshida, Masayuki Asahara, and Kentaro Inui. Lower perplexity is not always human-like. In Chengqing Zong, Fei Xia, Wenjie Li, and Roberto Navigli (eds.), Proceedings of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing (Volume 1: Long Papers), pp. 5203–5217, Online, August 2021. Association for Computational Linguistics. 10.18653/v1/2021.acl-long.405.
 
-Li et al. (2023a). Raymond Li, Loubna Ben allal, Yangtian Zi, Niklas Muennighoff, Denis Kocetkov, Chenghao Mou, Marc Marone, Christopher Akiki, Jia LI, Jenny Chim, Qian Liu, Evgenii Zheltonozhskii, Terry Yue Zhuo, Thomas Wang, Olivier Dehaene, Joel Lamy-Poirier, Joao Monteiro, Nicolas Gontier, Ming-Ho Yee, Logesh Kumar Umapathi, Jian Zhu, Ben Lipkin, Muhtasham Oblokulov, Zhiruo Wang, Rudra Murthy, Jason T Stillerman, Siva Sankalp Patel, Dmitry Abulkhanov, Marco Zocca, Manan Dey, Zhihan Zhang, Urvashi Bhattacharyya, Wenhao Yu, Sasha Luccioni, Paulo Villegas, Fedor Zhdanov, Tony Lee, Nadav Timor, Jennifer Ding, Claire S Schlesinger, Hailey Schoelkopf, Jan Ebert, Tri Dao, Mayank Mishra, Alex Gu, Carolyn Jane Anderson, Brendan Dolan-Gavitt, Danish Contractor, Siva Reddy, Daniel Fried, Dzmitry Bahdanau, Yacine Jernite, Carlos Mu noz Ferrandis, Sean Hughes, Thomas Wolf, Arjun Guha, Leandro Von Werra, and Harm de Vries. Starcoder: may the source be with you! Transactions on Machine Learning Research, 2023a. ISSN 2835-8856. Reproducibility Certification.
+Li et al. (2023a). Raymond Li, Loubna Ben allal, Yangtian Zi, Niklas Muennighoff, Denis Kocetkov, Chenghao Mou, Marc Marone, Christopher Akiki, Jia LI, Jenny Chim, Qian Liu, Evgenii Zheltonozhskii, Terry Yue Zhuo, Thomas Wang, Olivier Dehaene, Joel Lamy-Poirier, Joao Monteiro, Nicolas Gontier, Ming-Ho Yee, Logesh Kumar Umapathi, Jian Zhu, Ben Lipkin, Muhtasham Oblokulov, Zhiruo Wang, Rudra Murthy, Jason T Stillerman, Siva Sankalp Patel, Dmitry Abulkhanov, Marco Zocca, Manan Dey, Zhihan Zhang, Urvashi Bhattacharyya, Wenhao Yu, Sasha Luccioni, Paulo Villegas, Fedor Zhdanov, Tony Lee, Nadav Timor, Jennifer Ding, Claire S Schlesinger, Hailey Schoelkopf, Jan Ebert, Tri Dao, Mayank Mishra, Alex Gu, Carolyn Jane Anderson, Brendan Dolan-Gavitt, Danish Contractor, Siva Reddy, Daniel Fried, Dzmitry Bahdanau, Yacine Jernite, Carlos Muñoz Ferrandis, Sean Hughes, Thomas Wolf, Arjun Guha, Leandro Von Werra, and Harm de Vries. Starcoder: may the source be with you! Transactions on Machine Learning Research, 2023a. ISSN 2835-8856. Reproducibility Certification.
 
 Li et al. (2024). Tianhong Li, Yonglong Tian, He Li, Mingyang Deng, and Kaiming He. Autoregressive image generation without vector quantization. arXiv preprint arXiv:2406.11838, 2024.
 
@@ -878,7 +873,7 @@ Ott et al. (2019). Myle Ott, Sergey Edunov, Alexei Baevski, Angela Fan, Sam Gros
 
 Ou et al. (2024). Jingyang Ou, Shen Nie, Kaiwen Xue, Fengqi Zhu, Jiacheng Sun, Zhenguo Li, and Chongxuan Li. Your absorbing discrete diffusion secretly models the conditional distributions of clean data. arXiv preprint arXiv:2406.03736, 2024.
 
-Ouyang et al. (2022). Long Ouyang, Jeffrey Wu, Xu Jiang, Diogo Almeida, Carroll Wainwright, Pamela Mishkin, Chong Zhang, Sandhini Agarwal, Katarina Slama, Alex Ray, et al. Training language models to follow instructions with human feedback. Advances in neural information processing systems, 35:0 27730–27744, 2022.
+Ouyang et al. (2022). Long Ouyang, Jeffrey Wu, Xu Jiang, Diogo Almeida, Carroll Wainwright, Pamela Mishkin, Chong Zhang, Sandhini Agarwal, Katarina Slama, Alex Ray, et al. Training language models to follow instructions with human feedback. Advances in neural information processing systems, 35:27730–27744, 2022.
 
 Paperno et al. (2016). Denis Paperno, Germán Kruszewski, Angeliki Lazaridou, Ngoc Quan Pham, Raffaella Bernardi, Sandro Pezzelle, Marco Baroni, Gemma Boleda, and Raquel Fernández. The LAMBADA dataset: Word prediction requiring a broad discourse context. In Katrin Erk and Noah A. Smith (eds.), Proceedings of the 54th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers), pp. 1525–1534, Berlin, Germany, August 2016. Association for Computational Linguistics. 10.18653/v1/P16-1144.
 
@@ -896,7 +891,7 @@ Roziere et al. (2023). Baptiste Roziere, Jonas Gehring, Fabian Gloeckle, Sten So
 
 Sahoo et al. (2024). Subham Sekhar Sahoo, Marianne Arriola, Aaron Gokaslan, Edgar Mariano Marroquin, Alexander M Rush, Yair Schiff, Justin T Chiu, and Volodymyr Kuleshov. Simple and effective masked diffusion language models. In The Thirty-eighth Annual Conference on Neural Information Processing Systems, 2024. URL https://openreview.net/forum?id=L4uaAR4ArM.
 
-Sakaguchi et al. (2021). Keisuke Sakaguchi, Ronan Le Bras, Chandra Bhagavatula, and Yejin Choi. Winogrande: an adversarial winograd schema challenge at scale. Commun. ACM, 640 (9):0 99–106, August 2021. ISSN 0001-0782. 10.1145/3474381.
+Sakaguchi et al. (2021). Keisuke Sakaguchi, Ronan Le Bras, Chandra Bhagavatula, and Yejin Choi. Winogrande: an adversarial winograd schema challenge at scale. Commun. ACM, 64(9):99–106, August 2021. ISSN 0001-0782. 10.1145/3474381.
 
 Samragh et al. (2024). Mohammad Samragh, Iman Mirzadeh, Keivan Alizadeh Vahid, Fartash Faghri, Minsik Cho, Moin Nabi, Devang Naik, and Mehrdad Farajtabar. Scaling smart: Accelerating large language model pre-training with small model initialization. arXiv preprint arXiv:2409.12903, 2024.
 
@@ -924,7 +919,7 @@ Touvron et al. (2023a). Hugo Touvron, Thibaut Lavril, Gautier Izacard, Xavier Ma
 
 Touvron et al. (2023b). Hugo Touvron, Louis Martin, Kevin Stone, Peter Albert, Amjad Almahairi, Yasmine Babaei, Nikolay Bashlykov, Soumya Batra, Prajjwal Bhargava, Shruti Bhosale, et al. Llama 2: Open foundation and fine-tuned chat models. arXiv preprint arXiv:2307.09288, 2023b.
 
-Vaswani et al. (2017). Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, ukasz Kaiser, and Illia Polosukhin. Attention is all you need. In I. Guyon, U. Von Luxburg, S. Bengio, H. Wallach, R. Fergus, S. Vishwanathan, and R. Garnett (eds.), Advances in Neural Information Processing Systems, volume 30. Curran Associates, Inc., 2017.
+Vaswani et al. (2017). Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Ł ukasz Kaiser, and Illia Polosukhin. Attention is all you need. In I. Guyon, U. Von Luxburg, S. Bengio, H. Wallach, R. Fergus, S. Vishwanathan, and R. Garnett (eds.), Advances in Neural Information Processing Systems, volume 30. Curran Associates, Inc., 2017.
 
 Venkatraman et al. (2024). Siddarth Venkatraman, Moksh Jain, Luca Scimeca, Minsu Kim, Marcin Sendera, Mohsin Hasan, Luke Rowe, Sarthak Mittal, Pablo Lemos, Emmanuel Bengio, et al. Amortizing intractable inference in diffusion models for vision, language, and control. arXiv preprint arXiv:2405.20971, 2024.
 

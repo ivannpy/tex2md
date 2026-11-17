@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: 20f4ff8ceeae543fdf7250c50857523ffcd0274d67c1c0a1089ce2cecb2c8dbc
     path: "PCIC/Tesis/Text generation/AR-DIFFUSION- Auto-Regressive Diffusion Model for Text Generation.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-16
+converted: 2026-11-17
 ---
 
 # AR-Diffusion: Auto-Regressive Diffusion Model for Text Generation
@@ -332,7 +332,7 @@ In Table 5 we give the `SacreBLEU` score according to the setting of DINOISER. 
 
 | **Methods** | IWSLT14 |  |
 |:---|:--:|:--:|
-| 2-3 | De→En | En→De |
+|  | De→En | En→De |
 | Transformer (AR, beam = 5) (Vaswani et al., 2017) | 33.61 | 28.30 |
 | CMLM (NAR, $k$ = 5) (Ghazvininejad et al., 2019) | 29.41 | 24.34 |
 | DiffusionLM ($k$ = 50) (Li et al., 2022a) | 29.11 | 22.91 |
@@ -362,11 +362,11 @@ As depicted in Table 6, AR-Diffusion achieves superior performance compared to 
 | **Methods** | **Steps** | **NFE** | **`ROUGE-1`** | **`ROUGE-2`** | **`ROUGE-L`** | **AVG Drop** |
 |:---|:--:|:--:|:--:|:--:|:--:|:--:|
 | GENIE | 2,000 | 20,000 | 30.36 | 8.78 | 23.31 | \- |
-| 2-7 | 20 | 200 | 28.33 | 7.46 | 21.15 | \- |
-| 2-7 | 3 | 30 | 25.03 (-3.30) | 5.32 (-2.14) | 18.17 (-2.98) | 2.81 |
+|  | 20 | 200 | 28.33 | 7.46 | 21.15 | \- |
+|  | 3 | 30 | 25.03 (-3.30) | 5.32 (-2.14) | 18.17 (-2.98) | 2.81 |
 |  | 2 | 20 | 23.45 (-4.88) | 3.95 (-3.51) | 16.94 (-4.21) | 4.20 |
 | AR-Diffusion | 20 | 200 | 30.99 | 9.32 | 23.95 | \- |
-| 2-7 | 3 | 30 | 30.23 (-0.76) | 8.68 (-0.64) | 23.43 (-0.52) | **0.64** |
+|  | 3 | 30 | 30.23 (-0.76) | 8.68 (-0.64) | 23.43 (-0.52) | **0.64** |
 |  | 2 | 20 | 29.28 (-1.71) | 7.99 (-1.33) | 22.98 (-0.97) | **1.34** |
 
 ## 4.4 Inference Efficiency
@@ -392,6 +392,12 @@ Specifically, greedy search is to select the token with the highest probability 
 
 As shown in Table 8, AR-Diffusion achieves significantly higher diversity compared to the auto-regressive model. Furthermore, the diversity can be comparable to GENIE with a better performance.
 
+*(a)*
+
+*(b)*
+
+*(c)*
+
 **Figura 2.** Ablation experiments on XSum test set and taking $k$ = 5. The horizontal axis is the number of inference steps and the vertical axis is `AVG-ROUGE` = (`ROUGE-1` + `ROUGE-2` + `ROUGE-L`) / 3.
 
 #### Ablation Study
@@ -416,7 +422,7 @@ To investigate the relationship between the number of generated candidate sample
 
 #### Anchor Point
 
-We conduct experiments on $\textsc{AR-Diffusion}$ using different anchor points $(n_e, t_e)$. These anchor points vary in terms of $n_e$ values, namely $1.0 \times N$, $2.0 \times N$ and $3.0 \times N$, where $N$ denotes the target sentence length. Additionally, they share a common $t_e$ value of $T$, which represents the total time step of diffusion. We present the results in Table 9, and determine that the best result is achieved at $(n_e, t_e)$ = $(2.0 \times N, T)$.
+We conduct experiments on $\text{AR-Diffusion}$ using different anchor points $(n_e, t_e)$. These anchor points vary in terms of $n_e$ values, namely $1.0 \times N$, $2.0 \times N$ and $3.0 \times N$, where $N$ denotes the target sentence length. Additionally, they share a common $t_e$ value of $T$, which represents the total time step of diffusion. We present the results in Table 9, and determine that the best result is achieved at $(n_e, t_e)$ = $(2.0 \times N, T)$.
 
 **Figura 4.** Relationship between the number of candidate samples for applying MBR and `SacreBLEU` on IWSLT14 De→En test set.
 
@@ -529,9 +535,9 @@ Touvron et al. (2023). Hugo Touvron, Thibaut Lavril, Gautier Izacard, Xavier Mar
 
 Taori et al. (2023). Rohan Taori, Ishaan Gulrajani, Tianyi Zhang, Yann Dubois, Xuechen Li, Carlos Guestrin, Percy Liang, and Tatsunori B. Hashimoto. Stanford alpaca: An instruction-following llama model. https://github.com/tatsu-lab/stanford_alpaca, 2023.
 
-Vaswani et al. (2017). Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, ukasz Kaiser, and Illia Polosukhin. Attention is all you need. In I. Guyon, U. Von Luxburg, S. Bengio, H. Wallach, R. Fergus, S. Vishwanathan, and R. Garnett, editors, Advances in Neural Information Processing Systems, volume 30. Curran Associates, Inc., 2017. URL https://proceedings.neurips.cc/paper_files/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf.
+Vaswani et al. (2017). Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Ł ukasz Kaiser, and Illia Polosukhin. Attention is all you need. In I. Guyon, U. Von Luxburg, S. Bengio, H. Wallach, R. Fergus, S. Vishwanathan, and R. Garnett, editors, Advances in Neural Information Processing Systems, volume 30. Curran Associates, Inc., 2017. URL https://proceedings.neurips.cc/paper_files/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf.
 
-Brown et al. (2020). Tom Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared D Kaplan, Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell, et al. Language models are few-shot learners. Advances in neural information processing systems, 33:0 1877–1901, 2020.
+Brown et al. (2020). Tom Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared D Kaplan, Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell, et al. Language models are few-shot learners. Advances in neural information processing systems, 33:1877–1901, 2020.
 
 Ho et al. (2020). Jonathan Ho, Ajay Jain, and Pieter Abbeel. Denoising diffusion probabilistic models. In Hugo Larochelle, Marc’Aurelio Ranzato, Raia Hadsell, Maria-Florina Balcan, and Hsuan-Tien Lin, editors, Advances in Neural Information Processing Systems 33: Annual Conference on Neural Information Processing Systems 2020, NeurIPS 2020, December 6-12, 2020, virtual, 2020. URL https://proceedings.neurips.cc/paper/2020/hash/4c5bcfec8584af0d967f1ab10179ca4b-Abstract.html.
 
@@ -577,7 +583,7 @@ Stern et al. (2019). Mitchell Stern, William Chan, Jamie Kiros, and Jakob Uszkor
 
 Gu et al. (2016). Jiatao Gu, Zhengdong Lu, Hang Li, and Victor O. K. Li. Incorporating copying mechanism in sequence-to-sequence learning. In ACL (1). The Association for Computer Linguistics, 2016.
 
-Greff et al. (2017). Klaus Greff, Rupesh Kumar Srivastava, Jan Koutnḱ, Bas R. Steunebrink, and Jürgen Schmidhuber. LSTM: A search space odyssey. IEEE Trans. Neural Networks Learn. Syst., 280 (10):0 2222–2232, 2017.
+Greff et al. (2017). Klaus Greff, Rupesh Kumar Srivastava, Jan Koutník, Bas R. Steunebrink, and Jürgen Schmidhuber. LSTM: A search space odyssey. IEEE Trans. Neural Networks Learn. Syst., 28 (10):2222–2232, 2017.
 
 Lin et al. (2020). Bill Yuchen Lin, Wangchunshu Zhou, Ming Shen, Pei Zhou, Chandra Bhagavatula, Yejin Choi, and Xiang Ren. CommonGen: A constrained text generation challenge for generative commonsense reasoning. In Findings of the Association for Computational Linguistics: EMNLP 2020, pages 1823–1840, Online, November 2020. Association for Computational Linguistics. 10.18653/v1/2020.findings-emnlp.165. URL https://aclanthology.org/2020.findings-emnlp.165.
 
@@ -601,7 +607,7 @@ Holtzman et al. (2020). Ari Holtzman, Jan Buys, Li Du, Maxwell Forbes, and Yejin
 
 Song et al. (2021). Jiaming Song, Chenlin Meng, and Stefano Ermon. Denoising diffusion implicit models. In 9th International Conference on Learning Representations, ICLR 2021, Virtual Event, Austria, May 3-7, 2021. OpenReview.net, 2021. URL https://openreview.net/forum?id=St1giarCHLP.
 
-Dong et al. (2023). Chenhe Dong, Yinghui Li, Haifan Gong, Miaoxin Chen, Junxin Li, Ying Shen, and Min Yang. A survey of natural language generation. ACM Comput. Surv., 550 (8):0 173:1–173:38, 2023. 10.1145/3554727. URL https://doi.org/10.1145/3554727.
+Dong et al. (2023). Chenhe Dong, Yinghui Li, Haifan Gong, Miaoxin Chen, Junxin Li, Ying Shen, and Min Yang. A survey of natural language generation. ACM Comput. Surv., 55(8):173:1–173:38, 2023. 10.1145/3554727. URL https://doi.org/10.1145/3554727.
 
 Hoogeboom et al. (2022). Emiel Hoogeboom, Alexey A. Gritsenko, Jasmijn Bastings, Ben Poole, Rianne van den Berg, and Tim Salimans. Autoregressive diffusion models. In International Conference on Learning Representations, 2022. URL https://openreview.net/forum?id=Lm8T39vLDTE.
 

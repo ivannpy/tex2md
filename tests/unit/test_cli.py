@@ -104,3 +104,41 @@ def test_audit_reports_diagnostics_and_exit_status(tmp_path, capsys):
     assert "unresolved-reference" in out and "unknown-math-macro" in out and "1 with errors" in out
     f.write_text(MD + "\nAll fine, $x$.\n")
     assert main(["audit", str(tmp_path)]) == 0
+
+
+def test_a_malformed_mn_argument_is_refused_before_any_work(tmp_path, capsys):
+    import pytest
+    for bad in ("nopath", "::path", "id::"):
+        with pytest.raises(SystemExit) as e:
+            main(["arxiv", "2001.00001", "-o", str(tmp_path / "x.md"), "--mn", bad])
+        assert "BOOKMD5::PATH" in str(e.value)
+
+
+def test_a_missing_output_directory_is_refused_before_a_long_conversion(tmp_path):
+    import pytest
+    with pytest.raises(SystemExit) as e:
+        main(["arxiv", "2001.00001", "-o", str(tmp_path / "no" / "such" / "x.md")])
+    assert "output directory does not exist" in str(e.value)
+
+
+def test_exit_status_is_one_when_the_conversion_could_not_finish(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr("tex2md.convert.convert", lambda *a: {"ok": False, "error": "arXiv has no LaTeX source (PDF only)"})
+    assert main(["arxiv", "2001.00001", "-o", str(tmp_path / "x.md")]) == 1
+    assert "PDF only" in capsys.readouterr().out
+    monkeypatch.setattr("tex2md.convert.convert", lambda *a: {"ok": True})
+    assert main(["arxiv", "2001.00001", "-o", str(tmp_path / "x.md")]) == 0
+
+
+def test_add_mn_and_frontmatter_refuse_an_entry_without_a_path(tmp_path):
+    import pytest
+    f = tmp_path / "a.md"
+    f.write_text(MD)
+    with pytest.raises(SystemExit):
+        main(["add-mn", str(f), "bbb222"])
+
+
+def test_check_flags_an_entry_with_no_path(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr("tex2md.library.papers.MN_ROOT", str(tmp_path))     # a folder that does exist
+    (tmp_path / "a.md").write_text(MD.replace('    path: "PCIC/missing.pdf"\n', ""))
+    main(["check", str(tmp_path)])
+    assert "MISSING PDF" in capsys.readouterr().out

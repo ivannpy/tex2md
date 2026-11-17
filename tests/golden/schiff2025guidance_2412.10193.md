@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: efcafbb46d6e52f2aa55397d00a7d7caac4b4172c87f5753a39370b929104e16
     path: "PCIC/Tesis/Text generation/Simple guidance mechanisms for discrete diffusion models.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-16
+converted: 2026-11-17
 ---
 
 # Simple Guidance Mechanisms for Discrete Diffusion Models
@@ -68,7 +68,7 @@ $$\begin{equation}
              \alpha_{t}{\mathbf z}_t^\top {\mathbf x}+ (1 - \alpha_{t}){\mathbf z}_t^\top\boldsymbol{\pi}} \right).
 \end{equation}$$
 
-Of note, for absorbing-state diffusion, where $\boldsymbol{\pi}= [\textsc{mask}]~,$ a one-hot vector at the special $[\textsc{mask}]~$ token index, (Sahoo et al., 2024a) show that if ${\mathbf z}_t \neq [\textsc{mask}]~$ then $q({\mathbf z}_s | {\mathbf z}_t, {\mathbf x}) = \mathrm{Cat}({\mathbf z}_s; {\mathbf z}_t)$, which reflects the fact that unasked tokens at time $t$ must remain unmasked for all time $s < t$.
+Of note, for absorbing-state diffusion, where $\boldsymbol{\pi}= [\text{mask}]~,$ a one-hot vector at the special $[\text{mask}]~$ token index, (Sahoo et al., 2024a) show that if ${\mathbf z}_t \neq [\text{mask}]~$ then $q({\mathbf z}_s | {\mathbf z}_t, {\mathbf x}) = \mathrm{Cat}({\mathbf z}_s; {\mathbf z}_t)$, which reflects the fact that unasked tokens at time $t$ must remain unmasked for all time $s < t$.
 
 ## 2.2 Diffusion Guidance
 
@@ -299,11 +299,9 @@ We dub models trained with our refined objective **U**niform **D**iffusion **L**
 
 Our language modeling experiments show that (1) contrary to a widely-held belief, **uniform noise diffusion can attain state-of-the-art performance** on small vocabulary datasets (Table 1), and that (2) our **UDLM are state-of-the-art among uniform noise diffusion** (Tables 2 and 3).
 
-**Tabla 1.** UDLM performs best with smaller vocabs. Perplexity ($\downarrow$) on various datasets. Best values are **bolded.** $^{\text{*}}$ indicates values reported from early stopping on the validation set; otherwise validation performance at the end of training is used. $^\dagger$From (Sahoo et al., 2024a). $^\
+**Tabla 1.** UDLM performs best with smaller vocabs. Perplexity ($\downarrow$) on various datasets. Best values are **bolded.** $^{\text{*}}$ indicates values reported from early stopping on the validation set; otherwise validation performance at the end of training is used. $^\dagger$From (Sahoo et al., 2024a). $^\$$From Lou et al. (2023).
 
-$$From Lou et al. (2023).
-
-|  | $|$Vocab.$|$ | AR | MDLM | UDLM |
+|  | $\vert $Vocab.$\vert $ | AR | MDLM | UDLM |
 |:---|:--:|:--:|:--:|:--:|
 | Species10 | 12 | **2.88** | 3.17$_{\leq}$ | 3.15$_{\leq}$ |
 | QM9$^{\text{*}}$ | 40 | 2.19 | 2.12$_{\leq}$ | **2.02$_{\leq}$** |
@@ -343,9 +341,7 @@ Secondly, despite the persisting gap between absorbing and uniform noise discret
 |  | SEDD Uniform$^\dagger$ (Lou et al., 2023) | 1.47$_\leq$ |
 |  | UDLM (*Ours*) | <u>1.44</u>$_\leq$ |
 
-**Tabla 3.** UDLM outperforms other uniform discrete diffusion on LM1B. Best value is **bolded** & best discrete uniform diffusion value is <u>underlined</u>. $^\dagger$From (Sahoo et al., 2024a). $^\text{*}$From (Lou et al., 2023). $^\$$
-
-From (Austin et al., 2021).
+**Tabla 3.** UDLM outperforms other uniform discrete diffusion on LM1B. Best value is **bolded** & best discrete uniform diffusion value is <u>underlined</u>. $^\dagger$From (Sahoo et al., 2024a). $^\text{*}$From (Lou et al., 2023). $^\$$From (Austin et al., 2021).
 
 |  | Method | PPL ($\downarrow$) |
 |:---|:---|:--:|
@@ -377,7 +373,7 @@ Our guidance results indicate that (1) **classifier-free guidance is more useful
 
 | Model | D-CFG$\gamma$ | Disc. AUROC ($\downarrow$) | F1 ($\uparrow$) |  |
 |:---|:--:|:--:|:--:|:--:|
-| Random |  | 1.00 | 0.07 |  |
+| Random | – | 1.00 | 0.07 |  |
 | AR | 1 | 0.53$_{\pm \text{0.075}}$ | 0.87$_{\pm\text{0.011}}$ |  |
 | AR | 2 | 0.90$_{\pm\text{0.051}}$ | 0.81$_{\pm\text{0.009}}$ |  |
 | AR | 3 | 0.97$_{\pm\text{0.018}}$ | 0.74$_{\pm\text{0.022}}$ |  |
@@ -392,11 +388,10 @@ Our guidance results indicate that (1) **classifier-free guidance is more useful
 
 **Tabla 5.** Guidance with discrete diffusion models better balances the generation of valid and novel molecules with maximizing the property of interest, drug likeness (QED) / ring count, compared to AR. Validity, novelty, and mean QED / ring count for novel sequences are measured for generated sequences from each method. Mean $\pm$ standard deviation reported from five random seeds. Best values are **bolded**.
 
-|  |  |  |  |  |  |  |  |  |
-|:---|:---|:---|:--:|:--:|:--:|:--:|:--:|:--:|
 |  |  |  | *QED* |  |  | *Ring Count* |  |  |
+|:---|:---|:---|:--:|:--:|:--:|:--:|:--:|:--:|
 |  | Method | Guidance | Valid ($\uparrow$) | Novel ($\uparrow$) | Mean ($\uparrow$) | Valid ($\uparrow$) | Novel ($\uparrow$) | Mean ($\uparrow$) |
-| Original Data |  |  | 133k | 133k | 0.47 | 133k | 133k | 1.74 |
+| Original Data |  | – | 133k | 133k | 0.47 | 133k | 133k | 1.74 |
 | *Classifier-free* |  |  |  |  |  |  |  |  |
 |  | AR | D-CFG | 946.4$_{\pm\text{9.0}}$ | 79.4$_{\pm\text{6.4}}$ | 0.60$_{\pm\text{0.00}}$ | 441.4$_{\pm\text{11.1}}$ | 77.8$_{\pm\text{2.3}}$ | 4.83$_{\pm\text{0.08}}$ |
 |  | MDLM | D-CFG | 317.4$_{\pm\text{11.5}}$ | **95.8$_{\pm\text{9.0}}$** | 0.60$_{\pm\text{0.01}}$ | 90.0$_{\pm\text{8.2}}$ | 60.0$_{\pm\text{7.5}}$ | **5.26$_{\pm\text{0.15}}$** |
@@ -967,9 +962,8 @@ Training and validation sets were randomly split using 95% / 5%. In Table 10, w
 
 **Tabla 10.** Species10 train and validation splits statistics. Proportion of each species in the training and validation sets. Overall split size is indicated in parentheses in the column header.
 
-|  |  |  |
-|:---|:--:|:--:|
 | Species | Train | Validation |
+|:---|:--:|:--:|
 |  | (95% $\approx$ 16.5B bps) | (5% $\approx$ 869M bps) |
 | *Arabidopsis thaliana* | 0.68 | 0.77 |
 | *Caenorhabditis elegans* | 0.58 | 0.58 |
@@ -1108,7 +1102,7 @@ For the QM9 experiments, when training the classifier for NOS, we use the same d
 
 ### D.4.2 D-CFG Details
 
-When implementing D-CFG we train a single AR / discrete diffusion model (see Appendix D.2 for architecture details) where we randomly drop out the class condition by replacing it with a class $[\textsc{mask}]~$ token. The class condition is fused into models using the implementation of adaptive layer norm from (Peebles & Xie, 2023). We use 10% rate for masking / dropping-out the condition.
+When implementing D-CFG we train a single AR / discrete diffusion model (see Appendix D.2 for architecture details) where we randomly drop out the class condition by replacing it with a class $[\text{mask}]~$ token. The class condition is fused into models using the implementation of adaptive layer norm from (Peebles & Xie, 2023). We use 10% rate for masking / dropping-out the condition.
 
 At inference time, we perform two forward passes through the model, one with condition provided to compute the conditional probability $p_\theta({\mathbf z}_s \mid {\mathbf z}_t, y)$ and one where the condition is masked to compute the unconditional probability $p_\theta({\mathbf z}_s \mid {\mathbf z}_t).$ These values are then used as described in Section 3.1.
 
@@ -1763,11 +1757,11 @@ In this section, we evaluate unconditional samples generated from models trained
 
 # References
 
-Austin et al. (2021). Jacob Austin, Daniel D Johnson, Jonathan Ho, Daniel Tarlow, and Rianne Van Den Berg. Structured denoising diffusion models in discrete state-spaces. Advances in Neural Information Processing Systems, 34:0 17981–17993, 2021.
+Austin et al. (2021). Jacob Austin, Daniel D Johnson, Jonathan Ho, Daniel Tarlow, and Rianne Van Den Berg. Structured denoising diffusion models in discrete state-spaces. Advances in Neural Information Processing Systems, 34:17981–17993, 2021.
 
-Bickerton et al. (2012). G Richard Bickerton, Gaia V Paolini, Jérémy Besnard, Sorel Muresan, and Andrew L Hopkins. Quantifying the chemical beauty of drugs. Nature chemistry, 40 (2):0 90–98, 2012.
+Bickerton et al. (2012). G Richard Bickerton, Gaia V Paolini, Jérémy Besnard, Sorel Muresan, and Andrew L Hopkins. Quantifying the chemical beauty of drugs. Nature chemistry, 4(2):90–98, 2012.
 
-Campbell et al. (2022). Andrew Campbell, Joe Benton, Valentin De Bortoli, Thomas Rainforth, George Deligiannidis, and Arnaud Doucet. A continuous time framework for discrete denoising models. Advances in Neural Information Processing Systems, 35:0 28266–28279, 2022.
+Campbell et al. (2022). Andrew Campbell, Joe Benton, Valentin De Bortoli, Thomas Rainforth, George Deligiannidis, and Arnaud Doucet. A continuous time framework for discrete denoising models. Advances in Neural Information Processing Systems, 35:28266–28279, 2022.
 
 Campbell et al. (2024). Andrew Campbell, Jason Yim, Regina Barzilay, Tom Rainforth, and Tommi Jaakkola. Generative flows on discrete state-spaces: Enabling multimodal flows with applications to protein co-design. arXiv preprint arXiv:2402.04997, 2024.
 
@@ -1777,9 +1771,9 @@ Dai et al. (2019). Zihang Dai, Zhilin Yang, Yiming Yang, Jaime Carbonell, Quoc V
 
 Dathathri et al. (2019). Sumanth Dathathri, Andrea Madotto, Janice Lan, Jane Hung, Eric Frank, Piero Molino, Jason Yosinski, and Rosanne Liu. Plug and play language models: A simple approach to controlled text generation. arXiv preprint arXiv:1912.02164, 2019.
 
-Dhariwal & Nichol (2021a). Prafulla Dhariwal and Alexander Nichol. Diffusion models beat gans on image synthesis. Advances in neural information processing systems, 34:0 8780–8794, 2021a.
+Dhariwal & Nichol (2021a). Prafulla Dhariwal and Alexander Nichol. Diffusion models beat gans on image synthesis. Advances in neural information processing systems, 34:8780–8794, 2021a.
 
-Dhariwal & Nichol (2021b). Prafulla Dhariwal and Alexander Nichol. Diffusion models beat gans on image synthesis. Advances in neural information processing systems, 34:0 8780–8794, 2021b.
+Dhariwal & Nichol (2021b). Prafulla Dhariwal and Alexander Nichol. Diffusion models beat gans on image synthesis. Advances in neural information processing systems, 34:8780–8794, 2021b.
 
 Gao et al. (2024). Ruiqi Gao, Aleksander Holynski, Philipp Henzler, Arthur Brussee, Ricardo Martin-Brualla, Pratul Srinivasan, Jonathan T. Barron, and Ben Poole. Cat3d: Create anything in 3d with multi-view diffusion models, 2024. URL https://arxiv.org/abs/2405.10314.
 
@@ -1801,19 +1795,19 @@ Heusel et al. (2017). Martin Heusel, Hubert Ramsauer, Thomas Unterthiner, Bernha
 
 Ho & Salimans (2022). Jonathan Ho and Tim Salimans. Classifier-free diffusion guidance. arXiv preprint arXiv:2207.12598, 2022.
 
-Ho et al. (2020). Jonathan Ho, Ajay Jain, and Pieter Abbeel. Denoising diffusion probabilistic models. Advances in neural information processing systems, 33:0 6840–6851, 2020.
+Ho et al. (2020). Jonathan Ho, Ajay Jain, and Pieter Abbeel. Denoising diffusion probabilistic models. Advances in neural information processing systems, 33:6840–6851, 2020.
 
-Hoogeboom et al. (2021). Emiel Hoogeboom, Didrik Nielsen, Priyank Jaini, Patrick Forré, and Max Welling. Argmax flows and multinomial diffusion: Learning categorical distributions. Advances in Neural Information Processing Systems, 34:0 12454–12465, 2021.
+Hoogeboom et al. (2021). Emiel Hoogeboom, Didrik Nielsen, Priyank Jaini, Patrick Forré, and Max Welling. Argmax flows and multinomial diffusion: Learning categorical distributions. Advances in Neural Information Processing Systems, 34:12454–12465, 2021.
 
 Kelly (2011). Frank P Kelly. Reversibility and stochastic networks. Cambridge University Press, 2011.
 
-Kingma et al. (2021). Diederik Kingma, Tim Salimans, Ben Poole, and Jonathan Ho. Variational diffusion models. Advances in neural information processing systems, 34:0 21696–21707, 2021.
+Kingma et al. (2021). Diederik Kingma, Tim Salimans, Ben Poole, and Jonathan Ho. Variational diffusion models. Advances in neural information processing systems, 34:21696–21707, 2021.
 
 Krizhevsky et al. (2009). Alex Krizhevsky, Geoffrey Hinton, et al. Learning multiple layers of features from tiny images, 2009.
 
-Landrum et al. (2013). Greg Landrum et al. Rdkit: A software suite for cheminformatics, computational chemistry, and predictive modeling. Greg Landrum, 80 (31.10):0 5281, 2013.
+Landrum et al. (2013). Greg Landrum et al. Rdkit: A software suite for cheminformatics, computational chemistry, and predictive modeling. Greg Landrum, 8(31.10):5281, 2013.
 
-Li et al. (2022). Xiang Li, John Thickstun, Ishaan Gulrajani, Percy S Liang, and Tatsunori B Hashimoto. Diffusion-lm improves controllable text generation. Advances in Neural Information Processing Systems, 35:0 4328–4343, 2022.
+Li et al. (2022). Xiang Li, John Thickstun, Ishaan Gulrajani, Percy S Liang, and Tatsunori B Hashimoto. Diffusion-lm improves controllable text generation. Advances in Neural Information Processing Systems, 35:4328–4343, 2022.
 
 Lipman et al. (2022). Yaron Lipman, Ricky TQ Chen, Heli Ben-Hamu, Maximilian Nickel, and Matt Le. Flow matching for generative modeling. arXiv preprint arXiv:2210.02747, 2022.
 
@@ -1825,7 +1819,7 @@ Mahoney (2011). Matt Mahoney. Text8 dataset, 2011. URL http://mattmahoney.net/dc
 
 McAuley & Leskovec (2013). Julian McAuley and Jure Leskovec. Hidden factors and hidden topics: understanding rating dimensions with review text. In Proceedings of the 7th ACM conference on Recommender systems, pp. 165–172, 2013.
 
-Meng et al. (2022). Chenlin Meng, Kristy Choi, Jiaming Song, and Stefano Ermon. Concrete score matching: Generalized score matching for discrete data. Advances in Neural Information Processing Systems, 35:0 34532–34545, 2022.
+Meng et al. (2022). Chenlin Meng, Kristy Choi, Jiaming Song, and Stefano Ermon. Concrete score matching: Generalized score matching for discrete data. Advances in Neural Information Processing Systems, 35:34532–34545, 2022.
 
 Nichol et al. (2021). Alex Nichol, Prafulla Dhariwal, Aditya Ramesh, Pranav Shyam, Pamela Mishkin, Bob McGrew, Ilya Sutskever, and Mark Chen. Glide: Towards photorealistic image generation and editing with text-guided diffusion models. arXiv preprint arXiv:2112.10741, 2021.
 
@@ -1833,7 +1827,7 @@ Ninniri et al. (2024). Matteo Ninniri, Marco Podda, and Davide Bacciu. Classifie
 
 Nisonoff et al. (2024). Hunter Nisonoff, Junhao Xiong, Stephan Allenspach, and Jennifer Listgarten. Unlocking guidance for discrete state-space diffusion and flow models. arXiv preprint arXiv:2406.01572, 2024.
 
-O’Leary et al. (2016). Nuala A O’Leary, Mathew W Wright, J Rodney Brister, Stacy Ciufo, Diana Haddad, Rich McVeigh, Bhanu Rajput, Barbara Robbertse, Brian Smith-White, Danso Ako-Adjei, Alexander Astashyn, Azat Badretdin, Yiming Bao, Olga Blinkova, Vyacheslav Brover, Vyacheslav Chetvernin, Jinna Choi, Eric Cox, Olga Ermolaeva, Catherine M Farrell, Tamara Goldfarb, Tripti Gupta, Daniel Haft, Eneida Hatcher, Wratko Hlavina, Vinita S Joardar, Vamsi K Kodali, Wenjun Li, Donna Maglott, Patrick Masterson, Kelly M McGarvey, Michael R Murphy, Kathleen O’Neill, Shashikant Pujar, Sanjida H Rangwala, Daniel Rausch, Lillian D Riddick, Conrad Schoch, Andrei Shkeda, Susan S Storz, Hanzhen Sun, Francoise Thibaud-Nissen, Igor Tolstoy, Raymond E Tully, Anjana R Vatsan, Craig Wallin, David Webb, Wendy Wu, Melissa J Landrum, Avi Kimchi, Tatiana Tatusova, Michael DiCuccio, Paul Kitts, Terence D Murphy, and Kim D Pruitt. Reference sequence (RefSeq) database at NCBI: current status, taxonomic expansion, and functional annotation. Nucleic Acids Res., 440 (D1):0 D733–45, January 2016.
+O’Leary et al. (2016). Nuala A O’Leary, Mathew W Wright, J Rodney Brister, Stacy Ciufo, Diana Haddad, Rich McVeigh, Bhanu Rajput, Barbara Robbertse, Brian Smith-White, Danso Ako-Adjei, Alexander Astashyn, Azat Badretdin, Yiming Bao, Olga Blinkova, Vyacheslav Brover, Vyacheslav Chetvernin, Jinna Choi, Eric Cox, Olga Ermolaeva, Catherine M Farrell, Tamara Goldfarb, Tripti Gupta, Daniel Haft, Eneida Hatcher, Wratko Hlavina, Vinita S Joardar, Vamsi K Kodali, Wenjun Li, Donna Maglott, Patrick Masterson, Kelly M McGarvey, Michael R Murphy, Kathleen O’Neill, Shashikant Pujar, Sanjida H Rangwala, Daniel Rausch, Lillian D Riddick, Conrad Schoch, Andrei Shkeda, Susan S Storz, Hanzhen Sun, Francoise Thibaud-Nissen, Igor Tolstoy, Raymond E Tully, Anjana R Vatsan, Craig Wallin, David Webb, Wendy Wu, Melissa J Landrum, Avi Kimchi, Tatiana Tatusova, Michael DiCuccio, Paul Kitts, Terence D Murphy, and Kim D Pruitt. Reference sequence (RefSeq) database at NCBI: current status, taxonomic expansion, and functional annotation. Nucleic Acids Res., 44(D1):D733–45, January 2016.
 
 Ou et al. (2024). Jingyang Ou, Shen Nie, Kaiwen Xue, Fengqi Zhu, Jiacheng Sun, Zhenguo Li, and Chongxuan Li. Your absorbing discrete diffusion secretly models the conditional distributions of clean data. arXiv preprint arXiv:2406.03736, 2024.
 
@@ -1843,13 +1837,13 @@ Poole et al. (2022). Ben Poole, Ajay Jain, Jonathan T Barron, and Ben Mildenhall
 
 Radford et al. (2019). Alec Radford, Jeff Wu, Rewon Child, David Luan, Dario Amodei, and Ilya Sutskever. Language models are unsupervised multitask learners, 2019.
 
-Ramakrishnan et al. (2014). Raghunathan Ramakrishnan, Pavlo O Dral, Matthias Rupp, and O Anatole Von Lilienfeld. Quantum chemistry structures and properties of 134 kilo molecules. Scientific data, 10 (1):0 1–7, 2014.
+Ramakrishnan et al. (2014). Raghunathan Ramakrishnan, Pavlo O Dral, Matthias Rupp, and O Anatole Von Lilienfeld. Quantum chemistry structures and properties of 134 kilo molecules. Scientific data, 1(1):1–7, 2014.
 
 Ronneberger et al. (2015). Olaf Ronneberger, Philipp Fischer, and Thomas Brox. U-net: Convolutional networks for biomedical image segmentation. In Medical image computing and computer-assisted intervention–MICCAI 2015: 18th international conference, Munich, Germany, October 5-9, 2015, proceedings, part III 18, pp. 234–241. Springer, 2015.
 
-Ruddigkeit et al. (2012). Lars Ruddigkeit, Ruud Van Deursen, Lorenz C Blum, and Jean-Louis Reymond. Enumeration of 166 billion organic small molecules in the chemical universe database gdb-17. Journal of chemical information and modeling, 520 (11):0 2864–2875, 2012.
+Ruddigkeit et al. (2012). Lars Ruddigkeit, Ruud Van Deursen, Lorenz C Blum, and Jean-Louis Reymond. Enumeration of 166 billion organic small molecules in the chemical universe database gdb-17. Journal of chemical information and modeling, 52 (11):2864–2875, 2012.
 
-Saharia et al. (2022). Chitwan Saharia, William Chan, Saurabh Saxena, Lala Li, Jay Whang, Emily L Denton, Kamyar Ghasemipour, Raphael Gontijo Lopes, Burcu Karagol Ayan, Tim Salimans, et al. Photorealistic text-to-image diffusion models with deep language understanding. Advances in neural information processing systems, 35:0 36479–36494, 2022.
+Saharia et al. (2022). Chitwan Saharia, William Chan, Saurabh Saxena, Lala Li, Jay Whang, Emily L Denton, Kamyar Ghasemipour, Raphael Gontijo Lopes, Burcu Karagol Ayan, Tim Salimans, et al. Photorealistic text-to-image diffusion models with deep language understanding. Advances in neural information processing systems, 35:36479–36494, 2022.
 
 Sahoo et al. (2024a). Subham Sekhar Sahoo, Marianne Arriola, Yair Schiff, Aaron Gokaslan, Edgar Marroquin, Justin T Chiu, Alexander Rush, and Volodymyr Kuleshov. Simple and effective masked diffusion language models. arXiv preprint arXiv:2406.07524, 2024a.
 
@@ -1863,11 +1857,11 @@ Sarkar et al. (2024). Anirban Sarkar, Ziqi Tang, Chris Zhao, and Peter Koo. Desi
 
 Schiff et al. (2024). Yair Schiff, Chia-Hsiang Kao, Aaron Gokaslan, Tri Dao, Albert Gu, and Volodymyr Kuleshov. Caduceus: Bi-directional equivariant long-range dna sequence modeling. arXiv preprint arXiv:2403.03234, 2024.
 
-Schwaller et al. (2019). Philippe Schwaller, Teodoro Laino, Théophile Gaudin, Peter Bolgar, Christopher A Hunter, Costas Bekas, and Alpha A Lee. Molecular transformer: A model for uncertainty-calibrated chemical reaction prediction. ACS central science, 50 (9):0 1572–1583, 2019.
+Schwaller et al. (2019). Philippe Schwaller, Teodoro Laino, Théophile Gaudin, Peter Bolgar, Christopher A Hunter, Costas Bekas, and Alpha A Lee. Molecular transformer: A model for uncertainty-calibrated chemical reaction prediction. ACS central science, 5(9):1572–1583, 2019.
 
 Shi et al. (2024). Jiaxin Shi, Kehang Han, Zhe Wang, Arnaud Doucet, and Michalis K Titsias. Simplified and generalized masked diffusion for discrete data. arXiv preprint arXiv:2406.04329, 2024.
 
-Shih et al. (2022). Andy Shih, Dorsa Sadigh, and Stefano Ermon. Training and inference on any-order autoregressive models the right way. Advances in Neural Information Processing Systems, 35:0 2762–2775, 2022.
+Shih et al. (2022). Andy Shih, Dorsa Sadigh, and Stefano Ermon. Training and inference on any-order autoregressive models the right way. Advances in Neural Information Processing Systems, 35:2762–2775, 2022.
 
 Sohl-Dickstein et al. (2015). Jascha Sohl-Dickstein, Eric Weiss, Niru Maheswaranathan, and Surya Ganguli. Deep unsupervised learning using nonequilibrium thermodynamics. In International conference on machine learning, pp. 2256–2265. PMLR, 2015.
 
@@ -1889,7 +1883,7 @@ Wang & Cho (2019). Alex Wang and Kyunghyun Cho. Bert has a mouth, and it must sp
 
 Wang et al. (2023). Yingheng Wang, Yair Schiff, Aaron Gokaslan, Weishen Pan, Fei Wang, Christopher De Sa, and Volodymyr Kuleshov. Infodiffusion: Representation learning using information maximizing diffusion models. In International Conference on Machine Learning, pp. 36336–36354. PMLR, 2023.
 
-Weininger (1988). David Weininger. Smiles, a chemical language and information system. 1. introduction to methodology and encoding rules. Journal of chemical information and computer sciences, 280 (1):0 31–36, 1988.
+Weininger (1988). David Weininger. Smiles, a chemical language and information system. 1. introduction to methodology and encoding rules. Journal of chemical information and computer sciences, 28(1):31–36, 1988.
 
 Wolf et al. (2020). Thomas Wolf, Lysandre Debut, Victor Sanh, Julien Chaumond, Clement Delangue, Anthony Moi, Pierric Cistac, Tim Rault, Rémi Louf, Morgan Funtowicz, Joe Davison, Sam Shleifer, Patrick von Platen, Clara Ma, Yacine Jernite, Julien Plu, Canwen Xu, Teven Le Scao, Sylvain Gugger, Mariama Drame, Quentin Lhoest, and Alexander M. Rush. Transformers: State-of-the-art natural language processing. In Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing: System Demonstrations, pp. 38–45, Online, October 2020. Association for Computational Linguistics. URL https://www.aclweb.org/anthology/2020.emnlp-demos.6.
 

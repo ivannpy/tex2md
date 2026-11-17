@@ -24,9 +24,10 @@ return {
       return meta
     end },
   { Para = headers.Para, Header = headers.Header },
+  { Table = floats.MarkNested },
   { Figure = floats.Figure },
   { Table = floats.Table, Div = floats.DeferredTable, Math = equations.Math, Image = document.Image },
   { Table = cleanup.Table },
-  { Div = cleanup.Div, Span = cleanup.Span, SmallCaps = cleanup.SmallCaps },
+  { Div = cleanup.Div, Span = cleanup.Span, SmallCaps = cleanup.SmallCaps, CodeBlock = cleanup.CodeBlock },
   { Pandoc = document.Pandoc },
 }

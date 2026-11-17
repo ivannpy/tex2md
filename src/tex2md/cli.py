@@ -18,19 +18,36 @@ import json
 import os
 import re
 import sys
+import urllib.error
 
 from tex2md import __version__
 from tex2md.library import audit, papers
 
 
 def _mn(values):
-    return [tuple(x.split("::", 1)) for x in values]
+    """``BOOKMD5::PATH`` arguments -> [(bookmd5, path)]. Checked here, before any work is done."""
+    pairs = []
+    for value in values:
+        book, sep, path = value.partition("::")
+        if not sep or not book.strip() or not path.strip():
+            raise SystemExit(f"--mn expects BOOKMD5::PATH, got: {value}")
+        pairs.append((book.strip(), path))
+    return pairs
+
+
+def _writable(out):
+    """Fail before a long conversion, not after it, when the output cannot be written."""
+    folder = os.path.dirname(os.path.abspath(out))
+    if not os.path.isdir(folder):
+        raise SystemExit(f"output directory does not exist: {folder}")
+    return os.path.abspath(out)
 
 
 def cmd_arxiv(a):
     from tex2md.convert import convert
-    print(json.dumps(convert(a.arxiv, os.path.abspath(a.out), _mn(a.mn)), ensure_ascii=False))
-    return 0
+    report = convert(a.arxiv, _writable(a.out), _mn(a.mn))
+    print(json.dumps(report, ensure_ascii=False))
+    return 0 if report.get("ok") else 1
 
 
 def cmd_external(a):
@@ -45,6 +62,7 @@ def cmd_external(a):
     if a.venue:
         meta["venue"] = a.venue
     mn = _mn(a.mn)
+    _writable(a.out)
     if a.command == "jats":
         from tex2md.sources.jats import jats_body
         body = jats_body(a.src)
@@ -133,7 +151,13 @@ def build_parser():
 
 def main(argv=None):
     a = build_parser().parse_args(argv)
-    rc = a.fn(a)
+    try:
+        rc = a.fn(a)
+    except urllib.error.HTTPError as e:
+        hint = " (the server is rate limiting this machine: wait a few minutes and try again)" if e.code == 429 else ""
+        raise SystemExit(f"network error: HTTP {e.code} from {e.url}{hint}") from None
+    except (urllib.error.URLError, TimeoutError) as e:
+        raise SystemExit(f"network error: {getattr(e, 'reason', e)}") from None
     return rc if isinstance(rc, int) else 0
 
 
