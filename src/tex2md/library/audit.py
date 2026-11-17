@@ -12,6 +12,7 @@ from pathlib import Path
 
 from tex2md.build.aux import parse_floats
 from tex2md.config import CACHE
+from tex2md.diagnostics import SEVERITIES, Diagnostic, scan_markdown
 
 KINDS = (("table", "Tabla"), ("figure", "Figura"))
 
@@ -23,6 +24,7 @@ class Audit:
     unknown: list[str] = field(default_factory=list)     # in the .md, not in the .aux
     unnumbered: int = 0                                  # "**Figura.**" / "**Tabla.**" lines
     no_data: bool = False                                # no cached build / no caption lines
+    diagnostics: list[Diagnostic] = field(default_factory=list)   # what scan_markdown finds in the body
 
 
 def audit_file(path: str | Path) -> Audit | None:
@@ -33,6 +35,7 @@ def audit_file(path: str | Path) -> Audit | None:
     ver = re.search(r'^arxiv_version: "([^"]+)"', text, re.M)
     result = Audit(file=os.path.basename(str(path)))
     result.unnumbered = len(re.findall(r"^\*\*(?:Tabla|Figura)\.\*\*", text, re.M))
+    result.diagnostics = scan_markdown(text.split("\n---\n", 1)[-1])
     if not aid:
         result.no_data = True
         return result
@@ -52,15 +55,30 @@ def audit_file(path: str | Path) -> Audit | None:
 
 
 def cmd_audit(a):
-    problems = 0
+    """Float numbers against the PDF, plus the typed diagnostics found in each body.
+    Exit status 1 if a float is missing/unknown or any diagnostic of severity ``error`` appears."""
+    shown = SEVERITIES[:SEVERITIES.index(a.level) + 1]
+    float_problems = error_files = 0
+    totals: dict[str, int] = {}
     for name in sorted(os.listdir(a.dir)):
         if not name.endswith(".md") or name in ("INDEX.md",):
             continue
         r = audit_file(os.path.join(a.dir, name))
-        if r is None or r.no_data:
+        if r is None:
             continue
-        if r.missing or r.unknown:
-            problems += 1
-            print(f"{r.file:<46} missing: {', '.join(r.missing) or '-':<30} not in .aux: {', '.join(r.unknown) or '-'}")
-    print(f"{problems} file(s) with differences")
-    return 1 if problems else 0
+        lines = []
+        if not r.no_data and (r.missing or r.unknown):
+            float_problems += 1
+            lines.append(f"missing: {', '.join(r.missing) or '-':<30} not in .aux: {', '.join(r.unknown) or '-'}")
+        for d in r.diagnostics:
+            totals[d.code] = totals.get(d.code, 0) + d.count
+            if d.severity in shown:
+                lines.append(f"{d.severity:<7} {d.code} x{d.count}  {'; '.join(d.examples[:3])}"[:150])
+        if any(d.severity == "error" for d in r.diagnostics):
+            error_files += 1
+        for i, line in enumerate(lines):
+            print(f"{r.file if i == 0 else '':<46} {line}")
+    print(f"{float_problems} file(s) with float differences, {error_files} with errors")
+    if totals:
+        print("totals: " + ", ".join(f"{c} {n}" for c, n in sorted(totals.items())))
+    return 1 if (float_problems or error_files) else 0

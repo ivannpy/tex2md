@@ -16,7 +16,10 @@ from dataclasses import dataclass
 from tex2md.build.aux import parse_aux, parse_floats
 from tex2md.build.latex import find_main
 from tex2md.config import CACHE, FILTER, UNWRAP_FILTER
+from tex2md.diagnostics import Diagnostic, counts, from_pandoc_stderr, scan_markdown
 from tex2md.library.frontmatter import frontmatter
+from tex2md.pandoc_recovery import convert_with_recovery
+from tex2md.pandoc_recovery import diagnostics as dropped_diagnostics
 from tex2md.postprocess.markdown import (
     cap_heading_levels,
     drop_counter_hacks,
@@ -107,10 +110,17 @@ def label_equations(ws: Workspace):
         fh.write(str(counter - 1))
 
 
+def latexmk_command(base: str) -> list[str]:
+    """latexmk call for one paper. The source is untrusted: ``-no-shell-escape`` stops ``\\write18`` from running
+    even the commands TeX Live whitelists (``shell_escape=p``)."""
+    return ["latexmk", "-pdf", "-f", "-interaction=nonstopmode", "-silent",
+            "-pdflatex=pdflatex -no-shell-escape -interaction=nonstopmode %O %S", base + ".tex"]
+
+
 def compile_latex(ws: Workspace, report):
     """Compile once for the .aux/.bbl (errors tolerated: a partial .aux still helps)."""
     if not os.path.exists(os.path.join(ws.bdir, ws.base + ".aux")):
-        rc, _, _ = run(["latexmk", "-pdf", "-f", "-interaction=nonstopmode", "-silent", ws.base + ".tex"], ws.bdir, 600)
+        rc, _, _ = run(latexmk_command(ws.base), ws.bdir, 600)
         report["compile_rc"] = rc
     report["compiled_pdf"] = os.path.exists(os.path.join(ws.bdir, ws.base + ".pdf"))
 
@@ -138,12 +148,11 @@ def load_bibliography(flat, bbl_path):
 
 
 def run_pandoc(ws: Workspace, tex, labels, bib, report):
-    """Write the preprocessed LaTeX and the numbering tables, run pandoc; returns (body, stderr)."""
+    """Write the numbering tables and run pandoc (retrying without the environments it cannot parse).
+    Returns (body or None, last stderr, dropped environments)."""
     # pandoc runs in an empty directory: it would otherwise try to parse local .sty files
     pdir = os.path.join(ws.work, "pandoc")
     os.makedirs(pdir, exist_ok=True)
-    with open(os.path.join(pdir, "_tex2md_flat.tex"), "w") as fh:
-        fh.write(tex)
     lab_path = os.path.join(ws.work, "labels.json")
     with open(lab_path, "w") as fh:
         json.dump(labels, fh)
@@ -158,11 +167,30 @@ def run_pandoc(ws: Workspace, tex, labels, bib, report):
         # citeproc adds its bibliography <div> after our filter: unwrap it with a second pass
         cmd += ["--citeproc"] + [a for b in bibfiles for a in ("--bibliography", b)] + ["--lua-filter", UNWRAP_FILTER]
         report["citations"] = "citeproc"
-    rc, body, err = run(cmd, pdir, 600)
-    if rc != 0 or not body.strip():
-        report["error"] = "pandoc failed: " + err.strip()[-500:]
-        return None, err
-    return body, err
+
+    def run_once(text):
+        with open(os.path.join(pdir, "_tex2md_flat.tex"), "w") as fh:
+            fh.write(text)
+        return run(cmd, pdir, 600)
+
+    body, err, dropped, error = convert_with_recovery(tex, run_once)
+    report["dropped_environments"] = [vars(d) for d in dropped]
+    if body is None:
+        report["error"] = error
+        return None, err, dropped
+    return body, err, dropped
+
+
+def latex_reference_diagnostics(stats) -> list[Diagnostic]:
+    """\\ref / \\cite keys the preprocessor could not find in the .aux / .bbl."""
+    out = []
+    if stats.get("unresolved_refs"):
+        out.append(Diagnostic("unresolved-latex-reference", "error",
+                              "\\ref/\\cref to a label that is not in the .aux", stats["unresolved_refs"]))
+    if stats.get("unresolved_cites"):
+        out.append(Diagnostic("unresolved-latex-citation", "warning",
+                              "\\cite of a key that is not in the bibliography", stats["unresolved_cites"]))
+    return out
 
 
 def postprocess(body):
@@ -214,7 +242,7 @@ def convert(arg, out, mn):
     report.update(stats)
     report["tables_in_tex"] = len(re.findall(r"\\begin\{table\*?\}", tex))
 
-    body, err = run_pandoc(ws, tex, labels, bib, report)
+    body, err, dropped = run_pandoc(ws, tex, labels, bib, report)
     if body is None:
         return report
     mm = re.search(r"tex2md-stats figures=(\d+) tables=(\d+)", err)
@@ -222,6 +250,10 @@ def convert(arg, out, mn):
         report["figures_out"], report["tables_out"] = int(mm.group(1)), int(mm.group(2))
     body = postprocess(body)
     report["unresolved_left"] = len(re.findall(r"\[[a-zA-Z]+:[^\]\s]+\]", body)) + body.count("??")
+
+    diags = scan_markdown(body) + from_pandoc_stderr(err) + latex_reference_diagnostics(stats) + dropped_diagnostics(dropped)
+    report["diagnostics"] = [d.to_dict() for d in diags]
+    report["diagnostic_counts"] = counts(diags)
 
     with open(out, "w") as fh:
         fh.write(render_document(meta, aid, ver, mn, body))

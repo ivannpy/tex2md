@@ -120,6 +120,8 @@ def build_parser():
     p.set_defaults(fn=papers.cmd_add_mn)
     p = sub.add_parser("audit", help="compare figures/tables of each .md with the compiled PDF")
     p.add_argument("dir")
+    p.add_argument("--level", choices=["error", "warning", "info"], default="warning",
+                   help="lowest severity to print (default: warning)")
     p.set_defaults(fn=audit.cmd_audit)
     p = sub.add_parser("fixmath", help="re-run the math clean-up on converted .md")
     p.add_argument("files", nargs="+")

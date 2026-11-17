@@ -22,6 +22,14 @@
 - Library: 8 papers gained captions (baek2026, cheng2025, hoogeboom2021, lambert2025, schiff2025, wu2023, zeng2025,
   wang2025 recovered `1)`-style numbers); the rest of the 124 outputs are byte-identical.
 
+## Robustness pass (diagnostics, recovery, no shell)
+- `diagnostics.py`: typed diagnostics (code, severity, count, examples) in the conversion report and in
+  `audit [--level]`; `audit` exits 1 on float differences or `error` diagnostics.
+- `pandoc_recovery.py`: when pandoc cannot parse an environment it is replaced by a visible note (diagnostic
+  `dropped-environment`) and the conversion is retried, up to 5 times, instead of aborting.
+- `latexmk` runs with `-no-shell-escape` (untrusted source); all 124 papers recompiled with identical output.
+- `ROADMAP.md`: what the project does, how, known failures and future work.
+
 ## Verification pass over random samples (18 papers read against their PDFs)
 - Output is now plain Markdown: `Div`/`Span`/small caps are unwrapped, tables with colspan/rowspan or several header
   rows become pipe tables (math as `$...$`), and no MathML/`<span>`/`<div>` remains (14 tables that hold code

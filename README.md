@@ -9,7 +9,7 @@ Tres fuentes, un solo comando:
 | XML JATS (revistas abiertas, PubMed Central) | `tex2md jats` | pandoc; metadatos de Crossref |
 | Solo PDF | `tex2md pdf` | [marker](https://github.com/VikParuchuri/marker) (OCR + modelo de diseño) en un entorno `uv` aislado |
 
-Además mantiene la biblioteca: `frontmatter`, `add-mn`, `check`, `index`, `fixmath` y `doctor`.
+Además mantiene la biblioteca: `frontmatter`, `add-mn`, `check`, `index`, `audit`, `fixmath` y `doctor`.
 
 ## Requisitos
 
@@ -71,6 +71,8 @@ src/tex2md/
 │   └── lib/            state · headers · captions · floats · equations · document · labels · strutil
 ├── library/            front matter, índice, comprobación de enlaces con MarginNote
 ├── util/               tex.py (grupos balanceados, macros) · io.py (procesos, HTTP, YAML)
+├── diagnostics.py      diagnósticos tipados (informe de conversión y `audit`)
+├── pandoc_recovery.py  reintento sin el entorno que pandoc no puede leer
 └── doctor.py
 tests/                  unit/ · golden/ · regress.py
 marker/                 proyecto uv aislado (pyproject + uv.lock)
@@ -88,6 +90,8 @@ si el `.aux` no trae datos de ese tipo usa la etiqueta, y como último recurso u
 1. Escribe una función `texto -> texto` en el módulo temático (`preprocess/floats.py`, `tables.py`, …).
 2. Regístrala en `RULES` de `preprocess/pipeline.py` **en su sitio** (el orden importa) con un nombre.
 3. Añade una prueba mínima en `tests/unit/` (entrada LaTeX → salida esperada) y, si arregla un artículo real, un caso golden.
+
+Qué hace, cómo, fallas conocidas y trabajo futuro: ver `ROADMAP.md`.
 
 ## Desarrollo
 

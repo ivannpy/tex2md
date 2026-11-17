@@ -112,7 +112,7 @@ def drop_counter_hacks(body):
 _COMMENT = re.compile(r"(?<!\\)%[^\n]*")
 
 
-def _math_spans(body):
+def math_spans(body):
     """Left-to-right scan for math: ``$$ ... $$`` and ``$ ... $`` (an inline span may cross a line but not a
     blank line; ``\\$`` is a dollar sign). Yields (start, end, is_display)."""
     i, n = 0, len(body)
@@ -148,7 +148,7 @@ def tidy_math(body):
     r"""Two clean-ups inside Markdown math: TeX comments (``% ...`` to the end of the line, usually a bare ``%``
     that glues lines together in LaTeX) are dropped, and two inline formulas written back to back
     (``$1$$\uparrow$``, which reads as the start of a display block) are merged into one."""
-    spans = list(_math_spans(body))
+    spans = list(math_spans(body))
     out, pos, prev = [], 0, None
     for start, end, display in spans:
         text = body[start:end]

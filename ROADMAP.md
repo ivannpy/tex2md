@@ -3,7 +3,7 @@
 Documento vivo. Se actualiza cuando cambia el comportamiento del conversor. Para instrucciones de uso y
 arquitectura de código ver `README.md`; para el historial de cambios, `CHANGELOG.md`.
 
-Estado a 2026-11-16 · 45 reglas de preprocesado · 9 módulos Lua · 118 pruebas (22 de ellas reconvierten
+Estado a 2026-11-16 · 45 reglas de preprocesado · 9 módulos Lua · 138 pruebas (22 de ellas reconvierten
 artículos reales y comparan byte a byte) · 124 artículos de LaTeX, 7 de PDF y 1 de JATS en la biblioteca.
 
 ---
@@ -44,7 +44,8 @@ id de arXiv ─► descargar e-print ─► (etiquetar ecuaciones) ─► compil
    con `filter="data"`. Todo se guarda en `~/.cache/tex2md/<id>/`.
 2. **Etiquetado de ecuaciones** (`preprocess/equations.py`): antes de compilar, cada ecuación numerada sin
    `\label` recibe uno propio, para que el `.aux` registre su número. Se hace una vez por compilación guardada.
-3. **Compilación** (`latexmk`, una pasada tolerante a errores): produce el `.aux` (números reales de secciones,
+3. **Compilación** (`latexmk`, una pasada tolerante a errores y con `-no-shell-escape`, porque el LaTeX es de
+   terceros): produce el `.aux` (números reales de secciones,
    figuras, tablas y ecuaciones) y el `.bbl` (bibliografía).
 4. **Aplanado** con `latexpand`: un solo `.tex` con `\input`/`\include` resueltos.
 5. **Preprocesado** (`preprocess/pipeline.py`, lista ordenada de 45 reglas con nombre, cada una una función
@@ -54,11 +55,17 @@ id de arXiv ─► descargar e-print ─► (etiquetar ecuaciones) ─► compil
    líneas y limpia el preámbulo.
 6. **pandoc** (`-f latex -t markdown`) con la tubería Lua `filters/tex2md.lua`: numera encabezados, figuras,
    tablas y ecuaciones con los datos del `.aux`; desenvuelve `Div`/`Span`; convierte tablas con colspan/rowspan
-   en tablas de tuberías; conserva el contenido de figuras que son texto (prompts, algoritmos).
+   en tablas de tuberías; conserva el contenido de figuras que son texto (prompts, algoritmos). Si pandoc no
+   puede leer una construcción (`pandoc_recovery.py`), localiza el entorno más interno que contiene el error,
+   lo sustituye por una nota visible, lo registra como diagnóstico y reintenta (hasta 5 veces) en lugar de
+   abortar.
 7. **Postprocesado** (`postprocess/markdown.py`): matemáticas aisladas, `\text` restaurado, MathML → TeX,
    comentarios `%` y fórmulas pegadas, restos de contadores LaTeX.
 8. **Informe de calidad** (JSON en la salida y en el caché): tablas en el tex frente al md, referencias y
-   citas sin resolver, avisos.
+   citas sin resolver, y una lista de **diagnósticos tipados** (`diagnostics.py`): código estable, gravedad
+   (`error` = contenido erróneo o ausente, `warning`, `info`), cantidad y ejemplos. Cubren comandos que
+   KaTeX/MathJax no conocen en las ecuaciones, avisos de pandoc, `??`, citas sin resolver, restos de HTML,
+   flotantes sin número, ecuaciones sin `\tag` y entornos omitidos por la recuperación.
 
 ### 2.2 Numeración de figuras, tablas y ecuaciones
 pandoc no conoce la numeración del PDF. tex2md lee del `.aux`: (a) `\newlabel` → secciones, ecuaciones y
@@ -72,7 +79,9 @@ sin depender del orden.
 - `tests/unit/`: reglas, filtro Lua (con pandoc real), CLI, posproceso y 22 conversiones reales («golden»)
   que se repiten desde el caché y se comparan byte a byte.
 - `tests/regress.py`: reconvierte toda la biblioteca y compara contra una línea base.
-- `audit`: compara cada `.md` con los números de su PDF compilado (leyendas ausentes o inexistentes).
+- `audit [--level error|warning|info]`: compara cada `.md` con los números de su PDF compilado (leyendas
+  ausentes o inexistentes) y muestra los diagnósticos tipados de su cuerpo; sale con estado 1 si hay
+  diferencias de flotantes o diagnósticos de gravedad `error`.
 - Comprobaciones usadas en las revisiones por muestreo (no son parte del paquete): texto del PDF frente al
   `.md`, números de tablas, títulos, `\tag` frente a «(N)» del PDF.
 
@@ -88,18 +97,20 @@ Ordenadas por impacto. «Frecuencia» es sobre los 124 artículos de LaTeX.
 
 | # | Falla | Frecuencia / ejemplo | Efecto |
 |---|---|---|---|
-| F1 | **Un error de pandoc aborta la conversión entera** | raro (no ocurre hoy en la biblioteca, pero ocurrió varias veces durante el desarrollo) | no se produce `.md` |
-| F2 | **Macros del autor sin expandir en ecuaciones** cuando se generan por programa (`\foreach` + `\csname`), se definen en paquetes sin fuente o con `\NewDocumentCommand` de especificación `e_` | `\vz`, `\vx`, `\gB` (busbridge2025), `\grad` (hubotter2026), `\nm` (zhang2026), `\filledstar` (sahoo2025) | la ecuación contiene un comando que ningún motor de Markdown conoce |
+| F1 | **Si pandoc no puede leer una construcción, ese entorno se omite** (con nota visible y diagnóstico `dropped-environment`); si el error está fuera de cualquier entorno (llave sin cerrar a nivel global) o persiste tras 5 reintentos, la conversión sigue abortando | no ocurre hoy en la biblioteca; antes abortaba siempre | hueco marcado en el `.md`, o ningún `.md` |
+| F2 | **Comandos sin expandir o inválidos en ecuaciones** (diagnóstico `unknown-math-macro`): macros generadas por programa (`\foreach` + `\csname`), definidas en paquetes sin fuente o con `\NewDocumentCommand` de especificación `e_`; y comandos de texto que KaTeX no admite en matemáticas | 596 usos en unos 35 archivos: `\textsc` (~45), `\if`/`\fi` (216, sahoo2022), `\d` (31), `\filledstar` (30), `\grad` (24), `\nm` (23), `\vz`/`\vx`/`\gB` (busbridge2025), `\nicefrac`, `\includegraphics` dentro de fórmulas | la ecuación no se renderiza en un visor de Markdown |
 | F3 | **Ecuaciones sin `\tag`** o con `(??)` por colisión de `\label` | 4 compilaciones con una colisión (`2406.04329`, `2503.09573`, `2506.10892`, `1503.03585`): código comentado y `\\ \nonumber` de estilo antiguo; hasta 3 números sin etiqueta en `alcaraz2022`, `gong2022`, `bonnaire2025` | falta el número de alguna ecuación; 12 referencias `(??)` en 5 archivos |
 | F4 | **Tablas con bloques de código dentro de las celdas** siguen como HTML | 14 tablas en 8 archivos (`liu2022flow`, `han2022ssdlm`, `iyer2024quality`…) | HTML en el Markdown (con las fórmulas ya en TeX) |
 | F5 | **Líneas `**Figura.**`/`**Tabla.**` sin número** | 40 en 19 archivos: paneles de una figura o tablas sin `\caption` propio en el LaTeX | no es un error de conversión, pero no tienen número que citar |
+| F13 | **Citas sin resolver** (`[@clave]`, diagnóstico `unresolved-citation`) | 87 en `sahoo2022backpropagat` (bibliografía en un formato que no se empareja con las claves) | la cita aparece como clave de pandoc, no como autor o número |
+| F14 | **Referencias `??` reales** (diagnóstico `unresolved-reference`) | 9 en 4 archivos: `arriola2025`, `sahoo2025duo`, `su2026opdlm`, `mirzadeh2019takd` (la etiqueta no está en el `.aux`) | «(??)» en el texto en vez del número |
 | F6 | **Fórmulas con trucos de TeX sin equivalente** (`\ifthenelse`, `\if…\fi`, `\textsc` en matemáticas) | `zheng2023`, `sahoo2022` | fórmula truncada o con un comando inválido |
 | F7 | **`audit` da un falso positivo** | `pan2025demasking`: su `.aux` no registra 9 de sus tablas (sus números salen de las etiquetas y no están comprobados contra el PDF) | un aviso permanente en `audit` |
 | F8 | **Dependen de herramientas externas con versiones concretas** | pandoc ≥ 3 (probado con 3.14), `latexmk`, `latexpand`; `uv` solo para `pdf` | la conversión falla si faltan; `doctor` lo avisa |
 | F9 | **marker (PDF) comete errores de OCR** en ecuaciones y tablas | los 7 `.md` de PDF | no son fiables en cifras; el PDF manda |
-| F10 | **Compilar LaTeX de terceros sin `-no-shell-escape`** | TeX Live aplica `shell_escape=p` (lista blanca de comandos), pero no se desactiva | superficie de ataque pequeña pero evitable |
+| F10 | ~~Compilar LaTeX de terceros sin `-no-shell-escape`~~ **resuelta**: `latexmk` se llama con `-no-shell-escape` (probado: `\write18` queda `disabled`) y las 124 conversiones siguen idénticas | — | — |
 | F11 | **Sin caché de versiones del conversor en el `.md`** | `VERSION` sigue en `0.1`; el encabezado no indica con qué versión se generó | no se distingue un `.md` viejo de uno nuevo |
-| F12 | **Verificaciones de calidad solo manuales** | los scripts de muestreo (cobertura frente al PDF, `\tag` frente a «(N)») viven fuera del repositorio | la calidad depende de que alguien los vuelva a escribir |
+| F12 | **Parte de las verificaciones sigue siendo manual** | los diagnósticos ya viven en el paquete (`audit`), pero los scripts de muestreo (cobertura de texto frente al PDF, `\tag` frente a «(N)») siguen fuera del repositorio | esas dos comprobaciones dependen de que alguien las vuelva a escribir |
 
 **Límites de diseño** (no son fallas a corregir): las imágenes no se extraen; la fidelidad tipográfica
 (posición de figuras, columnas) no se conserva; un `.md` de un artículo con macros muy exóticas puede requerir
@@ -109,19 +120,20 @@ una regla nueva.
 
 ## 4. Trabajo futuro
 
-### Inmediato (en curso en esta iteración)
-Estado: **pendiente**; al terminarse se marcará aquí y en `CHANGELOG.md`.
+### Hecho en esta iteración (2026-11-16)
+1. **Diagnósticos tipados** en el informe de conversión y en `audit` (`diagnostics.py`, 11 códigos). Hicieron
+   visibles F2, F13 y F14. Pendiente de este punto: lista de diagnósticos «aceptados» para que el falso
+   positivo F7 no mantenga a `audit` en estado 1.
+2. **Recuperación cuando pandoc falla** (`pandoc_recovery.py`): entorno culpable → nota visible → reintento
+   (máximo 5), con diagnóstico `dropped-environment`. Probado con pandoc real.
+3. **Compilación sin shell** (`-no-shell-escape`). Reconstruidas y reconvertidas las 124 compilaciones: salida
+   idéntica byte a byte.
 
-1. **Diagnósticos tipados en el informe.** En lugar de un solo contador, una lista con código, gravedad,
-   cantidad y ejemplos: macros sin expandir en ecuaciones, avisos de pandoc (hoy se descartan), restos de
-   HTML, `??`, flotantes sin número y ecuaciones sin `\tag`. `audit` los mostrará y fallará si hay errores.
-   *Cierra parcialmente F2, F3, F6, F12.*
-2. **Reintento automático cuando pandoc falla.** pandoc indica línea y columna del error: se localiza el
-   entorno más interno que lo contiene, se sustituye por un marcador visible, se registra como diagnóstico y se
-   reintenta (hasta 5 veces). Un artículo con una construcción imposible dejará de bloquear la conversión.
-   *Cierra F1.*
-3. **Compilar con `-no-shell-escape`.** Una línea y una prueba; se comprobará sobre toda la biblioteca que no
-   cambia ningún resultado. *Cierra F10.*
+### Siguiente, derivado de los diagnósticos
+- **Reparar comandos de texto dentro de ecuaciones**: `\textsc{X}` → `\text{X}`, `\nicefrac{a}{b}` →
+  `{a}/{b}`, y quitar `\includegraphics`/`\scalebox` de fórmulas (F2; ~80 de los 596 usos).
+- **Investigar las 87 citas de `sahoo2022`** (F13) y las 9 referencias `??` (F14), y añadir una lista de
+  diagnósticos aceptados a `audit` (F7).
 
 ### Siguiente
 4. **Contraste con el HTML de arXiv** (`arxiv.org/html/<id>` o ar5iv) como oráculo: por HTTP, sin instalar

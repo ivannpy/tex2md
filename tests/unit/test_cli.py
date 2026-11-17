@@ -94,3 +94,13 @@ def test_jats_conversion_end_to_end(tmp_path):
     assert p.returncode == 0, p.stderr
     assert json.loads(p.stdout)["title"] == "T"
     assert "Hello *world*." in out.read_text()
+
+
+def test_audit_reports_diagnostics_and_exit_status(tmp_path, capsys):
+    f = tmp_path / "a.md"
+    f.write_text(MD.replace("arxiv_version", "arxiv_version") + "\nSee Eq. (??) and $\\vz$.\n")
+    assert main(["audit", str(tmp_path)]) == 1
+    out = capsys.readouterr().out
+    assert "unresolved-reference" in out and "unknown-math-macro" in out and "1 with errors" in out
+    f.write_text(MD + "\nAll fine, $x$.\n")
+    assert main(["audit", str(tmp_path)]) == 0
