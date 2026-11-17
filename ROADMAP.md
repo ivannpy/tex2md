@@ -199,6 +199,7 @@ una regla nueva.
 - **Reescribir sobre una representación intermedia propia**: el AST de pandoc más los filtros Lua ya cumple
   esa función; no compensa el costo.
 - **Instalar LaTeXML, Tralics o GROBID**: pesados para esta biblioteca, y LaTeXML tampoco convierte todo.
-- **Instalar un comando global**: el proyecto se usa con los envoltorios `tex2md.py`, `papers.py` y
-  `doc2md.py` para mantener el sistema limpio.
+- **Instalar un comando global en el equipo del autor**: allí el proyecto se usa con los envoltorios `tex2md.py`,
+  `papers.py` y `doc2md.py` para mantener el sistema limpio. El `README.md` documenta la instalación (`pip`,
+  `uv tool`) para quien la quiera.
 - **Cambiar marker por MinerU o Docling** para los PDF: sin evidencia sólida de que compense.
