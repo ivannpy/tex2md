@@ -195,3 +195,24 @@ def test_tidy_marker_writes_the_html_of_table_rows_as_markdown():
     from tex2md.sources.pdf import tidy_marker
     out = tidy_marker("| 10<sup>9</sup> | <b>Ours</b> | $a$<sup>2</sup> | <u>u</u><br/>z |\n\nText <b>kept</b>.\n")
     assert out == "| 10⁹ | **Ours** | $a^{2}$ | u<br>z |\n\nText <b>kept</b>.\n"
+
+
+def test_tidy_marker_turns_labels_into_paragraphs_in_numbered_papers():
+    from tex2md.sources.pdf import tidy_marker
+    body = ("# Bradley Efron\\* Stanford University\n\n# Abstract\n\n# 1 Introduction\n\n# 2 Model\n\n## 2.1 Data\n\n"
+            "## **COMPUTATION FOR PROCESSOR** *i*\n\n# 1. FORWARD PHASE\n\n# 2. BACKWARD PHASE\n\n### Term 1:\n\n"
+            "# 3 Results\n\n# Conditional generation sample\n\n## Results across sample sizes on many datasets\n\n"
+            "# References\n\n# 4. Appendix A: Samples\n\n### Small model completion\n\n# Pinky\n\n## B.2 Samples\n")
+    heads = [ln for ln in tidy_marker(body).split("\n") if ln.startswith("#")]
+    assert heads == ["# Abstract", "# 1 Introduction", "# 2 Model", "## 2.1 Data", "# 3 Results",
+                     "## Results across sample sizes on many datasets", "# References", "# 4. Appendix A: Samples",
+                     "## B.2 Samples"]
+    out = tidy_marker(body)
+    assert out.startswith("Bradley Efron Stanford University\n") and "\n**1. FORWARD PHASE**\n" in out
+    assert "\n**COMPUTATION FOR PROCESSOR i**\n" in out and "\n**Pinky**\n" in out and "\n**Term 1:**\n" in out
+
+
+def test_tidy_marker_leaves_unnumbered_papers_alone():
+    from tex2md.sources.pdf import tidy_marker
+    body = "# NVIDIA H100\n\n#### Ready for Enterprise AI?\n\n## Example:\n"
+    assert tidy_marker(body) == body

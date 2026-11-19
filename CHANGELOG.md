@@ -1,5 +1,13 @@
 # Changelog
 
+## marker: headings that only label something (2026-11-18)
+In a paper whose sections are numbered, `tidy_marker` (and `fixmarker`) turns into paragraphs the headings that
+label something instead of opening a section: the author or affiliation line before the first section
+(`efron2011tweedie`, `shannon1948`), a label ending in ":" (`Example:`, `Term 1:`), the steps of an algorithm whose
+numbers go back ("1. FORWARD PHASE" after section 3.2, and the title just before them: `bengio2003nplm`), short
+headings naming a sample, an example or a completion, and every unnumbered heading inside an appendix of samples
+(`radford2019gpt2`: 31). Labels become bold paragraphs. Papers without numbered sections are left as they are.
+
 ## HTML in tables (2026-11-18)
 `audit` counted 32 `html-residue` in the library; none is left.
 

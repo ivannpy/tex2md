@@ -111,7 +111,66 @@ def tidy_marker(body):
             elif re.match(r"(?i)^(references|bibliography|acknowledge?ments?)\b", t):
                 in_roman = False
         out.append(ln)
-    return re.sub(r"\n{3,}", "\n\n", "\n".join(out))
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(_label_headings(out)))
+
+
+_SECTION_NAME = re.compile(r"(?i)^(abstract|references|bibliography|acknowledge?ments?|appendi(x|ces)|contents|summary|"
+                           r"discussion|introduction|conclusions?|notation|exercises|funding|limitations|part\b|chapter\b)")
+_AUTHOR = re.compile(r"^By\s|\b(University|Institute|Laboratories|College|Inc\.)\b|@")
+_LABEL = re.compile(r"(?i)\b(samples?|completions?|examples?)\b")
+
+
+def _number(text):
+    """The leading section number of a heading (``3.2 Results`` -> (3, 2)), or None."""
+    m = re.match(r"^([0-9]+(?:\.[0-9]+)*)\.?\s+\S", re.sub(r"\*+", "", text))
+    return tuple(int(x) for x in m.group(1).split(".")) if m else None
+
+
+def _label_headings(lines):
+    """In a paper whose sections are numbered, headings that label something instead of opening a section: an author
+    or affiliation line before the first section, a label ending in ":", a numbered step that goes back in the
+    numbering (pseudocode: "1. FORWARD PHASE" after section 3.2, and the unnumbered title just before it), and in an
+    appendix of samples the labels of the samples ("Small model completion", "Outfit 2: High End"). They become
+    paragraphs, in bold when they were labels."""
+    heads = [i for i, ln in enumerate(lines) if re.match(r"^#+ ", ln)]
+    texts = {i: re.sub(r"^#+ ", "", lines[i]).strip() for i in heads}
+    if sum(1 for i in heads if _number(texts[i])) < 3:
+        return lines
+    plain = {i: re.sub(r"\\?\*+", "", texts[i]).strip() for i in heads}
+
+    def bold(i):
+        return "**" + plain[i] + "**"
+    started, top, prev_unnumbered, samples, stepping = False, 0, None, None, False
+    for i in heads:
+        t, num = plain[i], _number(texts[i])
+        level = len(lines[i]) - len(lines[i].lstrip("#"))
+        if num is None and re.match(r"^[A-Z](?:\.[0-9]+)+\.?\s+\S", t):
+            continue                                        # an appendix subsection (B.5.6 Samples)
+        if num:
+            # a step of an algorithm, not a section: back in the numbering, or not ahead of the step before it
+            if started and (num[0] < top or (stepping and len(num) == 1 and num[0] <= top)):
+                lines[i] = bold(i)
+                if prev_unnumbered is not None:
+                    lines[prev_unnumbered] = bold(prev_unnumbered)
+                prev_unnumbered, stepping = None, True
+                continue
+            started, top, prev_unnumbered, stepping = True, num[0], None, False
+            if samples is not None and level <= samples:
+                samples = None
+            if re.search(r"(?i)\bsamples?\b|\bexamples\b", t):
+                samples = level
+            continue
+        if _SECTION_NAME.match(t):
+            started = started or not re.match(r"(?i)^abstract", t) or started
+            prev_unnumbered, samples = None, (None if re.match(r"(?i)^(references|bibliography)", t) else samples)
+            continue
+        if not started and _AUTHOR.search(t):
+            lines[i] = plain[i]                             # the author line of the title page
+        elif t.endswith(":") or samples is not None or (_LABEL.search(t) and len(t.split()) <= 5):
+            lines[i] = bold(i)
+        else:
+            prev_unnumbered = i
+    return lines
 
 
 

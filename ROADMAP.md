@@ -3,7 +3,7 @@
 Documento vivo. Se actualiza cuando cambia el comportamiento del conversor. Para instrucciones de uso y
 arquitectura de código ver `README.md`; para el historial de cambios, `CHANGELOG.md`.
 
-Estado a 2026-11-18 · 77 reglas de preprocesado · 9 módulos Lua · 333 pruebas (22 de ellas reconvierten
+Estado a 2026-11-18 · 77 reglas de preprocesado · 9 módulos Lua · 335 pruebas (22 de ellas reconvierten
 artículos reales y comparan byte a byte) · 124 artículos de LaTeX, 7 de PDF y 1 de JATS en la biblioteca · además,
 65 artículos de arXiv que no están en la biblioteca (2012–2025) convierten sin error y con los mismos números de
 figuras y tablas que su PDF.
@@ -149,7 +149,7 @@ nuevo `missing-sections`), las `\ref` con una macro en la clave y la etiqueta de
 de §3 (14 artículos; `audit --level error` ya no muestra diferencias de flotantes en la biblioteca). Quedan
 después el `unbalanced-math` de `chen2024dforcing`, las `??` que no eran reales (`brown2020gpt3`,
 `golovneva2024reverse`), los títulos de la API con `$`, el número del `\part` y las fallas de marker de §4
-(`fixmarker`). Sigue abierto, de §4, el renivelado de encabezados de marker sin numeración romana.
+(`fixmarker`). De §4 quedan los encabezados de marker en documentos sin secciones numeradas (`nvidia2023h100`, un folleto), que se dejan como están.
 
 **Límites de diseño** (no son fallas a corregir): las imágenes no se extraen; la fidelidad tipográfica
 (posición de figuras, columnas) no se conserva; un `.md` de un artículo con macros muy exóticas puede requerir
