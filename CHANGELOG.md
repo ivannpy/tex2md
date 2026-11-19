@@ -1,5 +1,19 @@
 # Changelog
 
+## HTML in tables (2026-11-18)
+`audit` counted 32 `html-residue` in the library; none is left.
+
+- **Cells with block content** (lists, a rule, a quote, several paragraphs) are flattened to one line: list items as
+  `• item` / `1. item` separated by `<br>`, the line break of a pipe-table cell. pandoc wrote the whole table as HTML.
+- **One-column tables whose cells hold more than a line** (a dataset card, a sample of generated text) become their
+  blocks, with consecutive code-only cells joined into one code block (`ouyang2022instructgpt`: 16 tables,
+  `hoffmann2022`, `wen2025dija`, generated samples in `sahoo2025duo`, `sahoo2025esolm`, `havasi2025editflows`).
+- **A rule macro made of primitives** (`\newcommand{\thickhline}{\noalign{...}\hrule height 1pt ...}`) is removed
+  and its uses become `\hline`: pandoc printed "height 1pt" in a cell (`hendrycks2021mmlu`).
+- **marker tables**: `<b>`, `<i>`, `<u>`, `<sup>`, `<sub>` in table rows become Markdown, Unicode scripts or a
+  formula (`tidy_marker`, also through `fixmarker`); `<br>` stays.
+- **`html-residue`** no longer counts an escaped tag (`\<table\>`, text of the paper) or one inside code.
+
 ## Odd `$`, false `??`, titles and marker output (2026-11-18)
 The rest of `HALLAZGOS_2026-11-18.md` §3 and §4.
 

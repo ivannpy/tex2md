@@ -100,3 +100,19 @@ def test_if_zero_blocks_are_switched_off():
     # golovneva2024reverse: "\if 0 ... Figure~\ref{fig:rev_algo} ... \fi" came out with a "??"
     assert resolve_conditionals("a \\if 0\nhidden\n\\fi b") == "a \\iffalse\nhidden\n\\fi b"
     assert resolve_conditionals(r"\ifx\a\b x\fi") == r"\ifx\a\b x\fi"
+
+
+def test_a_rule_macro_made_of_primitives_becomes_hline():
+    # hendrycks2021mmlu: \thickhline printed "height 1pt" in a cell and the table came out as HTML
+    from tex2md.preprocess.textloss import table_rules_and_colors
+    src = ("\\newcommand{\\boldrule}{%\n\\noalign {\\ifnum 0=`}\\fi \\hrule height 1pt\n\\futurelet \\reserved@a \\@xhline\n}"
+           "\n\\begin{tabular}{c}\\boldrule a \\\\ \\end{tabular}")
+    assert table_rules_and_colors(src) == "\n\\begin{tabular}{c}\\hline a \\\\ \\end{tabular}"
+
+
+def test_a_rule_macro_defined_twice_is_removed_both_times():
+    # zhong2026: \ShortSep defined before each of two tables
+    from tex2md.preprocess.textloss import table_rules_and_colors
+    d = "\\newcommand{\\ShortSep}{%\n\\noalign{\\vskip 1pt}\\leaders\\hrule height 0.6pt\\hskip 4cm & \\cr}\n"
+    src = d + "\\begin{tabular}{c}a \\\\ \\ShortSep b\\end{tabular}\n" + d + "\\begin{tabular}{c}\\ShortSep\\end{tabular}"
+    assert table_rules_and_colors(src) == "\n\\begin{tabular}{c}a \\\\ \\hline b\\end{tabular}\n\n\\begin{tabular}{c}\\hline\\end{tabular}"

@@ -141,3 +141,8 @@ def test_an_ambiguous_main_file_is_reported():
     assert main_file_diagnostics("a.tex", ["a.tex"]) == []
     (d,) = main_file_diagnostics("a.tex", ["a.tex", "rebuttal.tex"])
     assert d.code == "ambiguous-main-file" and d.severity == "warning"
+
+
+def test_html_residue_ignores_escaped_tags_and_code():
+    body = "Wrap it:\\<table\\>\\</table\\>.\n\n    export_to<table> - 12\n\nAnd `<span>` too.\n"
+    assert "html-residue" not in {d.code for d in scan_markdown(body)}

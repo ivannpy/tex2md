@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 
-from tex2md.util.tex import balanced_end, bracket_end, rewrite_outside_math, skip_optional, skip_ws
+from tex2md.util.tex import balanced_end, bracket_end, group, rewrite_outside_math, skip_optional, skip_ws
 
 # Declarations without arguments: a "{" right after them is ordinary text, not an argument
 _NO_ARGUMENT = (
@@ -130,6 +130,23 @@ def table_rules_and_colors(text: str) -> str:
     * ``\rowcolor``, ``\cellcolor``, ``\addlinespace``, ``\specialrule``...: anything in front of a
       ``\multicolumn`` makes pandoc drop that cell, and ``\cellcolor{c}{58.6}`` loses the number.
     """
+    # a rule of the author's own made of primitives (\newcommand{\thickhline}{\noalign{...}\hrule height 1pt ...}):
+    # pandoc prints "height 1pt" in the next cell, and the cell turns the table into HTML
+    head = re.compile(r"\\(?:re)?newcommand\*?\s*\{?\\([a-zA-Z]+)\}?\s*(?=\{)")
+    names, pos = set(), 0
+    while True:             # (searched again after each removal: a macro may be defined twice)
+        m = head.search(text, pos)
+        if not m:
+            break
+        body, end = group(text, m.end())
+        if re.search(r"\\noalign|\\hrule", body) and "#" not in body:
+            names.add(m.group(1))
+            text = text[:m.start()] + text[end:]
+            pos = m.start()
+        else:
+            pos = m.end()
+    for name in names:
+        text = re.sub(r"\\" + name + r"(?![a-zA-Z@])", r"\\hline", text)
     text = re.sub(r"\\cmidrule\s*(?:\[[^\]]*\])?\s*(?:\([^)]*\))?\s*\{[^{}]*\}", r"\\midrule ", text)
     text = re.sub(r"\\cline\s*\{[^{}]*\}", r"\\hline ", text)
     text = re.sub(r"\\specialrule\s*\{[^{}]*\}\s*\{[^{}]*\}\s*\{[^{}]*\}", r"\\midrule ", text)

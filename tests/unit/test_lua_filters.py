@@ -238,3 +238,20 @@ def test_a_part_after_the_first_section_gets_no_number(tmp_path):
     body = r"\section{Introduction}x\part{Appendix}\section{Details}y"
     md = convert(tmp_path, body, sections=[sec(1, "1", "Introduction"), sec(1, "A", "Details")])
     assert re.findall(r"^#+ (.*)$", md, re.M) == ["1 Introduction", "Appendix", "A Details"]
+
+
+def test_a_one_column_box_with_lists_and_code_becomes_its_blocks(tmp_path):
+    # ouyang2022instructgpt: a dataset card laid out as a one-column table
+    body = (r"\begin{tabular}{l}\textbf{TruthfulQA} \\ \textbf{Prompting structure} \\ QA prompt: \\ \texttt{Q: Can it?} \\"
+            r" \\ \texttt{A: [completion]} \\ \begin{minipage}{5cm}\textbf{Features}\begin{itemize}\item 817 questions"
+            r"\item two metrics\end{itemize}\end{minipage} \\ \end{tabular}")
+    md = convert(tmp_path, body)
+    assert "<table" not in md and "<td" not in md
+    assert "    Q: Can it?\n\n    A: [completion]" in md and "- 817 questions" in md
+
+
+def test_cells_with_a_list_or_a_rule_stay_in_a_pipe_table(tmp_path):
+    body = (r"\begin{tabular}{lc}Model & A \\ \begin{minipage}{3cm}\begin{itemize}\item one\item two\end{itemize}"
+            r"\end{minipage} & 1 \\ \begin{minipage}{3cm}\hrule Base\end{minipage} & 2 \\ \end{tabular}")
+    md = convert(tmp_path, body)
+    assert "<table" not in md and "• one<br>• two" in md and "| Base " in md

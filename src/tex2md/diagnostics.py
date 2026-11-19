@@ -98,7 +98,9 @@ def scan_markdown(body: str) -> list[Diagnostic]:
         out.append(Diagnostic("unresolved-citation", "warning",
                               "citations left as pandoc keys ([@key]): the bibliography could not be matched",
                               len(cites), sorted(set(cites))[:3]))
-    html = Counter(re.findall(r"<(table|div|span|math|embed|figure)\b", body))
+    # (not text of the paper: an escaped "\<table\>" or a tag inside code)
+    code_free = re.sub(r"(?ms)^```.*?^```|^(?: {4}|\t).*?$|`[^`\n]*`", " ", body)
+    html = Counter(re.findall(r"(?<!\\)<(table|div|span|math|embed|figure)\b", code_free))
     if html:
         out.append(Diagnostic("html-residue", "warning",
                               "raw HTML left in the Markdown (usually a table whose cells hold code blocks)",

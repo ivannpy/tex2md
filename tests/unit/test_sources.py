@@ -189,3 +189,9 @@ def test_tidy_marker_md_drops_the_jstor_cover_and_keeps_the_header():
     assert "JSTOR" not in out and out.count("# Maximum Likelihood") == 1 and "**Autores:** A" in out
     assert out.endswith("> Convertido desde el PDF con marker (OCR).\n\nBy A. P. DEMPSTER\n")
     assert tidy_marker_md(out) == out
+
+
+def test_tidy_marker_writes_the_html_of_table_rows_as_markdown():
+    from tex2md.sources.pdf import tidy_marker
+    out = tidy_marker("| 10<sup>9</sup> | <b>Ours</b> | $a$<sup>2</sup> | <u>u</u><br/>z |\n\nText <b>kept</b>.\n")
+    assert out == "| 10⁹ | **Ours** | $a^{2}$ | u<br>z |\n\nText <b>kept</b>.\n"

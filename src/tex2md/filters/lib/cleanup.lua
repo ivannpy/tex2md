@@ -91,6 +91,8 @@ end
 
 -- The inlines of a block that can sit on one line: a paragraph, a code block (one <code> per line), or a table
 -- nested in a cell (a one-column tabular used to stack the lines of a label) read row by row. nil for anything else.
+local lines_of
+
 local function line_of(block)
   if block.t == "Para" or block.t == "Plain" then return html_breaks(block.content) end
   if block.t == "CodeBlock" then
@@ -98,6 +100,23 @@ local function line_of(block)
     for line in (block.text .. "\n"):gmatch("(.-)\n") do
       if #inlines > 0 then inlines:insert(pandoc.RawInline("html", "<br>")) end
       if line ~= "" then inlines:insert(pandoc.Code(line)) end
+    end
+    return inlines
+  end
+  if block.t == "HorizontalRule" then return pandoc.Inlines({}) end         -- a rule drawn in the cell
+  if block.t == "Header" then return html_breaks(block.content) end
+  if block.t == "Div" or block.t == "BlockQuote" then return lines_of(block.content, pandoc.Space()) end
+  if block.t == "BulletList" or block.t == "OrderedList" then
+    -- one line per item, "• " or its number in front
+    local inlines = pandoc.Inlines({})
+    local start = block.t == "OrderedList" and block.start or 1
+    for k, item in ipairs(block.content) do
+      local part = lines_of(item, pandoc.Space())
+      if part == nil then return nil end
+      if #inlines > 0 then inlines:insert(pandoc.RawInline("html", "<br>")) end
+      inlines:insert(pandoc.Str(block.t == "BulletList" and "•" or (tostring(start + k - 1) .. ".")))
+      inlines:insert(pandoc.Space())
+      inlines:extend(part)
     end
     return inlines
   end
@@ -123,6 +142,20 @@ local function line_of(block)
     if not (add_rows(body.head) and add_rows(body.body)) then return nil end
   end
   if not add_rows(block.foot.rows) then return nil end
+  return inlines
+end
+
+-- The blocks of a cell (or of a list item) on one line, joined by `sep`; nil if one of them cannot be.
+lines_of = function(blocks, sep)
+  local inlines = pandoc.Inlines({})
+  for _, b in ipairs(blocks) do
+    local part = line_of(b)
+    if part == nil then return nil end
+    if #part > 0 then
+      if #inlines > 0 then inlines:insert(sep) end
+      inlines:extend(part)
+    end
+  end
   return inlines
 end
 
@@ -170,6 +203,55 @@ local function single_cell(t)
   return rows[1].cells[1]
 end
 
+-- The rows of a one-column table whose cells hold more than a line (a list, a code block, several paragraphs):
+-- a box laid out as a table (a dataset card: its name, then "Prompting structure", examples, a list of features).
+-- Their blocks, in order, with the cells that only hold code lines joined into one code block; nil otherwise.
+local function box_blocks(t)
+  if #t.colspecs ~= 1 then return nil end
+  local cells, rich = {}, false
+  local function add(rows)
+    for _, r in ipairs(rows) do
+      for _, c in ipairs(r.cells) do
+        cells[#cells + 1] = c
+        if #c.contents > 1 or (#c.contents == 1 and c.contents[1].t ~= "Plain" and c.contents[1].t ~= "Para") then
+          rich = true
+        end
+      end
+    end
+  end
+  add(t.head.rows)
+  for _, b in ipairs(t.bodies) do add(b.head); add(b.body) end
+  add(t.foot.rows)
+  if not rich then return nil end
+  local out, code = pandoc.Blocks({}), nil
+  local function code_line(c)
+    if #c.contents == 0 then return "" end
+    if #c.contents ~= 1 or c.contents[1].t ~= "Plain" and c.contents[1].t ~= "Para" then return nil end
+    local inl = c.contents[1].content
+    if #inl == 1 and inl[1].t == "Code" then return inl[1].text end
+    return nil
+  end
+  for _, c in ipairs(cells) do
+    local line = code_line(c)
+    if line and (line ~= "" or code) then
+      code = code or {}
+      code[#code + 1] = line
+    else
+      if code then
+        while code[#code] == "" do code[#code] = nil end
+        out:insert(pandoc.CodeBlock(table.concat(code, "\n")))
+        code = nil
+      end
+      for _, b in ipairs(c.contents) do out:insert(b.t == "Plain" and pandoc.Para(b.content) or b) end
+    end
+  end
+  if code then
+    while code[#code] == "" do code[#code] = nil end
+    if #code > 0 then out:insert(pandoc.CodeBlock(table.concat(code, "\n"))) end
+  end
+  return out
+end
+
 local function row_is_empty(row)
   for _, cell in ipairs(row.cells) do
     local text = pandoc.utils.stringify(pandoc.Div(cell.contents))
@@ -197,6 +279,8 @@ function M.Table(t)
   local ncols = #t.colspecs
   local changed = false
   -- a box around some text (fbox + minipage inside a one-column tabular): the text itself, not a one-cell table
+  local box = box_blocks(t)
+  if box then return box end
   local cell = single_cell(t)
   if cell and #cell.contents > 0 then
     local blocks = pandoc.Blocks({})
