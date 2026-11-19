@@ -8,7 +8,14 @@ from tex2md.util.tex import group, skip_ws
 
 def tcolorbox_to_quote(text: str) -> str:
     """Code listings become verbatim; ordinary boxes become a quote with the title (if any) in bold."""
-    for m in reversed(list(re.finditer(r"\\(newtcblisting|newtcolorbox|DeclareTColorBox|NewTColorBox|NewTCBListing)\s*\{([^}]*)\}", text))):
+    head = re.compile(r"\\(newtcblisting|newtcolorbox|DeclareTColorBox|NewTColorBox|NewTCBListing)\s*\{([^}]*)\}")
+    while True:
+        # the last definition left, searched again each time: the text before it changes too (a box defined in the
+        # body after another one is used), so positions found at the start would cut the wrong text
+        found = list(head.finditer(text))
+        if not found:
+            return text
+        m = found[-1]
         i = m.end()
         specs = []
         while True:
@@ -49,4 +56,3 @@ def tcolorbox_to_quote(text: str) -> str:
         out.append(text[pos:])
         text = "".join(out)
         text = re.sub(r"\\end\{" + name + r"\}", r"\\end{quote}", text)
-    return text

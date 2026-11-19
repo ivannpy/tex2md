@@ -7,11 +7,16 @@ import re
 from tex2md.preprocess.algorithms import _brace_args
 from tex2md.util.tex import balanced_end, bracket_end, group, unwrap
 
+_CITATION_AMPERSAND = re.compile(r"\(([^()&\\]*?)\s&\s((?:[^()&\\]|\([^()&\\]*\))*?)\)")
+
+
+def _escape_citation_ampersands(cells):
+    return _CITATION_AMPERSAND.sub(r"(\1 \\& \2)", cells)
+
 
 def escape_citation_ampersands(text):
     """Author-year labels such as "(Wang & Cho, 2019)" inside a tabular add a phantom column."""
-    return re.sub(r"\\begin\{tabular\*?\}.*?\\end\{tabular\*?\}",
-                  lambda m: re.sub(r"\(([^()&\\]*?)\s&\s((?:[^()&\\]|\([^()&\\]*\))*?)\)", r"(\1 \\& \2)", m.group(0)),
+    return re.sub(r"\\begin\{tabular\*?\}.*?\\end\{tabular\*?\}", lambda m: _escape_citation_ampersands(m.group(0)),
                   text, flags=re.S)
 
 
@@ -66,6 +71,42 @@ def simple_colspec(spec):
     return "".join(out) or "c"
 
 
+_MULTICOLUMN_N = re.compile(r"\\multicolumn\s*\{\s*(\d+)\s*\}")
+
+
+def _row_width(body):
+    """Cells of the usual row of a tabular body (``\\multicolumn{n}`` counts n): the most frequent count among the
+    rows, the larger on a tie. LaTeX only warns when the rows have more cells than the column spec; pandoc then
+    drops the table, caption and all. (Not the widest row: rows written by a macro end inside it, out of sight, and
+    run together into one long "row".)"""
+    # (the "&" of an aligned or array inside a cell are not cells of the table)
+    body = re.sub(r"(?<!\\)\$\$.*?(?<!\\)\$\$|(?<!\\)\$.*?(?<!\\)\$|\\\(.*?\\\)", "", body, flags=re.S)
+    body = re.sub(r"\\begin\{([a-zA-Z]+\*?)\}.*?\\end\{\1\}", "", body, flags=re.S)
+    rows, cells, depth, i = [], 1, 0, 0
+    while i < len(body):
+        c = body[i]
+        if c == "\\":
+            if depth == 0 and (body.startswith("\\\\", i) or body.startswith("\\tabularnewline", i)):
+                rows.append(cells)
+                cells = 1
+            else:
+                mc = _MULTICOLUMN_N.match(body, i)
+                if mc and depth == 0:
+                    cells += int(mc.group(1)) - 1
+            i += 2
+            continue
+        if c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+        elif c == "&" and depth == 0:
+            cells += 1
+        i += 1
+    if not rows:
+        return cells
+    return max(rows, key=lambda n: (rows.count(n), n))
+
+
 def normalize_tabulars(text):
     """Make every tabular readable by pandoc: plain column specs, and one-cell tabulars used to
     stack lines inside a cell (\\begin{tabular}{@{}c@{}}a\\\\b\\end{tabular}) or \\makecell become plain text."""
@@ -90,6 +131,9 @@ def normalize_tabulars(text):
                 pos = m.start()
                 continue
         new = simple_colspec(spec)
+        close = text.find("\\end{tabular", e)
+        if close > 0 and "\\begin{tabular" not in text[e:close]:
+            new += "c" * max(0, _row_width(_escape_citation_ampersands(text[e:close])) - len(new))
         text = text[:m.end()] + "{" + new + "}" + text[e:]
         pos = m.end()
     mc = re.compile(r"\\makecell\*?(?:\[[^\]]*\])?(?=\{)")

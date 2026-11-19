@@ -13,7 +13,7 @@ import re
 import shutil
 from dataclasses import dataclass
 
-from tex2md.build.aux import parse_aux, parse_floats, parse_sections
+from tex2md.build.aux import parse_aux, parse_floats, parse_sections, use_long_captions
 from tex2md.build.latex import declared_toplevel, find_main, main_candidates
 from tex2md.config import CACHE, FILTER, UNWRAP_FILTER
 from tex2md.diagnostics import (
@@ -281,7 +281,7 @@ def convert(arg, out, mn):
     if defs:
         at = flat.find("\\usepackage")
         flat = flat[:at] + defs + "\n" + flat[at:] if at >= 0 else defs + "\n" + flat
-    floats = parse_floats(ws.build)
+    floats = use_long_captions(parse_floats(ws.build), flat)
     sections = parse_sections(ws.bdir, ws.base)
     tex, repairs = repair_braces(escape_citation_ampersands(preprocess(flat, labels, bib, stats, floats)))
     report.update(stats)

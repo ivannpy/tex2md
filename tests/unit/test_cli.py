@@ -142,3 +142,12 @@ def test_check_flags_an_entry_with_no_path(tmp_path, capsys, monkeypatch):
     (tmp_path / "a.md").write_text(MD.replace('    path: "PCIC/missing.pdf"\n', ""))
     main(["check", str(tmp_path)])
     assert "MISSING PDF" in capsys.readouterr().out
+
+
+def test_audit_counts_floats_kept_out_of_the_aux_by_an_empty_short_caption(tmp_path):
+    from tex2md.library.audit import _unlisted_captions
+    (tmp_path / "main.tex").write_text(
+        r"\begin{wrapfigure}{r}{5cm}\caption[]{Teaser}\end{wrapfigure}"
+        r"\begin{table}\caption[]{A}\end{table}\begin{table}\caption[Short]{B}\end{table}"
+        "\n% \\begin{table}\\caption[]{commented}\\end{table}\n")
+    assert _unlisted_captions(str(tmp_path)) == {"figure": 1, "table": 1}

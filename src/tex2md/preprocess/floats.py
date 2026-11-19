@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 
-from tex2md.util.tex import balanced_end
+from tex2md.util.tex import balanced_end, group, skip_ws
 
 
 def unwrap_algorithm_floats(text):
@@ -220,6 +220,32 @@ def _picture_only(block):
     return not rest
 
 
+_REAL_CAPTION = re.compile(r"\\caption(?![a-zA-Z@*])|\\captionof\s*\{")
+_ONE_CAPTION = re.compile(r"(?:\\captionsetup\s*\{[^{}]*\}\s*)?\\caption(?:of\s*\{[a-z]+\})?(?![a-zA-Z@*])\s*(?:\[[^\]]*\])?\s*(?=\{)")
+
+
+def _split_at_captions(block):
+    """A block (minipage) holding several captioned tables or figures, one under the other: one piece per caption.
+    The cut goes before each caption when the block starts with one (captions above their tables), after each
+    caption otherwise."""
+    if re.search(r"\\begin\{sub(?:figure|table)|\\subfloat|\\subcaptionbox", block):
+        return [block]          # the captions of sub-figures are sub-captions of one figure
+    caps = []
+    for m in _ONE_CAPTION.finditer(block):
+        e = balanced_end(block, m.end())
+        if e > 0:
+            caps.append((m.start(), e))
+    if len(caps) < 2:
+        return [block]
+    lead = re.sub(r"%[^\n]*|\\(?:centering|vspace\*?\{[^{}]*\}|small|footnotesize|scriptsize)|\s", "", block[:caps[0][0]])
+    if not lead:
+        cuts = [st for st, _ in caps[1:]]
+    else:   # (the \\label right after a caption goes with it)
+        cuts = [re.compile(r"(?:\s*\\label\s*\{[^{}]*\})*").match(block, e).end() for _, e in caps[:-1]]
+    bounds = [0] + cuts + [len(block)]
+    return [block[a:b] for a, b in zip(bounds, bounds[1:])]
+
+
 def split_captioned_blocks(text):
     """A float holding several side-by-side minipage/parbox blocks, each with its own \\caption:
     pandoc keeps one caption for the lot. Make one float per block."""
@@ -248,6 +274,16 @@ def split_captioned_blocks(text):
             if st >= last:
                 top.append((st, en, inner))
                 last = en
+        # what lies between the blocks and has a caption of its own (a table under two side-by-side minipages) is
+        # one more block
+        # (a numbered caption of the block's own: a "\\caption*{(a) ...}" in each minipage is a sub-caption of the caption
+        # below them, and that of an algorithm in a minipage belongs to the algorithm)
+        if any(_REAL_CAPTION.search(inner) and _captions_on_top(inner) for _, _, inner in top):
+            cuts = [0] + [x for st, en, _ in top for x in (st, en)] + [len(body)]
+            for st, en in zip(cuts[::2], cuts[1::2]):
+                if len(_REAL_CAPTION.findall(body[st:en])) == 1:
+                    top.append((st, en, body[st:en]))
+            top.sort()
         blocks = [inner for _, _, inner in top]
         capt = [b for b in blocks if "\\caption" in b]
         others = [b for b in blocks if "\\caption" not in b]
@@ -257,6 +293,7 @@ def split_captioned_blocks(text):
         for st, en, _ in reversed(top):
             rest = rest[:st] + rest[en:]
         rest = re.sub(r"%[^\n]*", "", rest)
+        rest = re.sub(r"\\(?:begin|end)\{(?:center|small|footnotesize|scriptsize)\}", "", rest)
         rest = re.sub(r"\\(?:centering|hfill|hspace|vspace|vskip|hskip|noindent|small|footnotesize|scriptsize|tiny|large|normalsize|quad|qquad|label|smallskip|medskip|bigskip|setlength|captionsetup|par|raggedright|raggedleft|relax|linewidth|textwidth|fill)\*?(?:\[[^\]]*\])?(?:\s*\{[^{}]*\})?", "", rest)
         rest = re.sub(r"-?[0-9.]+\s*(?:in|pt|cm|mm|em|ex|bp)\b|\\[;,:! ]|[\s{}\[\]~]", "", rest)
         clean = len(rest) < 4 and not re.search(r"\\begin\{(?:table|figure)", body)
@@ -266,7 +303,8 @@ def split_captioned_blocks(text):
 
             def kind_of(b, default=env_kind):
                 return declared_kind(b) or default
-            out.append("".join(f"\\begin{{{kind_of(b)}}}{b}\\end{{{kind_of(b)}}}\n" for b in capt))
+            pieces = [p for b in capt for p in _split_at_captions(b)]
+            out.append("".join(f"\\begin{{{kind_of(p)}}}{p}\\end{{{kind_of(p)}}}\n" for p in pieces))
         else:
             out.append(text[m.start():endm.end()])
         pos = endm.end()
@@ -328,8 +366,14 @@ def flatten_subfloats(text, floats=None):
                     continue
                 starts = [x.end() for x in flt.finditer(text, 0, m.start())]
                 n = len(re.findall(r"\\par\\textit\{\([a-z0-9]+\) ", text[starts[-1]:m.start()])) if starts else 0
-                lab = chr(ord("a") + n) if n < 26 else str(n)
-                body = body[:cm.start()] + "\\par\\textit{(" + lab + ") " + caption + "}\\par " + body[ce:]
+                # (a panel may hold two pictures, each with its caption: each one is a sub-caption of its own)
+                while cm and ce > 0:
+                    lab = chr(ord("a") + n) if n < 26 else str(n)
+                    line = "\\par\\textit{(" + lab + ") " + body[cm.end() + 1:ce - 1] + "}\\par "
+                    body = body[:cm.start()] + line + body[ce:]
+                    n += 1
+                    cm = cap.search(body, cm.start() + len(line))
+                    ce = balanced_end(body, cm.end()) if cm else -1
         text = text[:m.start()] + body + text[e.end():]
         pos = m.start() + len(body)
 
@@ -369,10 +413,42 @@ def unnest_floats(text):
 
 
 def wrap_envs_to_plain(text):
-    """wraptable/wrapfigure (with their width arguments) -> table/figure."""
+    """wraptable/wrapfigure (with their width arguments) and teaserfigure -> table/figure; the ``wrapstuff`` of the package of that
+    name -> the kind its ``type=`` option names (a figure when it names none), or just its content when it has no
+    caption. A wrapfigure/wraptable without a caption inside another float (a box of text beside the picture) is
+    just its content: as a float of its own it would end the outer one before that one's caption."""
+    wrap = re.compile(r"\\begin\{(wraptable|wrapfigure)\}(?:\{[^}]*\}|\[[^\]]*\])*")
+    floats = re.compile(r"\\(begin|end)\{(?:table|figure)\*?\}")
+    out, pos = [], 0
+    for m in wrap.finditer(text):
+        end = text.find("\\end{" + m.group(1) + "}", m.end())
+        if m.start() < pos or end < 0:
+            continue
+        body = text[m.end():end]
+        inside = sum(1 if t.group(1) == "begin" else -1 for t in floats.finditer(text, 0, m.start())) > 0
+        if inside and not re.search(r"\\caption", body):
+            out.append(text[pos:m.start()] + body)
+            pos = end + len("\\end{" + m.group(1) + "}")
+    text = "".join(out) + text[pos:]
+    text = re.sub(r"\\(begin|end)\{teaserfigure\}", r"\\\1{figure}", text)      # acmart's figure above the title
     text = re.sub(r"\\begin\{(wraptable|wrapfigure)\}(\{[^}]*\}|\[[^\]]*\])*", lambda m: "\\begin{" + ("table" if m.group(1) == "wraptable" else "figure") + "}", text)
     text = re.sub(r"\\end\{(wraptable|wrapfigure)\}", lambda m: "\\end{" + ("table" if m.group(1) == "wraptable" else "figure") + "}", text)
-    return text
+    out, pos = [], 0
+    for m in re.finditer(r"\\begin\{wrapstuff\}(\[(?:[^\[\]{}]|\{[^{}]*\})*\])?", text):
+        if m.start() < pos:
+            continue
+        end = text.find("\\end{wrapstuff}", m.end())
+        if end < 0:
+            break
+        kind = re.search(r"\btype\s*=\s*(table|figure)\b", m.group(1) or "")
+        kind = kind.group(1) if kind else "figure"
+        body = text[m.end():end]
+        if not re.search(r"\\caption(?![a-zA-Z@*])", body):
+            out.append(text[pos:m.start()] + body)        # a box of text the paragraph flows around: no float
+        else:
+            out.append(text[pos:m.start()] + f"\\begin{{{kind}}}" + body + f"\\end{{{kind}}}")
+        pos = end + len("\\end{wrapstuff}")
+    return "".join(out) + text[pos:]
 
 
 def strip_float_layout(text):
@@ -453,3 +529,82 @@ def single_paragraph_captions(text):
         fixed = re.sub(r"\n[ \t]*(?:\n[ \t]*)+|\\par(?![a-zA-Z@])\s*", " ", arg)
         out.append(text[pos:m.end()] + fixed)
         pos = e
+
+
+_FLOATROW_BOX = {"ffigbox": "figure", "ttabbox": "table", "fcapside": None}
+
+
+def floatrow_to_floats(text):
+    r"""floatrow: ``\begin{floatrow} \ffigbox{..}{..} \ttabbox{..}{..} \end{floatrow}`` (inside a ``figure``) puts a
+    figure and a table side by side, each box with its picture or tabular and its ``\caption``. pandoc does not know
+    the boxes and keeps one caption at most: make each box a float of its own, and drop the float around them.
+    Boxes declared with ``\newfloatcommand{name}{table}`` count too."""
+    if "\\begin{floatrow}" not in text:
+        return text
+    boxes = dict(_FLOATROW_BOX)
+    for m in re.finditer(r"\\newfloatcommand\s*\{(\w+)\}\s*\{(figure|table)\}", text):
+        boxes[m.group(1)] = m.group(2)
+    box = re.compile(r"\\(" + "|".join(boxes) + r")(?![a-zA-Z@])\s*(?:\[[^\]]*\]\s*)*(?=\{)")
+
+    def boxes_to_floats(body):
+        out, pos = [], 0
+        for m in box.finditer(body):
+            if m.start() < pos:
+                continue
+            args, i = [], m.end()
+            for _ in range(2):
+                i = skip_ws(body, i)
+                if i >= len(body) or body[i] != "{":
+                    break
+                arg, i = group(body, i)
+                args.append(arg)
+            kind = boxes[m.group(1)] or (declared_kind("".join(args)) or "figure")
+            if len(args) < 2:
+                continue
+            out.append(body[pos:m.start()] + f"\\begin{{{kind}}}" + "\n".join(args) + f"\\end{{{kind}}}\n")
+            pos = i
+        return "".join(out) + body[pos:]
+
+    row = re.compile(r"(\\begin\{(figure|table)(\*?)\}(?:\[[^\]]*\])?\s*)?\\begin\{floatrow\}(.*?)\\end\{floatrow\}"
+                     r"(\s*\\end\{(?:figure|table)\*?\})?", re.S)
+
+    def sub(m):
+        inner = boxes_to_floats(m.group(4))
+        if m.group(1) and m.group(5):
+            return inner                    # the float around the row: each box is one now
+        return (m.group(1) or "") + inner + (m.group(5) or "")
+    return row.sub(sub, text)
+
+
+def _captions_on_top(body):
+    """True when every caption of a float body is its own, not that of an environment inside it (an algorithm)."""
+    for m in _REAL_CAPTION.finditer(body):
+        opened = len(re.findall(r"\\begin\{", body[:m.start()])) - len(re.findall(r"\\end\{", body[:m.start()]))
+        if opened:
+            return False
+    return True
+
+
+def split_multi_caption_floats(text):
+    r"""A float that still holds several captions once its sub-figures are flattened (a prompt box with its caption,
+    then two panels with theirs): pandoc would keep the last caption only. One float per caption."""
+    envre = re.compile(r"\\begin\{(table|figure)(\*?)\}(\[[^\]]*\])?")
+    out, pos = [], 0
+    while True:
+        m = envre.search(text, pos)
+        if not m:
+            out.append(text[pos:])
+            return "".join(out)
+        endm = re.compile(r"\\end\{" + m.group(1) + re.escape(m.group(2)) + r"\}").search(text, m.end())
+        if not endm:
+            out.append(text[pos:])
+            return "".join(out)
+        body = text[m.end():endm.start()]
+        pieces = [body] if re.search(r"\\begin\{(?:table|figure|minipage)", body) or not _captions_on_top(body) \
+            else _split_at_captions(body)
+        if len(pieces) > 1:
+            out.append(text[pos:m.start()] + "\n".join(
+                f"\\begin{{{declared_kind(p) or m.group(1)}{m.group(2)}}}{p}\\end{{{declared_kind(p) or m.group(1)}{m.group(2)}}}" for p in pieces))
+        else:
+            out.append(text[pos:endm.end()])
+        pos = endm.end()

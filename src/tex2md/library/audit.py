@@ -45,14 +45,36 @@ def audit_file(path: str | Path) -> Audit | None:
     if not floats:
         result.no_data = True
         return result
+    unlisted = _unlisted_captions(os.path.join(os.path.dirname(build), "src"))
     for kind, word in KINDS:
         expected = [f["num"] for f in floats if f["kind"] == kind]
         got = set(re.findall(_CAPTION_LINE + word + r" ([A-Z0-9.]+)\.\*\*", text, re.M))
         if not expected:
             continue
         result.missing += [f"{word} {n}" for n in expected if n not in got]
-        result.unknown += [f"{word} {n}" for n in sorted(got) if n not in expected]
+        unknown = [f"{word} {n}" for n in sorted(got) if n not in expected]
+        if len(unknown) > unlisted.get(kind, 0):    # (the .aux leaves out as many floats as it should)
+            result.unknown += unknown
     return result
+
+
+_EMPTY_SHORT = re.compile(r"\\caption\s*\[\s*\]")
+_FLOAT_BEGIN = re.compile(r"\\begin\{(?:wrap)?(figure|table)\*?\}")
+
+
+def _unlisted_captions(src: str) -> dict[str, int]:
+    """Captions written ``\\caption[]{...}`` in the source, by kind: an empty short caption keeps the float out of
+    the list of figures/tables, so the .aux does not have its number, though the PDF and the .md do."""
+    counts: dict[str, int] = {}
+    for dp, _, fns in os.walk(src):
+        for f in fns:
+            if f.endswith(".tex"):
+                t = re.sub(r"(?<!\\)%[^\n]*", "", Path(dp, f).read_text(encoding="utf-8", errors="replace"))
+                for m in _EMPTY_SHORT.finditer(t):
+                    kinds = _FLOAT_BEGIN.findall(t, 0, m.start())
+                    if kinds:
+                        counts[kinds[-1]] = counts.get(kinds[-1], 0) + 1
+    return counts
 
 
 def cmd_audit(a):

@@ -1,4 +1,4 @@
-from tex2md.preprocess.tables import simplify_longtable_specs
+from tex2md.preprocess.tables import normalize_tabulars, simplify_longtable_specs
 
 
 def test_longtable_spec_from_pandoc_becomes_plain_columns():
@@ -60,3 +60,31 @@ def test_blanks_between_the_arguments_of_multicolumn_and_multirow_are_removed():
                                            "\\multirow[t]{2}{3cm}{E}")
     assert tighten_span_arguments("\\multicolumn{2}{c}") == "\\multicolumn{2}{c}"      # incomplete: left alone
     assert tighten_span_arguments("\\multicolumn{1}{c}{\\multirow{2}{*}} & x") == "\\multicolumn{1}{c}{\\multirow{2}{*}{}} & x"
+
+
+def test_column_spec_grows_to_the_widest_row():
+    # deschenaux2026duo2: "llllc" for rows of 12 cells; pandoc dropped the table and its caption
+    src = r"\begin{tabular}{llc}A & B & \multicolumn{3}{c}{FID} \\ 1 & 2 & 3 & 4 & 5 \\ \end{tabular}"
+    assert normalize_tabulars(src).startswith(r"\begin{tabular}{llccc}")
+
+
+def test_citation_ampersands_are_not_cells():
+    src = r"\begin{tabular}{lc}BERT (Wang & Cho, 2019) & 1 \\ x \& y & 2 \\ \end{tabular}"
+    assert normalize_tabulars(src).startswith(r"\begin{tabular}{lc}")
+
+
+def test_rows_ended_by_tabularnewline_math_and_macro_rows_are_counted_right():
+    # goodfellow2014gan (\tabularnewline), wang2026scdd ("&" of an aligned), liu2026mmadavla (rows from a macro)
+    assert normalize_tabulars(r"\begin{tabular}{lc}a & b\tabularnewline c & d\tabularnewline\end{tabular}").startswith(
+        r"\begin{tabular}{lc}")
+    assert normalize_tabulars(r"\begin{tabular}{lc}x & $\begin{aligned} a &= b \\ c &= d\end{aligned}$ \\ \end{tabular}").startswith(
+        r"\begin{tabular}{lc}")
+    assert normalize_tabulars(r"\begin{tabular}{lc}A & B \\ \row{x}{1} \row{y}{2} \row{z}{3}\end{tabular}").startswith(
+        r"\begin{tabular}{lc}")
+
+
+def test_rows_from_a_macro_ending_inside_it_do_not_widen_the_spec():
+    # liu2026mmadavla: \row{..} ends each row with "\\" inside its definition; only the last row has its own "\\"
+    src = (r"\begin{tabular}{lcc}A & B & C \\ x & y & z \\ \row{a}{1} & \row{b}{2}" "\n" r"\row{c}{3} & \row{d}{4}" "\n"
+           r"Ours & 9 & 9 \\ \end{tabular}")
+    assert normalize_tabulars(src).startswith(r"\begin{tabular}{lcc}")

@@ -1,4 +1,5 @@
 from tex2md.preprocess.macros import (
+    drop_primitive_spacing,
     expand_conditional_macros,
     expand_delimited_macros,
     expand_paired_delimiters,
@@ -76,3 +77,14 @@ def test_a_style_file_that_ends_in_a_backslash_does_not_stop_the_scan(tmp_path):
     (tmp_path / "notation.sty").write_text("\\newcommand{\\R}{\\mathbb{R}}\n\\newcommand{\\bad}[1]\\")
     flat = "\\usepackage{notation}\n\\begin{document} $\\R$"
     assert "\\newcommand{\\R}{\\mathbb{R}}" in local_style_macros(flat, str(tmp_path))
+
+
+def test_struts_are_dropped():
+    # yamabe2025priming: \colorbox{orange!20}{\strut orange} in a caption made pandoc fail on the whole table
+    assert drop_primitive_spacing(r"a \colorbox{o}{\strut x} \textbf{\strut z} \bigstrut") == r"a \colorbox{o}{x} \textbf{z} \bigstrut"
+
+
+def test_struts_in_listings_are_kept():
+    # gat2024dfm: |\colorbox{y}{\strut{}source}| escapes inside a listing
+    src = "\\begin{lstlisting}\ndef bfs(|\\colorbox{y}{\\strut{}source}|)\n\\end{lstlisting}"
+    assert drop_primitive_spacing(src) == src

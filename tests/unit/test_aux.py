@@ -1,4 +1,4 @@
-from tex2md.build.aux import parse_aux, parse_floats, parse_sections
+from tex2md.build.aux import parse_aux, parse_floats, parse_sections, use_long_captions
 
 MAIN_AUX = r"""
 \relax
@@ -105,3 +105,23 @@ def test_parse_sections_reads_the_numbered_table_of_contents(tmp_path):
 def test_a_label_key_with_braces_is_read_whole(tmp_path):
     (tmp_path / "main.aux").write_text("\\newlabel{alg:OeMDM{}-train}{{1}{7}{Training}{algorithm.1}{}}\n")
     assert parse_aux(str(tmp_path))["alg:OeMDM{}-train"]["num"] == "1"
+
+
+def test_parse_floats_keeps_only_the_caption_and_resolves_its_references(tmp_path):
+    (tmp_path / "main.aux").write_text(
+        r"\newlabel{fig:a}{{6}{3}{x}{figure.6}{}}" "\n"
+        r"\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Caption}}{3}{table.caption.3}\protected@file@percent }" "\n"
+        r"\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces We repeat \mbox {\hyperref [fig:a]{Figure~\ref *{fig:a}}} here}}{4}{figure.7}}")
+    floats = parse_floats(str(tmp_path))
+    assert [f["text"] for f in floats] == ["caption", "werepeatfigure6here"]
+
+
+def test_long_captions_replace_a_shared_short_form():
+    # \caption[Caption]{...} twice (besiroglu2024chinchilla): the .aux only has "Caption" for both tables
+    floats = [{"kind": "table", "num": "1", "text": "caption"}, {"kind": "figure", "num": "1", "text": "plot"},
+              {"kind": "table", "num": "3", "text": "caption"}]
+    tex = (r"\caption[Caption]{Our estimates} % \caption[Caption]{commented out}" "\n"
+           r"\caption{Plot} \caption[Caption]{\small Our estimates again}")
+    out = use_long_captions(floats, tex)
+    assert [f["text"] for f in out] == ["ourestimates", "plot", "ourestimatesagain"]
+    assert floats[0]["text"] == "caption"           # the input list is not changed

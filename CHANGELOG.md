@@ -1,5 +1,33 @@
 # Changelog
 
+## Missing captions (2026-11-18)
+The 14 library papers whose `.md` lacked captions the `.aux` has (`HALLAZGOS_2026-11-18.md` §3): each had its own
+cause. `audit --level error` now shows no float differences in the library. Five new rules (77).
+
+- **`.aux` captions**: the text is the caption group only (a short caption had the page and anchor glued to it), with
+  `\hyperref[..]` dropped and `\ref{x}` replaced by its number, as in the Markdown (`allenzhu2023`). A
+  `\caption[short]{long}` takes the long form when the short one is shared (`\caption[Caption]{...}` twice:
+  `besiroglu2024chinchilla`).
+- **References**: wrappers of `\ref`/`\cite` with up to three arguments and through other wrappers are expanded
+  (`\figref{x}` -> `\myref{Figure}{x}`); new rule `hyperref-to-text` keeps the text of `\hyperref[x]{...}` (a link to an
+  anchor the Markdown does not have; with a `\ref` inside it came out as HTML: 70 links in `allenzhu2023`).
+- **Floats pandoc lost**: `wrapstuff` (`bansal2026ttcd`), `teaserfigure` (`chen2026bard`), a caption-less
+  `wrapfigure` inside another float, `\twocolumn[\begin{@twocolumnfalse}...]` with a `]` inside (`chang2022maskgit`),
+  `floatrow` boxes (`kingma2021vdm`, new rule `floatrow-to-floats`), `ctable` and its `\FL`/`\ML`/`\NN`/`\LL` and a
+  `picture` laid out with `\put` (`chen2024dforcing`, new rules `ctable-to-table` and `unwrap-picture-puts`).
+- **Several captions in one float**: a captioned block between or under the minipages (`wang2026computegap`), a
+  minipage holding two captioned tables (`lu2025adablock`), and two captions left once the sub-figures are flattened
+  (`diffusiongemma2026`, new rule `split-multi-caption-floats`).
+- **Tables pandoc dropped with their caption**: a column spec shorter than the usual row (`deschenaux2026duo2`:
+  `llllc` for 12 cells) grows to fit it (the most frequent row width, not the widest: rows written by a macro, an
+  `aligned` in a cell, author-year `&` and `\tabularnewline` were checked against the library); `\strut` is dropped (inside a caption it made pandoc fail on the table:
+  `yamabe2025priming`; the CSL bibliography of `lambert2025reinforcemen` now has each number on its entry's line).
+- **Sub-figures**: every caption of a panel becomes a sub-caption line (`xie2025dreamcoder` lost its panel (c)).
+- **tcolorbox**: boxes defined again inside each figure were cut in the wrong place (positions found once, text
+  changed before them: `tae2025tess2`).
+- **`audit`**: floats kept out of the `.aux` by an empty short caption (`\caption[]{...}`) are no longer reported
+  (`pan2025demasking`, `vonrutte2026scaling`: ROADMAP F7).
+
 ## Library reconversion fixes (2026-11-18)
 From `HALLAZGOS_2026-11-18.md` (158 library papers reconverted: 4 pandoc failures, 4 conversions that lost content
 with the report in `ok`) and from a new diagnostic that found 8 more.

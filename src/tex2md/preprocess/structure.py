@@ -54,6 +54,25 @@ def label_options(text: str) -> str:
     return re.sub(r"\\label\s*\[[^\]]*\]\s*\{", r"\\label{", text)
 
 
+def _closing_bracket(text: str, i: int) -> int:
+    """Index of the ``]`` that closes an optional argument whose content starts at ``i`` (brackets and braces inside
+    it, ``\\\\[4pt]`` included, are skipped); -1 if none."""
+    depth = 0
+    while i < len(text):
+        c = text[i]
+        if c == "\\":
+            i += 2
+            continue
+        if c in "{[":
+            depth += 1
+        elif c in "}]":
+            if depth == 0:
+                return i if c == "]" else -1
+            depth -= 1
+        i += 1
+    return -1
+
+
 def unwrap_twocolumn(text: str) -> str:
     r"""``\twocolumn[{ ... }]`` (a full-width teaser above the columns) -> its content.
 
@@ -70,10 +89,12 @@ def unwrap_twocolumn(text: str) -> str:
             end = balanced_end(text, i)
             inner, after = text[i + 1:end - 1], end
         else:
-            end = text.find("]", i)
+            end = _closing_bracket(text, i)
             if end < 0:
                 return text
             inner, after = text[i:end], end
+            # (\begin{@twocolumnfalse} ... \end{@twocolumnfalse}: the full-width block of some templates)
+            inner = re.sub(r"\\(?:begin|end)\{@twocolumnfalse\}", "", inner)
         close = re.compile(r"\s*\]").match(text, after)
         # ICML-style \twocolumn[...] holds the title and authors: only a teaser with a float or caption matters
         if not close or not re.search(r"\\captionof|\\begin\{(?:figure|table)|\\includegraphics", inner):

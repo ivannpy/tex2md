@@ -17,20 +17,24 @@ from tex2md.preprocess.citations import PREAMBLE, inject_bibliography, simplify_
 from tex2md.preprocess.comments import plain_verbatim_environments
 from tex2md.preprocess.environments import (
     acks_to_section,
+    ctable_to_table,
     drop_picture_code,
     expand_glossary,
     restatable_to_theorem,
     tabular_in_math,
     tblr_to_tabular,
     unwrap_multicols,
+    unwrap_picture_puts,
 )
 from tex2md.preprocess.floats import (
     captionof_to_caption,
     dissolve_multi_caption_floats,
     flatten_subfloats,
+    floatrow_to_floats,
     retype_floats,
     single_paragraph_captions,
     split_captioned_blocks,
+    split_multi_caption_floats,
     starred_floats_to_plain,
     strip_float_layout,
     tables_without_tabular,
@@ -51,7 +55,7 @@ from tex2md.preprocess.macros import (
     fix_stray_macro_braces,
     text_in_macro_bodies,
 )
-from tex2md.preprocess.references import expand_wrappers, resolve_refs
+from tex2md.preprocess.references import expand_wrappers, hyperref_to_text, resolve_refs
 from tex2md.preprocess.structure import (
     drop_title_hacks,
     expand_abbreviations,
@@ -132,7 +136,10 @@ RULES: list[tuple[str, Rule]] = [
     ("unwrap-twocolumn", _pure(unwrap_twocolumn)),  # before the float rules: it holds the teaser figure
     ("tabular-in-math", _pure(tabular_in_math)),  # before any rule that looks for tabulars as table content
     ("tblr-to-tabular", _pure(tblr_to_tabular)),  # before the float rules look for a tabular in each table
+    ("ctable-to-table", _pure(ctable_to_table)),  # (same)
+    ("unwrap-picture-puts", _pure(unwrap_picture_puts)),  # an image and a table laid out with \put: a table to the float rules
     # --- floats: normalise so pandoc keeps every caption (order: wrap -> retype -> split -> flatten)
+    ("floatrow-to-floats", _pure(floatrow_to_floats)),  # first: its boxes hold the captions the rules below look for
     ("single-paragraph-captions", _pure(single_paragraph_captions)),  # pandoc cannot read a caption with a paragraph break
     ("wrap-envs-to-plain", _pure(wrap_envs_to_plain)),
     ("unwrap-algorithm-floats", _pure(unwrap_algorithm_floats)),  # before a rule takes their captions for the float's
@@ -145,6 +152,7 @@ RULES: list[tuple[str, Rule]] = [
     ("strip-float-layout", _pure(strip_float_layout)),
     ("flatten-subfloats", lambda text, ctx: flatten_subfloats(text, ctx.floats)),
     ("subfloat-captions", _pure(subfloat_captions)),
+    ("split-multi-caption-floats", _pure(split_multi_caption_floats)),  # what the flattened sub-floats leave
     ("unnest-floats", _pure(unnest_floats)),
     ("starred-captions-to-text", _pure(starred_captions_to_text)),  # after the floats have their final shape
     # --- macros and preamble pandoc cannot expand
@@ -166,6 +174,7 @@ RULES: list[tuple[str, Rule]] = [
     # --- references and citations (need the .aux / .bbl numbers)
     ("simplify-citeproc", _pure(simplify_citeproc)),
     ("expand-ref-wrappers", _pure(expand_wrappers)),
+    ("hyperref-to-text", _pure(hyperref_to_text)),  # a link to an anchor the Markdown does not have
     ("resolve-refs", lambda text, ctx: resolve_refs(text, ctx.labels, ctx.stats)),
     ("bibliography", _bibliography),
     # --- environments pandoc does not know -> plain counterparts

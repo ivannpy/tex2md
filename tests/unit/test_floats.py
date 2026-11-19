@@ -4,8 +4,10 @@ import re
 from tex2md.preprocess.floats import (
     dissolve_multi_caption_floats,
     flatten_subfloats,
+    floatrow_to_floats,
     retype_floats,
     split_captioned_blocks,
+    split_multi_caption_floats,
     tables_without_tabular,
     unnest_floats,
     unnest_tables,
@@ -299,3 +301,92 @@ def test_a_caption_above_its_table_still_takes_the_table_that_follows():
     out = wrap_loose_captions(src)
     assert r"\begin{table}\caption{First}\begin{tabular}{l}a\end{tabular}\end{table}" in out
     assert r"\begin{table}\caption{Second}\begin{tabular}{l}b\end{tabular}\end{table}" in out
+
+
+def test_wrapstuff_and_teaserfigure_become_floats():
+    src = (r"\begin{teaserfigure}\includegraphics{t}\caption{Teaser}\end{teaserfigure}"
+           r"\begin{wrapstuff}[r, width=0.5\linewidth, type=table]\caption{T}\begin{tabular}{c}1\end{tabular}\end{wrapstuff}"
+           r"\begin{wrapstuff}[l]Just a boxed note.\end{wrapstuff}")
+    out = wrap_envs_to_plain(src)
+    assert count(out, "figure") == 1 and count(out, "table") == 1 and "wrapstuff" not in out and "teaserfigure" not in out
+    assert "Just a boxed note." in out
+
+
+def test_captionless_wrapfigure_inside_a_float_is_its_content():
+    # allenzhu2023: a box of text beside the picture; as a float it closed the outer one before its caption
+    src = (r"\begin{figure*}\begin{wrapfigure}{l}{0.3\textwidth}Side text.\end{wrapfigure}"
+           r"\includegraphics{a}\caption{Main}\end{figure*}")
+    out = wrap_envs_to_plain(src)
+    assert out == r"\begin{figure*}Side text.\includegraphics{a}\caption{Main}\end{figure*}"
+
+
+def test_a_captioned_table_under_two_captioned_minipages_is_a_float_too():
+    # wang2026computegap: table and plot side by side, a second table below them in the same figure
+    src = (r"\begin{figure}\begin{minipage}{0.4\linewidth}\captionof{table}{Laws}\begin{tabular}{c}1\end{tabular}\end{minipage}"
+           r"\hfill\begin{minipage}{0.5\linewidth}\includegraphics{p}\captionof{figure}{Plot}\end{minipage}"
+           r"\vspace{4pt}\centering\captionof{table}{Multiples}\begin{tabular}{c}2\end{tabular}\end{figure}")
+    out = split_captioned_blocks(src)
+    assert count(out, "table") == 2 and count(out, "figure") == 1
+    assert out.index("Laws") < out.index("Plot") < out.index("Multiples")
+
+
+def test_a_minipage_with_two_captioned_tables_is_split():
+    # lu2025adablock: two tables stacked in the left minipage, one in the right, all in a center environment
+    left = (r"\captionsetup{type=table}\caption{First}\begin{tabular}{c}1\end{tabular}"
+            r"\captionsetup{type=table}\caption{Second}\begin{tabular}{c}2\end{tabular}")
+    src = (r"\begin{table}\begin{center}\begin{minipage}[t]{0.6\linewidth}" + left + r"\end{minipage}\hfill"
+           r"\begin{minipage}[t]{0.3\linewidth}\captionsetup{type=table}\caption{Third}\begin{tabular}{c}3\end{tabular}"
+           r"\end{minipage}\end{center}\end{table}")
+    out = split_captioned_blocks(src)
+    tables = re.findall(r"\\begin\{table\}(.*?)\\end\{table\}", out, re.S)
+    assert [re.search(r"\\caption\{(\w+)\}", t).group(1) for t in tables] == ["First", "Second", "Third"]
+    assert all(t.count(r"\caption{") == 1 for t in tables)
+
+
+def test_a_float_with_two_captions_left_by_flattened_panels_is_split():
+    # diffusiongemma2026: a prompt box and its caption, then two panels and theirs
+    src = (r"\begin{figure}[H]\begin{quote}Prompt\end{quote}\caption{The prompt}\label{fig:p}"
+           r"\includegraphics{a}\includegraphics{b}\caption{The panels}\label{fig:q}\end{figure}")
+    out = split_multi_caption_floats(src)
+    figures = re.findall(r"\\begin\{figure\}(.*?)\\end\{figure\}", out, re.S)
+    assert len(figures) == 2
+    assert "The prompt" in figures[0] and r"\label{fig:p}" in figures[0] and "Prompt" in figures[0]
+    assert "The panels" in figures[1] and r"\includegraphics{a}" in figures[1]
+
+
+def test_floatrow_boxes_become_floats():
+    # kingma2021vdm: a table and a plot side by side, each box with its caption
+    src = (r"\newfloatcommand{capbtabbox}{table}[][0.48\textwidth]" "\n"
+           r"\begin{figure}[t]\begin{floatrow}\capbtabbox{\begin{tabular}{c}1\end{tabular}}{\caption{Results}\label{t}}"
+           r"\ffigbox{\includegraphics{f}}{\caption{Ablation}\label{f}}\end{floatrow}\end{figure}")
+    out = floatrow_to_floats(src)
+    assert "floatrow" not in out.split("\n", 1)[1] and count(out, "table") == 1 and count(out, "figure") == 1
+    assert re.search(r"\\begin\{table\}.*Results.*\\end\{table\}\s*\\begin\{figure\}.*Ablation.*\\end\{figure\}", out, re.S)
+
+
+def test_minipages_with_subcaptions_or_algorithms_stay_one_figure():
+    # wu2025fastdllmv2: \caption*{(a) ...} in each minipage; han2022ssdlm: an algorithm (and its caption) in each
+    for panel in (r"\includegraphics{a}\caption*{(a) Left.}", r"\begin{algorithm}[H]\caption{Training}x\end{algorithm}"):
+        src = (r"\begin{figure*}\begin{minipage}[t]{0.48\textwidth}" + panel + r"\end{minipage}\hfill"
+               r"\begin{minipage}[t]{0.48\textwidth}" + panel + r"\end{minipage}\vspace{0.5em}\caption{Whole figure.}\end{figure*}")
+        assert split_captioned_blocks(src) == src
+        assert split_multi_caption_floats(src) == src
+
+
+def test_a_minipage_with_subfigures_is_not_split():
+    # ou2024radd: two captioned sub-figures in the right minipage are panels of one figure
+    src = (r"\begin{figure}\begin{minipage}{0.4\linewidth}\includegraphics{n}\caption{Network}\end{minipage}"
+           r"\begin{minipage}{0.55\linewidth}\begin{subfigure}{\linewidth}\includegraphics{a}\caption{A}\end{subfigure}"
+           r"\begin{subfigure}{\linewidth}\includegraphics{b}\caption{B}\end{subfigure}\end{minipage}\end{figure}")
+    out = split_captioned_blocks(src)
+    assert "\\caption{A}" in out and "\\caption{B}" in out and out.count(r"\begin{subfigure}") == 2
+
+
+def test_every_caption_of_a_panel_becomes_a_sub_caption():
+    # xie2025dreamcoder: the second panel holds two pictures, each with its caption
+    src = (r"\begin{figure}\begin{subfigure}{0.48\linewidth}\includegraphics{a}\caption{First}\end{subfigure}"
+           r"\begin{subfigure}{0.48\linewidth}\includegraphics{b}\caption{Second}\includegraphics{c}\caption{Third}"
+           r"\end{subfigure}\caption{All}\end{figure}")
+    out = flatten_subfloats(src)
+    assert re.findall(r"\\textit\{\((\w)\) (\w+)\}", out) == [("a", "First"), ("b", "Second"), ("c", "Third")]
+    assert out.count(r"\caption{") == 1

@@ -5,7 +5,7 @@ import os
 import re
 
 from tex2md.util.io import read
-from tex2md.util.tex import balanced_end, bracket_end, skip_ws
+from tex2md.util.tex import balanced_end, bracket_end, protected_spans, skip_ws, span_at
 
 SIZES = r"(tiny|scriptsize|footnotesize|small|normalsize|large|Large|LARGE|huge|Huge)"
 
@@ -137,7 +137,10 @@ def drop_fragile_macro_defs(text):
 
 
 def drop_primitive_spacing(text):
-    """Primitive spacing with length registers (\\vskip\\bigskipamount) confuses pandoc."""
+    """Primitive spacing with length registers (\\vskip\\bigskipamount) confuses pandoc, and so does \\strut (an
+    invisible rule): in ``\\textbf{\\strut z}`` pandoc stops with an error, inside a caption it drops the table."""
+    verbatim = protected_spans(text, math=False)          # (a listing keeps its code as written)
+    text = re.sub(r"\\strut(?![a-zA-Z@])\s*", lambda m: m.group(0) if span_at(verbatim, m.start()) else "", text)
     return re.sub(r"\\[vh]skip\s*-?\s*(?:\\[a-zA-Z@]+|[0-9.]+\s*[a-z]{2})(?:\s*(?:plus|minus)\s*-?[0-9.]*\s*(?:\\[a-zA-Z@]+|[a-z]{2}))*", "", text)
 
 

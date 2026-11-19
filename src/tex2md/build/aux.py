@@ -5,7 +5,7 @@ import os
 import re
 
 from tex2md.util.io import read
-from tex2md.util.tex import clean_num, group, skip_ws
+from tex2md.util.tex import clean_num, group, skip_ws, strip_comments
 
 # A caption written ``\caption{\small{...}}`` reaches the .aux with the size command expanded (\small is fragile in
 # some styles): "\fontsize {9}{10}\selectfont \abovedisplayskip 6\p@ plus1.5\p@ ...{the caption}". Without this the
@@ -36,6 +36,13 @@ def parse_floats(build):
         return []
     root = max(roots, key=lambda f: len(auxes[f]))
     out, seen = [], set()
+    # a reference in a caption reaches the .aux as "\hyperref [x]{Figure~\ref *{x}}"; the Markdown has "Figure 6"
+    nums = {m.group(1): clean_num(m.group(2)) for t in auxes.values()
+            for m in re.finditer(r"\\newlabel\{([^{}]*)\}\{\{((?:[^{}]|\{[^{}]*\})*)\}", t)}
+
+    def refs(txt):
+        txt = re.sub(r"\\hyperref\s*\[[^\]{}]*\]", "", txt)
+        return re.sub(r"\\(?:ref|eqref|autoref|cref|Cref)\s*\*?\s*\{([^{}]*)\}", lambda r: " " + nums.get(r.group(1), "") + " ", txt)
 
     def walk(name):
         if name in seen or name not in auxes:
@@ -46,10 +53,44 @@ def parse_floats(build):
             if m.group(1):
                 walk(os.path.basename(m.group(1)))
             else:
-                txt = re.sub(r"\\[a-zA-Z@]+\s*", " ", re.sub(r"^\\ignorespaces\s*", "", _without_font_noise(m.group(4))))
+                cap = m.group(4).lstrip()
+                if cap.startswith("{"):         # only the caption, not the page and anchor after it (short captions)
+                    cap = group(cap, 0)[0]
+                txt = re.sub(r"\\[a-zA-Z@]+\s*", " ", re.sub(r"^\\ignorespaces\s*", "", refs(_without_font_noise(cap))))
                 out.append({"kind": m.group(2), "num": clean_num(m.group(3)),
                             "text": re.sub(r"[^a-z0-9]", "", txt.lower())[:40]})
     walk(root)
+    return out
+
+
+def _caption_key(tex):
+    return re.sub(r"[^a-z0-9]", "", re.sub(r"\\[a-zA-Z@]+\s*", " ", tex).lower())[:40]
+
+
+def use_long_captions(floats, tex):
+    r"""``\caption[short]{long}`` writes the short form to the .aux, often a placeholder ("Caption") shared by several
+    floats: their captions could not be told apart, and a float would take another's number. Put the long form in
+    place of the short one, pairing the captions of ``tex`` with the entries of ``floats`` in document order."""
+    head = re.compile(r"\\caption(?:of\s*\{[a-z]+\})?\s*\[")
+    tex = strip_comments(tex)
+    out = [dict(f) for f in floats]
+    at = 0
+    for m in head.finditer(tex):
+        short_end = tex.find("]", m.end())
+        if short_end < 0 or "\n\n" in tex[m.end():short_end]:
+            continue
+        i = skip_ws(tex, short_end + 1)
+        if i >= len(tex) or tex[i] != "{":
+            continue
+        long, _ = group(tex, i)
+        short_key, long_key = _caption_key(tex[m.end():short_end]), _caption_key(long)
+        if not short_key or short_key == long_key:
+            continue
+        for j in range(at, len(out)):
+            if out[j]["text"] == short_key:
+                out[j]["text"] = long_key
+                at = j + 1
+                break
     return out
 
 

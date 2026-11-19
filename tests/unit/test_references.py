@@ -1,4 +1,4 @@
-from tex2md.preprocess.references import resolve_refs
+from tex2md.preprocess.references import expand_wrappers, hyperref_to_text, resolve_refs
 
 LABELS = {"fig:a": {"num": "3a", "type": "subfigure"}, "sub@fig:a": {"num": "a", "type": ""},
           "fig:b": {"num": "4b", "type": "subfigure"}, "eq:1": {"num": "1", "type": "equation"},
@@ -32,3 +32,17 @@ def test_a_key_written_with_a_text_macro_is_found_as_latex_wrote_it_to_the_aux()
     text = "\\def\\framework{OeMDM}\n\\def\\method{LoMDM}\nAlgorithm~\\ref{alg:\\framework{}-train} and \\eqref{eq:\\method{}_loss}"
     out = resolve_refs(text, labels, stats)
     assert out.endswith("Algorithm~1 and (3)") and stats["unresolved_refs"] == 0
+
+
+def test_wrappers_with_two_arguments_and_through_other_wrappers():
+    # allenzhu2023: \figref{x} -> \myref{Figure}{x} -> \hyperref[x]{Figure~\ref*{x}}
+    src = (r"\newcommand{\myref}[2]{\mbox{\hyperref[#2]{#1~\ref*{#2}}}}" "\n" r"\newcommand{\figref}[1]{\myref{Figure}{#1}}"
+           "\n" r"\def\eqn#1{Eq.~\eqref{#1}}" "\n" r"See \figref{fig:a}, \myref{Table} {tab:b} and \eqn{e1}.")
+    out = expand_wrappers(src).rsplit("\n", 1)[1]
+    assert out == (r"See \mbox{\hyperref[fig:a]{Figure~\ref*{fig:a}}}, \mbox{\hyperref[tab:b]{Table~\ref*{tab:b}}}"
+                   r" and Eq.~\eqref{e1}.")
+
+
+def test_hyperref_keeps_its_text():
+    assert hyperref_to_text(r"in \hyperref[fig:a]{Figure~\ref*{fig:a}} and \hyperref [s]{here}") == \
+        r"in {Figure~\ref*{fig:a}} and {here}"

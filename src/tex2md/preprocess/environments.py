@@ -194,3 +194,59 @@ def acks_to_section(text: str) -> str:
         pos = m.start() + len(new)
     return re.sub(r"\\begin\{ack\}(.*?)\\end\{ack\}", lambda m: "\n\n\\section*{Acknowledgments}\n\n" + m.group(1).strip() + "\n\n",
                   text, flags=re.S)
+
+
+def unwrap_picture_puts(text: str) -> str:
+    r"""``\begin{picture}(w,h) \put(x,y){...} \end{picture}`` laying out an image and a table: their content, without
+    the coordinates (pandoc prints them, and the float around it is no longer read as a table)."""
+    def inner(m):
+        body = re.sub(r"\\(?:put|makebox)\s*\([^()]*\)(?:\[[^\]]*\])?\s*(?=\{)", "", m.group(1))
+        return re.sub(r"\\(?:multiput|qbezier|line|vector|circle\*?|oval)\s*(?:\([^()]*\)\s*)+(?:\{[^{}]*\})?", "", body)
+    return re.sub(r"\\begin\{picture\}\s*(?:\([^()]*\)\s*){1,2}(.*?)\\end\{picture\}", inner, text, flags=re.S)
+
+
+# ctable's row commands: first, middle and last rule, and a plain row end
+_CTABLE_ROWS = [(r"\\FL(?![a-zA-Z@])(?:\[[^\]]*\])?", r"\\toprule "), (r"\\ML(?![a-zA-Z@])(?:\[[^\]]*\])?", r"\\\\ \\midrule "),
+                (r"\\LL(?![a-zA-Z@])(?:\[[^\]]*\])?", r"\\\\ \\bottomrule "), (r"\\NN(?![a-zA-Z@])(?:\[[^\]]*\])?", r"\\\\ ")]
+
+
+def ctable_to_table(text: str) -> str:
+    r"""ctable: ``\ctable[caption={..}, label={..}]{cols}{notes}{rows}`` -> a ``table`` with that caption, label and
+    tabular, and its ``\FL``/``\ML``/``\NN``/``\LL`` row commands -> booktabs rules. pandoc does not know the
+    command and prints its arguments as text."""
+    if not re.search(r"\\usepackage\s*(?:\[[^\]]*\])?\s*\{[^{}]*\bctable\b", text):
+        return text         # (\FL, \NN... may be the author's own macros)
+    out, pos = [], 0
+    for m in re.finditer(r"\\ctable(?![a-zA-Z@])\s*", text):
+        if m.start() < pos:
+            continue
+        i, opts = m.end(), ""
+        if i < len(text) and text[i] == "[":
+            opts, i = group(text, i, "[", "]")
+        args = []
+        for _ in range(3):
+            i = skip_ws(text, i)
+            if i >= len(text) or text[i] != "{":
+                break
+            arg, i = group(text, i)
+            args.append(arg)
+        if len(args) < 3:
+            continue
+
+        def option(name, opts=opts):
+            o = re.search(r"(?:^|,)\s*" + name + r"\s*=\s*", opts)
+            if not o:
+                return ""
+            j = skip_ws(opts, o.end())
+            if j < len(opts) and opts[j] == "{":
+                return group(opts, j)[0]
+            return opts[j:].split(",")[0].strip()
+        cap, lab = option("caption"), option("label")
+        table = "\\begin{table}" + (f"\\caption{{{cap}}}" if cap else "") + (f"\\label{{{lab}}}" if lab else "")
+        table += f"\\begin{{tabular}}{{{args[0]}}}{args[2]}\\end{{tabular}}" + (f"\n{args[1]}\n" if args[1].strip() else "")
+        out.append(text[pos:m.start()] + table + "\\end{table}")
+        pos = i
+    text = "".join(out) + text[pos:]
+    for pat, rep in _CTABLE_ROWS:
+        text = re.sub(pat, rep, text)
+    return text

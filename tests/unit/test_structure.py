@@ -49,3 +49,11 @@ def test_texorpdfstring_with_one_argument_eats_the_next_token_like_latex():
 def test_texorpdfstring_in_verbatim_is_left_alone():
     text = "\\begin{verbatim}\\texorpdfstring{a}~\\end{verbatim}"
     assert texorpdfstring_tex(text) == text
+
+
+def test_twocolumn_with_twocolumnfalse_and_brackets_inside():
+    # chang2022maskgit: the first "]" was that of "\\[-4pt]" inside the tabular
+    src = (r"\twocolumn[\begin{@twocolumnfalse}\begin{figure}\begin{tabular}{c}a\\[-4pt]b\end{tabular}"
+           r"\caption{Examples}\end{figure}\end{@twocolumnfalse}]rest")
+    out = unwrap_twocolumn(src)
+    assert out == r"\begin{figure}\begin{tabular}{c}a\\[-4pt]b\end{tabular}\caption{Examples}\end{figure}rest"

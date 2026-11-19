@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 
 from tex2md.build.aux import fmt_num, ref_name
-from tex2md.util.tex import group
+from tex2md.util.tex import group, skip_ws
 
 
 def _join(nums):
@@ -105,36 +105,62 @@ def resolve_refs(text, labels, stats):
 WRAPPED = re.compile(r"\\(ref|eqref|cref|Cref|autoref|Autoref|cite[a-z]*|Cite[a-z]*|newcite)\b")
 
 
+def hyperref_to_text(text):
+    r"""``\hyperref[key]{text}`` -> ``{text}``: pandoc makes it a link to an anchor the Markdown does not have, and a
+    ``\ref`` inside it (``\hyperref[x]{Figure~\ref*{x}}``) comes out as an HTML link nested in the first."""
+    return re.sub(r"\\hyperref\s*\[[^\]{}]*\]\s*(?=\{)", "", text)
+
+
 def expand_wrappers(text):
-    """Inline one-argument user macros that wrap \\ref or \\cite (\\eqnref{x} -> Eq.~\\eqref{x})
-    so references and citations can be resolved before pandoc sees them."""
+    """Inline user macros that wrap \\ref or \\cite (\\eqnref{x} -> Eq.~\\eqref{x}), with up to three arguments
+    and through other wrappers (\\figref{x} -> \\myref{Figure}{x} -> \\hyperref[x]{Figure~\\ref*{x}}), so
+    references and citations can be resolved before pandoc sees them."""
+    found = {}          # name -> (number of arguments, body)
+    for m in re.finditer(r"\\(?:re)?newcommand\*?\s*\{?\\([a-zA-Z]+)\}?\s*\[([1-3])\]\s*", text):
+        i = m.end()
+        if i < len(text) and text[i] == "{":
+            found[m.group(1)] = (int(m.group(2)), group(text, i)[0])
+    for m in re.finditer(r"\\def\s*\\([a-zA-Z]+)\s*((?:#[1-3])+)\s*", text):
+        i = m.end()
+        if i < len(text) and text[i] == "{" and m.group(2) == "".join(f"#{k}" for k in range(1, len(m.group(2)) // 2 + 1)):
+            found[m.group(1)] = (len(m.group(2)) // 2, group(text, i)[0])
     defs = {}
-    for m in re.finditer(r"\\(?:re)?newcommand\*?\s*\{?\\([a-zA-Z]+)\}?\s*\[1\]\s*", text):
-        i = m.end()
-        if i < len(text) and text[i] == "{":
-            body, _ = group(text, i)
-            if WRAPPED.search(body):
-                defs[m.group(1)] = body
-    for m in re.finditer(r"\\def\s*\\([a-zA-Z]+)\s*#1\s*", text):
-        i = m.end()
-        if i < len(text) and text[i] == "{":
-            body, _ = group(text, i)
-            if WRAPPED.search(body):
-                defs[m.group(1)] = body
+    while True:         # a macro that calls a wrapper is a wrapper too
+        known = re.compile(r"\\(?:" + "|".join(map(re.escape, defs)) + r")(?![a-zA-Z])") if defs else None
+        new = {k: v for k, v in found.items() if k not in defs
+               and (WRAPPED.search(v[1]) or (known and known.search(v[1])))}
+        if not new:
+            break
+        defs.update(new)
     if not defs:
         return text
     pat = re.compile(r"\\(" + "|".join(sorted(map(re.escape, defs), key=len, reverse=True)) + r")(?![a-zA-Z])\s*\{")
-    out, i = [], 0
-    while True:
-        m = pat.search(text, i)
-        if not m:
-            out.append(text[i:])
+    for _ in range(4):  # one level of wrapping per pass
+        out, i, changed = [], 0, False
+        while True:
+            m = pat.search(text, i)
+            if not m:
+                out.append(text[i:])
+                break
+            out.append(text[i:m.start()])
+            nargs, body = defs[m.group(1)]
+            args, j = [], m.end() - 1
+            for k in range(nargs):
+                if k:
+                    j = skip_ws(text, j)
+                if j >= len(text) or text[j] != "{":
+                    break
+                arg, j = group(text, j)
+                args.append(arg)
+            if len(args) < nargs or any("#" in a for a in args):
+                out.append(text[m.start():j])
+            else:
+                for k, a in enumerate(args, 1):
+                    body = body.replace(f"#{k}", a)
+                out.append(body)
+                changed = True
+            i = j
+        text = "".join(out)
+        if not changed:
             break
-        out.append(text[i:m.start()])
-        arg, j = group(text, m.end() - 1)
-        if "#" in arg:
-            out.append(text[m.start():j])
-        else:
-            out.append(defs[m.group(1)].replace("#1", arg))
-        i = j
-    return "".join(out)
+    return text

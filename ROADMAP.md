@@ -3,7 +3,7 @@
 Documento vivo. Se actualiza cuando cambia el comportamiento del conversor. Para instrucciones de uso y
 arquitectura de código ver `README.md`; para el historial de cambios, `CHANGELOG.md`.
 
-Estado a 2026-11-18 · 72 reglas de preprocesado · 9 módulos Lua · 294 pruebas (22 de ellas reconvierten
+Estado a 2026-11-18 · 77 reglas de preprocesado · 9 módulos Lua · 319 pruebas (22 de ellas reconvierten
 artículos reales y comparan byte a byte) · 124 artículos de LaTeX, 7 de PDF y 1 de JATS en la biblioteca · además,
 65 artículos de arXiv que no están en la biblioteca (2012–2025) convierten sin error y con los mismos números de
 figuras y tablas que su PDF.
@@ -39,7 +39,7 @@ No convierte documentos Word, HTML genérico ni PDF escaneados con calidad de La
 
 ```
 id de arXiv ─► descargar e-print ─► (etiquetar ecuaciones) ─► compilar con latexmk ─► .aux / .bbl
-          ─► aplanar con latexpand ─► preprocesar (72 reglas) ─► pandoc + filtros Lua ─► postprocesar ─► .md
+          ─► aplanar con latexpand ─► preprocesar (77 reglas) ─► pandoc + filtros Lua ─► postprocesar ─► .md
 ```
 
 0. **Archivo principal** (`build/latex.py`): el que declara el `00README.json` de arXiv (`"usage": "toplevel"`) o
@@ -58,7 +58,7 @@ id de arXiv ─► descargar e-print ─► (etiquetar ecuaciones) ─► compil
    figuras, tablas y ecuaciones) y el `.bbl` (bibliografía).
 4. **Aplanado** con `latexpand`: un solo `.tex` con `\input`/`\include` resueltos; los `\input` que deja y los
    `\subfile` (que no conoce) se expanden después, estos sin su preámbulo.
-5. **Preprocesado** (`preprocess/pipeline.py`, lista ordenada de 72 reglas con nombre, cada una una función
+5. **Preprocesado** (`preprocess/pipeline.py`, lista ordenada de 77 reglas con nombre, cada una una función
    `texto → texto` probada por separado). Resuelve `\ref`/`\cite` a los números del PDF, normaliza entornos que
    pandoc pierde (subfloats, minipages, `\captionof`, `\captionsetup{type=…}`, tablas sin `tabular`…), expande
    macros que pandoc no entiende (`.sty` locales, `\DeclarePairedDelimiter`, macros con argumento delimitado,
@@ -131,7 +131,7 @@ Ordenadas por impacto. «Frecuencia» es sobre los 124 artículos de LaTeX.
 | F13 | **Citas sin resolver** (`[@clave]`, diagnóstico `unresolved-citation`) | 87 en `sahoo2022backpropagat` (bibliografía en un formato que no se empareja con las claves) | la cita aparece como clave de pandoc, no como autor o número |
 | F14 | **Referencias `??` reales** (diagnóstico `unresolved-reference`) | 9 en 4 archivos: `arriola2025`, `sahoo2025duo`, `su2026opdlm`, `mirzadeh2019takd`. La etiqueta no está en el `.aux`: en `su2026opdlm` está en un `subfigure` cuyo `\caption` se comentó, y el PDF también muestra `??` | «(??)» en el texto en vez del número, igual que en el PDF |
 | F6 | **Fórmulas con trucos de TeX sin equivalente** (`\if…\fi` con argumento opcional, `\foreach`) | `sahoo2022` (`\ifthenelse` ya se resuelve) | fórmula truncada o con un comando inválido |
-| F7 | **`audit` da un falso positivo** | `pan2025demasking`: su `.aux` no registra 9 de sus tablas (sus números salen de las etiquetas y no están comprobados contra el PDF) | un aviso permanente en `audit` |
+| F7 | ~~`audit` da un falso positivo~~ **resuelta** el 2026-11-18: `pan2025demasking` (9 tablas) y `vonrutte2026scaling` (Figura 1) escriben `\caption[]{…}`, y una forma corta vacía deja el flotante fuera del `.aux`; `audit` ya cuenta esos `\caption[]` de la fuente | — | — |
 | F15 | **Texto de la fuente que no llega al `.md`** (diagnóstico `lost-text`): red de seguridad, no prueba | 996 palabras en 19 archivos; casi todo es ruido (opciones de listados y de macros, cabeceras de tablas reordenadas, notas del autor dentro de macros); no se ha mirado uno por uno | posible texto perdido que habría que revisar |
 | F16 | **Fuentes que no se pueden convertir**: TeX plano y LaTeX 2.09 (sin `\documentclass`), envoltorios de PDF (`\includepdf`), envíos que solo tienen PDF | 2 envoltorios de PDF entre los artículos probados | error claro; para esos hay que usar `pdf` (OCR) |
 | F8 | **Dependen de herramientas externas con versiones concretas** | pandoc ≥ 3 (probado con 3.14), `latexmk`, `latexpand`; `uv` solo para `pdf` | la conversión falla si faltan; `doctor` lo avisa |
@@ -145,9 +145,10 @@ Ordenadas por impacto. «Frecuencia» es sobre los 124 artículos de LaTeX.
 el archivo principal mal elegido (`00README.json`), `\subfile`, el `.bbl` de `ACM-Reference-Format`, los cuatro
 fallos de pandoc, los encabezados sin número o con otro número (8 artículos más, hallados con el diagnóstico
 nuevo `missing-sections`), las `\ref` con una macro en la clave y la etiqueta de ecuación que se metía en
-`\newcommand{\ee}{\end{equation}}` (las `??` de `kaplan2020`). Quedan abiertos los puntos de §3 y §4 de ese
-archivo que no se mencionan aquí (leyendas ausentes, `unbalanced-math` de listados con `escapeinside`, títulos
-de la API con `$`). Un `\part` todavía recibe un número contado.
+`\newcommand{\ee}{\end{equation}}` (las `??` de `kaplan2020`) y, el mismo día, todas las leyendas ausentes
+de §3 (14 artículos; `audit --level error` ya no muestra diferencias de flotantes en la biblioteca). Quedan
+abiertos los puntos de §3 y §4 de ese archivo que no se mencionan aquí (`unbalanced-math` de listados con
+`escapeinside`, `??` sueltas, títulos de la API con `$`). Un `\part` todavía recibe un número contado.
 
 **Límites de diseño** (no son fallas a corregir): las imágenes no se extraen; la fidelidad tipográfica
 (posición de figuras, columnas) no se conserva; un `.md` de un artículo con macros muy exóticas puede requerir
