@@ -304,7 +304,10 @@ def _flag(name, text, at):
 def resolve_conditionals(text: str) -> str:
     r"""``\ifthenelse{\equal{\anonymous}{0}}{A}{B}``, ``\ifthenelse{\boolean{x}}{A}{B}``, ``\iftoggle{x}{A}{B}``:
     keep the branch the document takes. pandoc knows none of them and drops both branches (acknowledgments,
-    author contributions). A test that cannot be decided here is left as it is."""
+    author contributions). A test that cannot be decided here is left as it is. ``\if 0`` becomes ``\iffalse``."""
+    # "\if 0 ... \fi" compares "0" with the space after it: always false, a block the authors switched off (pandoc
+    # keeps it, with its "??")
+    text = re.sub(r"\\if\s*[0-9](?=[ \t\n%])", r"\\iffalse", text)
     macros = {m.group(1) or m.group(2): m.group(3).strip() for m in _SIMPLE_MACRO.finditer(text)}
 
     def literal(s):

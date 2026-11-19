@@ -3,7 +3,7 @@
 Documento vivo. Se actualiza cuando cambia el comportamiento del conversor. Para instrucciones de uso y
 arquitectura de código ver `README.md`; para el historial de cambios, `CHANGELOG.md`.
 
-Estado a 2026-11-18 · 77 reglas de preprocesado · 9 módulos Lua · 319 pruebas (22 de ellas reconvierten
+Estado a 2026-11-18 · 77 reglas de preprocesado · 9 módulos Lua · 327 pruebas (22 de ellas reconvierten
 artículos reales y comparan byte a byte) · 124 artículos de LaTeX, 7 de PDF y 1 de JATS en la biblioteca · además,
 65 artículos de arXiv que no están en la biblioteca (2012–2025) convierten sin error y con los mismos números de
 figuras y tablas que su PDF.
@@ -20,7 +20,7 @@ que se puedan leer, buscar y citar con exactitud (cifras, ecuaciones, tablas y n
 | Fuente LaTeX de arXiv | `arxiv` | `.md` con secciones, ecuaciones (`$…$`, `\tag{N}`), tablas, leyendas de figuras y tablas, algoritmos y bibliografía, numerados como el PDF compilado |
 | XML JATS (revistas abiertas, PubMed Central) | `jats` | `.md` vía pandoc, metadatos de Crossref |
 | Solo PDF | `pdf` | `.md` por OCR con marker (más propenso a errores) |
-| Biblioteca | `frontmatter`, `add-mn`, `check`, `index`, `audit`, `fixmath`, `doctor` | encabezados YAML con el vínculo a MarginNote, índice, comprobaciones |
+| Biblioteca | `frontmatter`, `add-mn`, `check`, `index`, `audit`, `fixmath`, `fixmarker`, `doctor` | encabezados YAML con el vínculo a MarginNote, índice, comprobaciones |
 
 Cada `.md` lleva un encabezado YAML (título, autores, año, arXiv, versión, vínculo `bookmd5`/ruta de
 MarginNote, fuente de la conversión, fecha). Las figuras se reducen a su leyenda.
@@ -129,7 +129,7 @@ Ordenadas por impacto. «Frecuencia» es sobre los 124 artículos de LaTeX.
 | F4 | **Tablas con bloques de código dentro de las celdas** pueden quedar como HTML | 1 tabla en 1 archivo (`nie2025llada`, celdas con color por token); antes 14 en 8 | HTML en el Markdown (con las fórmulas ya en TeX) |
 | F5 | **Líneas `**Figura.**`/`**Tabla.**` sin número** | 21 en 7 archivos (`pan2025demasking` 10, `hu2026elf` 5…): paneles de una figura o tablas sin `\caption` propio en el LaTeX | no es un error de conversión, pero no tienen número que citar |
 | F13 | **Citas sin resolver** (`[@clave]`, diagnóstico `unresolved-citation`) | 87 en `sahoo2022backpropagat` (bibliografía en un formato que no se empareja con las claves) | la cita aparece como clave de pandoc, no como autor o número |
-| F14 | **Referencias `??` reales** (diagnóstico `unresolved-reference`) | 9 en 4 archivos: `arriola2025`, `sahoo2025duo`, `su2026opdlm`, `mirzadeh2019takd`. La etiqueta no está en el `.aux`: en `su2026opdlm` está en un `subfigure` cuyo `\caption` se comentó, y el PDF también muestra `??` | «(??)» en el texto en vez del número, igual que en el PDF |
+| F14 | **Referencias `??` reales** (diagnóstico `unresolved-reference`) | 14 en 6 archivos, comprobadas una a una el 2026-11-18: `arriola2025`, `hendrycks2021mmlu`, `lin2021limitations` y `sahoo2025duo` (LaTeX avisa de la referencia indefinida: en `sahoo2025duo` un `\nonumber` deja sin número la ecuación etiquetada), `su2026opdlm` (etiqueta en un `subfigure` con el `\caption` comentado) y `mirzadeh2019takd` (etiqueta de una sección sin número: el PDF deja un hueco). En todas el PDF también muestra `??` | «(??)» en el texto en vez del número, igual que en el PDF |
 | F6 | **Fórmulas con trucos de TeX sin equivalente** (`\if…\fi` con argumento opcional, `\foreach`) | `sahoo2022` (`\ifthenelse` ya se resuelve) | fórmula truncada o con un comando inválido |
 | F7 | ~~`audit` da un falso positivo~~ **resuelta** el 2026-11-18: `pan2025demasking` (9 tablas) y `vonrutte2026scaling` (Figura 1) escriben `\caption[]{…}`, y una forma corta vacía deja el flotante fuera del `.aux`; `audit` ya cuenta esos `\caption[]` de la fuente | — | — |
 | F15 | **Texto de la fuente que no llega al `.md`** (diagnóstico `lost-text`): red de seguridad, no prueba | 996 palabras en 19 archivos; casi todo es ruido (opciones de listados y de macros, cabeceras de tablas reordenadas, notas del autor dentro de macros); no se ha mirado uno por uno | posible texto perdido que habría que revisar |
@@ -147,8 +147,9 @@ fallos de pandoc, los encabezados sin número o con otro número (8 artículos m
 nuevo `missing-sections`), las `\ref` con una macro en la clave y la etiqueta de ecuación que se metía en
 `\newcommand{\ee}{\end{equation}}` (las `??` de `kaplan2020`) y, el mismo día, todas las leyendas ausentes
 de §3 (14 artículos; `audit --level error` ya no muestra diferencias de flotantes en la biblioteca). Quedan
-abiertos los puntos de §3 y §4 de ese archivo que no se mencionan aquí (`unbalanced-math` de listados con
-`escapeinside`, `??` sueltas, títulos de la API con `$`). Un `\part` todavía recibe un número contado.
+después el `unbalanced-math` de `chen2024dforcing`, las `??` que no eran reales (`brown2020gpt3`,
+`golovneva2024reverse`), los títulos de la API con `$`, el número del `\part` y las fallas de marker de §4
+(`fixmarker`). Sigue abierto, de §4, el renivelado de encabezados de marker sin numeración romana.
 
 **Límites de diseño** (no son fallas a corregir): las imágenes no se extraen; la fidelidad tipográfica
 (posición de figuras, columnas) no se conserva; un `.md` de un artículo con macros muy exóticas puede requerir

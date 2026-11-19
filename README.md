@@ -45,7 +45,7 @@ tex2md arxiv 1910.01108 -o distilbert.md          # última versión
 tex2md arxiv 1910.01108v4 -o distilbert.md        # versión concreta
 ```
 
-Un id con versión fija la fuente que se convierte; úsalo cuando la numeración deba coincidir con un PDF concreto, porque las versiones de un artículo pueden diferir. El comando imprime el informe JSON (ver más abajo) y termina con estado 1 si la conversión no se completó.
+Un id con versión fija la fuente que se convierte; úsalo cuando la numeración deba coincidir con un PDF concreto, porque las versiones de un artículo pueden diferir. `--title` sustituye el título de arXiv (por ejemplo, el de la versión publicada); los `$` que la API pone alrededor de texto sin fórmula (`$Ψ$-Samplers`) se quitan solos. El comando imprime el informe JSON (ver más abajo) y termina con estado 1 si la conversión no se completó.
 
 ### JATS
 
@@ -75,7 +75,7 @@ Para cada `.md` convertido desde LaTeX compara los números de figuras y tablas 
 
 ### Biblioteca de `.md` (opcional)
 
-`tex2md index DIR` regenera `INDEX.md`, una tabla con todos los `.md` de la carpeta a partir de su encabezado. `tex2md fixmath ARCHIVOS` repite la limpieza de matemáticas sobre `.md` ya convertidos. `tex2md frontmatter ARCHIVO --arxiv ID` añade el encabezado a un `.md` que no lo tiene.
+`tex2md index DIR` regenera `INDEX.md`, una tabla con todos los `.md` de la carpeta a partir de su encabezado. `tex2md fixmath ARCHIVOS` repite la limpieza de matemáticas sobre `.md` ya convertidos. `tex2md fixmarker ARCHIVOS` repara en `.md` hechos con marker lo que marker hace mal (notas al pie `<sup>&</sup>lt;sup>1</sup>`, la portada de JSTOR, niveles de encabezado con secciones I., II. y subsecciones A., B., y encabezados que son una viñeta, una fila de letras o una frase larga); las conversiones nuevas ya salen así. `tex2md frontmatter ARCHIVO --arxiv ID` añade el encabezado a un `.md` que no lo tiene.
 
 Integración con MarginNote: `--mn BOOKMD5::RUTA` guarda en el encabezado el vínculo con un documento de MarginNote, `tex2md add-mn ARCHIVO BOOKMD5::RUTA` añade otro y `tex2md check DIR` lista los vínculos cuyo PDF ya no existe en la carpeta de MarginNote (`TEX2MD_MN_ROOT`).
 

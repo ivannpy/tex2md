@@ -20,7 +20,8 @@ def arxiv_meta(aid):
     path = os.path.join(CACHE, "meta", aid.replace("/", "_") + ".json")
     if os.path.exists(path):
         with open(path) as fh:
-            return json.load(fh)
+            meta = json.load(fh)
+        return dict(meta, title=plain_title(meta["title"]))      # (cached before titles were cleaned)
     meta = arxiv_meta_batch([aid]).get(aid)
     if not meta:
         raise SystemExit(f"arXiv has no record for {aid}")
@@ -63,12 +64,18 @@ def arxiv_meta_batch(ids):
     return out
 
 
+def plain_title(title):
+    """``The Diffusion Duality, Chapter II: $Ψ$-Samplers`` -> ``... Ψ-Samplers``: dollars around plain text (no TeX
+    command, sub- or superscript) are only there to typeset it; a title with real math keeps them."""
+    return re.sub(r"\$([^$]*)\$", lambda m: m.group(1) if not re.search(r"[\\^_{}]", m.group(1)) else m.group(0), title)
+
+
 def _entry(e):
     jr = e.find("arxiv:journal_ref", ATOM)
     return {
         "id": re.search(r"abs/(.+?)(v\d+)?$", e.find("a:id", ATOM).text).group(1),
         "latest": re.search(r"(v\d+)$", e.find("a:id", ATOM).text).group(1),
-        "title": " ".join(e.find("a:title", ATOM).text.split()),
+        "title": plain_title(" ".join(e.find("a:title", ATOM).text.split())),
         "authors": [a.find("a:name", ATOM).text for a in e.findall("a:author", ATOM)],
         "published": e.find("a:published", ATOM).text[:10],
         "abstract": " ".join(e.find("a:summary", ATOM).text.split()),

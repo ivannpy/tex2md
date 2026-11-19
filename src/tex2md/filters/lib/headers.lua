@@ -68,6 +68,8 @@ end
 
 function M.Header(h)
   if unnumbered(h.classes) then return h end
+  -- above the level of \section (known once a header matched the toc): a \part, which the toc does not number
+  if S.level_shift and h.level - S.level_shift < 1 then return h end
   local num = toc_number(h) or labels.label_number(h.identifier)
   local auto = header_number(h.level)
   if num then resync(num) else num = auto end

@@ -88,3 +88,9 @@ def test_struts_in_listings_are_kept():
     # gat2024dfm: |\colorbox{y}{\strut{}source}| escapes inside a listing
     src = "\\begin{lstlisting}\ndef bfs(|\\colorbox{y}{\\strut{}source}|)\n\\end{lstlisting}"
     assert drop_primitive_spacing(src) == src
+
+
+def test_control_space_before_a_dollar_becomes_a_space():
+    # chen2024dforcing: "$x=\ $Forward$(a)$" came out as "$x=\$Forward$(a)$" (an odd "$")
+    assert drop_primitive_spacing(r"$x=\ $Forward$(a)$ and vs.\ $y$") == r"$x= $Forward$(a)$ and vs.\ $y$"
+    assert drop_primitive_spacing(r"\newcommand{\noexis}{$\ $} a & $\ $ \\") == r"\newcommand{\noexis}{} a &  \\"

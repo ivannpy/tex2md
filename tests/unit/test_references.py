@@ -46,3 +46,12 @@ def test_wrappers_with_two_arguments_and_through_other_wrappers():
 def test_hyperref_keeps_its_text():
     assert hyperref_to_text(r"in \hyperref[fig:a]{Figure~\ref*{fig:a}} and \hyperref [s]{here}") == \
         r"in {Figure~\ref*{fig:a}} and {here}"
+
+
+def test_a_key_with_commas_is_one_label():
+    # brown2020gpt3: \ref{section:Language Modeling, Cloze, and Completion Tasks}
+    labels = {"section:Language Modeling, Cloze, and Completion Tasks": {"num": "3.1", "type": "subsection"},
+              "a": {"num": "1", "type": "figure"}, "b": {"num": "2", "type": "figure"}}
+    stats = {"unresolved_refs": 0, "unresolved_cites": 0}
+    out = resolve_refs(r"In Section \ref{section:Language Modeling, Cloze, and Completion Tasks}; \cref{a,b}.", labels, stats)
+    assert out == "In Section 3.1; Figures~1 and 2." and stats["unresolved_refs"] == 0

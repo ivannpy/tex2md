@@ -39,4 +39,69 @@ def marker_body(pdf, mode):
             return "# " + text
         return m.group(1) + " " + text
     body = re.sub(r"(?m)^(#+) (.+)$", level, body)
-    return re.sub(r"\n{3,}", "\n\n", body)
+    return tidy_marker(body)
+
+
+_ROMAN = re.compile(r"^(?=[IVXL]+\.)(L?X{0,3})(IX|IV|V?I{0,3})\.\s+\S")
+
+
+def _false_heading(text):
+    """Text marker set as a heading because it is large or bold: a list item, a row of single letters (a sample of a
+    source), or a whole sentence."""
+    words = text.split()
+    single = sum(len(w) == 1 for w in words)
+    return text[:1] in "•·-" or (len(words) >= 4 and single / len(words) >= 0.6) or len(words) > 14
+
+
+def tidy_marker(body):
+    """What marker 1.x gets wrong in its Markdown, fixable without running it again (also on converted .md):
+    ``<sup>&</sup>lt;sup>1</sup>`` (a footnote mark escaped twice), the cover page JSTOR adds to its PDFs, heading
+    levels taken from the font size where the sections are numbered I., II. with subsections A., B., and false
+    headings (a list item, a sample of letters, a sentence)."""
+    body = re.sub(r"<(su[pb])>&</\1>lt;\1>", r"<\1>", body)
+    head = body[:4000]
+    end = head.rfind("JSTOR is an independent not-for-profit")
+    if "Stable URL" in head and end >= 0:
+        stop = body.find("\n\n", end)
+        body = body[stop if stop >= 0 else len(body):].lstrip("\n")
+    lines = body.split("\n")
+    texts = [re.sub(r"^#+ ", "", ln) for ln in lines]
+    roman = sum(1 for ln, t in zip(lines, texts) if ln.startswith("#") and _ROMAN.match(t))
+    out, in_roman = [], False
+    for ln, t in zip(lines, texts):
+        if ln.startswith("#") and re.match(r"^#+ ", ln):
+            if _false_heading(t):
+                ln = t                          # a paragraph again
+            elif roman >= 2 and _ROMAN.match(t):
+                ln, in_roman = "# " + t, True
+            elif roman >= 2 and in_roman and re.match(r"^[A-H]\.\s+\S", t):
+                ln = "## " + t
+            elif re.match(r"(?i)^(references|bibliography|acknowledge?ments?)\b", t):
+                in_roman = False
+        out.append(ln)
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(out))
+
+
+
+def tidy_marker_md(text):
+    """``tidy_marker`` on a converted .md: only the body marker wrote, after the front matter and the header this
+    package adds (title, authors, the "Convertido desde el PDF con marker" note); and without the repeated title the
+    JSTOR cover hid from the first conversion."""
+    m = re.search(r"(?m)^> Convertido desde el PDF con marker.*\n(?:>.*\n)*\n", text)
+    if not m:
+        return text
+    title = re.search(r'^title: "((?:[^"\\]|\\.)*)"$', text, re.M)
+    body = tidy_marker(text[m.end():])
+    if title:
+        body = re.sub(r"\A\s*#+ " + re.escape(title.group(1)) + r"\s*\n", "", body, flags=re.I)
+    return text[:m.end()] + body.lstrip("\n")
+
+
+def cmd_fixmarker(a):
+    for f in a.files:
+        t = Path(f).read_text(encoding="utf-8")
+        new = tidy_marker_md(t)
+        if new != t:
+            Path(f).write_text(new, encoding="utf-8")
+            print("fixed", f)
+    return 0

@@ -40,7 +40,9 @@ def resolve_refs(text, labels, stats):
 
     def one(cmd, keys):
         out = []
-        for k in [k.strip() for k in keys.split(",") if k.strip()]:
+        # (a key may hold commas: \ref{section:Language Modeling, Cloze, and Completion Tasks})
+        split = [keys.strip()] if keys.strip() in labels else [k.strip() for k in keys.split(",") if k.strip()]
+        for k in split:
             lab = lookup(k)
             if not lab:
                 out.append(("", "??"))

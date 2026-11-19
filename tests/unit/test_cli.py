@@ -30,7 +30,7 @@ body
 def test_every_documented_command_exists():
     parser = build_parser()
     choices = next(a for a in parser._actions if a.dest == "command").choices
-    assert set(choices) == {"arxiv", "jats", "pdf", "index", "check", "frontmatter", "add-mn", "audit", "fixmath", "doctor"}
+    assert set(choices) == {"arxiv", "jats", "pdf", "index", "check", "frontmatter", "add-mn", "audit", "fixmath", "fixmarker", "doctor"}
 
 
 def test_version_flag(capsys):
@@ -151,3 +151,13 @@ def test_audit_counts_floats_kept_out_of_the_aux_by_an_empty_short_caption(tmp_p
         r"\begin{table}\caption[]{A}\end{table}\begin{table}\caption[Short]{B}\end{table}"
         "\n% \\begin{table}\\caption[]{commented}\\end{table}\n")
     assert _unlisted_captions(str(tmp_path)) == {"figure": 1, "table": 1}
+
+
+def test_regress_keeps_the_title_of_the_header():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("regress", os.path.join(os.path.dirname(__file__), "..", "regress.py"))
+    regress = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(regress)
+    md = '---\ntitle: "Generative Adversarial \\"Nets\\""\narxiv: "1406.2661"\narxiv_version: "v1"\n---\n# x\n'
+    cmd = regress.command_for(md, "out.md")
+    assert cmd[cmd.index("--title") + 1] == 'Generative Adversarial "Nets"' and "1406.2661v1" in cmd

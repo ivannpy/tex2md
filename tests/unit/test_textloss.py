@@ -94,3 +94,9 @@ def test_a_toggle_without_else_takes_the_next_token_as_its_third_argument_as_tex
     assert resolve_conditionals(src) == r"\newtoggle{ws} \subsection{Analysis: IO} text"
     on = r"\newtoggle{ws}\toggletrue{ws} \iftoggle{ws}{\section{A}}\subsection{B}"
     assert resolve_conditionals(on) == r"\newtoggle{ws}\toggletrue{ws} \section{A}{B}"
+
+
+def test_if_zero_blocks_are_switched_off():
+    # golovneva2024reverse: "\if 0 ... Figure~\ref{fig:rev_algo} ... \fi" came out with a "??"
+    assert resolve_conditionals("a \\if 0\nhidden\n\\fi b") == "a \\iffalse\nhidden\n\\fi b"
+    assert resolve_conditionals(r"\ifx\a\b x\fi") == r"\ifx\a\b x\fi"

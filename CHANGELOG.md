@@ -1,5 +1,24 @@
 # Changelog
 
+## Odd `$`, false `??`, titles and marker output (2026-11-18)
+The rest of `HALLAZGOS_2026-11-18.md` §3 and §4.
+
+- **`$x=\ $Forward$(a)$`**: a control space before the closing `$` (pandoc trimmed the math and left `\$`:
+  `chen2024dforcing`) becomes a plain space; before an opening `$` (`vs.\ $x$`) it is kept. `$\ $` alone (an empty
+  table cell, `li2022universal`) is dropped: pandoc printed `$$`, and that table had rows run together.
+- **References**: a `\ref` key with commas is one label when the `.aux` has it (`brown2020gpt3`);
+  `\if 0 ... \fi` is `\iffalse` (`golovneva2024reverse` showed the `??` of a switched-off block; `sun2023hollow` showed a paragraph the authors had
+  switched off). The other `??`
+  of the library are also in the PDF (ROADMAP F14, checked one by one).
+- **Titles**: dollars around plain text leave arXiv's title (`$Ψ$-Samplers`); `arxiv --title` sets the title,
+  and `tests/regress.py` passes the one of the header, so hand-corrected titles survive a regeneration.
+- **`\part`**: a header above the level of `\section` (once a header matched the `.aux` toc) gets no number
+  (`\part{Appendix}` came out as `# A Appendix`).
+- **marker**: new `tidy_marker`, run on every PDF conversion and, through the new `fixmarker` command, on converted
+  `.md`: footnote marks escaped twice (`<sup>&</sup>lt;sup>1</sup>`, 11 library files), the JSTOR cover page
+  (`dempster1977em`), heading levels where sections are numbered I., II. with subsections A., B.
+  (`bengio1994longterm`), and headings that are a list item, a row of single letters or a sentence.
+
 ## Missing captions (2026-11-18)
 The 14 library papers whose `.md` lacked captions the `.aux` has (`HALLAZGOS_2026-11-18.md` §3): each had its own
 cause. `audit --level error` now shows no float differences in the library. Five new rules (77).

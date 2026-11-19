@@ -159,3 +159,33 @@ def test_api_requests_keep_the_gap_arxiv_asks_for_even_across_runs(tmp_path, mon
     now[0] += 10.0
     arxiv._pace_api()                       # long after: no wait
     assert waits == [2.0]
+
+
+def test_dollars_around_plain_text_leave_the_title():
+    from tex2md.sources.arxiv import plain_title
+    assert plain_title("The Diffusion Duality, Chapter II: $Ψ$-Samplers") == "The Diffusion Duality, Chapter II: Ψ-Samplers"
+    assert plain_title("Scaling $\\alpha$ and $x^2$ laws") == "Scaling $\\alpha$ and $x^2$ laws"
+
+
+def test_tidy_marker_repairs_what_marker_gets_wrong():
+    from tex2md.sources.pdf import tidy_marker
+    body = ("<sup>&</sup>lt;sup>1</sup>Nyquist, H.\n\n# A B B A B A B A\n\n## I. INTRODUCTION\n\ntext\n\n"
+            "#### II. METHOD\n\n# A. Analysis\n\n#### B. Results\n\n# • Setting 4: separate LRs.\n\n# REFERENCES\n")
+    out = tidy_marker(body)
+    assert out.startswith("<sup>1</sup>Nyquist, H.")
+    assert [ln for ln in out.split("\n") if ln.startswith("#")] == \
+        ["# I. INTRODUCTION", "# II. METHOD", "## A. Analysis", "## B. Results", "# REFERENCES"]
+    assert "\nA B B A B A B A\n" in out and "\n• Setting 4: separate LRs.\n" in out
+    assert tidy_marker(out) == out
+
+
+def test_tidy_marker_md_drops_the_jstor_cover_and_keeps_the_header():
+    from tex2md.sources.pdf import tidy_marker_md
+    md = ('---\ntitle: "Maximum Likelihood"\n---\n\n# Maximum Likelihood\n\n**Autores:** A\n\n'
+          "> Sin DOI.\n> Convertido desde el PDF con marker (OCR).\n\n"
+          "A. P. Dempster\n\n### Stable URL:\n\nhttp://links.jstor.org/x\n\n"
+          "JSTOR is an independent not-for-profit organization.\n\n# Maximum Likelihood\n\nBy A. P. DEMPSTER\n")
+    out = tidy_marker_md(md)
+    assert "JSTOR" not in out and out.count("# Maximum Likelihood") == 1 and "**Autores:** A" in out
+    assert out.endswith("> Convertido desde el PDF con marker (OCR).\n\nBy A. P. DEMPSTER\n")
+    assert tidy_marker_md(out) == out

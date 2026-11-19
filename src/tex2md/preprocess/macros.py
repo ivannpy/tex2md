@@ -138,9 +138,19 @@ def drop_fragile_macro_defs(text):
 
 def drop_primitive_spacing(text):
     """Primitive spacing with length registers (\\vskip\\bigskipamount) confuses pandoc, and so does \\strut (an
-    invisible rule): in ``\\textbf{\\strut z}`` pandoc stops with an error, inside a caption it drops the table."""
+    invisible rule): in ``\\textbf{\\strut z}`` pandoc stops with an error, inside a caption it drops the table; and a
+    control space before a "$"."""
     verbatim = protected_spans(text, math=False)          # (a listing keeps its code as written)
     text = re.sub(r"\\strut(?![a-zA-Z@])\s*", lambda m: m.group(0) if span_at(verbatim, m.start()) else "", text)
+    # a control space right before a "$" (``$x=\ $Forward``): pandoc trims the math and leaves "\" before the "$"
+    def control_space(m):
+        para = text[text.rfind("\n\n", 0, m.start()) + 1:m.start()]
+        closing = len(re.findall(r"(?<!\\)\$", para)) % 2 == 1       # (before an opening "$" it is a real space: "vs.\ $x$")
+        return " " if closing and not span_at(verbatim, m.start()) else m.group(0)
+    # "$\ $" (an empty cell, li2022universal's \noexis) holds nothing: pandoc would print "$$"
+    text = re.sub(r"(?<![\\$])\$\\ \$(?!\$)", lambda m: m.group(0) if span_at(verbatim, m.start()) else "", text)
+    verbatim = protected_spans(text, math=False)
+    text = re.sub(r"(?<!\\)\\ (?=\$)", control_space, text)
     return re.sub(r"\\[vh]skip\s*-?\s*(?:\\[a-zA-Z@]+|[0-9.]+\s*[a-z]{2})(?:\s*(?:plus|minus)\s*-?[0-9.]*\s*(?:\\[a-zA-Z@]+|[a-z]{2}))*", "", text)
 
 

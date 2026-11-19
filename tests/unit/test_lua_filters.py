@@ -231,3 +231,10 @@ def test_headers_take_the_numbers_of_the_table_of_contents_even_below_a_part(tmp
     heads = re.findall(r"^#+ (.*)$", md, re.M)
     # (the \\part itself still gets a counted number: the toc entries are sections only)
     assert heads[1:] == ["1 Introduction", "Setup", "2 Method", "2.1 Setup", "A Infrastructure"]
+
+
+def test_a_part_after_the_first_section_gets_no_number(tmp_path):
+    # feng2025theory: "\part{Appendix}" came out as "# A Appendix"
+    body = r"\section{Introduction}x\part{Appendix}\section{Details}y"
+    md = convert(tmp_path, body, sections=[sec(1, "1", "Introduction"), sec(1, "A", "Details")])
+    assert re.findall(r"^#+ (.*)$", md, re.M) == ["1 Introduction", "Appendix", "A Details"]

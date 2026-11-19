@@ -32,6 +32,9 @@ def command_for(md_text: str, out: str) -> list[str]:
     aid = re.search(r'^arxiv: "([^"]+)"', fm, re.M).group(1)
     ver = re.search(r'^arxiv_version: "([^"]+)"', fm, re.M)
     cmd = [sys.executable, "-m", "tex2md", "arxiv", aid + (ver.group(1) if ver else ""), "-o", out]
+    title = re.search(r'^title: ("(?:[^"\\]|\\.)*")$', fm, re.M)
+    if title:       # (it may have been corrected by hand: keep it)
+        cmd += ["--title", json.loads(title.group(1))]
     for b, p in re.findall(r'bookmd5: (\w+)\s+path: ("(?:[^"\\]|\\.)*")', fm):
         cmd += ["--mn", f"{b}::{json.loads(p)}"]      # the path is a JSON string: decode its escapes (\u001b, \")
     return cmd

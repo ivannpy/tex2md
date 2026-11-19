@@ -6,7 +6,7 @@ Conversor de artículos científicos a Markdown: fuente LaTeX de arXiv (`arxiv`)
 
 - `make check` (ruff, mypy y pruebas rápidas) y `make regress` (reconvierte los artículos golden desde el caché y compara byte a byte). Los dos deben pasar antes de un commit.
 - Ejecutar con `uv run` (o `make`). Desde la raíz del repositorio `import tex2md` falla porque el envoltorio `tex2md.py` tapa al paquete: usar pytest o ejecutar Python desde otra carpeta.
-- No hay comando global instalado: `tex2md.py`, `papers.py` y `doc2md.py` son envoltorios del mismo CLI (`src/tex2md/cli.py`), con subcomandos `arxiv|jats|pdf|frontmatter|add-mn|check|index|audit|fixmath|doctor`. `doctor` comprueba pandoc, TeX y uv.
+- No hay comando global instalado: `tex2md.py`, `papers.py` y `doc2md.py` son envoltorios del mismo CLI (`src/tex2md/cli.py`), con subcomandos `arxiv|jats|pdf|frontmatter|add-mn|check|index|audit|fixmath|fixmarker|doctor`. `doctor` comprueba pandoc, TeX y uv.
 
 ## Arquitectura
 

@@ -45,7 +45,7 @@ def _writable(out):
 
 def cmd_arxiv(a):
     from tex2md.convert import convert
-    report = convert(a.arxiv, _writable(a.out), _mn(a.mn))
+    report = convert(a.arxiv, _writable(a.out), _mn(a.mn), a.title)
     print(json.dumps(report, ensure_ascii=False))
     return 0 if report.get("ok") else 1
 
@@ -87,6 +87,11 @@ def cmd_fixmath(a):
     return run(a)
 
 
+def cmd_fixmarker(a):
+    from tex2md.sources.pdf import cmd_fixmarker as run
+    return run(a)
+
+
 def cmd_doctor(a):
     from tex2md.doctor import run_doctor
     return run_doctor()
@@ -103,6 +108,7 @@ def build_parser():
     p.add_argument("-o", "--out", required=True)
     p.add_argument("--mn", action="append", default=[], metavar="BOOKMD5::PATH",
                    help="MarginNote document id and its path under the MN Documents folder")
+    p.add_argument("--title", help="title to use instead of arXiv's (e.g. that of the published PDF)")
     p.set_defaults(fn=cmd_arxiv)
 
     for kind, text in (("jats", "publisher / PubMed Central JATS XML -> Markdown"),
@@ -144,6 +150,9 @@ def build_parser():
     p = sub.add_parser("fixmath", help="re-run the math clean-up on converted .md")
     p.add_argument("files", nargs="+")
     p.set_defaults(fn=cmd_fixmath)
+    p = sub.add_parser("fixmarker", help="repair what marker gets wrong in converted .md (escaped <sup>, JSTOR cover, headings)")
+    p.add_argument("files", nargs="+")
+    p.set_defaults(fn=cmd_fixmarker)
     p = sub.add_parser("doctor", help="verify external tools and data directories")
     p.set_defaults(fn=cmd_doctor)
     return ap

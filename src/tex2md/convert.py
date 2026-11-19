@@ -257,10 +257,13 @@ def render_document(meta, aid, ver, mn, body):
     return "\n".join(head) + "\n" + body.strip() + "\n"
 
 
-def convert(arg, out, mn):
-    """Convert one arXiv paper (id with optional version) to ``out``; returns the quality report."""
+def convert(arg, out, mn, title=None):
+    """Convert one arXiv paper (id with optional version) to ``out``; returns the quality report. ``title`` takes
+    the place of arXiv's (the published version's title, a hand-corrected one)."""
     aid, ver = parse_arxiv_arg(arg)
     meta = arxiv_meta(aid)
+    if title:
+        meta = dict(meta, title=title)
     ver = ver or meta["latest"]
     report = {"arxiv": aid + ver, "out": out, "ok": False}
 
