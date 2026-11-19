@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: 28983dbec601de9236fc81944d1489f95bf9a390c596b38d984e10e9f0b2a8c8
     path: "PCIC/Tesis/ar-diff/SDAR- A Synergistic Diffusion-AutoRegression Paradigm for Scalable Sequence Generation.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-17
+converted: 2026-11-18
 ---
 
 # SDAR: A Synergistic Diffusion-AutoRegression Paradigm for Scalable Sequence Generation
@@ -595,9 +595,9 @@ In summary, SDAR is not merely a hybrid architecture, but a new language modelin
 
 We thank Shen Nie for insightful discussions on the training and evaluation details of LLaDA, and for suggesting that the training transition could proceed without logits shift or attention mask annealing. We thank Yu Zhang for valuable guidance in optimizing the pretraining pipeline and training framework, as well as for providing infrastructure support in the early stages of the project.
 
-# 10 Infrastructure
+# A Infrastructure
 
-## 10.1 Training Infrastructure
+## A.1 Training Infrastructure
 
 The training of the SDAR model requires specialized attention masks and training objectives that differ from standard autoregressive language models. As a result, widely adopted kernels such as FlashAttention for attention computation and fused cross-entropy kernels from projects like Liger-Kernel cannot be directly applied. To address this, we adopt FlexAttention[^1], which achieves significant speedups compared to the scaled dot-product attention provided in PyTorch.
 
@@ -605,7 +605,7 @@ For the loss computation, we implement a custom Triton kernel that performs a fu
 
 While the full-scale, industry-grade training framework we use is not entirely open source, we plan to release a research-oriented open-source implementation based on existing widely used frameworks. In terms of efficiency, the raw throughput, measured in tokens processed per GPU per second, is comparable to conventional autoregressive model training. However, due to SDAR’s training paradigm,which requires processing both clean and noised versions of each sample, the effective training speed is approximately halved relative to standard autoregressive models.
 
-## 10.2 Inference Infrastructure
+## A.2 Inference Infrastructure
 
 Unlike many diffusion-based models that rely on approximate or specialized cache mechanisms (e.g., dLLM-cache), the SDAR model maintains a mathematically identical key-value (KV) cache to that of standard autoregressive models. This compatibility allows us to leverage established cache management techniques, including PagedAttention as implemented in vLLM.
 

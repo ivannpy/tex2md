@@ -33,3 +33,10 @@ def test_braces_inside_verbatim_and_comment_environments_do_not_count():
 def test_the_preamble_is_not_touched():
     text = "\\newcommand{\\open}{\\begin{center}{}\n\\begin{document}\nbody\n\\end{document}"
     assert repair_braces(text) == (text, [])
+
+
+def test_a_brace_of_the_preamble_never_closed_is_dropped():
+    text = "\\usepackage{listings}{\n\\lstset{language=Python}\n\\begin{document}\nbody\n\\end{document}"
+    fixed, repairs = repair_braces(text)
+    assert fixed == "\\usepackage{listings}\n\\lstset{language=Python}\n\\begin{document}\nbody\n\\end{document}"
+    assert [(r.kind, r.line) for r in repairs] == [("dropped-open", 1)]

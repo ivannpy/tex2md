@@ -61,3 +61,8 @@ def test_latex_shown_in_a_listing_is_not_labelled():
     src = "\\begin{verbatim}\n\\begin{equation} shown \\end{equation}\n\\end{verbatim}\n\\begin{equation}x\\end{equation}"
     out, nxt = label_numbered_equations(src)
     assert out.count("\\label{tex2md-eq-") == 1 and "shown \\end{equation}" in out and nxt == 2
+
+
+def test_an_equation_environment_inside_a_macro_definition_is_not_labelled():
+    text = "\\newcommand{\\be}{\\begin{equation}}\n\\newcommand{\\ee}{\\end{equation}}\n\\be x \\label{eq:a} \\ee\n"
+    assert label_numbered_equations(text) == (text, 1)

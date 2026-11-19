@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 
-from tex2md.util.tex import balanced_end, protected_spans
+from tex2md.util.tex import balanced_end, protected_spans, span_at
 
 
 def mark_appendix(text: str) -> str:
@@ -95,3 +95,35 @@ def quad_before_digits(text: str) -> str:
     r"""``\quad 16 steps`` (text mode) -> ``~16 steps``: pandoc reads the digits as a length argument and
     drops them. Math regions are left alone, where ``\quad`` is meaningful."""
     return _MATH_OR_QUAD.sub(lambda m: m.group(0) if m.group("math") else "~", text)
+
+
+_PDFSTRING = re.compile(r"\\texorpdfstring(?![a-zA-Z@])\s*(?=\{)")
+_TOKEN = re.compile(r"\s*(?:\\[a-zA-Z@]+|\\.|[^\s{}])")
+
+
+def texorpdfstring_tex(text: str) -> str:
+    r"""``\texorpdfstring{TeX}{PDF}`` -> ``{TeX}`` (hyperref's choice for the printed text). Written with one argument
+    (``\texorpdfstring{\sdrl}~Training``), LaTeX takes the next token for the second one; pandoc stopped with
+    ``unexpected ~`` and the whole paper was lost."""
+    spans = protected_spans(text, math=False)
+    out, pos = [], 0
+    for m in _PDFSTRING.finditer(text):
+        if m.start() < pos or span_at(spans, m.start()):
+            continue
+        e = balanced_end(text, m.end())
+        if e < 0:
+            continue
+        j = e
+        while j < len(text) and text[j] in " \t\n":
+            j += 1
+        if j < len(text) and text[j] == "{":
+            end = balanced_end(text, j)
+        else:
+            t = _TOKEN.match(text, e)
+            end = t.end() if t else -1
+        if end < 0:
+            continue
+        out.append(text[pos:m.start()] + text[m.end():e])
+        pos = end
+    out.append(text[pos:])
+    return "".join(out)

@@ -1,4 +1,4 @@
-from tex2md.build.aux import parse_aux, parse_floats
+from tex2md.build.aux import parse_aux, parse_floats, parse_sections
 
 MAIN_AUX = r"""
 \relax
@@ -82,3 +82,26 @@ def test_audit_counts_captions_that_sit_in_a_list_item_or_a_quote(tmp_path, monk
                   "1.  Item\n\n    **Figura 1.** First figure.\n\n> **Figura 2.** Second figure.\n\n**Figura 3.** Third figure.\n")
     result = audit.audit_file(md)
     assert result is not None and result.missing == [] and result.unknown == []
+
+
+TOC_AUX = r"""
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}Definition of $\text {EB-C}$}{2}{subsection.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{Acknowledgments}{9}{section*.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {A}More}{10}{appendix.A}\protected@file@percent }
+"""
+
+
+def test_parse_sections_reads_the_numbered_table_of_contents(tmp_path):
+    (tmp_path / "paper.aux").write_text(TOC_AUX)
+    (tmp_path / "other.aux").write_text(TOC_AUX.replace("Introduction", "Rebuttal"))
+    assert parse_sections(str(tmp_path), "paper") == [
+        {"level": 1, "num": "1", "text": "introduction"},
+        {"level": 2, "num": "1.1", "text": "definitionofebc"},
+        {"level": 1, "num": "A", "text": "more"},
+    ]
+
+
+def test_a_label_key_with_braces_is_read_whole(tmp_path):
+    (tmp_path / "main.aux").write_text("\\newlabel{alg:OeMDM{}-train}{{1}{7}{Training}{algorithm.1}{}}\n")
+    assert parse_aux(str(tmp_path))["alg:OeMDM{}-train"]["num"] == "1"

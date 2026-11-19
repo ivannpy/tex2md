@@ -151,6 +151,8 @@ id de arXiv
 | `unresolved-reference` | error | un `\ref` sin resolver quedó como `??` en el Markdown |
 | `unresolved-latex-reference` | error | `\ref` a una etiqueta que no está en el `.aux` (el mismo problema, visto en el LaTeX) |
 | `dropped-environment` | error | pandoc no pudo leer un entorno y se sustituyó por una nota: su contenido no está en el Markdown |
+| `missing-sections` | error | secciones numeradas del `.aux` (tabla de contenidos) sin un encabezado con ese número en el Markdown: se perdió parte del cuerpo o los encabezados perdieron su número |
+| `ambiguous-main-file` | warning | varios archivos del e-print son documentos completos y no hay `00README` que diga cuál es el principal: se eligió uno por heurística (comprobar que no sea una respuesta a revisores o un borrador) |
 | `dropped-definition` | warning | se quitó una definición que pandoc no podía leer, o una macro que se expandía a sí misma |
 | `unbalanced-braces` | warning | llaves sin pareja en el LaTeX: se cerró el grupo al final del párrafo o se descartó la sobrante |
 | `lost-text` | warning | tramos de 12 o más palabras de la fuente que no están en el Markdown; es una red de seguridad y da falsos positivos |

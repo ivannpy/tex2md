@@ -18,7 +18,7 @@ def parse_bbl(t):
         opt = None
         if i < len(t) and t[i] == "[":
             opt, i = group(t, i, "[", "]")
-        i = skip_ws(t, i)
+        i = _skip_ws_and_comments(t, i)
         if i >= len(t) or t[i] != "{":
             continue
         key, i = group(t, i)
@@ -46,6 +46,17 @@ def parse_bbl(t):
                 short = o
         out.append({"key": key, "short": short, "year": year, "num": n + 1, "body": body.strip()})
     return out
+
+
+def _skip_ws_and_comments(t, i):
+    """Blanks and ``%`` comments: ``ACM-Reference-Format`` writes ``\\bibitem[label]%`` and the key on the next line."""
+    while True:
+        i = skip_ws(t, i)
+        if i < len(t) and t[i] == "%":
+            nl = t.find("\n", i)
+            i = len(t) if nl < 0 else nl + 1
+            continue
+        return i
 
 
 def _named_label(label):
@@ -192,6 +203,8 @@ def _plain_bib_text(s):
     s = re.sub(r"\\newblock\b|\\urlprefix\b|\\BibitemOpen\b|\\bibAnnoteFile\{[^}]*\}", " ", s)
     s = re.sub(r"\\BibitemShut\s*\{[^}]*\}", "", s)
     s = re.sub(r"\\penalty\s*-?\d+ ?", "", s)    # "34:\penalty0 17981": the digit is the argument, not text
+    # ACM-Reference-Format: "\urldef\tempurl \url{...} \showURL{\tempurl}" -> the URL once
+    s = re.sub(r"\\urldef\s*\\[a-zA-Z@]+|\\showURL\s*\{\s*\\[a-zA-Z@]+\s*\}", " ", s)
     for cmd in ("href", "bibinfo", "bibfield", "Eprint"):
         s = unwrap(s, cmd, 1)
     s = re.sub(r"\\(url|doi|path)\s*\{([^}]*)\}", r"\2", s)

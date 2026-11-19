@@ -24,12 +24,78 @@ _TOKEN = re.compile(r"\\verb\*?(?P<d>[^a-zA-Z\s*]).*?(?P=d)"
 _URL_PERCENT = re.compile(r"(?<!\\)%")
 
 
+# a verbatim environment made by hand: "\def\zzz{\catcode`\\=12 ... \zzzz}", the body read up to "\end{zzz}" by a
+# macro defined inside a group that changes the catcodes ("{\catcode`\/=0 \catcode`\[=1 \catcode`\]=2 ... ]")
+_CATCODE_VERBATIM = re.compile(r"\\def\\([a-zA-Z]+)\s*\{%?\s*(?:\\catcode`\\.=1[12]\s*)*\\catcode`\\\\=12")
+# an environment whose body is written to a file and read back as verbatim (tcolorbox, fancyvrb): pandoc runs in an
+# empty directory and stopped at the "\input{\jobname.vrb}" of its definition
+_VERBOUT_NEW = re.compile(r"\\(?:re)?newenvironment\s*\{([^{}]+)\}\s*(?:\[(\d)\])?\s*(?:\[[^\]]*\])?\s*(?=\{)")
+_VERBOUT = re.compile(r"\\(?:tcbverbatimwrite|VerbatimOut|verbatimwrite)(?![a-zA-Z@])|\\begin\{VerbatimOut\}")
+_CATCODE_GROUP = re.compile(r"(?m)^[ \t]*\{[ \t]*\n(?:[ \t]*\\catcode`\\?.=\d+[ \t]*\n)+")
+
+
 def verbatim_environments(text: str) -> set[str]:
     """Names of the verbatim-like environments of a document: the standard ones plus the ones it defines."""
     names = set(VERBATIM_NAMES)
     for m in _DEFINED.finditer(text):
         names.add(m.group(1).strip())
+    for m in _CATCODE_VERBATIM.finditer(text):
+        names.add(m.group(1))
+    for m in _VERBOUT_NEW.finditer(text):
+        e = balanced_end(text, m.end())
+        if e > 0 and _VERBOUT.search(text, m.end(), e):
+            names.add(m.group(1).strip())
     return names
+
+
+def drop_verbatim_out_environments(text: str) -> tuple[str, dict[str, int]]:
+    r"""Remove the definitions of the environments whose body is written to a file and read back as verbatim
+    (``\newenvironment{nfebox}[3]{\tcbverbatimwrite{\jobname.vrb}}{...\inputverbfile{\jobname.vrb}...}``) and
+    return {name: number of arguments}."""
+    found: dict[str, int] = {}
+    pos = 0
+    while True:
+        m = _VERBOUT_NEW.search(text, pos)
+        if not m:
+            break
+        e1 = balanced_end(text, m.end())
+        j = e1
+        while 0 < j < len(text) and text[j] in " \t\n":
+            j += 1
+        e2 = balanced_end(text, j) if 0 < j < len(text) and text[j] == "{" else -1
+        if e2 < 0 or not _VERBOUT.search(text, m.end(), e1):
+            pos = m.end()
+            continue
+        found[m.group(1).strip()] = int(m.group(2) or 0)
+        text = text[:m.start()] + text[e2:]
+        pos = m.start()
+    return text, found
+
+
+def drop_catcode_verbatim(text: str) -> tuple[str, list[str]]:
+    r"""Remove the definitions of the hand-made verbatim environments (``_CATCODE_VERBATIM``) and return their names.
+    The group that defines the reading macro closes with the character it made a closing brace (``]``), so pandoc saw
+    an open ``{`` up to the end of the file and lost the whole paper."""
+    names = []
+    while True:
+        m = _CATCODE_VERBATIM.search(text)
+        if not m:
+            break
+        e = balanced_end(text, text.index("{", m.start()))
+        if e < 0:
+            break
+        names.append(m.group(1))
+        text = text[:m.start()] + text[e:]
+    if not names:
+        return text, names
+    for g in list(_CATCODE_GROUP.finditer(text))[::-1]:
+        closing = re.findall(r"\\catcode`\\?(.)=2", g.group(0))
+        if not closing or "gdef" not in text[g.end():g.end() + 300]:
+            continue
+        end = re.compile(r"(?m)^[ \t]*" + re.escape(closing[0]) + r"[ \t]*$").search(text, g.end())
+        if end:
+            text = text[:g.start()] + text[end.end():]
+    return text, names
 
 
 def _empty_comment(line: str) -> str:
@@ -97,6 +163,12 @@ def plain_verbatim_environments(text: str) -> str:
     ``spverbatim`` -> ``verbatim`` / ``lstlisting``: pandoc reads an environment it does not know as ordinary
     LaTeX, which runs the lines of a listing together and drops every ``%`` comment in it."""
     renames = {"spverbatim": ("verbatim", 0, False)}
+    text, hand_made = drop_catcode_verbatim(text)
+    for name in hand_made:
+        renames[name] = ("verbatim", 0, False)
+    text, written = drop_verbatim_out_environments(text)
+    for name, nargs in written.items():
+        renames[name] = ("verbatim", nargs, False)
     for pattern, target, groups in ((_LST_NEW, "lstlisting", 2), (_VERB_NEW, "verbatim", 1)):
         while True:
             m = pattern.search(text)
@@ -161,13 +233,16 @@ def inline_listing_files(text: str, folder: str, read=None) -> str:
     return _LISTING_FILE.sub(one, text)
 
 
-_INPUT = re.compile(r"\\(?:input|include)(?![a-zA-Z@])\s*\{([^{}]+)\}")
+_INPUT = re.compile(r"\\(?P<cmd>input|include|subfile|subfileinclude)(?![a-zA-Z@])\s*\{([^{}]+)\}")
+_SUBFILE_BODY = re.compile(r"\\begin\{document\}(.*?)(?:\\end\{document\}|\Z)", re.S)
 
 
 def expand_remaining_inputs(text: str, folder: str, depth: int = 0) -> str:
     r"""``\input{a} & \input{b}``: latexpand expands one \input per line and leaves the other for pandoc, which runs in
     an empty directory and drops the whole construct (the generation examples of a results table disappeared with
-    it). The ones that are left and exist on disk are put in here, comments emptied, as many levels deep as needed."""
+    it). The ones that are left and exist on disk are put in here, comments emptied, as many levels deep as needed.
+    ``\subfile{sec.tex}`` (package ``subfiles``), which latexpand does not know, is expanded the same way, keeping
+    only the body of the file when it is a standalone document (``\documentclass[main]{subfiles}``)."""
     import os
     if depth > 8:
         return text
@@ -176,12 +251,15 @@ def expand_remaining_inputs(text: str, folder: str, depth: int = 0) -> str:
     def one(m):
         if span_at(spans, m.start()):
             return m.group(0)
-        name = m.group(1).strip()
+        name = m.group(2).strip()
         for candidate in (name, name + ".tex"):
             path = os.path.join(folder, candidate)
             if os.path.isfile(path):
                 with open(path, encoding="utf-8", errors="replace") as fh:
                     body = empty_comments(fh.read())
+                if m.group("cmd").startswith("subfile"):
+                    inner = _SUBFILE_BODY.search(body)
+                    body = inner.group(1) if inner else body
                 return "\n" + expand_remaining_inputs(body, folder, depth + 1) + "\n"
         return m.group(0)
     return _INPUT.sub(one, text)

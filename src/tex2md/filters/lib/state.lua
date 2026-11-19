@@ -7,6 +7,9 @@ local S = {
   used = { figure = {}, table = {} }, -- entries of S.floats already given to a float (the .aux lists floats in
                                     -- placement order, which is not always document order)
   flast = {},                       -- last matched float per kind (to detect multi-panel floats)
+  sections = {},                    -- .aux table of contents in order: {level, num, text}
+  sptr = 1,                         -- first entry of S.sections not yet given to a header
+  level_shift = nil,                -- header level minus toc level (2 when a \part pushed every section down)
   counters = { 0, 0, 0 },           -- running section / subsection / subsubsection numbers
   in_appendix = false,
   fig_count = 0,                    -- fallback numbering when the .aux has no float data

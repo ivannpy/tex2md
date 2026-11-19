@@ -3,7 +3,7 @@ import subprocess
 
 import pytest
 
-from tex2md.preprocess.comments import empty_comments, plain_verbatim_environments
+from tex2md.preprocess.comments import empty_comments, expand_remaining_inputs, plain_verbatim_environments
 
 LISTINGS = "\n".join([
     r"Text 50\% done % a comment",
@@ -65,3 +65,52 @@ def test_code_pandoc_wrote_with_highlighting_commands_becomes_plain_text_again()
            "\\KeywordTok{def}\\NormalTok{ f(x\\_1): }\\CommentTok{\\# a{-}b \\textless{}|im\\_start|\\textgreater{}}\n\\end{Highlighting}")
     out = plain_verbatim_environments(src)
     assert out.strip().splitlines()[1:3] == ["def f(x_1): # a-b <|im_start|>", "\\end{verbatim}"]
+
+
+CATCODE_VERBATIM = r"""\def\zzz{%
+   \catcode`\$=12
+   \catcode`\%=12
+   \catcode`\\=12
+   \catcode`\{=12
+   \catcode`\}=12
+   \zzzz}
+{
+\catcode`\/=0
+\catcode`\[=1
+\catcode`\]=2
+\catcode`\{=12
+\catcode`\}=12
+\catcode`\\=12
+/long/gdef/zzzz#1\end{zzz}[%
+#1/end[zzz]]
+]
+\begin{document}
+\begin{zzz}
+cost {$3,300 % per car
+\end{zzz}
+\end{document}
+"""
+
+
+def test_hand_made_catcode_verbatim_becomes_verbatim():
+    text = plain_verbatim_environments(empty_comments(CATCODE_VERBATIM))
+    assert "catcode" not in text and "gdef" not in text
+    assert "\\begin{verbatim}\ncost {$3,300 % per car\n\\end{verbatim}" in text
+
+
+def test_environment_written_to_a_file_and_read_back_becomes_verbatim():
+    text = ("\\newenvironment{nfebox}[3]{%\n  \\def\\t{NFE #1}%\n  \\tcbverbatimwrite{\\jobname.vrb}%\n}{%\n"
+            "  \\endtcbverbatimwrite%\n  \\inputverbfile{\\jobname.vrb}%\n}\n\\begin{document}\n"
+            "\\begin{nfebox}{1}{2.03}{8.11}\n,,, the 100% the\n\\end{nfebox}\n\\end{document}\n")
+    out = plain_verbatim_environments(empty_comments(text))
+    assert "jobname" not in out
+    assert "\\begin{verbatim}\n,,, the 100% the\n\\end{verbatim}" in out
+
+
+def test_subfile_is_expanded_without_its_preamble(tmp_path):
+    (tmp_path / "sec_intro.tex").write_text(
+        "\\documentclass[main.tex]{subfiles}\n\\begin{document}\n\\section{Intro}\nText.\n\\end{document}\n")
+    (tmp_path / "sec_exp.tex").write_text("\\section{Experiments} % no preamble\n")
+    out = expand_remaining_inputs("\\subfile{sec_intro.tex}\n\\subfile{sec_exp}\n", str(tmp_path))
+    assert "documentclass" not in out and "\\section{Intro}\nText." in out
+    assert "\\section{Experiments} %" in out

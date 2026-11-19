@@ -4,6 +4,7 @@
 -- `-M key=path` (JSON files written by tex2md):
 --   tex2md_labels  the .aux \newlabel table        (sections, equations, float labels)
 --   tex2md_floats  the .aux \caption lines in order (the numbers of figures and tables)
+--   tex2md_sections the .aux table of contents in order (the numbers of the headers)
 --
 -- Modules live in lib/; the passes below run in order and the order matters (headers are numbered
 -- before floats, floats before images are dropped).
@@ -21,6 +22,7 @@ return {
   { Meta = function(meta)
       S.labels = S.read_json(meta, "tex2md_labels") or {}
       S.floats = S.read_json(meta, "tex2md_floats") or {}
+      S.sections = S.read_json(meta, "tex2md_sections") or {}
       return meta
     end },
   { Para = headers.Para, Header = headers.Header },

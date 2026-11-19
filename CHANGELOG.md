@@ -1,5 +1,35 @@
 # Changelog
 
+## Library reconversion fixes (2026-11-18)
+From `HALLAZGOS_2026-11-18.md` (158 library papers reconverted: 4 pandoc failures, 4 conversions that lost content
+with the report in `ok`) and from a new diagnostic that found 8 more.
+
+- **Main file**: the `00README.json` (`"usage": "toplevel"`) or `00README.XXX` (`toplevelfile`) of the e-print names
+  it; without one, a `.bbl` of the same name and the number of files pulled in beat the name `main.tex`. `subfiles`
+  parts and `standalone` figures are not candidates. `chen2026bard` had converted the rebuttal and `sun2023hollow` a
+  draft of notes; `2607.14106` also changes (its README names `neurips_2026.tex`).
+- **`\subfile{x}`** is expanded (without the preamble of `x`): `he2021exposure` had lost half its sections.
+- **New diagnostics**: `missing-sections` (error: numbered sections of the `.aux` table of contents with no heading of
+  that number in the Markdown) and `ambiguous-main-file` (warning). The report also records `main`.
+- **Section numbers from the table of contents**: the filter gives each header the number of the `.aux` toc entry
+  with the same title (in order, keeping the level offset of the first match), before the label and the level
+  counters. Headings were unnumbered or misnumbered under a `\part` (`feng2025theory`), with lost labels, custom
+  appendix commands (`\beginappendix`: `cheng2025sdar` now has A instead of 10) and IEEE numbers.
+- **ACM-Reference-Format `.bbl`**: `\bibitem[label]%` with the key on the next line, `\urldef`/`\showURL`
+  (`kuleshov2026modern`: 91 unresolved citations; `kwon2023vllm` and `muennighoff2023` now use their `.bbl`).
+- **pandoc failures**: `\texorpdfstring` with one argument (new rule `texorpdfstring`); a hand-made verbatim
+  environment built with `\catcode` (`\def\zzz{...}` that makes `\` an ordinary character); a `{` of the preamble never closed
+  (`\usepackage{listings}{`, reported as `unbalanced-braces`); environments that write their body to
+  `\jobname.vrb` and read it back (`\tcbverbatimwrite`) become `verbatim`.
+- **Figures** keep a code block inside a quote (sample texts in a `tcolorbox`), and the math clean-ups leave code
+  inside block quotes alone (`$` in those samples gave `unbalanced-math`).
+- **References**: a key written with a text macro (`\ref{alg:\framework{}-train}`) is looked up as LaTeX wrote it to
+  the `.aux` (`alg:OeMDM{}-train`); the key may hold braces, also in `parse_aux`, which cut it at the first `}`
+  (`hong2026oemdm`: 6 `??`).
+- **Equation labels** are no longer put inside a macro definition (`\newcommand{\ee}{\end{equation}}`): every
+  equation got a second label and amsmath dropped the author's (`kaplan2020`: 32 `??`). Cached builds made with
+  the old labeller must be deleted to be recompiled (`~/.cache/tex2md/<id>/build`).
+
 ## Audit pass (2026-11-17): the library and 65 arXiv papers that were not in it
 Method: reconvert the 124 library papers into a scratch folder (the library's `.md` files were not touched), convert
 65 more arXiv sources (2012–2025, classics and recent), and look for what pandoc does without saying: text that

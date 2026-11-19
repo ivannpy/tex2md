@@ -1,4 +1,4 @@
-from tex2md.preprocess.structure import quad_before_digits, unwrap_twocolumn
+from tex2md.preprocess.structure import quad_before_digits, texorpdfstring_tex, unwrap_twocolumn
 
 
 def test_twocolumn_teaser_is_unwrapped():
@@ -34,3 +34,18 @@ def test_comment_lines_are_dropped_but_not_inside_verbatim():
     from tex2md.preprocess.structure import strip_comment_lines
     src = "a\n% c\nb\n\\begin{verbatim}\n% keep\n\\end{verbatim}\n  % d\ne\n"
     assert strip_comment_lines(src) == "a\nb\n\\begin{verbatim}\n% keep\n\\end{verbatim}\ne\n"
+
+
+
+def test_texorpdfstring_keeps_the_tex_argument():
+    assert texorpdfstring_tex(r"\section{On \texorpdfstring{$\alpha$}{alpha} rates}") == r"\section{On {$\alpha$} rates}"
+
+
+def test_texorpdfstring_with_one_argument_eats_the_next_token_like_latex():
+    assert texorpdfstring_tex(r"\section{Before \texorpdfstring{\sdrl}~Training}") == r"\section{Before {\sdrl}Training}"
+    assert texorpdfstring_tex(r"\texorpdfstring{A}\relax B") == r"{A} B"
+
+
+def test_texorpdfstring_in_verbatim_is_left_alone():
+    text = "\\begin{verbatim}\\texorpdfstring{a}~\\end{verbatim}"
+    assert texorpdfstring_tex(text) == text

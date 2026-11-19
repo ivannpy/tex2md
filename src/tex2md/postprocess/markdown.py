@@ -135,6 +135,7 @@ _HTML_BLOCK = re.compile(r"</?(?:table|thead|tbody|tfoot|tr|td|th|colgroup|col|p
 # pandoc fences code with backticks only; a line of "~~~~" is a row of TeX spaces inside an equation
 _FENCE_OPEN = re.compile(r"[ ]{0,3}(`{3,})(?:[^`]*|\s*\{.*\})$")
 _CODE_MARK = "\x00code%d\x00"
+_QUOTED_CODE = re.compile(r"((?:> ?)+) {4}(?=.*\S)")
 
 
 def protect_code(body):
@@ -155,6 +156,18 @@ def protect_code(body):
             j = i + 1
             while j < len(lines) and not lines[j].lstrip().startswith(fence.group(1)):
                 j += 1
+            out.append(keep("\n".join(lines[i:j + 1])))
+            i = j + 1
+            continue
+        quoted = _QUOTED_CODE.match(line)
+        if quoted and (i == 0 or not lines[i - 1].lstrip("> ")):
+            # code in a block quote (the sample text of a box): ">     text", up to the end of the quote
+            j = i
+            while j + 1 < len(lines) and lines[j + 1].startswith(quoted.group(1).rstrip()) \
+                    and (_QUOTED_CODE.match(lines[j + 1]) or not lines[j + 1].lstrip("> ")):
+                j += 1
+            while not lines[j].lstrip("> "):
+                j -= 1
             out.append(keep("\n".join(lines[i:j + 1])))
             i = j + 1
             continue

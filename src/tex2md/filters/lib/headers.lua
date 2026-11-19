@@ -1,4 +1,5 @@
--- Section numbers: taken from the .aux when the heading has a label, counted otherwise.
+-- Section numbers: taken from the .aux table of contents (matched by title, in order) or from the heading's label,
+-- counted otherwise. Counting alone goes wrong when pandoc shifts the levels (a \part) or a heading is lost.
 local S = require("state")
 local text = require("strutil")
 local labels = require("labels")
@@ -46,9 +47,28 @@ local function unnumbered(classes)
   return false
 end
 
+local TOC_LOOKAHEAD = 12      -- toc entries a header may skip (headings the conversion lost or merged)
+
+-- The number of the next table-of-contents entry whose title starts like this header's; nil if none.
+local function toc_number(h)
+  local key = text.norm_text(pandoc.utils.stringify(h.content)):sub(1, 40)
+  if key == "" then return nil end
+  for i = S.sptr, math.min(S.sptr + TOC_LOOKAHEAD, #S.sections) do
+    local e = S.sections[i]
+    local n = math.min(#key, #e.text)
+    -- the level must agree too (once known): a \paragraph often repeats the title of a later subsection
+    local level_ok = S.level_shift == nil or h.level - e.level == S.level_shift
+    if level_ok and e.text ~= "" and (e.text == key or (n >= 12 and e.text:sub(1, n) == key:sub(1, n))) then
+      S.level_shift = S.level_shift or h.level - e.level
+      S.sptr = i + 1
+      return e.num
+    end
+  end
+end
+
 function M.Header(h)
   if unnumbered(h.classes) then return h end
-  local num = labels.label_number(h.identifier)
+  local num = toc_number(h) or labels.label_number(h.identifier)
   local auto = header_number(h.level)
   if num then resync(num) else num = auto end
   if num then

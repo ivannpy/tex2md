@@ -50,6 +50,8 @@ local function substantive(blocks)
   for _, b in ipairs(blocks) do
     if b.t == "CodeBlock" then
       return true
+    elseif b.t == "BlockQuote" and substantive(b.content) then
+      return true      -- a sample text in a tcolorbox: verbatim inside the quote the box became
     elseif b.t == "Para" or b.t == "Plain" or b.t == "BlockQuote" or b.t == "BulletList"
         or b.t == "OrderedList" or b.t == "DefinitionList" then
       if text_length(b) >= 40 then return true end

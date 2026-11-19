@@ -55,6 +55,10 @@ def _blank_comments(text: str) -> str:
     return re.sub(r"(?<!\\)%[^\n]*", lambda m: " " * len(m.group(0)), text)
 
 
+_IN_DEFINITION = re.compile(r"\\(?:(?:re)?newcommand|providecommand|DeclareRobustCommand|[gex]?def|newenvironment)"
+                            r"(?![a-zA-Z@])")
+
+
 def label_numbered_equations(text: str, prefix: str = "tex2md-eq", start: int = 1) -> tuple[str, int]:
     """Return (text with labels, next free counter). Comments are not read: a commented-out ``\\begin{align}``
     is no environment, and a ``\\\\`` or a ``\\label`` inside a comment is neither a row end nor a label."""
@@ -71,7 +75,11 @@ def label_numbered_equations(text: str, prefix: str = "tex2md-eq", start: int = 
         if not end:
             out.append(text[pos:])
             return "".join(out), n
-        if span_at(verbatim, m.start()):      # LaTeX shown as an example in a listing
+        line = seen[seen.rfind("\n", 0, m.start()) + 1:m.start()]
+        if span_at(verbatim, m.start()) or _IN_DEFINITION.search(line):
+            # LaTeX shown as an example in a listing, or the body of a macro (\newcommand{\be}{\begin{equation}}
+            # with \ee = \end{equation}: a label put there is repeated in every equation and amsmath drops the
+            # author's own ones, "Multiple \label's")
             out.append(text[pos:end.start()])
             pos = end.start()
             continue

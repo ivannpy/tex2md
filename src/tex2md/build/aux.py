@@ -60,9 +60,9 @@ def parse_aux(build):
             if not f.endswith(".aux"):
                 continue
             t = read(os.path.join(dp, f))
-            for m in re.finditer(r"\\newlabel\{([^}]*)\}", t):
-                key = m.group(1)
-                i = skip_ws(t, m.end())
+            for m in re.finditer(r"\\newlabel(?=\{)", t):
+                key, i = group(t, m.end())     # (may hold braces: "alg:OeMDM{}-train", from \label{alg:\method{}-train})
+                i = skip_ws(t, i)
                 if i >= len(t) or t[i] != "{":
                     continue
                 body, _ = group(t, i)
@@ -114,3 +114,40 @@ def ref_name(typ):
 def fmt_num(lab):
     n = lab["num"]
     return f"({n})" if NAMES.get(lab["type"]) == "Eq." else n
+
+
+
+_TOC = re.compile(r"\\@input\{([^}]*)\}|\\@writefile\{toc\}\{\\contentsline\s*\{(section|subsection|subsubsection)\}\s*(?=\{)")
+_NUMBERLINE = re.compile(r"\\numberline\s*(?=\{)")
+
+
+def parse_sections(bdir, base):
+    """[{level, num, text}] of the numbered sections the compiled document wrote to its table of contents, in order:
+    level 1-3, the number as printed ("2", "3.1", "A.2", "II-A") and the start of the title in the form
+    ``parse_floats`` gives captions. Read from ``base.aux`` and the .aux files it ``\\@input``s only: a build folder
+    may still hold the .aux of another file that was once taken for the main one."""
+    out, seen = [], set()
+    levels = {"section": 1, "subsection": 2, "subsubsection": 3}
+
+    def walk(path):
+        if path in seen or not os.path.isfile(path):
+            return
+        seen.add(path)
+        t = read(path)
+        for m in _TOC.finditer(t):
+            if m.group(1):
+                walk(os.path.join(bdir, m.group(1)))
+                continue
+            title, _ = group(t, m.end())
+            nl = _NUMBERLINE.match(title.lstrip())
+            if not nl:
+                continue        # \addcontentsline of an unnumbered heading
+            title = title.lstrip()
+            num, k = group(title, nl.end())
+            num = clean_num(num)
+            if not num:
+                continue
+            txt = re.sub(r"\\[a-zA-Z@]+\s*", " ", _without_font_noise(title[k:]))
+            out.append({"level": levels[m.group(2)], "num": num, "text": re.sub(r"[^a-z0-9]", "", txt.lower())[:40]})
+    walk(os.path.join(bdir, base + ".aux"))
+    return out

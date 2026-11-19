@@ -305,3 +305,36 @@ def from_pandoc_stderr(err: str) -> list[Diagnostic]:
 def counts(diags: list[Diagnostic]) -> dict[str, int]:
     c = Counter(d.severity for d in diags)
     return {s: c.get(s, 0) for s in SEVERITIES}
+
+
+_HEADING_NUM = re.compile(r"^#{1,6}\s+([0-9A-Z]+(?:[.-][0-9A-Z]+)*)\.?\s", re.M)
+MISSING_SECTIONS_MIN = 2         # sections of the .aux with no heading before the conversion is called incomplete
+MISSING_SECTIONS_SHARE = 0.2     # ... and the share of all of them that this must be
+
+
+def scan_missing_sections(sections: list[dict], body: str) -> list[Diagnostic]:
+    """Numbered sections of the compiled document (its .aux) with no heading of that number in the Markdown. Half a
+    paper loaded with a command latexpand does not know (``\\subfile``) used to give a short Markdown with the
+    report in ``ok``; a heading written without its number (or with another one) is caught too."""
+    nums = [s["num"] for s in sections if s["level"] <= 2]
+    if not nums:
+        return []
+    written = set(_HEADING_NUM.findall(body))
+    missing = [n for n in dict.fromkeys(nums) if n not in written]
+    if len(missing) < MISSING_SECTIONS_MIN or len(missing) < MISSING_SECTIONS_SHARE * len(set(nums)):
+        return []
+    return [Diagnostic("missing-sections", "error",
+                       f"{len(missing)} of the {len(set(nums))} numbered sections of the compiled document have no "
+                       "heading in the Markdown: part of the body was not converted, or the headings lost their numbers",
+                       len(missing), missing[:8])]
+
+
+def main_file_diagnostics(main: str, candidates: list[str]) -> list[Diagnostic]:
+    """Several files of the e-print are complete documents and arXiv's ``00README`` does not say which one is the
+    paper: the one taken was chosen by a heuristic (a .bbl of the same name, how many files it pulls in)."""
+    if len(candidates) < 2:
+        return []
+    return [Diagnostic("ambiguous-main-file", "warning",
+                       f"{len(candidates)} files have \\documentclass and \\begin{{document}} and the source declares "
+                       f"no main file: {main} was taken (check that it is the paper and not a rebuttal or a draft)",
+                       len(candidates), candidates[:5])]

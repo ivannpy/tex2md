@@ -1,4 +1,4 @@
-from tex2md.preprocess.citations import first_authors, parse_bbl, resolve_cites, simplify_citeproc
+from tex2md.preprocess.citations import first_authors, parse_bbl, plain_bib, resolve_cites, simplify_citeproc
 
 BBL_NUMERIC = r"""
 \begin{thebibliography}{2}
@@ -105,3 +105,26 @@ def test_other_packages_citation_commands_are_resolved():
     numbered = parse_bbl(r"\bibitem{ho} Ho. \bibitem{song} Song.")
     assert resolve_cites(r"\citeyearpar{ho} \citenum{song} \cite{ho,song}", numbered, stats) == "[1] 2 [1, 2]"
     assert stats["unresolved_cites"] == 0
+
+
+BBL_ACM = r"""
+\begin{thebibliography}{2}
+\bibitem[Arriola et~al\mbox{.}(2025a)]%
+        {arriola2025block}
+\bibfield{author}{\bibinfo{person}{Marianne Arriola}, {and} \bibinfo{person}{Volodymyr Kuleshov}.} \bibinfo{year}{2025}\natexlab{a}.
+\newblock \showarticletitle{Block diffusion}.
+\newblock
+\urldef\tempurl%
+\url{https://arxiv.org/abs/2503.09573}
+\showURL{%
+\tempurl}
+\end{thebibliography}
+"""
+
+
+def test_acm_reference_format_key_on_the_line_after_the_label():
+    (entry,) = parse_bbl(BBL_ACM)
+    assert entry["key"] == "arriola2025block"
+    assert entry["short"] == "Arriola et~al\\mbox{.}" and entry["year"] == "2025a"
+    assert plain_bib(entry["body"]) == "Marianne Arriola, and Volodymyr Kuleshov. 2025a. Block diffusion. " \
+                                       "https://arxiv.org/abs/2503.09573"

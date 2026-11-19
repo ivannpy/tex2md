@@ -13,10 +13,18 @@ import re
 import shutil
 from dataclasses import dataclass
 
-from tex2md.build.aux import parse_aux, parse_floats
-from tex2md.build.latex import find_main
+from tex2md.build.aux import parse_aux, parse_floats, parse_sections
+from tex2md.build.latex import declared_toplevel, find_main, main_candidates
 from tex2md.config import CACHE, FILTER, UNWRAP_FILTER
-from tex2md.diagnostics import Diagnostic, counts, from_pandoc_stderr, scan_lost_text, scan_markdown
+from tex2md.diagnostics import (
+    Diagnostic,
+    counts,
+    from_pandoc_stderr,
+    main_file_diagnostics,
+    scan_lost_text,
+    scan_markdown,
+    scan_missing_sections,
+)
 from tex2md.library.frontmatter import frontmatter
 from tex2md.pandoc_recovery import convert_with_recovery
 from tex2md.pandoc_recovery import diagnostics as dropped_diagnostics
@@ -58,6 +66,7 @@ class Workspace:
     src: str
     build: str
     main: str = ""
+    candidates: tuple[str, ...] = ()     # complete documents of the tree when no 00README names the main one
     bdir: str = ""
     base: str = ""
 
@@ -76,7 +85,10 @@ def fetch(aid, ver, report) -> Workspace | None:
         report["error"] = "arXiv has no LaTeX source (PDF only)"
         return None
     ws = Workspace(work=work, src=os.path.join(work, "src"), build=os.path.join(work, "build"))
-    ws.main = find_main(ws.src)
+    cands = main_candidates(ws.src)
+    ws.main = find_main(ws.src, cands)
+    if not declared_toplevel(ws.src):
+        ws.candidates = tuple(os.path.relpath(c, ws.src) for c in cands)
     if not ws.main:
         report["error"] = "no main .tex found (no file with \\documentclass and \\begin{document}: plain TeX and " \
                           "LaTeX 2.09 sources are not supported)"
@@ -86,6 +98,7 @@ def fetch(aid, ver, report) -> Workspace | None:
     rel_main = os.path.relpath(ws.main, ws.src)
     ws.bdir = os.path.join(ws.build, os.path.dirname(rel_main))
     ws.base = os.path.splitext(os.path.basename(rel_main))[0]
+    report["main"] = rel_main
     return ws
 
 
@@ -157,7 +170,7 @@ def load_bibliography(flat, bbl_path):
     return parse_bbl(inline.group(0) if inline else read(bbl_path)) if (inline or bbl_path) else None
 
 
-def run_pandoc(ws: Workspace, tex, labels, floats, bib, report):
+def run_pandoc(ws: Workspace, tex, labels, floats, sections, bib, report):
     """Write the numbering tables and run pandoc (retrying without the environments it cannot parse).
     Returns (body or None, last stderr, dropped environments)."""
     # pandoc runs in an empty directory: it would otherwise try to parse local .sty files
@@ -169,9 +182,12 @@ def run_pandoc(ws: Workspace, tex, labels, floats, bib, report):
     floats_path = os.path.join(ws.work, "floats.json")
     with open(floats_path, "w") as fh:
         json.dump(floats, fh)
+    sections_path = os.path.join(ws.work, "sections.json")
+    with open(sections_path, "w") as fh:
+        json.dump(sections, fh)
     cmd = ["pandoc", "_tex2md_flat.tex", "-f", "latex", "-t", PANDOC_FORMAT, "--wrap=none",
            "--syntax-highlighting=none", "--lua-filter", FILTER, "-M", "tex2md_labels=" + lab_path,
-           "-M", "tex2md_floats=" + floats_path]
+           "-M", "tex2md_floats=" + floats_path, "-M", "tex2md_sections=" + sections_path]
     bibfiles = [os.path.join(dp, f) for dp, _, fns in os.walk(ws.build) for f in fns if f.endswith(".bib")]
     if not bib and bibfiles:
         # citeproc adds its bibliography <div> after our filter: unwrap it with a second pass
@@ -266,11 +282,12 @@ def convert(arg, out, mn):
         at = flat.find("\\usepackage")
         flat = flat[:at] + defs + "\n" + flat[at:] if at >= 0 else defs + "\n" + flat
     floats = parse_floats(ws.build)
+    sections = parse_sections(ws.bdir, ws.base)
     tex, repairs = repair_braces(escape_citation_ampersands(preprocess(flat, labels, bib, stats, floats)))
     report.update(stats)
     report["tables_in_tex"] = len(re.findall(r"\\begin\{table\*?\}", tex))
 
-    body, err, dropped = run_pandoc(ws, tex, labels, floats, bib, report)
+    body, err, dropped = run_pandoc(ws, tex, labels, floats, sections, bib, report)
     if body is None:
         return report
     mm = re.search(r"tex2md-stats figures=(\d+) tables=(\d+)", err)
@@ -280,7 +297,9 @@ def convert(arg, out, mn):
     report["unresolved_left"] = len(re.findall(r"\[[a-zA-Z]+:[^\]\s]+\]", body)) + body.count("??")
 
     diags = (scan_markdown(body) + from_pandoc_stderr(err) + latex_reference_diagnostics(stats)
-             + dropped_diagnostics(dropped) + scan_lost_text(tex, body) + brace_diagnostics(repairs))
+             + dropped_diagnostics(dropped) + scan_lost_text(tex, body) + brace_diagnostics(repairs)
+             + scan_missing_sections(sections, body)
+             + main_file_diagnostics(os.path.relpath(ws.main, ws.src), list(ws.candidates)))
     report["diagnostics"] = [d.to_dict() for d in diags]
     report["diagnostic_counts"] = counts(diags)
 

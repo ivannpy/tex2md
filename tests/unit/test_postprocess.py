@@ -106,3 +106,10 @@ def test_renames_do_not_touch_longer_names():
 def test_ifthenelse_left_in_an_equation_by_a_macro_with_an_optional_part_is_decided():
     body = r"$L = \ifthenelse{\equal{\log p(x)}{}}{A}{B} + \ifthenelse{\equal{}{}}{C}{D} + \ifthenelse{\boolean{x}}{E}{F}$"
     assert resolve_ifthenelse(body) == r"$L = B + C + \ifthenelse{\boolean{x}}{E}{F}$"
+
+
+def test_code_inside_a_block_quote_is_protected():
+    body = "**Figura 2.** Sample.\n\n>     will be $5. half\n>\n>      of hour $20\n\nafter $x$\n"
+    protected, stash = protect_code(body)
+    assert stash == [">     will be $5. half\n>\n>      of hour $20"]
+    assert restore_code(protected, stash) == body

@@ -15,9 +15,25 @@ def _plural(name):
     return name[:-1] + "s." if name.endswith(".") else name + "s"
 
 
+_TEXT_MACRO = re.compile(r"\\(?:def\s*\\([a-zA-Z]+)|(?:re)?newcommand\*?\s*\{?\\([a-zA-Z]+)\}?)\s*\{([\w .-]*)\}")
+# a key with one level of braces: \ref{alg:\method{}-train}
+_KEY = r"\{((?:[^{}]|\{[^{}]*\})*)\}"
+
+
+def _expand_key(key, macros):
+    r"""``eq:\method{}_loss`` -> ``eq:LoMDM{}_loss``, the way LaTeX writes the key to the .aux."""
+    return re.sub(r"\\([a-zA-Z]+)(?![a-zA-Z])\s*", lambda m: macros.get(m.group(1), m.group(0)), key)
+
+
 def resolve_refs(text, labels, stats):
+    macros = {}
+    if re.search(r"\\(?:ref|eqref|cref|Cref|autoref)\*?\s*\{[^{}]*\\", text):
+        macros = {m.group(1) or m.group(2): m.group(3) for m in _TEXT_MACRO.finditer(text)}
+
     def lookup(key):
         lab = labels.get(key)
+        if not lab and "\\" in key and macros:
+            lab = labels.get(_expand_key(key, macros))
         if not lab:
             stats["unresolved_refs"] += 1
         return lab
@@ -56,7 +72,7 @@ def resolve_refs(text, labels, stats):
         return ", ".join(parts)
 
     pat = re.compile(r"\\(ref|eqref|cref|Cref|autoref|Autoref|pageref|cpageref|nameref|vref|Vref|labelcref|namecref|nameCref)"
-                     r"\*?\s*\{([^}]*)\}")
+                     r"\*?\s*" + _KEY)
 
     def sub(m):
         if "#" in m.group(2):  # inside a macro definition

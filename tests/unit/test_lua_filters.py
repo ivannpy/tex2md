@@ -15,12 +15,14 @@ FMT = ("markdown-raw_attribute-header_attributes-fenced_divs-bracketed_spans-nat
        "-grid_tables-smart-auto_identifiers-implicit_figures")
 
 
-def convert(tmp_path, body, labels=None, floats=None):
+def convert(tmp_path, body, labels=None, floats=None, sections=None):
     (tmp_path / "in.tex").write_text("\\documentclass{article}\\usepackage{graphicx}\\begin{document}\n" + body + "\n\\end{document}")
     (tmp_path / "labels.json").write_text(json.dumps(labels or {}))
     (tmp_path / "floats.json").write_text(json.dumps(floats or []))
+    (tmp_path / "sections.json").write_text(json.dumps(sections or []))
     p = subprocess.run(["pandoc", "in.tex", "-f", "latex", "-t", FMT, "--wrap=none", "--lua-filter", FILTER,
-                        "-M", "tex2md_labels=labels.json", "-M", "tex2md_floats=floats.json"],
+                        "-M", "tex2md_labels=labels.json", "-M", "tex2md_floats=floats.json",
+                        "-M", "tex2md_sections=sections.json"],
                        capture_output=True, text=True, cwd=tmp_path)
     assert p.returncode == 0, p.stderr
     return p.stdout
@@ -207,3 +209,17 @@ def test_a_table_without_a_header_row_gets_its_first_row_as_header(tmp_path):
     md = convert(tmp_path, body)
     assert md.count("| Model |") == 2 and "|       |     |     |" not in md
     assert md.count("|:------|:---:|:---:|") == 2
+
+
+def sec(level, num, title):
+    return {"level": level, "num": num, "text": re.sub(r"[^a-z0-9]", "", title.lower())[:40]}
+
+
+def test_headers_take_the_numbers_of_the_table_of_contents_even_below_a_part(tmp_path):
+    body = (r"\part{Main}\section{Introduction}\paragraph{Setup}x\section{Method}\subsection{Setup}y"
+            r"\section{Infrastructure}")
+    md = convert(tmp_path, body, sections=[sec(1, "1", "Introduction"), sec(1, "2", "Method"),
+                                           sec(2, "2.1", "Setup"), sec(1, "A", "Infrastructure")])
+    heads = re.findall(r"^#+ (.*)$", md, re.M)
+    # (the \\part itself still gets a counted number: the toc entries are sections only)
+    assert heads[1:] == ["1 Introduction", "Setup", "2 Method", "2.1 Setup", "A Infrastructure"]

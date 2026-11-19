@@ -1,4 +1,12 @@
-from tex2md.diagnostics import Diagnostic, counts, from_pandoc_stderr, scan_lost_text, scan_markdown
+from tex2md.diagnostics import (
+    Diagnostic,
+    counts,
+    from_pandoc_stderr,
+    main_file_diagnostics,
+    scan_lost_text,
+    scan_markdown,
+    scan_missing_sections,
+)
 
 
 def codes(body):
@@ -114,3 +122,22 @@ def test_configuration_commands_with_deep_braces_are_not_lost_text():
            + "}\nThe results are presented in the next section and they agree with the theory.\n\\end{document}")
     body = "The results are presented in the next section and they agree with the theory."
     assert not [d for d in scan_lost_text(tex, body) if d.code == "lost-text"]
+
+
+def test_missing_sections_flags_a_body_cut_in_half():
+    sections = [{"level": 1, "num": str(n), "text": ""} for n in range(1, 7)]
+    body = "# 1 Introduction\n\ntext\n\n# 2 Method\n\n## 2.1 Detail\n\n# 3 Results\n"
+    (d,) = scan_missing_sections(sections, body)
+    assert d.code == "missing-sections" and d.severity == "error" and d.examples == ["4", "5", "6"]
+
+
+def test_missing_sections_is_quiet_when_every_number_has_a_heading():
+    sections = [{"level": 1, "num": "1", "text": ""}, {"level": 2, "num": "II-A", "text": ""},
+                {"level": 3, "num": "1.1.1", "text": ""}]
+    assert scan_missing_sections(sections, "# 1 Intro\n\n## II-A Diffusion\n") == []
+
+
+def test_an_ambiguous_main_file_is_reported():
+    assert main_file_diagnostics("a.tex", ["a.tex"]) == []
+    (d,) = main_file_diagnostics("a.tex", ["a.tex", "rebuttal.tex"])
+    assert d.code == "ambiguous-main-file" and d.severity == "warning"

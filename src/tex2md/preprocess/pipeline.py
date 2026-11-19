@@ -59,6 +59,7 @@ from tex2md.preprocess.structure import (
     mark_appendix,
     quad_before_digits,
     strip_comment_lines,
+    texorpdfstring_tex,
     unwrap_twocolumn,
 )
 from tex2md.preprocess.symbols import symbols_to_unicode
@@ -122,6 +123,7 @@ RULES: list[tuple[str, Rule]] = [
     ("paired-delimiters", _pure(expand_paired_delimiters)),
     ("symbols-to-unicode", _pure(symbols_to_unicode)),  # before text-in-macro-bodies (\cmark = \text{\ding{51}})
     ("text-in-macro-bodies", _pure(text_in_macro_bodies)),  # before anything expands or drops macros
+    ("texorpdfstring", _pure(texorpdfstring_tex)),  # a one-argument call makes pandoc fail on the whole paper
     ("mark-appendix", _pure(mark_appendix)),
     ("expand-abbreviations", _pure(expand_abbreviations)),
     ("expand-glossary", _pure(expand_glossary)),

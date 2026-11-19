@@ -3,7 +3,7 @@
 Documento vivo. Se actualiza cuando cambia el comportamiento del conversor. Para instrucciones de uso y
 arquitectura de código ver `README.md`; para el historial de cambios, `CHANGELOG.md`.
 
-Estado a 2026-11-17 · 71 reglas de preprocesado · 9 módulos Lua · 271 pruebas (22 de ellas reconvierten
+Estado a 2026-11-18 · 72 reglas de preprocesado · 9 módulos Lua · 292 pruebas (22 de ellas reconvierten
 artículos reales y comparan byte a byte) · 124 artículos de LaTeX, 7 de PDF y 1 de JATS en la biblioteca · además,
 65 artículos de arXiv que no están en la biblioteca (2012–2025) convierten sin error y con los mismos números de
 figuras y tablas que su PDF.
@@ -39,9 +39,14 @@ No convierte documentos Word, HTML genérico ni PDF escaneados con calidad de La
 
 ```
 id de arXiv ─► descargar e-print ─► (etiquetar ecuaciones) ─► compilar con latexmk ─► .aux / .bbl
-          ─► aplanar con latexpand ─► preprocesar (71 reglas) ─► pandoc + filtros Lua ─► postprocesar ─► .md
+          ─► aplanar con latexpand ─► preprocesar (72 reglas) ─► pandoc + filtros Lua ─► postprocesar ─► .md
 ```
 
+0. **Archivo principal** (`build/latex.py`): el que declara el `00README.json` de arXiv (`"usage": "toplevel"`) o
+   el antiguo `00README.XXX`; si no hay, entre los documentos completos (sin contar partes de `subfiles` ni
+   figuras `standalone`) gana el que tiene un `.bbl` de su mismo nombre, luego el que alcanza más `.tex` por
+   `\input`/`\include`/`\subfile`; el nombre `main.tex` solo desempata. Si hubo que adivinar, aviso
+   `ambiguous-main-file`.
 1. **Descarga** (`sources/arxiv.py`): metadatos de la API de arXiv (con 3 s como mínimo entre dos peticiones,
    también entre ejecuciones distintas, y respetando `Retry-After`) y e-print con reintentos; extracción de `tar`
    con `filter="data"` en una carpeta temporal que se renombra al terminar. Todo se guarda en
@@ -51,8 +56,9 @@ id de arXiv ─► descargar e-print ─► (etiquetar ecuaciones) ─► compil
 3. **Compilación** (`latexmk`, una pasada tolerante a errores y con `-no-shell-escape`, porque el LaTeX es de
    terceros): produce el `.aux` (números reales de secciones,
    figuras, tablas y ecuaciones) y el `.bbl` (bibliografía).
-4. **Aplanado** con `latexpand`: un solo `.tex` con `\input`/`\include` resueltos.
-5. **Preprocesado** (`preprocess/pipeline.py`, lista ordenada de 71 reglas con nombre, cada una una función
+4. **Aplanado** con `latexpand`: un solo `.tex` con `\input`/`\include` resueltos; los `\input` que deja y los
+   `\subfile` (que no conoce) se expanden después, estos sin su preámbulo.
+5. **Preprocesado** (`preprocess/pipeline.py`, lista ordenada de 72 reglas con nombre, cada una una función
    `texto → texto` probada por separado). Resuelve `\ref`/`\cite` a los números del PDF, normaliza entornos que
    pandoc pierde (subfloats, minipages, `\captionof`, `\captionsetup{type=…}`, tablas sin `tabular`…), expande
    macros que pandoc no entiende (`.sty` locales, `\DeclarePairedDelimiter`, macros con argumento delimitado,
@@ -85,7 +91,10 @@ etiquetas; (b) cada `\caption` en orden → número real de cada figura y tabla.
 leyenda con su entrada por el comienzo del texto (prefijo más largo primero; subcadena si la leyenda empieza
 con una macro; la etiqueta propia tiene prioridad sobre el emparejamiento difuso). El `.aux` lista los
 flotantes en orden de **colocación**, no de documento, así que cada entrada se usa una sola vez y se busca
-sin depender del orden.
+sin depender del orden. (c) La tabla de contenidos (`\@writefile{toc}`) → número de cada sección, que el filtro
+asigna a cada encabezado por su título y en orden (con el desfase de nivel que fija el primer emparejamiento:
+un `\part` baja todas las secciones dos niveles); sin entrada, la etiqueta del encabezado y, en último caso,
+el conteo por niveles. El diagnóstico `missing-sections` compara esa tabla con los encabezados del `.md`.
 
 ### 2.3 Verificación
 - `tests/unit/`: reglas, filtro Lua (con pandoc real), CLI, posproceso y 22 conversiones reales («golden»)
@@ -131,6 +140,14 @@ Ordenadas por impacto. «Frecuencia» es sobre los 124 artículos de LaTeX.
 | F11 | **Sin caché de versiones del conversor en el `.md`** | `VERSION` sigue en `0.1`; el encabezado no indica con qué versión se generó | no se distingue un `.md` viejo de uno nuevo |
 | F12 | **Parte de las verificaciones sigue siendo manual** | los diagnósticos ya viven en el paquete (`audit`, y desde esta revisión `unbalanced-math` y `lost-text`), pero los scripts de muestreo (cobertura de texto y de números frente al PDF, `\tag` frente a «(N)») siguen fuera del repositorio | esas comprobaciones dependen de que alguien las vuelva a escribir |
 | F17 | ~~Los `.md` de la biblioteca no se habían regenerado con esta versión~~ **resuelta** el 2026-11-17: los 124 de LaTeX se reconvirtieron (la copia anterior se guardó fuera de la biblioteca) y `tests/regress.py` los reproduce idénticos | — | — |
+
+**Reconversión del 2026-11-18** (detalle, causas y cómo reproducir: `HALLAZGOS_2026-11-18.md`): **corregidos**
+el archivo principal mal elegido (`00README.json`), `\subfile`, el `.bbl` de `ACM-Reference-Format`, los cuatro
+fallos de pandoc, los encabezados sin número o con otro número (8 artículos más, hallados con el diagnóstico
+nuevo `missing-sections`), las `\ref` con una macro en la clave y la etiqueta de ecuación que se metía en
+`\newcommand{\ee}{\end{equation}}` (las `??` de `kaplan2020`). Quedan abiertos los puntos de §3 y §4 de ese
+archivo que no se mencionan aquí (leyendas ausentes, `unbalanced-math` de listados con `escapeinside`, títulos
+de la API con `$`). Un `\part` todavía recibe un número contado.
 
 **Límites de diseño** (no son fallas a corregir): las imágenes no se extraen; la fidelidad tipográfica
 (posición de figuras, columnas) no se conserva; un `.md` de un artículo con macros muy exóticas puede requerir
