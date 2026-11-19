@@ -8,6 +8,19 @@ function M.has_aux(kind)
   return false
 end
 
+-- "table" when the caption is, word for word, that of a table in the .aux and of no figure: a figure environment
+-- whose own caption is a \\captionof{table} (a table laid out beside a plot); nil otherwise.
+function M.caption_kind(caption_text)
+  local key = text.norm_text(caption_text):sub(1, 40)
+  if #key < 24 then return nil end
+  local hit = {}
+  for _, f in ipairs(S.floats) do
+    if f.text:sub(1, #key) == key then hit[f.kind] = true end
+  end
+  if hit.table and not hit.figure then return "table" end
+  return nil
+end
+
 -- Number of the next .aux entry of `kind` whose text starts like `caption_text`; nil if none.
 -- `label_num` is the number the float's own \\label gives (or nil): it outranks the looser substring match.
 function M.aux_number(kind, caption_text, label_num)

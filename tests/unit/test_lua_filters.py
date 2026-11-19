@@ -64,6 +64,14 @@ def test_a_float_without_its_own_caption_gets_no_number(tmp_path):
     assert captions(md) == ["Figura"]
 
 
+def test_figure_whose_caption_is_a_table_of_the_aux_is_printed_as_tabla(tmp_path):
+    # a figure environment with a plot beside a table, captioned with \captionof{table} (wang2026computegap)
+    cap = "Compute multiples at every budget of each variant"
+    md = convert(tmp_path, FIG % cap, floats=[fl("figure", "1", "Revisiting the compute multiple"),
+                                              fl("table", "2", cap)])
+    assert captions(md) == ["Tabla 2"]
+
+
 def test_marked_table_without_tabular_is_printed_as_tabla(tmp_path):
     md = convert(tmp_path, FIG % "TEX2MDTABLE Word lists", floats=[fl("table", "5", "Word lists")])
     assert captions(md) == ["Tabla 5"] and "TEX2MDTABLE" not in md

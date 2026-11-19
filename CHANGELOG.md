@@ -29,6 +29,9 @@ with the report in `ok`) and from a new diagnostic that found 8 more.
 - **Equation labels** are no longer put inside a macro definition (`\newcommand{\ee}{\end{equation}}`): every
   equation got a second label and amsmath dropped the author's (`kaplan2020`: 32 `??`). Cached builds made with
   the old labeller must be deleted to be recompiled (`~/.cache/tex2md/<id>/build`).
+- **A figure captioned with `\captionof{table}`** (a plot beside a table in one `figure` environment) is printed as
+  `Tabla N` when its caption is, word for word, that of a table in the `.aux` and of no figure (`wang2026computegap`
+  printed its Table 2 as "Figura 2").
 
 ## Audit pass (2026-11-17): the library and 65 arXiv papers that were not in it
 Method: reconvert the 124 library papers into a scratch folder (the library's `.md` files were not touched), convert

@@ -3,7 +3,7 @@
 Documento vivo. Se actualiza cuando cambia el comportamiento del conversor. Para instrucciones de uso y
 arquitectura de código ver `README.md`; para el historial de cambios, `CHANGELOG.md`.
 
-Estado a 2026-11-18 · 72 reglas de preprocesado · 9 módulos Lua · 292 pruebas (22 de ellas reconvierten
+Estado a 2026-11-18 · 72 reglas de preprocesado · 9 módulos Lua · 294 pruebas (22 de ellas reconvierten
 artículos reales y comparan byte a byte) · 124 artículos de LaTeX, 7 de PDF y 1 de JATS en la biblioteca · además,
 65 artículos de arXiv que no están en la biblioteca (2012–2025) convierten sin error y con los mismos números de
 figuras y tablas que su PDF.

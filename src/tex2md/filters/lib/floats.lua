@@ -133,14 +133,19 @@ function M.Figure(fig)
     local cap = text.strip_label_spans(text.caption_inlines(fig.caption))
     return pandoc.Div({ pandoc.Para(cap) }, pandoc.Attr("", { DEFERRED }))
   end
+  local word, counter, kind = "Figura", "fig_count", "figure"
+  if captioned and captions.caption_kind(pandoc.utils.stringify(fig.caption.long)) == "table" then
+    word, counter, kind = "Tabla", "tab_count", "table"
+  end
   if captioned then
-    num = captions.aux_number("figure", pandoc.utils.stringify(fig.caption.long), num) or num
+    num = captions.aux_number(kind, pandoc.utils.stringify(fig.caption.long), kind == "figure" and num or nil)
+      or (kind == "figure" and num or nil)
   else
     num = nil  -- a panel without its own caption carries its parent's label: no number
   end
-  num = resolve_number("fig_count", "figure", num, captioned)
+  num = resolve_number(counter, kind, num, captioned)
   local cap = text.strip_label_spans(text.caption_inlines(fig.caption))
-  local line = pandoc.Para(lead_line("Figura", num, cap))
+  local line = pandoc.Para(lead_line(word, num, cap))
   local out = pandoc.Blocks({})
   if substantive(fig.content) then
     -- the tables kept here are part of the figure: the Table pass must not print a "Tabla" line for them
