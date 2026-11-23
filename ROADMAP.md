@@ -70,7 +70,9 @@ id de arXiv ─► descargar e-print ─► (etiquetar ecuaciones) ─► compil
    y `braces.py` cierra una llave sin cerrar que se tragaría el resto del artículo.
 6. **pandoc** (`-f latex -t markdown`) con la tubería Lua `filters/tex2md.lua`: numera encabezados, figuras,
    tablas y ecuaciones con los datos del `.aux`; desenvuelve `Div`/`Span`; convierte tablas con colspan/rowspan
-   en tablas de tuberías; conserva el contenido de figuras que son texto (prompts, algoritmos). Si pandoc no
+   en tablas de tuberías; conserva el contenido de figuras que son texto (prompts, algoritmos); y, al final
+   (`displaymath.lua`), deja cada ecuación `$$` en su propio párrafo, también dentro de citas, listas y cursivas,
+   y cada fórmula en línea en una sola línea y sin espacios en los extremos. Si pandoc no
    puede leer una construcción (`pandoc_recovery.py`), localiza qué la contiene y lo quita: un **entorno**
    (se sustituye por una nota visible, porque su contenido falta), una **definición** (`\newcolumntype`, una macro
    que se expande a sí misma) o una línea del **preámbulo**; lo registra como diagnóstico y reintenta (hasta 5
@@ -150,6 +152,8 @@ de §3 (14 artículos; `audit --level error` ya no muestra diferencias de flotan
 después el `unbalanced-math` de `chen2024dforcing`, las `??` que no eran reales (`brown2020gpt3`,
 `golovneva2024reverse`), los títulos de la API con `$`, el número del `\part` y las fallas de marker de §4
 (`fixmarker`). De §4 quedan los encabezados de marker en documentos sin secciones numeradas (`nvidia2023h100`, un folleto), que se dejan como están.
+
+**Reconversión del 2026-11-22** (`HALLAZGOS_2026-11-22.md`): ecuaciones `$$` dentro de párrafos, citas, listas y cursivas (no se renderizaban en MarginNote/Obsidian), tablas perdidas o en LaTeX crudo, compilaciones fallidas (paquete no instalado, archivo principal en una subcarpeta) y `\newcommandx`: **corregidos**. Quedan la Figura 2 de `heusel2017fid` (`figwindow`), los `.md` de marker sin tocar y la duda de cómo trata MarginNote el texto pegado a `$`.
 
 **Límites de diseño** (no son fallas a corregir): las imágenes no se extraen; la fidelidad tipográfica
 (posición de figuras, columnas) no se conserva; un `.md` de un artículo con macros muy exóticas puede requerir

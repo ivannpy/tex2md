@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: 20f4ff8ceeae543fdf7250c50857523ffcd0274d67c1c0a1089ce2cecb2c8dbc
     path: "PCIC/Tesis/Text generation/AR-DIFFUSION- Auto-Regressive Diffusion Model for Text Generation.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-17
+converted: 2026-11-22
 ---
 
 # AR-Diffusion: Auto-Regressive Diffusion Model for Text Generation
@@ -46,7 +46,7 @@ In the field of natural language generation, conditional generative models are c
 
 Recently, (Li et al., 2022a) propose a natural language generation model based on the diffusion process, which is typically divided into a forward noising process and a reverse denoising process.
 
-Specifically, the forward process is a fixed linear Gaussian model, which gradually perturbs the random variable ${\boldsymbol{z}}_0$ until it becomes the standard Gaussian distribution. This can be formalized as: 
+Specifically, the forward process is a fixed linear Gaussian model, which gradually perturbs the random variable ${\boldsymbol{z}}_0$ until it becomes the standard Gaussian distribution. This can be formalized as:
 
 $$\begin{equation}
 \small
@@ -56,7 +56,7 @@ q({\boldsymbol{z}}_t \mid {\boldsymbol{z}}_0; {\boldsymbol{x}}) = {\mathcal{N}}(
 
 where, $\bar{\alpha}_{t}=\prod_{i=1}^t\alpha_i$, and $\alpha_i$ is a coefficient that monotonically decreases with timestep $t$, ${\boldsymbol{z}}_t$ is the latent state at timestep $t$.
 
-The reverse process is to initiate from standard Gaussian noise and progressively utilize the denoising transition $p_{\boldsymbol{\theta}}({\boldsymbol{z}}_{t-1}|{\boldsymbol{z}}_t;{\boldsymbol{x}})$ for generation. 
+The reverse process is to initiate from standard Gaussian noise and progressively utilize the denoising transition $p_{\boldsymbol{\theta}}({\boldsymbol{z}}_{t-1}|{\boldsymbol{z}}_t;{\boldsymbol{x}})$ for generation.
 
 $$\begin{equation}
 \small
@@ -68,7 +68,7 @@ where the mean $\mu_{\boldsymbol{\theta}}$ and variance $\Sigma_{\boldsymbol{\th
 
 To extend the continuous diffusion process to discrete text generation, Li et al. (2022a) introduce an additional Markov transition from the discrete tokens ${\boldsymbol{y}}$ to the latent variable ${\boldsymbol{z}}_0$. In practice, we add an embedding step $q_{\phi}({\boldsymbol{z}}_0|{\boldsymbol{y}})=\mathcal{N}({\boldsymbol{z}}_0;\mathrm{Emb}({\boldsymbol{y}}),(1-\alpha_0)\textbf{I})$ in the forward process, and use a trainable rounding step which is parametrized by $p_{{\boldsymbol{\theta}}}({\boldsymbol{y}}|{\boldsymbol{z}}_0;{\boldsymbol{x}})=\prod_{i=1}^{N} p_{{\boldsymbol{\theta}}}(y_i| z_0^i;{\boldsymbol{x}})$ in the reverse process. In each timestep, we utilize an encoder-decoder model ${\boldsymbol{g}}_{{\boldsymbol{\theta}}}({\boldsymbol{z}}_t,t;{\boldsymbol{x}})$ to approximate ${\boldsymbol{z}}_0$ (Lin et al., 2023) in a NAR manner and then estimate $\mu_{\boldsymbol{\theta}}({\boldsymbol{z}}_t,t;{\boldsymbol{x}})$.
 
-In consequence, combined with maximizing the evidence lower bound (ELBO) of $\log p_{{\boldsymbol{\theta}}}({\boldsymbol{y}}|{\boldsymbol{x}})$, our training objective of the conditional diffusion language model is: 
+In consequence, combined with maximizing the evidence lower bound (ELBO) of $\log p_{{\boldsymbol{\theta}}}({\boldsymbol{y}}|{\boldsymbol{x}})$, our training objective of the conditional diffusion language model is:
 
 $$\begin{equation}
 \small
@@ -82,7 +82,7 @@ $$\begin{equation}
 
 In the typical diffusion process, every token in the text sequence has the same diffusion timestep. In order to leverage the sequential nature of language, we enable tokens to have different diffusion timesteps during the forward and reverse pass. To accomplish this, we propose a multi-level diffusion strategy that includes both sentence-level and token-level diffusion.
 
-Firstly, at the sentence-level, we follow Diffusion-LM (Li et al., 2022a) to randomly select a timestep $t$. Secondly, at the token-level, we incorporate positional information $n \in \left[1, N\right]$ based on the sentence-level timestep to regulate the diffusion timestep for the current token. The procedure is illustrated as: 
+Firstly, at the sentence-level, we follow Diffusion-LM (Li et al., 2022a) to randomly select a timestep $t$. Secondly, at the token-level, we incorporate positional information $n \in \left[1, N\right]$ based on the sentence-level timestep to regulate the diffusion timestep for the current token. The procedure is illustrated as:
 
 $$\begin{equation}
 \small
@@ -92,7 +92,7 @@ $$\begin{equation}
 
 where $N$ is the given target sentence length, ${\boldsymbol{z}}_t$ is the sentence representation at timestep[^4] $t$, ${\boldsymbol{z}}_{f(n,t)}^n$ is the latent representation for the $n$-th token at sentence-level timestep $t$, and $f(n, t)$ is a token-level timestep function that denotes the token-level diffusion timestep determined by token position $n$ and sentence-level timestep $t$.
 
-We visualize the token-level timestep $\big(n, f(n,t)\big)$ onto a two-dimensional coordinate system as Figure 1 , which takes the token **position** as the horizontal axis and the sentence-level **timestep** as the vertical axis. Furthermore, to provide a more profound description of the characteristics of movement, we define the speed of movement as the following equation. 
+We visualize the token-level timestep $\big(n, f(n,t)\big)$ onto a two-dimensional coordinate system as Figure 1 , which takes the token **position** as the horizontal axis and the sentence-level **timestep** as the vertical axis. Furthermore, to provide a more profound description of the characteristics of movement, we define the speed of movement as the following equation.
 
 $$\begin{equation}
 \small
@@ -117,7 +117,7 @@ Define an anchor point $(n_e, t_e)$[^5].
 
  Sample (${\boldsymbol{x}}, {\boldsymbol{y}}$) from the dataset and embed ${\boldsymbol{y}}$ into ${\boldsymbol{z}}_0$.
 
- Sample a sentence-level timestep $t$ from the interval $[0, N+T]$, then the start point is determined by the following equation: 
+ Sample a sentence-level timestep $t$ from the interval $[0, N+T]$, then the start point is determined by the following equation:
 
 $$\begin{equation}
 \small
@@ -125,7 +125,7 @@ $$\begin{equation}
 \tag{6}
 \end{equation}$$
 
- Use the point-slope linear function to determine the token-level timestep $f(n, t)$ in position $n$: 
+ Use the point-slope linear function to determine the token-level timestep $f(n, t)$ in position $n$:
 
 $$\begin{equation}
 \small
@@ -135,7 +135,7 @@ f(n, t)=\mathrm{clip}\big(\frac{t_e-t_s}{n_e-n_s}(n-n_s)+t_s, 0, T\big)
 
  Sample ${\boldsymbol{z}}_{f(n,t)}^n$ for each $n$ in different positions with Gaussian reparameterization.
 
- According to Eq. (3) and Eq. (9), employ gradient descent to optimize the objective: 
+ According to Eq. (3) and Eq. (9), employ gradient descent to optimize the objective:
 
 $$\begin{equation}
 \small
@@ -147,7 +147,7 @@ $$\begin{equation}
 
 Following the guidance of the principle, we develop a token-level diffusion strategy with the linear function, which is shown in Figure 1(c). In particular, the procedure is illustrated in Algorithm 1, where $\mathrm{clip}(x, \mathrm{min}, \mathrm{max})$ function is to clamp all elements in $x$ into the range $[ \mathrm{min}, \mathrm{max} ]$. Specifically, in the forward process of diffusion, the start point goes to the left from $(N, 0)$ to $(0, 0)$ along the horizontal axis and then moves up to $(0, T)$ along the vertical axis. Therefore, the entire range of sentence-level timestep is extended to $\left[0, N+T\right]$.
 
-In the reverse diffusion process, the multi-level diffusion follows the formula: 
+In the reverse diffusion process, the multi-level diffusion follows the formula:
 
 $$\begin{equation}
 \small
@@ -182,7 +182,7 @@ Sample ${\boldsymbol{z}}_{t_0} \sim \mathcal{N}(\textbf{0}, \textbf{I})$.
 
  Based on the current sentence-level inference steps $t_i$ and the next one $t_{i+1}$, assign token-level timesteps $f(n, t_i)$ and $f(n, t_{i+1})$ to token in position $n$ using Eq. (7).
 
- Reverse sample ${\boldsymbol{z}}_{t_{i+1}}=\big({\boldsymbol{z}}^{1}_{f(1,t_{i+1})}, {\boldsymbol{z}}^{2}_{f(2,t_{i+1})},\cdots, {\boldsymbol{z}}^{N}_{f(N,t_{i+1})}\big)$ from $p_{\theta}({\boldsymbol{z}}_{t_{i+1}}\mid {\boldsymbol{z}}_{t_{i}};{\boldsymbol{x}})$ with the following formulas: 
+ Reverse sample ${\boldsymbol{z}}_{t_{i+1}}=\big({\boldsymbol{z}}^{1}_{f(1,t_{i+1})}, {\boldsymbol{z}}^{2}_{f(2,t_{i+1})},\cdots, {\boldsymbol{z}}^{N}_{f(N,t_{i+1})}\big)$ from $p_{\theta}({\boldsymbol{z}}_{t_{i+1}}\mid {\boldsymbol{z}}_{t_{i}};{\boldsymbol{x}})$ with the following formulas:
 
 $$\begin{equation}
 \small
@@ -204,7 +204,7 @@ p_{\theta}\big({\boldsymbol{z}}^{n}_{f(n, t_{i+1})}\mid {\boldsymbol{z}}^{n}_{f(
 
 Map ${\boldsymbol{z}}_{t_M}$ to the nearest embedding $\hat{{\boldsymbol{y}}}$.
 
-In practice, we propose an algorithm for the inference, illustrated in Algorithm 2. 
+In practice, we propose an algorithm for the inference, illustrated in Algorithm 2.
 
 $$\begin{equation}
 \small
@@ -460,7 +460,7 @@ During the inference process, skipping strategy requires the model ${\boldsymbol
 
 Through maximizing the evidence lower bound (ELBO) of $p({\boldsymbol{z}}_0)$, the training object is equivalent to minimize the divergence between $q({\boldsymbol{z}}_{t}|{\boldsymbol{z}}_{t-1}, {\boldsymbol{z}}_0)$ and $p_{\theta}({\boldsymbol{z}}_{t-1}|{\boldsymbol{z}}_{t})$ following (Luo, 2022).
 
-By converting the joint probability distribution into a conditional probability distribution, we obtain the following formula for $q({\boldsymbol{z}}_{t_{i+1}}|{\boldsymbol{z}}_{t_{i}}, {\boldsymbol{z}}_0)$. 
+By converting the joint probability distribution into a conditional probability distribution, we obtain the following formula for $q({\boldsymbol{z}}_{t_{i+1}}|{\boldsymbol{z}}_{t_{i}}, {\boldsymbol{z}}_0)$.
 
 $$\begin{equation}
 \small
@@ -484,7 +484,7 @@ q({\boldsymbol{z}}_{t_{i+1}}\mid {\boldsymbol{z}}_{t_{i}},{\boldsymbol{z}}_{0})=
 \tag{14}
 \end{equation}$$
 
-Next, we obtain the explicit expression $q\big(z^{n}_{f(n, t_{i+1})}\mid z^{n}_{f(n, t_{i})}, z_{0}^{n}\big)$ through linear interpolation between $z^{n}_{f(n, t_{i})}$ and $z_{0}^{n}$. 
+Next, we obtain the explicit expression $q\big(z^{n}_{f(n, t_{i+1})}\mid z^{n}_{f(n, t_{i})}, z_{0}^{n}\big)$ through linear interpolation between $z^{n}_{f(n, t_{i})}$ and $z_{0}^{n}$.
 
 $$\begin{equation}
 \small
@@ -501,7 +501,7 @@ $$\begin{equation}
 \end{aligned}
 \end{equation}$$
 
-where we have the following notations for simplification. 
+where we have the following notations for simplification.
 
 $$\begin{equation}
 \small
@@ -513,7 +513,7 @@ $$\begin{equation}
 \tag{16}
 \end{equation}$$
 
-Building upon Eq. (15), we substitute ${\boldsymbol{z}}^n_{0}$ with ${\boldsymbol{g}}_{\theta}({\boldsymbol{z}}^n_{f(n,t)}, f(n,t);{\boldsymbol{x}})$, yielding the final formula for $p_{\theta}\big({\boldsymbol{z}}^{n}_{f(n, t_{i+1})}\mid {\boldsymbol{z}}^{n}_{f(n, t_{i})};{\boldsymbol{x}}\big)$ as the following equation. 
+Building upon Eq. (15), we substitute ${\boldsymbol{z}}^n_{0}$ with ${\boldsymbol{g}}_{\theta}({\boldsymbol{z}}^n_{f(n,t)}, f(n,t);{\boldsymbol{x}})$, yielding the final formula for $p_{\theta}\big({\boldsymbol{z}}^{n}_{f(n, t_{i+1})}\mid {\boldsymbol{z}}^{n}_{f(n, t_{i})};{\boldsymbol{x}}\big)$ as the following equation.
 
 $$\begin{equation}
 \small

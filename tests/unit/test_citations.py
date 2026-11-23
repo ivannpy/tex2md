@@ -128,3 +128,8 @@ def test_acm_reference_format_key_on_the_line_after_the_label():
     assert entry["short"] == "Arriola et~al\\mbox{.}" and entry["year"] == "2025a"
     assert plain_bib(entry["body"]) == "Marianne Arriola, and Volodymyr Kuleshov. 2025a. Block diffusion. " \
                                        "https://arxiv.org/abs/2503.09573"
+
+
+def test_plain_bib_keeps_paren_math():
+    from tex2md.preprocess.citations import plain_bib
+    assert plain_bib(r"Pixart-{\(\alpha\)}: Fast") == r"Pixart-$\alpha$: Fast"

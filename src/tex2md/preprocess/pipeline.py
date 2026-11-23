@@ -17,6 +17,7 @@ from tex2md.preprocess.citations import PREAMBLE, inject_bibliography, simplify_
 from tex2md.preprocess.comments import plain_verbatim_environments
 from tex2md.preprocess.environments import (
     acks_to_section,
+    boxes_around_math,
     ctable_to_table,
     drop_picture_code,
     expand_glossary,
@@ -31,6 +32,7 @@ from tex2md.preprocess.floats import (
     dissolve_multi_caption_floats,
     flatten_subfloats,
     floatrow_to_floats,
+    pair_content_with_captions,
     retype_floats,
     single_paragraph_captions,
     split_captioned_blocks,
@@ -38,6 +40,7 @@ from tex2md.preprocess.floats import (
     starred_floats_to_plain,
     strip_float_layout,
     tables_without_tabular,
+    teaser_in_maketitle,
     unnest_floats,
     unwrap_algorithm_floats,
     wrap_envs_to_plain,
@@ -51,6 +54,8 @@ from tex2md.preprocess.macros import (
     drop_size_redefs,
     expand_conditional_macros,
     expand_delimited_macros,
+    expand_float_macros,
+    expand_newcommandx,
     expand_paired_delimiters,
     fix_stray_macro_braces,
     text_in_macro_bodies,
@@ -68,6 +73,7 @@ from tex2md.preprocess.structure import (
 )
 from tex2md.preprocess.symbols import symbols_to_unicode
 from tex2md.preprocess.tables import (
+    cell_line_breaks,
     centered_column_types,
     cr_to_row_end,
     drop_empty_math_cells,
@@ -76,6 +82,7 @@ from tex2md.preprocess.tables import (
     simplify_longtable_specs,
     simplify_multicolumn_specs,
     strip_layout_wrappers,
+    tabu_to_tabular,
     tighten_span_arguments,
     unwrap_cell_macros,
 )
@@ -123,8 +130,10 @@ RULES: list[tuple[str, Rule]] = [
     # --- document structure
     ("resolve-conditionals", _pure(resolve_conditionals)),  # before the branches are read by any other rule
     ("expand-conditional-macros", _pure(expand_conditional_macros)),
+    ("expand-newcommandx", _pure(expand_newcommandx)),  # xargs: optional arguments pandoc cannot read
     ("delimited-macros", _pure(expand_delimited_macros)),
     ("paired-delimiters", _pure(expand_paired_delimiters)),
+    ("expand-float-macros", _pure(expand_float_macros)),  # a table kept in a macro: the float rules must see it
     ("symbols-to-unicode", _pure(symbols_to_unicode)),  # before text-in-macro-bodies (\cmark = \text{\ding{51}})
     ("text-in-macro-bodies", _pure(text_in_macro_bodies)),  # before anything expands or drops macros
     ("texorpdfstring", _pure(texorpdfstring_tex)),  # a one-argument call makes pandoc fail on the whole paper
@@ -134,12 +143,16 @@ RULES: list[tuple[str, Rule]] = [
     ("quad-before-digits", _pure(quad_before_digits)),
     ("fix-stray-macro-braces", _pure(fix_stray_macro_braces)),
     ("unwrap-twocolumn", _pure(unwrap_twocolumn)),  # before the float rules: it holds the teaser figure
+    ("boxes-around-math", _pure(boxes_around_math)),  # a \resizebox{..}{$...$} inside \[ \]: its $ end the equation
     ("tabular-in-math", _pure(tabular_in_math)),  # before any rule that looks for tabulars as table content
     ("tblr-to-tabular", _pure(tblr_to_tabular)),  # before the float rules look for a tabular in each table
+    ("tabu-to-tabular", _pure(tabu_to_tabular)),  # (same)
     ("ctable-to-table", _pure(ctable_to_table)),  # (same)
     ("unwrap-picture-puts", _pure(unwrap_picture_puts)),  # an image and a table laid out with \put: a table to the float rules
     # --- floats: normalise so pandoc keeps every caption (order: wrap -> retype -> split -> flatten)
     ("floatrow-to-floats", _pure(floatrow_to_floats)),  # first: its boxes hold the captions the rules below look for
+    ("teaser-in-maketitle", _pure(teaser_in_maketitle)),  # Figure 1 drawn by a redefined \maketitle
+    ("pair-content-with-captions", _pure(pair_content_with_captions)),  # a row of tables, then a row of their captions
     ("single-paragraph-captions", _pure(single_paragraph_captions)),  # pandoc cannot read a caption with a paragraph break
     ("wrap-envs-to-plain", _pure(wrap_envs_to_plain)),
     ("unwrap-algorithm-floats", _pure(unwrap_algorithm_floats)),  # before a rule takes their captions for the float's
@@ -184,6 +197,7 @@ RULES: list[tuple[str, Rule]] = [
     ("cr-to-row-end", _pure(cr_to_row_end)),
     ("plain-tabular-envs", _pure(plain_tabular_envs)),
     ("normalize-tabulars", _pure(normalize_tabulars)),
+    ("cell-line-breaks", _pure(cell_line_breaks)),  # after the specs: the column spec is the first group
     ("simplify-longtable-specs", _pure(simplify_longtable_specs)),
     ("table-rules-and-colors", _pure(table_rules_and_colors)),
     ("rewrite-algorithmic", _pure(rewrite_algorithmic)),

@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: 8d3d0ea335a109aec55a2cd939de369a6e19c304439fd6ef863ae8106e6dfcdf
     path: "PCIC/Tesis/ar-diff/Scaling Diffusion Language Models via Adaptation From Autoregressive Models.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-17
+converted: 2026-11-22
 ---
 
 # Scaling Diffusion Language Models via Adaptation from Autoregressive Models
@@ -44,14 +44,14 @@ Our experiments provide a comprehensive comparison between AR LMs and DLMs acros
 
 # 2 Preliminary and Notation
 
-Diffusion models (Sohl-Dickstein et al., 2015; Song & Ermon, 2019; Ho et al., 2020; Song et al., 2021b) are latent variable generative models characterized by a forward and a reverse Markov process. We denote $\mathbf{x}_0\sim p_{data}(\mathbf{x}_0)$ as the variable following the data distribution, and $\mathbf{x}_t\sim q(\mathbf{x}_t)$ as the noisy variable of $\mathbf{x}_0$ at time $t$, where the maximum time is $T$. The forward process $q(\mathbf{x}_{1:T}|\mathbf{x}_0)=\prod_{t=1}^Tq(\mathbf{x}_t|\mathbf{x}_{t-1})$ corrupts the initial data $\mathbf{x}_0$ into a sequence of increasingly noisy variables $\mathbf{x}_{1:T}$. Accordingly, the backward Markov process models the joint probability as $p_{\theta}(\mathbf{x}_{0:T})=p_{\theta}(\mathbf{x}_T)\prod_{t=1}^Tp_{\theta}(\mathbf{x}_{t-1}|\mathbf{x}_t)$, which gradually denoises $\mathbf{x}_t$ to reconstruct the original data $\mathbf{x}_0$. Parameters $\theta$ are learned by minimizing the negative log-likelihood of $\mathbf{x}_0$, which can be optimized through the evidence lower bound (ELBO), 
+Diffusion models (Sohl-Dickstein et al., 2015; Song & Ermon, 2019; Ho et al., 2020; Song et al., 2021b) are latent variable generative models characterized by a forward and a reverse Markov process. We denote $\mathbf{x}_0\sim p_{data}(\mathbf{x}_0)$ as the variable following the data distribution, and $\mathbf{x}_t\sim q(\mathbf{x}_t)$ as the noisy variable of $\mathbf{x}_0$ at time $t$, where the maximum time is $T$. The forward process $q(\mathbf{x}_{1:T}|\mathbf{x}_0)=\prod_{t=1}^Tq(\mathbf{x}_t|\mathbf{x}_{t-1})$ corrupts the initial data $\mathbf{x}_0$ into a sequence of increasingly noisy variables $\mathbf{x}_{1:T}$. Accordingly, the backward Markov process models the joint probability as $p_{\theta}(\mathbf{x}_{0:T})=p_{\theta}(\mathbf{x}_T)\prod_{t=1}^Tp_{\theta}(\mathbf{x}_{t-1}|\mathbf{x}_t)$, which gradually denoises $\mathbf{x}_t$ to reconstruct the original data $\mathbf{x}_0$. Parameters $\theta$ are learned by minimizing the negative log-likelihood of $\mathbf{x}_0$, which can be optimized through the evidence lower bound (ELBO),
 
 $$\begin{equation}
 \tag{1}
     -\log p_{\theta}(\mathbf{x}_0) \leq \mathbb{E}_{q(\mathbf{x}_1|\mathbf{x}_0)}[-\log p_{\theta}(\mathbf{x}_0|\mathbf{x}_1)] + D_{\mathrm{KL}}(q(\mathbf{x}_T|\mathbf{x}_0)||p_{\theta}(\mathbf{x}_T))+\mathcal{L}_T,
 \end{equation}$$
 
-with $\mathcal{L}_T=\sum_{t=2}^T\mathbb{E}_{q(\mathbf{x}_t|\mathbf{x}_0)}[D_{\mathrm{KL}}(q(\mathbf{x}_{t-1}|\mathbf{x}_t, \mathbf{x}_0)||p_{\theta}(\mathbf{x}_{t-1}|\mathbf{x}_t))]$. For continuous text diffusion (Li et al., 2022; Gong et al., 2023b), at each forward step, perturbations are applied according to $q(\mathbf{x}_{t} \vert \mathbf{x}_{t-1}) = \mathcal{N}(\mathbf{x}_{t};\sqrt{1-\beta_t}\mathbf{x}_{t-1}, {\beta}_t \mathbf{I})$, where $\beta_t \in (0,1)$ represents different scales across time steps such that $\mathbf{x}_T \sim \mathcal{N}(0, \mathbf{I})$. In the case of discrete denoising models (Ho et al., 2020; Austin et al., 2021; Zheng et al., 2024a), the forward process is defined as a categorical distribution $q(\mathbf{x}_{t} \vert \mathbf{x}_{t-1})=\text{Cat}(\boldsymbol{x}_t;\boldsymbol{Q}_t^\top\boldsymbol{x}_{t-1})$, where each $\mathbf{x}_t \in \{0, 1\}^K$ is a one-hot vector with vocabulary size $K$, $\boldsymbol{Q}_t\in[0,1]^{K\times K}$ is the transition matrix, and each entry $[\boldsymbol{Q}_t]_{ij}$ denotes the probability of transition from the state $i$ to $j$. We build on the formulation of *absorbing discrete diffusion* (Austin et al., 2021), which specifies $\boldsymbol{Q}_t=(1-\beta_t)I+\beta_t\mathbf{1}\boldsymbol{m}^\top$. We denote $\mathbf{1}$ as an all-one vector of size $K$ and $\boldsymbol{m}$ as the one-hot encoding of a special `[MASK]` token in the vocabulary. Therefore, the transition matrix, $\boldsymbol{Q}_t$ indicates that with probability $1 - \beta_t$, $\boldsymbol{x}_t$ remains unchanged; otherwise, it transitions to $\boldsymbol{m}$, becoming absorbed into `[MASK]`. Letting $\boldsymbol{\overline{Q}}_t \coloneqq \prod_{i=1}^t\boldsymbol{Q}_i=\alpha_tI+(1-\alpha_t)\mathbf{1}\boldsymbol{m}^\top$ and $\alpha_t \coloneqq \prod_{i=1}^t(1-\beta_t)$, the distribution of $\boldsymbol{x}_t$ conditional on $\boldsymbol{x}_0$ is given by 
+with $\mathcal{L}_T=\sum_{t=2}^T\mathbb{E}_{q(\mathbf{x}_t|\mathbf{x}_0)}[D_{\mathrm{KL}}(q(\mathbf{x}_{t-1}|\mathbf{x}_t, \mathbf{x}_0)||p_{\theta}(\mathbf{x}_{t-1}|\mathbf{x}_t))]$. For continuous text diffusion (Li et al., 2022; Gong et al., 2023b), at each forward step, perturbations are applied according to $q(\mathbf{x}_{t} \vert \mathbf{x}_{t-1}) = \mathcal{N}(\mathbf{x}_{t};\sqrt{1-\beta_t}\mathbf{x}_{t-1}, {\beta}_t \mathbf{I})$, where $\beta_t \in (0,1)$ represents different scales across time steps such that $\mathbf{x}_T \sim \mathcal{N}(0, \mathbf{I})$. In the case of discrete denoising models (Ho et al., 2020; Austin et al., 2021; Zheng et al., 2024a), the forward process is defined as a categorical distribution $q(\mathbf{x}_{t} \vert \mathbf{x}_{t-1})=\text{Cat}(\boldsymbol{x}_t;\boldsymbol{Q}_t^\top\boldsymbol{x}_{t-1})$, where each $\mathbf{x}_t \in \{0, 1\}^K$ is a one-hot vector with vocabulary size $K$, $\boldsymbol{Q}_t\in[0,1]^{K\times K}$ is the transition matrix, and each entry $[\boldsymbol{Q}_t]_{ij}$ denotes the probability of transition from the state $i$ to $j$. We build on the formulation of *absorbing discrete diffusion* (Austin et al., 2021), which specifies $\boldsymbol{Q}_t=(1-\beta_t)I+\beta_t\mathbf{1}\boldsymbol{m}^\top$. We denote $\mathbf{1}$ as an all-one vector of size $K$ and $\boldsymbol{m}$ as the one-hot encoding of a special `[MASK]` token in the vocabulary. Therefore, the transition matrix, $\boldsymbol{Q}_t$ indicates that with probability $1 - \beta_t$, $\boldsymbol{x}_t$ remains unchanged; otherwise, it transitions to $\boldsymbol{m}$, becoming absorbed into `[MASK]`. Letting $\boldsymbol{\overline{Q}}_t \coloneqq \prod_{i=1}^t\boldsymbol{Q}_i=\alpha_tI+(1-\alpha_t)\mathbf{1}\boldsymbol{m}^\top$ and $\alpha_t \coloneqq \prod_{i=1}^t(1-\beta_t)$, the distribution of $\boldsymbol{x}_t$ conditional on $\boldsymbol{x}_0$ is given by
 
 $$\begin{equation}
 \tag{2}
@@ -70,14 +70,14 @@ We begin by formulating the continuous-time discrete diffusion process (§3.1) a
 
 ## 3.1 Continuous-time Discrete Diffusion Processes
 
-Following Eq.2 and $q(\boldsymbol{x}_t|\boldsymbol{x}_0)=\sum_{\boldsymbol{x}_s}q(\boldsymbol{x}_t|\boldsymbol{x}_s)q(\boldsymbol{x}_s|\boldsymbol{x}_0)$, the forward transition distribution between arbitrary points $s < t$ can be derived as 
+Following Eq.2 and $q(\boldsymbol{x}_t|\boldsymbol{x}_0)=\sum_{\boldsymbol{x}_s}q(\boldsymbol{x}_t|\boldsymbol{x}_s)q(\boldsymbol{x}_s|\boldsymbol{x}_0)$, the forward transition distribution between arbitrary points $s < t$ can be derived as
 
 $$\begin{equation}
     q(\boldsymbol{x}_t|\boldsymbol{x}_s)=\text{Cat}(\boldsymbol{x}_t;\boldsymbol{\overline{Q}}_{s|t}^\top \boldsymbol{x}_s) =\frac{\alpha_t}{\alpha_s}\boldsymbol{x}_s+(1-\frac{\alpha_t}{\alpha_s})\boldsymbol{m},
 \tag{3}
 \end{equation}$$
 
-with $\boldsymbol{\overline{Q}}_{s|t} \coloneqq \boldsymbol{\overline{Q}}_s^{-1}\boldsymbol{\overline{Q}}_t=\frac{\alpha_t}{\alpha_s}I+(1-\frac{\alpha_t}{\alpha_s})\mathbf{1}\boldsymbol{m}^\top$. The corresponding backward transition distribution conditional on $\boldsymbol{x}_0$ is also available in closed form, 
+with $\boldsymbol{\overline{Q}}_{s|t} \coloneqq \boldsymbol{\overline{Q}}_s^{-1}\boldsymbol{\overline{Q}}_t=\frac{\alpha_t}{\alpha_s}I+(1-\frac{\alpha_t}{\alpha_s})\mathbf{1}\boldsymbol{m}^\top$. The corresponding backward transition distribution conditional on $\boldsymbol{x}_0$ is also available in closed form,
 
 $$\begin{equation}
 \tag{4}
@@ -88,21 +88,21 @@ $$\begin{equation}
     \end{cases}
 \end{equation}$$
 
-In discrete diffusion processes, we aim to approximate the backward transition distribution $q(\boldsymbol{x}_s|\boldsymbol{x}_t,\boldsymbol{x}_0)$ using a denoising model $p_{\theta}(\boldsymbol{x_s}|\boldsymbol{x}_t, f_{\theta}(\boldsymbol{x}_t))$, where $f_{\theta}(\boldsymbol{x}_t)$, an approximation of $\boldsymbol{x}_0$, is usually the output of neural networks such as a transformer (Vaswani et al., 2017). We can define the denoising model to have a similar form of backward transitions as $p_{\theta}(\boldsymbol{x_s}|\boldsymbol{x}_t)=\frac{\alpha_s-\alpha_t}{1-\alpha_t}f_{\theta}(\boldsymbol{x}_t)+\frac{1-\alpha_s}{1-\alpha_t}\boldsymbol{m}$. According to the training objective in Eq.1, the KL-divergence of $\mathcal{L}_T$ at each step $t$ can be simplified to a reweighted cross-entropy function, 
+In discrete diffusion processes, we aim to approximate the backward transition distribution $q(\boldsymbol{x}_s|\boldsymbol{x}_t,\boldsymbol{x}_0)$ using a denoising model $p_{\theta}(\boldsymbol{x_s}|\boldsymbol{x}_t, f_{\theta}(\boldsymbol{x}_t))$, where $f_{\theta}(\boldsymbol{x}_t)$, an approximation of $\boldsymbol{x}_0$, is usually the output of neural networks such as a transformer (Vaswani et al., 2017). We can define the denoising model to have a similar form of backward transitions as $p_{\theta}(\boldsymbol{x_s}|\boldsymbol{x}_t)=\frac{\alpha_s-\alpha_t}{1-\alpha_t}f_{\theta}(\boldsymbol{x}_t)+\frac{1-\alpha_s}{1-\alpha_t}\boldsymbol{m}$. According to the training objective in Eq.1, the KL-divergence of $\mathcal{L}_T$ at each step $t$ can be simplified to a reweighted cross-entropy function,
 
 $$\begin{equation}
     D_{\mathrm{KL}}(q(\boldsymbol{x}_s|\boldsymbol{x}_t,\boldsymbol{x}_0)||p_{\theta}(\boldsymbol{x}_s||\boldsymbol{x}_t))=-\frac{\alpha_s-\alpha_t}{1-\alpha_t}\delta_{\boldsymbol{x}_t,\boldsymbol{m}}\boldsymbol{x}_0^\top\log f_{\theta}(\boldsymbol{x}_t),
 \tag{5}
 \end{equation}$$
 
-where $\delta_{a,b}$ is the indicator function for $a=b$. If we take the limit and let $T\rightarrow \infty$, the first two terms of Eq.1 will approach 0 and some constant, respectively. Thus the evidence lower bound (ELBO) effectively becomes $\mathcal{L}_T$ and 
+where $\delta_{a,b}$ is the indicator function for $a=b$. If we take the limit and let $T\rightarrow \infty$, the first two terms of Eq.1 will approach 0 and some constant, respectively. Thus the evidence lower bound (ELBO) effectively becomes $\mathcal{L}_T$ and
 
 $$\begin{equation}
 \tag{6}
     \lim_{T\rightarrow \infty}\mathcal{L}_T = \int_{0}^{1}\frac{\alpha_t^\prime}{1-\alpha_t}\mathbb{E}_{q(\mathbf{x}_t|\mathbf{x}_0)}[\delta_{\boldsymbol{x}_t,\boldsymbol{m}}\boldsymbol{x}_0^\top\log f_{\theta}(\boldsymbol{x}_t)]\,dt.
 \end{equation}$$
 
-The full derivation is listed in Appendix A.2. The same form of ELBO which is invariant to noise schedule but related to the signal-to-noise ratio (SNR) is also introduced in Kingma et al. (2021); Shi et al. (2024). Following Austin et al. (2021), we choose the noise schedule $\alpha_t=1-t$, then $\frac{-\alpha_t^\prime}{1-\alpha_t}=\frac{1}{t}$. The previous discussion focused on the single token $\boldsymbol{x}_t$, and can be applied independently to a text sequence of $N$ tokens $\mathbf{x}_t=[\boldsymbol{x}_t^{1}, \boldsymbol{x}_t^{2}\dots, \boldsymbol{x}_t^{N}]$. During training, we do not compute integral loss in Eq.6 for efficiency consideration; instead, we sample $t$ for each data point. The final loss at $t$ is 
+The full derivation is listed in Appendix A.2. The same form of ELBO which is invariant to noise schedule but related to the signal-to-noise ratio (SNR) is also introduced in Kingma et al. (2021); Shi et al. (2024). Following Austin et al. (2021), we choose the noise schedule $\alpha_t=1-t$, then $\frac{-\alpha_t^\prime}{1-\alpha_t}=\frac{1}{t}$. The previous discussion focused on the single token $\boldsymbol{x}_t$, and can be applied independently to a text sequence of $N$ tokens $\mathbf{x}_t=[\boldsymbol{x}_t^{1}, \boldsymbol{x}_t^{2}\dots, \boldsymbol{x}_t^{N}]$. During training, we do not compute integral loss in Eq.6 for efficiency consideration; instead, we sample $t$ for each data point. The final loss at $t$ is
 
 $$\begin{equation}
 \tag{7}
@@ -113,7 +113,7 @@ where $f_{\theta}(\mathbf{x}_t^{1:N})_n$ denotes the whole input sequence is fed
 
 ## 3.2 Unifying Language Modeling Objectives
 
-The training objective of autoregressive (AR) language models is the negative log-likelihood of each ground-truth token provided the preceding tokens, 
+The training objective of autoregressive (AR) language models is the negative log-likelihood of each ground-truth token provided the preceding tokens,
 
 $$\begin{equation}
 \tag{8}
@@ -324,21 +324,21 @@ This section provides detailed preliminary and loss derivations of §2 and §3.1
 
 ## A.1 Background of Diffusion Models
 
-We denote $\mathbf{x}_0\sim p_{data}(\mathbf{x}_0)$ as the variable following the data distribution, and $\mathbf{x}_t\sim q(\mathbf{x}_t)$ as the noisy variable of $\mathbf{x}_0$ at time $t$, where the maximum time is $T$. The forward process 
+We denote $\mathbf{x}_0\sim p_{data}(\mathbf{x}_0)$ as the variable following the data distribution, and $\mathbf{x}_t\sim q(\mathbf{x}_t)$ as the noisy variable of $\mathbf{x}_0$ at time $t$, where the maximum time is $T$. The forward process
 
 $$\begin{equation}
 q(\mathbf{x}_{1:T}|\mathbf{x}_0)=\prod_{t=1}^Tq(\mathbf{x}_t|\mathbf{x}_{t-1})
 \tag{9}
 \end{equation}$$
 
-corrupts the initial data $\mathbf{x}_0$ into a sequence of increasingly noisy variables $\mathbf{x}_{1:T}$. Accordingly, the reverse Markov process models the joint probability as 
+corrupts the initial data $\mathbf{x}_0$ into a sequence of increasingly noisy variables $\mathbf{x}_{1:T}$. Accordingly, the reverse Markov process models the joint probability as
 
 $$\begin{equation}
 p_{\theta}(\mathbf{x}_{0:T})=p_{\theta}(\mathbf{x}_T)\prod_{t=1}^Tp_{\theta}(\mathbf{x}_{t-1}|\mathbf{x}_t),
 \tag{10}
 \end{equation}$$
 
-which gradually denoises $\mathbf{x}_t$ to reconstruct the original data $\mathbf{x}_0$. Parameters $\theta$ are learned by minimizing the negative log-likelihood of $\mathbf{x}_0$, which can be optimized through the variational lower bound (VLB): 
+which gradually denoises $\mathbf{x}_t$ to reconstruct the original data $\mathbf{x}_0$. Parameters $\theta$ are learned by minimizing the negative log-likelihood of $\mathbf{x}_0$, which can be optimized through the variational lower bound (VLB):
 
 $$\begin{align}
 \tag{11}
@@ -348,14 +348,14 @@ $$\begin{align}
 \mathcal{L}_T & =\sum_{t=2}^T\mathbb{E}_{q(\mathbf{x}_t|\mathbf{x}_0)}[D_{\mathrm{KL}}(q(\mathbf{x}_{t-1}|\mathbf{x}_t, \mathbf{x}_0)||p_{\theta}(\mathbf{x}_{t-1}|\mathbf{x}_t))].
 \end{align}$$
 
-For continuous text diffusion (Li et al., 2022; Gong et al., 2023b), at each forward step, perturbations are applied according to 
+For continuous text diffusion (Li et al., 2022; Gong et al., 2023b), at each forward step, perturbations are applied according to
 
 $$\begin{equation}
 q(\mathbf{x}_{t} \vert \mathbf{x}_{t-1}) = \mathcal{N}(\mathbf{x}_{t};\sqrt{1-\beta_t}\mathbf{x}_{t-1}, {\beta}_t \mathbf{I}), 
 \tag{13}
 \end{equation}$$
 
-where $\beta_t \in (0,1)$ represents different scales. In the end, $\mathbf{x}_T \sim \mathcal{N}(0, \mathbf{I})$. In the case of discrete denoising models (Ho et al., 2020; Austin et al., 2021; Zheng et al., 2024a), $\mathbf{x}_t$ follows a categorical distribution which naturally aligns with discrete text data. Let $\boldsymbol{x}$ be the one-hot encoded sample of variable $\mathbf{x}$ and $\mathbf{x}_t\sim \text{Cat}(\boldsymbol{x}_t;\boldsymbol{p})$ represent a categorical distribution over vector $\boldsymbol{x}$ with probabilities given by $\boldsymbol{p}$. Here, $K$ represents the vocabulary size, $\boldsymbol{x}\in \{\boldsymbol{e}_1,\dots,\boldsymbol{e}_K\}$, and $\boldsymbol{e}_k \in \{0, 1\}^K$ is the one-hot encoding of the $k$-th word category. The forward process can be formulated through a transition matrix $\boldsymbol{Q}_t\in[0,1]^{K\times K}$ such that 
+where $\beta_t \in (0,1)$ represents different scales. In the end, $\mathbf{x}_T \sim \mathcal{N}(0, \mathbf{I})$. In the case of discrete denoising models (Ho et al., 2020; Austin et al., 2021; Zheng et al., 2024a), $\mathbf{x}_t$ follows a categorical distribution which naturally aligns with discrete text data. Let $\boldsymbol{x}$ be the one-hot encoded sample of variable $\mathbf{x}$ and $\mathbf{x}_t\sim \text{Cat}(\boldsymbol{x}_t;\boldsymbol{p})$ represent a categorical distribution over vector $\boldsymbol{x}$ with probabilities given by $\boldsymbol{p}$. Here, $K$ represents the vocabulary size, $\boldsymbol{x}\in \{\boldsymbol{e}_1,\dots,\boldsymbol{e}_K\}$, and $\boldsymbol{e}_k \in \{0, 1\}^K$ is the one-hot encoding of the $k$-th word category. The forward process can be formulated through a transition matrix $\boldsymbol{Q}_t\in[0,1]^{K\times K}$ such that
 
 $$\begin{equation}
 q(\mathbf{x}_{t} \vert \mathbf{x}_{t-1})=\text{Cat}(\boldsymbol{x}_t;\boldsymbol{Q}_t^\top\boldsymbol{x}_{t-1}); \boldsymbol{Q}_t=(1-\beta_t)I+\beta_t\mathbf{1}\boldsymbol{e}_K^\top,
@@ -364,7 +364,7 @@ q(\mathbf{x}_{t} \vert \mathbf{x}_{t-1})=\text{Cat}(\boldsymbol{x}_t;\boldsymbol
 
 with $\mathbf{1}$ as an all-one vector of size $K$ and we assume $\boldsymbol{e}_K$ as the special \[mask\] state, also defined as the absorbing state in discrete diffusion $\boldsymbol{m}$. Each entry in $[\boldsymbol{Q}_t]_{ij}$ denotes the probability of transition from the state $\boldsymbol{e}_i$ to $\boldsymbol{e}_j$, and thus the previously defined $\boldsymbol{Q}_t$ means with probability $1-\beta_t$, $\boldsymbol{x}_t$ will stay unchanged and otherwise it will jump to the mask state $\boldsymbol{e}_K$.
 
-Starting from $\boldsymbol{x}_0$, the $t$-step marginal distribution and the posterior at previous time $t-1$ is respectively 
+Starting from $\boldsymbol{x}_0$, the $t$-step marginal distribution and the posterior at previous time $t-1$ is respectively
 
 $$\begin{equation}
     q(\boldsymbol{x}_t|\boldsymbol{x}_0)=\text{Cat}(\boldsymbol{x}_t;\boldsymbol{p}=\boldsymbol{\overline{Q}}_t^\top\boldsymbol{x}_0); \; q(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t,\boldsymbol{x}_0)=
@@ -378,21 +378,21 @@ where cumulative products $\boldsymbol{\overline{Q}}_t = \prod_{i=1}^t\boldsymbo
 
 Previous discrete time $t\in[0,T]$ restricts $\boldsymbol{x}_t$ to fixed time points whereas the continuous-time sampling allows for more flexibility covering any point in the range (Kingma et al., 2021; Shi et al., 2024; Zhao et al., 2024; Ou et al., 2024). In this case, $t$ runs from $0$ to $1$, corresponding to dividing $[0,1]$ into $T$ intervals and let $T\rightarrow\infty$. For any two arbitrary time points, $0\leq s< t\leq 1$, the forward modeling can be generalized from $q(\mathbf{x}_{t} \vert \mathbf{x}_{t-1})$ to $q(\mathbf{x}_{t} \vert \mathbf{x}_{s})$. We uniformly adopt the notation of continuous-time in following sections.
 
-Following the previous definition, after simplification, we have $q(\boldsymbol{x}_t|\boldsymbol{x}_0)=\alpha_t\boldsymbol{x}_0+(1-\alpha_t)\boldsymbol{m}$, referring to the probability of transition to absorbing mask state. Given $q(\boldsymbol{x}_t|\boldsymbol{x}_0)=q(\boldsymbol{x}_t|\boldsymbol{x}_s)q(\boldsymbol{x}_s|\boldsymbol{x}_0)$, we can derive the transition distribution between two arbitrary times $s$ and $t$: 
+Following the previous definition, after simplification, we have $q(\boldsymbol{x}_t|\boldsymbol{x}_0)=\alpha_t\boldsymbol{x}_0+(1-\alpha_t)\boldsymbol{m}$, referring to the probability of transition to absorbing mask state. Given $q(\boldsymbol{x}_t|\boldsymbol{x}_0)=q(\boldsymbol{x}_t|\boldsymbol{x}_s)q(\boldsymbol{x}_s|\boldsymbol{x}_0)$, we can derive the transition distribution between two arbitrary times $s$ and $t$:
 
 $$\begin{equation}
     q(\boldsymbol{x}_t|\boldsymbol{x}_s)=\text{Cat}(\boldsymbol{x}_t;\boldsymbol{\overline{Q}}_{s|t}^\top \boldsymbol{x}_s), \;\text{with }\boldsymbol{\overline{Q}}_{s|t} = \boldsymbol{\overline{Q}}_s^{-1}\boldsymbol{\overline{Q}}_t=\frac{\alpha_t}{\alpha_s}I+(1-\frac{\alpha_t}{\alpha_s})\mathbf{1}\boldsymbol{m}^\top.
 \tag{16}
 \end{equation}$$
 
-Similarly, after simplification, 
+Similarly, after simplification,
 
 $$\begin{equation}
 q(\boldsymbol{x}_t|\boldsymbol{x}_s)=\frac{\alpha_t}{\alpha_s}\boldsymbol{x}_s+(1-\frac{\alpha_t}{\alpha_s})\boldsymbol{m}.
 \tag{17}
 \end{equation}$$
 
-Following Zheng et al. (2024a); Shi et al. (2024) and extend the formulation to continuous time, we have the backward transition probability: 
+Following Zheng et al. (2024a); Shi et al. (2024) and extend the formulation to continuous time, we have the backward transition probability:
 
 $$\begin{equation}
 \tag{18}
@@ -403,21 +403,21 @@ $$\begin{equation}
     \end{cases}
 \end{equation}$$
 
-For $\boldsymbol{x}_t\neq\boldsymbol{m}$, the $q(\boldsymbol{x}_s|\boldsymbol{x}_t, \boldsymbol{x}_0)$ will stick to the observed data. For $\boldsymbol{x}_t=\boldsymbol{m}$, we get the simplified 
+For $\boldsymbol{x}_t\neq\boldsymbol{m}$, the $q(\boldsymbol{x}_s|\boldsymbol{x}_t, \boldsymbol{x}_0)$ will stick to the observed data. For $\boldsymbol{x}_t=\boldsymbol{m}$, we get the simplified
 
 $$\begin{equation}
 \tag{19}
 q(\boldsymbol{x}_s|\boldsymbol{x}_t, \boldsymbol{x}_0)=\frac{\alpha_s-\alpha_t}{1-\alpha_t}\boldsymbol{x}_0+\frac{1-\alpha_s}{1-\alpha_t}\boldsymbol{m}.
 \end{equation}$$
 
-In diffusion process, the generative model aims to approximate the reverse transitions using a denoising model $p_{\theta}(\boldsymbol{x_s}|\boldsymbol{x}_t, f_{\theta}(\boldsymbol{x}_t))\rightsquigarrow q(\boldsymbol{x}_s|\boldsymbol{x}_t,\boldsymbol{x}_0)$, where $f_{\theta}(\boldsymbol{x}_t)$ represents the probability vector obtained from the softmax applied to the logits generated by the neural network, usually using transformer networks (Vaswani et al., 2017) in text domain. We can similarly have 
+In diffusion process, the generative model aims to approximate the reverse transitions using a denoising model $p_{\theta}(\boldsymbol{x_s}|\boldsymbol{x}_t, f_{\theta}(\boldsymbol{x}_t))\rightsquigarrow q(\boldsymbol{x}_s|\boldsymbol{x}_t,\boldsymbol{x}_0)$, where $f_{\theta}(\boldsymbol{x}_t)$ represents the probability vector obtained from the softmax applied to the logits generated by the neural network, usually using transformer networks (Vaswani et al., 2017) in text domain. We can similarly have
 
 $$\begin{equation}
 \tag{20}
 p_{\theta}(\boldsymbol{x_s}|\boldsymbol{x}_t)=\frac{\alpha_s-\alpha_t}{1-\alpha_t}f_{\theta}(\boldsymbol{x}_t)+\frac{1-\alpha_s}{1-\alpha_t}\boldsymbol{m}.
 \end{equation}$$
 
-Given Eq.19 and Eq.20, the KL-divergence loss is optimized by 
+Given Eq.19 and Eq.20, the KL-divergence loss is optimized by
 
 $$\begin{equation}
     D_{\mathrm{KL}}(q(\boldsymbol{x}_s|\boldsymbol{x}_t,\boldsymbol{x}_0)||p_{\theta}(\boldsymbol{x}_s||\boldsymbol{x}_t)) = 
@@ -428,21 +428,21 @@ $$\begin{equation}
 \tag{21}
 \end{equation}$$
 
-We can use the indicator function $\delta_{\boldsymbol{x}_t,\boldsymbol{m}}$ to unify the conditional cases. In addition, given $\boldsymbol{x}_0$, we have $D_{\mathrm{KL}}(\boldsymbol{x}_0||f_{\theta}(\boldsymbol{x}_t))=-\boldsymbol{x}_0^\top\log f_{\theta}(\boldsymbol{x}_t)$ which corresponds to the cross-entropy widely used in the classification. Therefore, we have 
+We can use the indicator function $\delta_{\boldsymbol{x}_t,\boldsymbol{m}}$ to unify the conditional cases. In addition, given $\boldsymbol{x}_0$, we have $D_{\mathrm{KL}}(\boldsymbol{x}_0||f_{\theta}(\boldsymbol{x}_t))=-\boldsymbol{x}_0^\top\log f_{\theta}(\boldsymbol{x}_t)$ which corresponds to the cross-entropy widely used in the classification. Therefore, we have
 
 $$\begin{equation}
     D_{\mathrm{KL}}(q(\boldsymbol{x}_s|\boldsymbol{x}_t,\boldsymbol{x}_0)||p_{\theta}(\boldsymbol{x}_s||\boldsymbol{x}_t))=-\frac{\alpha_s-\alpha_t}{1-\alpha_t}\delta_{\boldsymbol{x}_t,\boldsymbol{m}}\boldsymbol{x}_0^\top\log f_{\theta}(\boldsymbol{x}_t).
 \tag{22}
 \end{equation}$$
 
-Following Eq.12, if we set a small timestep $\Delta_t=t-s=\frac{1}{T}\in(0,1)$, 
+Following Eq.12, if we set a small timestep $\Delta_t=t-s=\frac{1}{T}\in(0,1)$,
 
 $$\begin{equation}
     \mathcal{L}_T = \sum_{t=2}^T [-\frac{\alpha_s-\alpha_t}{(t-s)(1-\alpha_t)}\delta_{\boldsymbol{x}_t,\boldsymbol{m}}\boldsymbol{x}_0^\top\log f_{\theta}(\boldsymbol{x}_t)\Delta_t].
 \tag{23}
 \end{equation}$$
 
-By taking the limit as $T\rightarrow \infty$, we have $\alpha_t^\prime=\frac{\alpha_t-\alpha_s}{t-s}$, and the sum is transformed into an integral: 
+By taking the limit as $T\rightarrow \infty$, we have $\alpha_t^\prime=\frac{\alpha_t-\alpha_s}{t-s}$, and the sum is transformed into an integral:
 
 $$\begin{equation}
 \tag{24}
@@ -453,7 +453,7 @@ Also, the first two terms in Eq.11 are $\rightarrow 0$ and a constant, respectiv
 
 The same form of ELBO which is invariant to noise schedule but related to the signal-to-noise ratio (SNR) is also introduced in Kingma et al. (2021); Shi et al. (2024). Following Austin et al. (2021); Zheng et al. (2024a), we choose the noise schedule $\alpha_t=1-t$, then $\frac{-\alpha_t^\prime}{1-\alpha_t}=\frac{1}{t}$.
 
-The previous discussion focused on the single token $\boldsymbol{x}_t$, and can be easily extended to a text sequence of length $N$ represented as $\mathbf{x}_t=[\boldsymbol{x}_t^{1}, \boldsymbol{x}_t^{2}\dots, \boldsymbol{x}_t^{N}]$. The final loss of the whole sequence is 
+The previous discussion focused on the single token $\boldsymbol{x}_t$, and can be easily extended to a text sequence of length $N$ represented as $\mathbf{x}_t=[\boldsymbol{x}_t^{1}, \boldsymbol{x}_t^{2}\dots, \boldsymbol{x}_t^{N}]$. The final loss of the whole sequence is
 
 $$\begin{equation}
 \tag{25}

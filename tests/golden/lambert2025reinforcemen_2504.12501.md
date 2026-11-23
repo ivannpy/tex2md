@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: ed3f1b07f041e91fa507d541a6880ca7bdcdaaf16202a30dbc19401537baa508
     path: "PCIC/Tesis/OPD/Reinforcement Learning from Human Feedback A short introduction to RLHF and post-training focused on language models.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-18
+converted: 2026-11-22
 ---
 
 # Reinforcement Learning from Human Feedback
@@ -411,7 +411,9 @@ For a richer example with continuous dynamics, consider the classic *CartPole* (
 
   $$\begin{equation}
   \tag{8}{x_{t+1}=x_t+\Delta t\,\dot{x}_t,\quad \dot{x}_{t+1}=\dot{x}_t+\Delta t\,\ddot{x}_t,}
-  \end{equation}$$ $$\begin{equation}
+  \end{equation}$$
+
+  $$\begin{equation}
   \tag{9}{\theta_{t+1}=\theta_t+\Delta t\,\dot{\theta}_t,\quad \dot{\theta}_{t+1}=\dot{\theta}_t+\Delta t\,\ddot{\theta}_t.}
   \end{equation}$$
 
@@ -438,7 +440,7 @@ The RL formulation for RLHF is seen as a less open-ended problem, where a few ke
 | Reward granularity | Often per-step / fine-grained | Usually response-level (bandit-style) over the full completion, usually no discounting ($\gamma = 1$) |
 | Horizon | Multi-step episode ($T>1$) | Often single-step ($T=1$), though multi-turn can be modeled as longer-horizon |
 
-Given the single-turn nature of the problem, the optimization can be re-written without the time horizon and discount factor (and with an explicit reward model): 
+Given the single-turn nature of the problem, the optimization can be re-written without the time horizon and discount factor (and with an explicit reward model):
 
 $$\begin{equation}
 \tag{10}{\max_\pi \; \mathbb{E}_{\tau \sim \pi} \left[r_\theta(s_t, a_t) \right].}
@@ -775,13 +777,13 @@ $$\begin{equation}
 
 Taking the logarithm *before* averaging over the dataset is what makes the negative-log-likelihood loss the right objective: maximizing the expected probability $\mathbb{E}[P]$ is not the same as maximizing the expected log-probability $\mathbb{E}[\log P]$.
 
-The per-example loss is the log-sigmoid expression inside the expectation above, as in \[3\] and other works: 
+The per-example loss is the log-sigmoid expression inside the expectation above, as in \[3\] and other works:
 
 $$\begin{equation}
 \tag{17}{\mathcal{L}(\theta) = - \log \left( \sigma \left( r_{\theta}(y_c \mid x) - r_{\theta}(y_r \mid x) \right) \right)}
 \end{equation}$$
 
-The second is a mathematically equivalent form expressed using the softplus function $\log(1+e^x)$, as in \[23\] and other works: 
+The second is a mathematically equivalent form expressed using the softplus function $\log(1+e^x)$, as in \[23\] and other works:
 
 $$\begin{equation}
 \tag{18}{\mathcal{L}(\theta) = \log \left( 1 + e^{r_{\theta}(y_r \mid x) - r_{\theta}(y_c \mid x)} \right)}
@@ -1282,7 +1284,7 @@ $$\begin{equation}
 \tag{26}{G_t = r_t + \gamma r_{t+1} + \cdots = \sum_{k=0}^\infty \gamma^k r_{t+k}.}
 \end{equation}$$
 
-The return definition can also be written recursively as: 
+The return definition can also be written recursively as:
 
 $$\begin{equation}
 \tag{27}{G_{t} = r_t + \gamma G_{t+1}.}
@@ -1296,7 +1298,7 @@ $$\begin{equation}
 
 All policy gradient algorithms optimize a policy $\pi_\theta(a\mid s)$ to maximize expected return; this objective can be expressed using the induced value function $V^{\pi_\theta}(s)$.
 
-Let $d_0(s)$ be the initial-state distribution. The episodic objective we maximize can be written as: 
+Let $d_0(s)$ be the initial-state distribution. The episodic objective we maximize can be written as:
 
 $$\begin{equation}
 \tag{29}{
@@ -1334,7 +1336,7 @@ The core implementation detail is how to compute said gradient.
 
 ### 6.2.1 Deriving the Policy Gradient
 
-Let $p_\theta(\tau)$ denote the trajectory distribution induced by the initial-state distribution $d_0$, the policy $\pi_\theta$, and the environment transition dynamics, as expanded in eq. 35 below. Another way to pose the RL objective we want to maximize is as follows: 
+Let $p_\theta(\tau)$ denote the trajectory distribution induced by the initial-state distribution $d_0$, the policy $\pi_\theta$, and the environment transition dynamics, as expanded in eq. 35 below. Another way to pose the RL objective we want to maximize is as follows:
 
 $$\begin{equation}
 \tag{33}{
@@ -1342,7 +1344,7 @@ J(\theta) = \mathbb{E}_{\tau \sim p_\theta} \left[ R(\tau) \right],
 }
 \end{equation}$$
 
-where $\tau = (s_0, a_0, s_1, a_1, \ldots)$ is a trajectory and $R(\tau) = \sum_{t=0}^\infty r_t$ is the total reward of the trajectory. Alternatively, we can write the expectation as an integral over all possible trajectories: 
+where $\tau = (s_0, a_0, s_1, a_1, \ldots)$ is a trajectory and $R(\tau) = \sum_{t=0}^\infty r_t$ is the total reward of the trajectory. Alternatively, we can write the expectation as an integral over all possible trajectories:
 
 $$\begin{equation}
 \tag{34}{
@@ -1350,7 +1352,7 @@ J(\theta) = \int_\tau p_\theta (\tau) R(\tau) d\tau
 }
 \end{equation}$$
 
-Notice that we can express the trajectory probability as follows, where $\pi_\theta(a_t|s_t) p(s_{t+1}|s_t, a_t)$ combines the policy probability with the environment transition probability from one state-action pair to the next state: 
+Notice that we can express the trajectory probability as follows, where $\pi_\theta(a_t|s_t) p(s_{t+1}|s_t, a_t)$ combines the policy probability with the environment transition probability from one state-action pair to the next state:
 
 $$\begin{equation}
 \tag{35}{
@@ -1358,7 +1360,7 @@ p_\theta (\tau) = d_0(s_0) \prod_{t=0}^\infty \pi_\theta(a_t|s_t) p(s_{t+1}|s_t,
 }
 \end{equation}$$
 
-If we take the gradient of the objective (eq. 33) with respect to the policy parameters $\theta$: 
+If we take the gradient of the objective (eq. 33) with respect to the policy parameters $\theta$:
 
 $$\begin{equation}
 \tag{36}{
@@ -1366,7 +1368,7 @@ $$\begin{equation}
 }
 \end{equation}$$
 
-Notice that we can use the [log-derivative trick](https://andrewcharlesjones.github.io/journal/log-derivative.html) in order to rewrite the gradient of the integral as an expectation: 
+Notice that we can use the [log-derivative trick](https://andrewcharlesjones.github.io/journal/log-derivative.html) in order to rewrite the gradient of the integral as an expectation:
 
 $$\begin{equation}
 \tag{37}{
@@ -1377,7 +1379,7 @@ $$\begin{equation}
 }
 \end{equation}$$
 
-Using this log-derivative trick: 
+Using this log-derivative trick:
 
 $$\begin{equation}
 \tag{38}{
@@ -1407,7 +1409,7 @@ Now, if we take the gradient of the above, we get:
 
 - only $\nabla_\theta \log \pi_\theta(a_t|s_t)$ survives
 
-Therefore, the gradient of the log probability of the trajectory simplifies to: 
+Therefore, the gradient of the log probability of the trajectory simplifies to:
 
 $$\begin{equation}
 \tag{40}{
@@ -1423,7 +1425,7 @@ Reaching this equation is a crucial point in the implementation. Here, we have g
 
 You’ll see this throughout the chapter. Now, back to the formal policy gradient mathematics.
 
-Substituting this back in eq. 38, we get: 
+Substituting this back in eq. 38, we get:
 
 $$\begin{equation}
 \tag{41}{
@@ -1431,7 +1433,7 @@ $$\begin{equation}
 }
 \end{equation}$$
 
-Quite often, people use a more general formulation of the policy gradient: 
+Quite often, people use a more general formulation of the policy gradient:
 
 $$\begin{equation}
 \tag{42}{
@@ -1575,7 +1577,7 @@ $$\begin{equation}
 
 Here, $\pi_\theta(a|s)$ is the current policy being optimized and $\pi_{\theta_{\text{old}}}(a|s)$ is the policy that was used to collect the training data (i.e., the policy from the previous iteration). The ratio between these two policies emerges from *importance sampling*, which allows us to reuse data collected under an old policy to estimate gradients for a new policy.
 
-Recall from the advantage formulation of the policy gradient (eq. 45) that we have: 
+Recall from the advantage formulation of the policy gradient (eq. 45) that we have:
 
 $$\begin{equation}
 \tag{53}{\nabla_\theta J(\theta) = \mathbb{E}_{\tau \sim p_\theta} \left[ \sum_{t=0}^T A^{\pi_\theta}(s_t, a_t) \nabla_\theta \log \pi_\theta(a_t|s_t) \right].}
@@ -2981,7 +2983,7 @@ $$\begin{equation}
 \tag{106}{p^*(y_1 \succ y_2 \mid x) = \sigma\left(\beta \log \frac{\pi^*(y_1 \mid x)}{\pi_{\text{ref}}(y_1 \mid x)} - \beta \log \frac{\pi^*(y_2 \mid x)}{\pi_{\text{ref}}(y_2 \mid x)}\right) }
 \end{equation}$$
 
-This is the likelihood of preference data under the Bradley-Terry model, given the optimal policy $\pi^*$. Recall from Chapter 5 on Reward Modeling that we derived the Bradley-Terry objective as maximizing the likelihood, or equivalently minimizing the negative log-likelihood, which gives us the loss: 
+This is the likelihood of preference data under the Bradley-Terry model, given the optimal policy $\pi^*$. Recall from Chapter 5 on Reward Modeling that we derived the Bradley-Terry objective as maximizing the likelihood, or equivalently minimizing the negative log-likelihood, which gives us the loss:
 
 $$\begin{equation}
 \tag{107}{
@@ -3292,7 +3294,7 @@ $$\begin{equation}
 \tag{124}{R_{flat} = [0.7, 0.3, 0.5, 0.2, 0.4, 0.8, 0.6, 0.5, 0.9, 0.3, 0.4, 0.7, 0.2, 0.5, 0.8, 0.6, 0.5, 0.4, 0.3, 0.6]}
 \end{equation}$$
 
-Now, we select the indices of the five highest values: 
+Now, we select the indices of the five highest values:
 
 $$\begin{equation}
 \tag{125}{S_5(R_{flat}) = [8, 5, 14, 0, 11]}
@@ -4532,7 +4534,7 @@ Within the post-training literature, many prominent models include other methods
 
 ### 15.2.1 Pretraining Gradients in RL
 
-Another way of viewing regularization is that you may have a *dataset* that you want the model to remain close to, as done in InstructGPT \[3\] “in order to fix the performance regressions on public NLP datasets”. To implement this, they modify the training objective for RLHF. Taking eq. 139, we can transform this into an objective function to optimize by sampling from the RL policy model, completions $y$ from prompts $x$ in the RL dataset used for RLHF, which yields: 
+Another way of viewing regularization is that you may have a *dataset* that you want the model to remain close to, as done in InstructGPT \[3\] “in order to fix the performance regressions on public NLP datasets”. To implement this, they modify the training objective for RLHF. Taking eq. 139, we can transform this into an objective function to optimize by sampling from the RL policy model, completions $y$ from prompts $x$ in the RL dataset used for RLHF, which yields:
 
 $$\begin{equation}
 \tag{143}{
@@ -4552,7 +4554,7 @@ J(\theta) = \mathbb{E}_{(x,y) \sim \mathcal{D}_{\pi_{\text{RL},\theta}}} \left[ 
 
 Recent work proposed using a negative log-likelihood term to balance the optimization of Direct Preference Optimization (DPO) \[360\]. Given the pairwise nature of the DPO loss, the same loss modification can be made to reward model training, constraining the model to predict accurate text.
 
-The optimization follows as a modification to DPO. 
+The optimization follows as a modification to DPO.
 
 $$\begin{equation}
 \tag{145}{\mathcal{L}_{\text{DPO+NLL}} = \mathcal{L}_{\text{DPO}}(c_i^w, y_i^w, c_i^l, y_i^l \mid x_i) + \alpha \mathcal{L}_{\text{NLL}}(c_i^w, y_i^w \mid x_i)

@@ -175,6 +175,45 @@ def tabular_in_math(text: str) -> str:
         pos = m.start() + len(new)
 
 
+_MATH_BOX = re.compile(r"\\(?:resizebox\*?\s*\{[^{}]*\}\s*\{[^{}]*\}|scalebox\s*\{[^{}]*\}(?:\s*\[[^\]]*\])?)\s*(?=\{\s*\$)")
+_DISPLAY_OPEN = re.compile(r"\\\[|\\begin\{(?:equation|align|gather|multline|flalign|eqnarray)\*?\}")
+_DISPLAY_CLOSE = re.compile(r"\\\]|\\end\{(?:equation|align|gather|multline|flalign|eqnarray)\*?\}")
+
+
+def _in_display_math(text: str, pos: int) -> bool:
+    """True when ``pos`` lies after a display-math opening that has not been closed (looks back one paragraph)."""
+    start = text.rfind("\n\n", 0, pos)
+    chunk = text[start + 1 if start >= 0 else 0:pos]
+    opens = [m.end() for m in _DISPLAY_OPEN.finditer(chunk)]
+    if not opens:
+        return False
+    return not _DISPLAY_CLOSE.search(chunk, opens[-1])
+
+
+def boxes_around_math(text: str) -> str:
+    r"""``\[\resizebox{\linewidth}{!}{$\displaystyle ...$}\]``: a formula scaled to the line width. The box is
+    layout, and inside display math its ``$`` read as the end of the equation (the rest of the paper swaps math
+    and text). The formula stays: bare inside display math, ``$...$`` in running text.
+
+    ``\fitbox{W}{...}`` (a class file's \resizebox that only shrinks: pandoc never sees its definition and drops
+    the table or the formula in it) is read as ``\resizebox{W}{!}{...}`` first."""
+    text = re.sub(r"\\fitbox(?![a-zA-Z@])\s*(\{[^{}]*\})", r"\\resizebox\1{!}", text)
+    pos = 0
+    while True:
+        m = _MATH_BOX.search(text, pos)
+        if not m:
+            return text
+        e = balanced_end(text, m.end())
+        inner = text[m.end() + 1:e - 1].strip() if e > 0 else ""
+        if not (inner.startswith("$") and inner.endswith("$") and not inner.startswith("$$")
+                and len(re.findall(r"(?<!\\)\$", inner)) == 2):
+            pos = m.end()
+            continue
+        new = inner[1:-1].strip() if _in_display_math(text, m.start()) else inner
+        text = text[:m.start()] + new + text[e:]
+        pos = m.start() + len(new)
+
+
 def acks_to_section(text: str) -> str:
     r"""JMLR's ``\acks{...}`` and NeurIPS' ``\begin{ack}...\end{ack}`` print an Acknowledgments heading and the text; the
     macro or environment lives in the style file, so pandoc drops the first and the heading of the second."""

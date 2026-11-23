@@ -74,3 +74,12 @@ def test_tcolorboxes_defined_in_the_body_and_redefined_become_quotes():
     out = tcolorbox_to_quote(defs + use + defs + use)
     assert "newtcolorbox" not in out and "sharp" not in out and "boxrule" not in out
     assert out.count(r"\begin{quote}") == 4 and out.count(r"\textbf{Example}") == 2 and out.count("User: hi") == 2
+
+
+def test_resizebox_around_math_inside_display():
+    from tex2md.preprocess.environments import boxes_around_math
+    tex = r"where \[\resizebox{\linewidth}{!}{$\displaystyle a = b,$}\] and \resizebox{2cm}{!}{$c$} text"
+    assert boxes_around_math(tex) == r"where \[\displaystyle a = b,\] and $c$ text"
+    # a class file's \fitbox is read as \resizebox
+    assert boxes_around_math(r"\begin{equation}\fitbox{0.9\textwidth}{$x$}\end{equation}") == \
+        r"\begin{equation}x\end{equation}"

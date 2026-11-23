@@ -125,3 +125,10 @@ def test_long_captions_replace_a_shared_short_form():
     out = use_long_captions(floats, tex)
     assert [f["text"] for f in out] == ["ourestimates", "plot", "ourestimatesagain"]
     assert floats[0]["text"] == "caption"           # the input list is not changed
+
+
+def test_long_captions_when_the_aux_lists_floats_in_placement_order():
+    from tex2md.build.aux import use_long_captions
+    floats = [{"kind": "figure", "num": "5", "text": "fivshort"}, {"kind": "figure", "num": "4", "text": "fourshort"}]
+    tex = r"\caption[Four short]{Four long} text \caption[Fiv short]{Five long}"
+    assert [f["text"] for f in use_long_captions(floats, tex)] == ["fivelong", "fourlong"]

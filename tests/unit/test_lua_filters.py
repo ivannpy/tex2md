@@ -255,3 +255,42 @@ def test_cells_with_a_list_or_a_rule_stay_in_a_pipe_table(tmp_path):
             r"\end{minipage} & 1 \\ \begin{minipage}{3cm}\hrule Base\end{minipage} & 2 \\ \end{tabular}")
     md = convert(tmp_path, body)
     assert "<table" not in md and "• one<br>• two" in md and "| Base " in md
+
+
+def test_display_math_inside_a_theorem_gets_its_own_paragraph(tmp_path):
+    # pandoc keeps the equation inside the italic paragraph ("*text $$...$$*"), which viewers do not render
+    md = convert(tmp_path, r"""\newtheorem{prop}{Proposition}
+\begin{quote}\emph{It holds that
+\begin{equation*} a = b \end{equation*}
+for all $x$.} And more.\end{quote}""")
+    lines = md.strip().splitlines()
+    i = next(k for k, l in enumerate(lines) if "$$" in l)
+    assert lines[i].startswith("> $$") and lines[i - 1].strip() == ">"
+    assert lines[0].startswith("> *It holds that*")
+    assert any(l.startswith("> *for all $x$.*") for l in lines)
+
+
+def test_display_math_takes_the_punctuation_after_it(tmp_path):
+    md = convert(tmp_path, r"""Then \[ a = b \]. Next sentence.
+
+\begin{itemize}\item where \[ c = d \] holds\end{itemize}""")
+    assert "$$a = b.$$" in md
+    assert "\n\nNext sentence." in md
+    item = md[md.index("- where"):]
+    assert "\n\n  $$" in item and "\n\n  holds" in item
+
+
+def test_inline_math_is_one_line_without_blank_ends(tmp_path):
+    md = convert(tmp_path, "\\begin{quote}Let $\\bar p :=\n \\mathbb E_S\\ $ be.\\end{quote}")
+    assert "$\\bar p := \\mathbb E_S$" in md and "> \\mathbb" not in md
+
+
+def test_inline_math_with_a_tex_comment_keeps_the_rest(tmp_path):
+    md = convert(tmp_path, "\\newcommand{\\E}[1]{%\n \\mathbb{E}[#1]}\nwith $a = \\E{b}$ and 50\\% of $c$.")
+    assert "$a = \\mathbb{E}[b]$" in md and "50% of $c$" in md
+
+
+def test_author_tag_is_not_doubled(tmp_path):
+    md = convert(tmp_path, r"\begin{equation}\label{eq:x} a = b \tag{$\tau$-leaping}\end{equation}",
+                 labels={"eq:x": {"num": "$\\tau$-leaping", "type": "equation"}})
+    assert md.count("\\tag") == 1

@@ -74,7 +74,7 @@ def use_long_captions(floats, tex):
     head = re.compile(r"\\caption(?:of\s*\{[a-z]+\})?\s*\[")
     tex = strip_comments(tex)
     out = [dict(f) for f in floats]
-    at = 0
+    at, taken = 0, set()
     for m in head.finditer(tex):
         short_end = tex.find("]", m.end())
         if short_end < 0 or "\n\n" in tex[m.end():short_end]:
@@ -86,10 +86,12 @@ def use_long_captions(floats, tex):
         short_key, long_key = _caption_key(tex[m.end():short_end]), _caption_key(long)
         if not short_key or short_key == long_key:
             continue
-        for j in range(at, len(out)):
-            if out[j]["text"] == short_key:
+        # from the last match on, then the earlier ones not taken yet: the .aux lists floats in placement order
+        for j in [*range(at, len(out)), *range(min(at, len(out)))]:
+            if j not in taken and out[j]["text"] == short_key:
                 out[j]["text"] = long_key
-                at = j + 1
+                taken.add(j)
+                at = max(at, j + 1)
                 break
     return out
 

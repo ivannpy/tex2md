@@ -1,5 +1,48 @@
 # Changelog
 
+## Display math on its own line, lost tables and failed compiles (2026-11-22)
+Found reconverting the PDFs added to the library on 2026-11-19..22 (`HALLAZGOS_2026-11-22.md`).
+
+- **`$$` blocks always start a line.** Pandoc keeps an equation inside its paragraph, and the old clean-up
+  (`isolate_display_math`) left alone the ones in a block quote (theorem boxes), a list item or emphasis:
+  `> *Let ... $$\begin{equation}...\end{equation}$$*` or `\end{align}$$ They can be...`. MarginNote, Obsidian
+  and KaTeX plug-ins do not render those. New Lua pass `displaymath.lua` (last in `tex2md.lua`) splits every
+  paragraph at its display equations, closing and reopening the emphasis around them; the writer then prefixes
+  the quote and indents the list. Punctuation right after the equation (`\].`) goes inside it.
+- **Inline math on one line, no blanks at the ends**: in a quote pandoc put `> ` in the middle of a formula
+  written over two lines; `$ x$` / `$x $` lose the blanks (most readers do not take them for math). A TeX
+  comment inside the formula is removed first (it would swallow the rest once the formula is one line), and a
+  formula that was only a comment (`$% ...$`, marker) is dropped instead of becoming `$$`.
+- **`\resizebox{\linewidth}{!}{$\displaystyle ...$}` inside `\[ \]`** (`zekri2026gdds`: 6 `unbalanced-math`):
+  the box goes, the formula stays. A class file's `\fitbox{W}{...}` is read as `\resizebox` (`wang2026ludi` lost
+  Table 3 and its scaled equations).
+- **Tables printed as raw LaTeX or lost**: `tabu`/`longtabu` → `tabular` (`liu2024ddpd`); a float kept in a macro
+  without arguments (`\newcommand{\tabSpecifics}{\begin{table}...}`) is expanded where it is used; inside a
+  tabular, a blank line, a `\vspace` at the start of a cell and a `\\` inside a brace group are removed;
+  `\pbox[t][5ex]{w}{a\\b}` cells become one line; `\multirow{2}*{X}` (bare `*` width) is read
+  (`dhariwal2021beat`: Tables 1 and 7). `\hfill` glued to a word keeps a space (`Time steps\hfill$t_i$`).
+- **Two rows of minipages, tables first and captions after** (`utpala2026loopedudlm`): each table is paired with
+  its caption; before, the first caption took both tables and Table 9 was empty.
+- **Teaser drawn by a redefined `\maketitle`** (`\renewcommand{\@maketitle}{...\captionof{figure}{...}}`,
+  `\mymaketitle`): its caption becomes a figure after `\maketitle` (Figure 1 of `zhu2026wamdiff2` and
+  `yu2026groundanything`).
+- **Compilation**: a package that is not installed (`tocstyle`, gone from TeX Live) is dropped from the build
+  copy and the paper compiled again (`dropped_packages` in the report; `heusel2017fid` had 47 `??`). A main file
+  in a subfolder whose `\input`s are relative to the root of the tree (`latex/acl_latex.tex` with
+  `\input{sections/...}`) is compiled from the root (`cheng2026vocalnetmdm`: the `.md` had only the abstract).
+  New diagnostic `compile-failed` (warning) when LaTeX gives no PDF.
+- **xargs' `\newcommandx`** (optional arguments anywhere; pandoc left every use unexpanded: 866
+  `unknown-math-macro` in `gourevitch2026udm`, now 8): only the first optional → a plain `\newcommand` with a
+  default; trailing optional ones → each use expanded by the preprocessor. Optional arguments in the middle are
+  left as they are.
+- **An equation with the author's own `\tag{...}`** gets no second `\tag` from its `\label` (KaTeX refuses two,
+  and the `.aux` number `$\tau$-leaping` put a `$` inside the formula: `\tag{$$-leaping}` broke the pairing of
+  every `$$` after it in `gourevitch2026udm`). `\tag{\theequation}` (`\numberthis`) does not count.
+- `unknown-math-macro` no longer flags commands KaTeX knows (`\frown`, `\mathrlap`, `\blacktriangleleft`...).
+- **Float numbers**: `use_long_captions` also looks at earlier floats (the `.aux` is in placement order and a
+  float placed before an earlier one kept its short caption), and a `\label` inside the caption gives the
+  number when its entry agrees (`heusel2017fid`: Figures 5 and 6 had the same number).
+
 ## marker: headings that only label something (2026-11-18)
 In a paper whose sections are numbered, `tidy_marker` (and `fixmarker`) turns into paragraphs the headings that
 label something instead of opening a section: the author or affiliation line before the first section

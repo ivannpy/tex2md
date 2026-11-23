@@ -585,6 +585,72 @@ def _captions_on_top(body):
     return True
 
 
+_MINIPAGE = re.compile(r"\\begin\{minipage\}(?:\[[^\]]*\])*\{[^{}]*\}(.*?)\\end\{minipage\}", re.S)
+
+
+_TITLE_DEF = re.compile(r"\\(?:(?:re)?newcommand\*?\s*\{?\\[a-zA-Z@]*maketitle\}?|def\s*\\[a-zA-Z@]*maketitle)\s*(?=\{)")
+_TITLE_CAPTION = re.compile(r"\\caption(?:of\s*\{(?:figure|table)\})?\s*(?:\[[^\]]*\])?\s*(?=\{)")
+
+
+def teaser_in_maketitle(text):
+    r"""A teaser figure drawn by the template's title: ``\renewcommand{\@maketitle}{\old@maketitle ...
+    \includegraphics{teaser}\captionof{figure}{...}}``. Pandoc never runs that definition, so Figure 1 is lost. Its
+    caption becomes a figure of its own right after ``\maketitle``."""
+    body_at = text.find("\\begin{document}")
+    figures = []
+    for m in _TITLE_DEF.finditer(text):
+        e = balanced_end(text, m.end())
+        if e < 0:
+            continue
+        body = text[m.end():e]
+        for c in _TITLE_CAPTION.finditer(body):
+            ce = balanced_end(body, c.end())
+            if ce > 0:
+                kind = "table" if "{table}" in c.group(0) else "figure"
+                figures.append(f"\\begin{{{kind}}}\n\\caption{{{body[c.end() + 1:ce - 1].strip()}}}\n\\end{{{kind}}}\n")
+    if not figures or body_at < 0:
+        return text
+    mt = re.compile(r"\\maketitle(?![a-zA-Z@])").search(text, body_at)
+    at = mt.end() if mt else body_at + len("\\begin{document}")
+    return text[:at] + "\n" + "".join(figures) + text[at:]
+
+
+def pair_content_with_captions(text):
+    r"""Side-by-side floats laid out as two rows of minipages: first the tables (or images), then a row with their
+    captions (``\begin{minipage}{..}\caption{A}\end{minipage}\hfill\begin{minipage}{..}\caption{B}...``). The
+    caption rules would give both tables to the first caption and leave the second one empty. Here the i-th
+    content minipage and the i-th caption minipage become one minipage."""
+    envre = re.compile(r"\\begin\{(table|figure)(\*?)\}(\[[^\]]*\])?")
+    pos = 0
+    while True:
+        m = envre.search(text, pos)
+        if not m:
+            return text
+        endm = re.compile(r"\\end\{" + m.group(1) + re.escape(m.group(2)) + r"\}").search(text, m.end())
+        if not endm:
+            return text
+        body = text[m.end():endm.start()]
+        pos = endm.end()
+        pages = list(_MINIPAGE.finditer(body))
+        if any("\\begin{minipage}" in p.group(1) for p in pages):
+            continue
+        kinds = []
+        for p in pages:
+            inner = p.group(1)
+            has_cap = "\\caption" in inner
+            has_content = bool(re.search(r"\\begin\{tabular|\\includegraphics", inner))
+            kinds.append("C" if has_cap and not has_content else "T" if has_content and not has_cap else "?")
+        k = len(kinds) // 2
+        if k < 2 or "?" in kinds or kinds != ["T"] * k + ["C"] * k:
+            continue
+        lead = body[:pages[0].start()]
+        joined = "".join("\\begin{minipage}{\\linewidth}" + pages[i].group(1) + "\n" + pages[k + i].group(1)
+                         + "\\end{minipage}\n" for i in range(k))
+        new = text[m.start():m.end()] + lead + joined + text[endm.start():endm.end()]
+        text = text[:m.start()] + new + text[endm.end():]
+        pos = m.start() + len(new)
+
+
 def split_multi_caption_floats(text):
     r"""A float that still holds several captions once its sub-figures are flattened (a prompt box with its caption,
     then two panels with theirs): pandoc would keep the last caption only. One float per caption."""

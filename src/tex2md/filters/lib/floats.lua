@@ -103,6 +103,12 @@ end
 function M.Figure(fig)
   S.stats.figures = S.stats.figures + 1
   local num = labels.float_number(fig.identifier, "figure")
+  if not num and fig.caption and fig.caption.long then
+    -- a \label inside the caption is an empty span there
+    fig.caption.long:walk({ Span = function(s)
+      if not num and #s.content == 0 and s.identifier ~= "" then num = labels.float_number(s.identifier, "figure") end
+    end })
+  end
   local has_table = false
   fig.content:walk({ Table = function(t) if has_text(t) then has_table = true end end })
   local lab = fig.identifier ~= "" and S.labels[fig.identifier] or nil

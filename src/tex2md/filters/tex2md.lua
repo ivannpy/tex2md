@@ -17,6 +17,7 @@ local floats = require("floats")
 local equations = require("equations")
 local document = require("document")
 local cleanup = require("cleanup")
+local displaymath = require("displaymath")
 
 return {
   { Meta = function(meta)
@@ -32,4 +33,5 @@ return {
   { Table = cleanup.Table },
   { Div = cleanup.Div, Span = cleanup.Span, SmallCaps = cleanup.SmallCaps, CodeBlock = cleanup.CodeBlock },
   { Pandoc = document.Pandoc },
+  { Math = displaymath.Math, Pandoc = displaymath.Pandoc },   -- last: the abstract is in the body by now
 }

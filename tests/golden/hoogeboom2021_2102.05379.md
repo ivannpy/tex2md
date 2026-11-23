@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: d1e35a9be9b32c370d9fea2bedc22433c0b552e7619cfa1733b49e3a4d51721f
     path: "PCIC/Tesis/core/Argmax Flows and Multinomial Diffusion- Learning Categorical Distributions.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-17
+converted: 2026-11-22
 ---
 
 # Argmax Flows and Multinomial Diffusion: Learning Categorical Distributions
@@ -51,7 +51,7 @@ Therefore, in this paper we introduce extensions of flows and diffusion models f
 
 #### Normalizing Flows
 
-Given ${\mathcal{V}}= \mathbb{R}^d$ and ${\mathcal{Z}}= \mathbb{R}^d$ with densities $p_{V}$ and $p_{Z}$ respectively, normalizing flows (Rezende and Mohamed, 2015) learn a bijective and differentiable transformation $g : {\mathcal{Z}}\to {\mathcal{V}}$ such that the change-of-variables formula gives the density at any point ${\boldsymbol{v}}\in {\mathcal{V}}$: 
+Given ${\mathcal{V}}= \mathbb{R}^d$ and ${\mathcal{Z}}= \mathbb{R}^d$ with densities $p_{V}$ and $p_{Z}$ respectively, normalizing flows (Rezende and Mohamed, 2015) learn a bijective and differentiable transformation $g : {\mathcal{Z}}\to {\mathcal{V}}$ such that the change-of-variables formula gives the density at any point ${\boldsymbol{v}}\in {\mathcal{V}}$:
 
 $$\begin{equation}
 \tag{1}
@@ -60,14 +60,14 @@ $$\begin{equation}
 
 where $p_{Z}$ can be any density (usually chosen as a standard Gaussian). Thus, normalizing flows provide a powerful framework to learn *exact* density functions. However, Eq. (1) is restricted to continuous densities.
 
-To learn densities on ordinal discrete data (such as natural images), typically dequantization noise is added (Uria et al., 2013; Theis et al., 2016; Ho et al., 2019). Nielsen et al. (2020) reinterpreted dequantization as a surjective flow layer ${\boldsymbol{v}}\mapsto {\boldsymbol{x}}$ that is deterministic in one direction (${\boldsymbol{x}}= \mathsf{round}({\boldsymbol{v}})$) and stochastic in the other (${\boldsymbol{v}}= {\boldsymbol{x}}+ {\boldsymbol{u}}$ where ${\boldsymbol{u}}\sim q({\boldsymbol{u}}|{\boldsymbol{x}})$). Using this interpretation, dequantization can be seen as a probabilistic right-inverse for the rounding operation in the latent variable model given by: 
+To learn densities on ordinal discrete data (such as natural images), typically dequantization noise is added (Uria et al., 2013; Theis et al., 2016; Ho et al., 2019). Nielsen et al. (2020) reinterpreted dequantization as a surjective flow layer ${\boldsymbol{v}}\mapsto {\boldsymbol{x}}$ that is deterministic in one direction (${\boldsymbol{x}}= \mathsf{round}({\boldsymbol{v}})$) and stochastic in the other (${\boldsymbol{v}}= {\boldsymbol{x}}+ {\boldsymbol{u}}$ where ${\boldsymbol{u}}\sim q({\boldsymbol{u}}|{\boldsymbol{x}})$). Using this interpretation, dequantization can be seen as a probabilistic right-inverse for the rounding operation in the latent variable model given by:
 
 $$\begin{equation*}
 \small
 {P({\boldsymbol{x}}) =\! \int \! P({\boldsymbol{x}}|{\boldsymbol{v}}) p({\boldsymbol{v}})\mathop{}\!\mathrm{d}{\boldsymbol{v}}, \quad P({\boldsymbol{x}}|{\boldsymbol{v}}) \!=\! \delta\big({\boldsymbol{x}}\!=\! \mathsf{round}({\boldsymbol{v}})\big)},
 \end{equation*}$$
 
-where $\mathsf{round}$ is applied elementwise. In this case, the density model $p({\boldsymbol{v}})$ is modeled using a normalizing flow. Learning proceeds by introducing the variational distribution $q({\boldsymbol{v}}|{\boldsymbol{x}})$ that models the probabilistic right-inverse for the rounding surjection and optimizing the evidence lower bound (ELBO): 
+where $\mathsf{round}$ is applied elementwise. In this case, the density model $p({\boldsymbol{v}})$ is modeled using a normalizing flow. Learning proceeds by introducing the variational distribution $q({\boldsymbol{v}}|{\boldsymbol{x}})$ that models the probabilistic right-inverse for the rounding surjection and optimizing the evidence lower bound (ELBO):
 
 $$\begin{align}
 \log P({\boldsymbol{x}}) &\geq \mathbb{E}_{{\boldsymbol{v}}\sim q({\boldsymbol{v}}|{\boldsymbol{x}})} \left[ \log P({\boldsymbol{x}}| {\boldsymbol{v}}) + \log p({\boldsymbol{v}}) - \log q({\boldsymbol{v}}|{\boldsymbol{x}}) \right] = \mathbb{E}_{{\boldsymbol{v}}\sim q({\boldsymbol{v}}|{\boldsymbol{x}})} \left[ \log p({\boldsymbol{v}}) - \log q({\boldsymbol{v}}|{\boldsymbol{x}}) \right].
@@ -78,14 +78,14 @@ The last equality holds under the constraint that the support of $q({\boldsymbol
 
 #### Diffusion Models
 
-Given data ${\boldsymbol{x}}_0$, a diffusion model (Sohl-Dickstein et al., 2015) consists of predefined variational distributions $q({\boldsymbol{x}}_t | {\boldsymbol{x}}_{t-1})$ that gradually add noise over time steps $t \in \{1, \ldots, T\}$. The diffusion trajectory is defined such that $q({\boldsymbol{x}}_{t} | {\boldsymbol{x}}_{t-1})$ adds a small amount of noise around ${\boldsymbol{x}}_{t-1}$. This way, information is gradually destroyed such that at the final time step, ${\boldsymbol{x}}_T$ carries almost no information about ${\boldsymbol{x}}_0$. Their generative counterparts consists of learnable distributions $p({\boldsymbol{x}}_{t-1} | {\boldsymbol{x}}_{t})$ that learn to denoise the data. When the diffusion process adds sufficiently small amounts of noise, it suffices to define the denoising trajectory using distributions that are factorized (without correlation) over the dimension axis. The distribution $p({\boldsymbol{x}}_T)$ is chosen to be similar to the distribution that the diffusion trajectory approaches. Diffusion models can be optimized using variational inference: 
+Given data ${\boldsymbol{x}}_0$, a diffusion model (Sohl-Dickstein et al., 2015) consists of predefined variational distributions $q({\boldsymbol{x}}_t | {\boldsymbol{x}}_{t-1})$ that gradually add noise over time steps $t \in \{1, \ldots, T\}$. The diffusion trajectory is defined such that $q({\boldsymbol{x}}_{t} | {\boldsymbol{x}}_{t-1})$ adds a small amount of noise around ${\boldsymbol{x}}_{t-1}$. This way, information is gradually destroyed such that at the final time step, ${\boldsymbol{x}}_T$ carries almost no information about ${\boldsymbol{x}}_0$. Their generative counterparts consists of learnable distributions $p({\boldsymbol{x}}_{t-1} | {\boldsymbol{x}}_{t})$ that learn to denoise the data. When the diffusion process adds sufficiently small amounts of noise, it suffices to define the denoising trajectory using distributions that are factorized (without correlation) over the dimension axis. The distribution $p({\boldsymbol{x}}_T)$ is chosen to be similar to the distribution that the diffusion trajectory approaches. Diffusion models can be optimized using variational inference:
 
 $$\begin{equation*}
     \log P({\boldsymbol{x}}_0) \geq \mathbb{E}_{x_1, \ldots x_T \sim q} 
     \Big{[} \log p({\boldsymbol{x}}_T) + \sum_{t=1}^T \log \frac{p({\boldsymbol{x}}_{t-1} | {\boldsymbol{x}}_t)}{q({\boldsymbol{x}}_{t} | {\boldsymbol{x}}_{t-1})} \Big{]}.
 \end{equation*}$$
 
-An important insight in diffusion is that by conditioning on ${\boldsymbol{x}}_0$, the posterior probability $q({\boldsymbol{x}}_{t-1} | {\boldsymbol{x}}_{t}, {\boldsymbol{x}}_0) = q({\boldsymbol{x}}_{t} | {\boldsymbol{x}}_{t-1})q({\boldsymbol{x}}_{t-1} | {\boldsymbol{x}}_0) / q({\boldsymbol{x}}_t | {\boldsymbol{x}}_0)$ is tractable and straightforward to compute, permitting a reformulation in terms of KL divergences that has lower variance (Sohl-Dickstein et al., 2015). Note that $\mathrm{KL} \big{(} q({\boldsymbol{x}}_T | {\boldsymbol{x}}_0) | p({\boldsymbol{x}}_T)\big{)} \approx 0$ if the diffusion trajectory $q$ is defined well: 
+An important insight in diffusion is that by conditioning on ${\boldsymbol{x}}_0$, the posterior probability $q({\boldsymbol{x}}_{t-1} | {\boldsymbol{x}}_{t}, {\boldsymbol{x}}_0) = q({\boldsymbol{x}}_{t} | {\boldsymbol{x}}_{t-1})q({\boldsymbol{x}}_{t-1} | {\boldsymbol{x}}_0) / q({\boldsymbol{x}}_t | {\boldsymbol{x}}_0)$ is tractable and straightforward to compute, permitting a reformulation in terms of KL divergences that has lower variance (Sohl-Dickstein et al., 2015). Note that $\mathrm{KL} \big{(} q({\boldsymbol{x}}_T | {\boldsymbol{x}}_0) | p({\boldsymbol{x}}_T)\big{)} \approx 0$ if the diffusion trajectory $q$ is defined well:
 
 $$\begin{align}
 \begin{split}
@@ -97,7 +97,7 @@ $$\begin{align}
 
 # 3 Argmax Flows
 
-Argmax flows define discrete distributions using 1) a density model $p({\boldsymbol{v}})$, such as a normalizing flow, and 2) an argmax layer that maps the continuous ${\boldsymbol{v}}\in \mathbb{R}^{D \times K}$ to a discrete ${\boldsymbol{x}}\in \{1,2,...,K\}^D$ using 
+Argmax flows define discrete distributions using 1) a density model $p({\boldsymbol{v}})$, such as a normalizing flow, and 2) an argmax layer that maps the continuous ${\boldsymbol{v}}\in \mathbb{R}^{D \times K}$ to a discrete ${\boldsymbol{x}}\in \{1,2,...,K\}^D$ using
 
 $$\begin{equation}
 \small
@@ -105,7 +105,7 @@ $$\begin{equation}
 \tag{4}
 \end{equation}$$
 
-This is a natural choice to model categorical variables, because it divides the entire continuous space of ${\boldsymbol{v}}$ into symmetric partitions corresponding to categories in ${\boldsymbol{x}}$. To sample from an argmax flow sample ${\boldsymbol{v}}\sim p({\boldsymbol{v}})$ and compute ${\boldsymbol{x}}= \mathop{\mathrm{arg\,max}}{\boldsymbol{v}}$ (Algorithm 1). To generate reasonable samples, it is up to the density model $p({\boldsymbol{v}})$ to capture any complicated dependencies between the different dimensions. While sampling from an argmax flow is straightforward, the main difficulty lies in *optimizing* this generative model. To compute the likelihood of a datapoint ${\boldsymbol{x}}$, we have to compute 
+This is a natural choice to model categorical variables, because it divides the entire continuous space of ${\boldsymbol{v}}$ into symmetric partitions corresponding to categories in ${\boldsymbol{x}}$. To sample from an argmax flow sample ${\boldsymbol{v}}\sim p({\boldsymbol{v}})$ and compute ${\boldsymbol{x}}= \mathop{\mathrm{arg\,max}}{\boldsymbol{v}}$ (Algorithm 1). To generate reasonable samples, it is up to the density model $p({\boldsymbol{v}})$ to capture any complicated dependencies between the different dimensions. While sampling from an argmax flow is straightforward, the main difficulty lies in *optimizing* this generative model. To compute the likelihood of a datapoint ${\boldsymbol{x}}$, we have to compute
 
 $$\begin{equation}
 \small
@@ -113,7 +113,7 @@ $$\begin{equation}
 \tag{5}
 \end{equation}$$
 
-which is intractable. Consequently, we resort to variational inference and specify a variational distribution $q({\boldsymbol{v}}|{\boldsymbol{x}})$. We note that naïvely choosing any variational distribution may lead to samples ${\boldsymbol{v}}\sim q({\boldsymbol{v}}| {\boldsymbol{x}})$ where $\delta({\boldsymbol{x}}= \mathop{\mathrm{arg\,max}}{\boldsymbol{v}}) = 0$, which yields an ELBO of negative infinity. To avoid this, we need a variational distribution $q({\boldsymbol{v}}|{\boldsymbol{x}})$ that satisfies what we term the *argmax constraint*: 
+which is intractable. Consequently, we resort to variational inference and specify a variational distribution $q({\boldsymbol{v}}|{\boldsymbol{x}})$. We note that naïvely choosing any variational distribution may lead to samples ${\boldsymbol{v}}\sim q({\boldsymbol{v}}| {\boldsymbol{x}})$ where $\delta({\boldsymbol{x}}= \mathop{\mathrm{arg\,max}}{\boldsymbol{v}}) = 0$, which yields an ELBO of negative infinity. To avoid this, we need a variational distribution $q({\boldsymbol{v}}|{\boldsymbol{x}})$ that satisfies what we term the *argmax constraint*:
 
 $$\begin{equation*}
 \small
@@ -150,14 +150,14 @@ We are free to specify any variational distribution $q({\boldsymbol{v}}|{\boldsy
 
 #### Thresholding (Alg. 3).
 
-A straightforward method to construct a distribution $q({\boldsymbol{v}}|x)$ satisfying the argmax constraint is to use thresholding. That is, we first sample an unbounded variable ${\boldsymbol{u}}\in \mathbb{R}^{K}$ from $q({\boldsymbol{u}}| x)$, which can be for example a conditional Gaussian or normalizing flow. Next, we map ${\boldsymbol{u}}$ to ${\boldsymbol{v}}$ such that element $x$ is the largest: 
+A straightforward method to construct a distribution $q({\boldsymbol{v}}|x)$ satisfying the argmax constraint is to use thresholding. That is, we first sample an unbounded variable ${\boldsymbol{u}}\in \mathbb{R}^{K}$ from $q({\boldsymbol{u}}| x)$, which can be for example a conditional Gaussian or normalizing flow. Next, we map ${\boldsymbol{u}}$ to ${\boldsymbol{v}}$ such that element $x$ is the largest:
 
 $$\begin{equation}
     v_x = u_x \quad \text{and} \quad {\boldsymbol{v}}_{-x} = \mathrm{threshold}_T({\boldsymbol{u}}_{-x})
 \tag{6}
 \end{equation}$$
 
-where the thresholding is applied elementwise with threshold value $T=v_x$. This ensures that element $v_x$ is the largest, and consequently that $q({\boldsymbol{v}}|x)$ satisfies the argmax constraint. Note that we require the threshold function to be bijective, $\mathrm{threshold}_T: \mathbb{R}\rightarrow (-\infty,T)$, so that we can use the change-of-variables formula to compute $\log q({\boldsymbol{v}}|x)$. In our implementation, thresholding is implemented using a softplus such that all values are mapped below a limit $T$: 
+where the thresholding is applied elementwise with threshold value $T=v_x$. This ensures that element $v_x$ is the largest, and consequently that $q({\boldsymbol{v}}|x)$ satisfies the argmax constraint. Note that we require the threshold function to be bijective, $\mathrm{threshold}_T: \mathbb{R}\rightarrow (-\infty,T)$, so that we can use the change-of-variables formula to compute $\log q({\boldsymbol{v}}|x)$. In our implementation, thresholding is implemented using a softplus such that all values are mapped below a limit $T$:
 
 $$\begin{equation}
 \small
@@ -199,7 +199,7 @@ $+ \log \mathrm{TruncGumbel}({\boldsymbol{v}}_{-{\boldsymbol{x}}} | \boldsymbol{
 
 #### Gumbel (Alg. 4).
 
-An alternative approach is to let $q({\boldsymbol{v}}|x) = \mathrm{Gumbel}({\boldsymbol{v}}|\boldsymbol{\phi})$ *restricted* to $\mathop{\mathrm{arg\,max}}{\boldsymbol{v}}= x$, where the location parameters $\boldsymbol{\phi}\leftarrow \mathrm{NN}(x)$ are predicted using a neural network $\mathrm{NN}$. The Gumbel distribution has favourable properties: The $\mathop{\mathrm{arg\,max}}$ and $\max$ are independent and the $\max$ is also distributed as a Gumbel: 
+An alternative approach is to let $q({\boldsymbol{v}}|x) = \mathrm{Gumbel}({\boldsymbol{v}}|\boldsymbol{\phi})$ *restricted* to $\mathop{\mathrm{arg\,max}}{\boldsymbol{v}}= x$, where the location parameters $\boldsymbol{\phi}\leftarrow \mathrm{NN}(x)$ are predicted using a neural network $\mathrm{NN}$. The Gumbel distribution has favourable properties: The $\mathop{\mathrm{arg\,max}}$ and $\max$ are independent and the $\max$ is also distributed as a Gumbel:
 
 $$\begin{equation}
 \small
@@ -207,7 +207,7 @@ $$\begin{equation}
     \max_i v_i \sim \mathrm{Gumbel}(\phi_{\max}),
 \end{equation}$$
 
-where $\phi_{\max} = \log \sum_i \exp \phi_i$. For a more extensive introduction see (Maddison et al., 2014; Kool et al., 2019). To sample ${\boldsymbol{v}}\sim q({\boldsymbol{v}}|x)$, we thus first sample the maximum $v_x$ according to Eq. 8. Next, given the sample $v_x$, the remaining values can be sampled using *truncated* Gumbel distributions: 
+where $\phi_{\max} = \log \sum_i \exp \phi_i$. For a more extensive introduction see (Maddison et al., 2014; Kool et al., 2019). To sample ${\boldsymbol{v}}\sim q({\boldsymbol{v}}|x)$, we thus first sample the maximum $v_x$ according to Eq. 8. Next, given the sample $v_x$, the remaining values can be sampled using *truncated* Gumbel distributions:
 
 $$\begin{equation}
 \small
@@ -215,7 +215,7 @@ $$\begin{equation}
     \tag{9}
 \end{equation}$$
 
-where the truncation value $T$ is given by $v_x$ which ensures that the argmax constraint $v_x > v_i$ for $i\not=x$ is satisfied. Recall that to optimize Eq. 2, $\log q({\boldsymbol{v}}| {\boldsymbol{x}})$ is also required, which can be computed using the closed-form expressions for the log density functions (see Table 5). Another property of Gumbel distributions is that 
+where the truncation value $T$ is given by $v_x$ which ensures that the argmax constraint $v_x > v_i$ for $i\not=x$ is satisfied. Recall that to optimize Eq. 2, $\log q({\boldsymbol{v}}| {\boldsymbol{x}})$ is also required, which can be computed using the closed-form expressions for the log density functions (see Table 5). Another property of Gumbel distributions is that
 
 $$\begin{equation}
 \small
@@ -241,21 +241,21 @@ In the current description, Argmax Flows require the same number of dimensions i
 
 # 4 Multinomial Diffusion
 
-In this section we introduce an alternative likelihood-based model for categorical data: Multinomial Diffusion. In contrast with previous sections, ${\boldsymbol{x}}_t$ will be represented in one-hot encoded format ${\boldsymbol{x}}_t \in \{0, 1\}^K$. Specifically, for category $k$, $x_{k} = 1$ and $x_{j} = 0$ for $j \not= k$. Note that again the dimension axis is omitted for clarity as all distributions are independent over the dimension axis. We define the multinomial diffusion process using a categorical distribution that has a $\beta_t$ chance of resampling a category uniformly: 
+In this section we introduce an alternative likelihood-based model for categorical data: Multinomial Diffusion. In contrast with previous sections, ${\boldsymbol{x}}_t$ will be represented in one-hot encoded format ${\boldsymbol{x}}_t \in \{0, 1\}^K$. Specifically, for category $k$, $x_{k} = 1$ and $x_{j} = 0$ for $j \not= k$. Note that again the dimension axis is omitted for clarity as all distributions are independent over the dimension axis. We define the multinomial diffusion process using a categorical distribution that has a $\beta_t$ chance of resampling a category uniformly:
 
 $$\begin{equation}
     q({\boldsymbol{x}}_t | {\boldsymbol{x}}_{t-1}) =  \mathcal{C}({\boldsymbol{x}}_t | (1 - \beta_t) {\boldsymbol{x}}_{t-1} + \beta_t / K ),
     \tag{11}
 \end{equation}$$
 
-where $\mathcal{C}$ denotes a categorical distribution with probability parameters after $|$. Further addition (and subtraction) between scalars and vectors is done elementwise. This convention kept throughout this section. Since these distributions form a Markov chain, we can express the probability of any ${\boldsymbol{x}}_t$ given ${\boldsymbol{x}}_0$ as: 
+where $\mathcal{C}$ denotes a categorical distribution with probability parameters after $|$. Further addition (and subtraction) between scalars and vectors is done elementwise. This convention kept throughout this section. Since these distributions form a Markov chain, we can express the probability of any ${\boldsymbol{x}}_t$ given ${\boldsymbol{x}}_0$ as:
 
 $$\begin{equation}
     q({\boldsymbol{x}}_t | {\boldsymbol{x}}_{0}) =  \mathcal{C}({\boldsymbol{x}}_t | \bar{\alpha}_t {\boldsymbol{x}}_{0} + (1 - \bar{\alpha}_t) / K )
     \tag{12}
 \end{equation}$$
 
-where $\alpha_t = 1 - \beta_t$ and $\bar{\alpha}_t = \prod_{\tau=1}^t \alpha_\tau$. Intuïtively, for each next timestep, a little amount of uniform noise $\beta_t$ over the $K$ classes is introduced, and with a large probability $(1 - \beta_t)$ the previous value ${\boldsymbol{x}}_{t-1}$ is sampled. Using Equation 11 and 12 the categorical posterior $q({\boldsymbol{x}}_{t-1} | {\boldsymbol{x}}_{t}, {\boldsymbol{x}}_0)$ can be computed in closed-form: 
+where $\alpha_t = 1 - \beta_t$ and $\bar{\alpha}_t = \prod_{\tau=1}^t \alpha_\tau$. Intuïtively, for each next timestep, a little amount of uniform noise $\beta_t$ over the $K$ classes is introduced, and with a large probability $(1 - \beta_t)$ the previous value ${\boldsymbol{x}}_{t-1}$ is sampled. Using Equation 11 and 12 the categorical posterior $q({\boldsymbol{x}}_{t-1} | {\boldsymbol{x}}_{t}, {\boldsymbol{x}}_0)$ can be computed in closed-form:
 
 $$\begin{align}
 \begin{split}
@@ -268,7 +268,7 @@ $$\begin{align}
 
 **Figura 2.** Overview of multinomial diffusion. A generative model $p({\boldsymbol{x}}_{t-1} | {\boldsymbol{x}}_{t})$ learns to gradually denoise a signal from left to right. An inference diffusion process $q({\boldsymbol{x}}_{t} | {\boldsymbol{x}}_{t-1})$ gradually adds noise form right to left.
 
-One of the innovations in (Ho et al., 2020) was the insight to not predict the parameters for the generative trajectory directly, but rather to predict the noise using the posterior equation for $q$. Although predicting the noise is difficult for discrete data, we predict a probability vector for $\hat{{\boldsymbol{x}}}_0$ from ${\boldsymbol{x}}_t$ and subsequently parametrize $p({\boldsymbol{x}}_{t-1} | {\boldsymbol{x}}_{t})$ using the probability vector from $q({\boldsymbol{x}}_{t-1} | {\boldsymbol{x}}_t, \hat{{\boldsymbol{x}}}_0)$, where ${\boldsymbol{x}}_0$ is approximated using a neural network $\hat{{\boldsymbol{x}}}_0 = \mu({\boldsymbol{x}}_t, t)$. Equation 13 will produce valid probability vectors that are non-negative and sums to one under the condition that the prediction $\hat{{\boldsymbol{x}}}_0$ is non-negative and sums to one, which is ensured with a softmax function in $\mu$. To summarize: 
+One of the innovations in (Ho et al., 2020) was the insight to not predict the parameters for the generative trajectory directly, but rather to predict the noise using the posterior equation for $q$. Although predicting the noise is difficult for discrete data, we predict a probability vector for $\hat{{\boldsymbol{x}}}_0$ from ${\boldsymbol{x}}_t$ and subsequently parametrize $p({\boldsymbol{x}}_{t-1} | {\boldsymbol{x}}_{t})$ using the probability vector from $q({\boldsymbol{x}}_{t-1} | {\boldsymbol{x}}_t, \hat{{\boldsymbol{x}}}_0)$, where ${\boldsymbol{x}}_0$ is approximated using a neural network $\hat{{\boldsymbol{x}}}_0 = \mu({\boldsymbol{x}}_t, t)$. Equation 13 will produce valid probability vectors that are non-negative and sums to one under the condition that the prediction $\hat{{\boldsymbol{x}}}_0$ is non-negative and sums to one, which is ensured with a softmax function in $\mu$. To summarize:
 
 $$\begin{align}
     \begin{split}
@@ -280,7 +280,7 @@ $$\begin{align}
     \tag{14}
 \end{align}$$
 
-The KL terms in Equation 3 can be simply computed by enumerating the probabilities in Equation 13 and 14 and computing the KL divergence for discrete distributions in $L_{t-1}$ with $t \geq 2$: 
+The KL terms in Equation 3 can be simply computed by enumerating the probabilities in Equation 13 and 14 and computing the KL divergence for discrete distributions in $L_{t-1}$ with $t \geq 2$:
 
 $$\begin{align}
 \begin{split}
@@ -290,7 +290,7 @@ $$\begin{align}
 \tag{15}
 \end{align}$$
 
-which can be computed using $\sum_k \boldsymbol{\theta}_{\mathrm{post}}({\boldsymbol{x}}_t, {\boldsymbol{x}}_0))_k \cdot \log \frac{\boldsymbol{\theta}_{\mathrm{post}}({\boldsymbol{x}}_t, {\boldsymbol{x}}_0))_k}{\boldsymbol{\theta}_{\mathrm{post}}({\boldsymbol{x}}_t, \hat{{\boldsymbol{x}}}_0))_k}$. Furtermore, to compute $\log p({\boldsymbol{x}}_0 | {\boldsymbol{x}}_1)$ use that ${\boldsymbol{x}}_0$ is onehot: 
+which can be computed using $\sum_k \boldsymbol{\theta}_{\mathrm{post}}({\boldsymbol{x}}_t, {\boldsymbol{x}}_0))_k \cdot \log \frac{\boldsymbol{\theta}_{\mathrm{post}}({\boldsymbol{x}}_t, {\boldsymbol{x}}_0))_k}{\boldsymbol{\theta}_{\mathrm{post}}({\boldsymbol{x}}_t, \hat{{\boldsymbol{x}}}_0))_k}$. Furtermore, to compute $\log p({\boldsymbol{x}}_0 | {\boldsymbol{x}}_1)$ use that ${\boldsymbol{x}}_0$ is onehot:
 
 $$\begin{equation}
     \log p({\boldsymbol{x}}_0 | {\boldsymbol{x}}_1) = \sum_k {\boldsymbol{x}}_{0,k} \log  \hat{{\boldsymbol{x}}}_{0,k}
@@ -507,7 +507,7 @@ And then finally we can compute the loss term $L_t$ using the KL divergence for 
         loss = sum_except_batch(kl)
         return loss
 
-Coincidentally this code even works for $L_0$ because ${\boldsymbol{x}}_0$ is onehot and then: 
+Coincidentally this code even works for $L_0$ because ${\boldsymbol{x}}_0$ is onehot and then:
 
 $$-\log \mathcal{C}({\boldsymbol{x}}_0 | \hat{{\boldsymbol{x}}}_{0}) - \sum_k {\boldsymbol{x}}_{0,k} \log  \hat{{\boldsymbol{x}}}_{0,k} = \sum_k {\boldsymbol{x}}_{0,k} [\underbrace{\log {\boldsymbol{x}}_{0,k}}_{0 \text{ or } \log 0} - \log  \hat{{\boldsymbol{x}}}_{0,k}] = \mathrm{KL}(\mathcal{C}({\boldsymbol{x}}_{0})||\mathcal{C}(\hat{{\boldsymbol{x}}}_{0})),$$
 
@@ -519,13 +519,13 @@ This section gives details on experimental setup, architectures and optimization
 
 #### Diffusion settings
 
-For diffusion we use the cosine schedule for $\{\alpha_t\}$ from (Nichol and Dhariwal, 2021) with the difference that what was previously $\sqrt{\bar{\alpha}_t}$ is now $\bar{\alpha}_t$, so that their factor $\sqrt{\bar{\alpha}_t}$ for the Gaussian mean is equal to our factor $\bar{\alpha}_t$ for categorical parameters. Specifically, our $\bar{\alpha}_t$ are defined using: 
+For diffusion we use the cosine schedule for $\{\alpha_t\}$ from (Nichol and Dhariwal, 2021) with the difference that what was previously $\sqrt{\bar{\alpha}_t}$ is now $\bar{\alpha}_t$, so that their factor $\sqrt{\bar{\alpha}_t}$ for the Gaussian mean is equal to our factor $\bar{\alpha}_t$ for categorical parameters. Specifically, our $\bar{\alpha}_t$ are defined using:
 
 $$\begin{equation*}
     \bar{\alpha}_t =\frac{f(t)}{f(0)} \quad f(t) = \cos \left( \frac{t/T + s}{1  + s} \cdot \frac{\pi}{2} \right), \quad s = 0.008,
 \end{equation*}$$
 
-where $T$ is the total number of diffusion steps. Nichol and Dhariwal (2021) show that instead of sampling $t$ uniformly, variance is reduced when $t$ is importance-sampled with $q(t) \propto \sqrt{\mathbb{E}[L_t^2]}$, which is estimated using training statistics, and we use their approach. The objective can be summarized as: 
+where $T$ is the total number of diffusion steps. Nichol and Dhariwal (2021) show that instead of sampling $t$ uniformly, variance is reduced when $t$ is importance-sampled with $q(t) \propto \sqrt{\mathbb{E}[L_t^2]}$, which is estimated using training statistics, and we use their approach. The objective can be summarized as:
 
 $$\begin{equation}
     \log P({\boldsymbol{x}}_0) \geq \mathbb{E}_{t \sim q(t), {\boldsymbol{x}}_t \sim q({\boldsymbol{x}}_t | {\boldsymbol{x}}_0)} 

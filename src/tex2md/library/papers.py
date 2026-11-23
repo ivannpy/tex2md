@@ -134,7 +134,7 @@ def cmd_index(a):
         rows.append((f, parse_frontmatter(fm)))
     rows.sort(key=lambda r: (str(r[1].get("year", "")), r[0]))
     out = ["# Índice de artículos", "",
-           "Generado con `python3 ~/Documents/tex2md/papers.py index <esta carpeta>` a partir del encabezado YAML de cada `.md`. "
+           "Generado con `python3 ~/Developer/tex2md/papers.py index <esta carpeta>` (la copia de desarrollo de tex2md) a partir del encabezado YAML de cada `.md`. "
            "No editar a mano: editar el encabezado del `.md` y regenerar.", "",
            f"{len(rows)} artículos. `bookmd5` identifica el PDF en MarginNote (origen único de los PDF).", "",
            "| Archivo | Título | Año | arXiv / DOI | MarginNote (bookmd5 · ruta) |", "|---|---|---|---|---|"]

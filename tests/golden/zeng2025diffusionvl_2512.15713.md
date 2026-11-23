@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: 81bf80f4b35a99ada7ce7f12ebfea30675883c86855c1758e465420ba3d3b066
     path: "PCIC/Tesis/ar-diff/DiffusionVL- Translating Any Autoregressive Models into Diffusion Vision Language Models.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-17
+converted: 2026-11-22
 ---
 
 # DiffusionVL: Translating Any Autoregressive Models into Diffusion Vision Language Models
@@ -66,7 +66,7 @@ Recently, some works have attempted to use autoregressive models as initializati
 
 ## 3.1 Preliminaries
 
-In the autoregressive paradigm, text generation is modeled as next-token prediction. Given an input sequence $\{x^1,\dots,x^L\}$, the training objective is to minimize the cross-entropy loss. 
+In the autoregressive paradigm, text generation is modeled as next-token prediction. Given an input sequence $\{x^1,\dots,x^L\}$, the training objective is to minimize the cross-entropy loss.
 
 $$\begin{equation}
 \tag{1}
@@ -75,7 +75,7 @@ $$\begin{equation}
 
 where the model $P_\theta(\cdot |x^{<i})$ aims to maximize the conditional probability of the current position by using the preceding context $x^{<i}=x^1,\dots,x^{i-1}$.
 
-By contrast, masked diffusion models can be subdivided into two paradigms: full diffusion and block diffusion. The full diffusion paradigm adds and removes noise simultaneously throughout the entire sequence. For a time $t \in(0,1)$, the input sequence is masked with a probability of $t$, yielding a noisy sequence $x_t$. The model $P_\theta(\cdot |x_t)$ is trained to minimize the expected masked position prediction loss. 
+By contrast, masked diffusion models can be subdivided into two paradigms: full diffusion and block diffusion. The full diffusion paradigm adds and removes noise simultaneously throughout the entire sequence. For a time $t \in(0,1)$, the input sequence is masked with a probability of $t$, yielding a noisy sequence $x_t$. The model $P_\theta(\cdot |x_t)$ is trained to minimize the expected masked position prediction loss.
 
 $$\begin{equation}
 \tag{2}
@@ -84,7 +84,7 @@ $$\begin{equation}
 
 where $t \sim \mathcal{U}(0, 1)$ and $\mathcal{M}_t$ denotes the set of masked positions.
 
-The block diffusion paradigm divides the entire sequence into several blocks of equal size and performs block-wise noise addition and denoising within each block. 
+The block diffusion paradigm divides the entire sequence into several blocks of equal size and performs block-wise noise addition and denoising within each block.
 
 $$\begin{equation}
 \tag{3}
@@ -107,7 +107,7 @@ Furthermore, we extend the approach to build a dVLM based on an AR-LM, and descr
 
 In this section, we elaborate on the training framework of our diffusion finetuning, as illustrated in Figure 3.
 
-The image is processed through the vision encoder and projector, and the resulting vision embeddings are concatenated with text embeddings. Each sequence is padded with `<EOS>` tokens to a length divisible by the block size $D$ and split into $B=L/D$ non-overlapping blocks $\{\mathbf{x}_{(1)}, \ldots, \mathbf{x}_{(B)}\}$. Unlike the sequence-level noise in prior dVLMs (You et al., 2025; Li et al., 2025b; Yu et al., 2025), we adopt a block-wise noise schedule: For each block $b$ containing response or padding tokens, a noise level $t_b \sim \mathcal{U}(0,1)$ is sampled and each token $x^i$ within it is independently masked as 
+The image is processed through the vision encoder and projector, and the resulting vision embeddings are concatenated with text embeddings. Each sequence is padded with `<EOS>` tokens to a length divisible by the block size $D$ and split into $B=L/D$ non-overlapping blocks $\{\mathbf{x}_{(1)}, \ldots, \mathbf{x}_{(B)}\}$. Unlike the sequence-level noise in prior dVLMs (You et al., 2025; Li et al., 2025b; Yu et al., 2025), we adopt a block-wise noise schedule: For each block $b$ containing response or padding tokens, a noise level $t_b \sim \mathcal{U}(0,1)$ is sampled and each token $x^i$ within it is independently masked as
 
 $$\begin{equation}
 \tag{4}
@@ -118,7 +118,7 @@ x^i, & p=1-t_b,
 \end{cases}
 \end{equation}$$
 
-where $p$ is the noise probability, while blocks containing image or prompt tokens remain unmasked ($t_b = 0$). The noised sequence $\tilde{\mathbf{x}}$ and clean sequence $\mathbf{x}$ are concatenated along the sequence dimension, with an attention mask $\mathbf{M}$ enforcing intra-block bidirectional and inter-block causal attention. For position $i$ in noised block $b$, $\mathbf{M}_{ij}$ indicates whether $i$ may attend to $j$ ($1$) or not ($0$): 
+where $p$ is the noise probability, while blocks containing image or prompt tokens remain unmasked ($t_b = 0$). The noised sequence $\tilde{\mathbf{x}}$ and clean sequence $\mathbf{x}$ are concatenated along the sequence dimension, with an attention mask $\mathbf{M}$ enforcing intra-block bidirectional and inter-block causal attention. For position $i$ in noised block $b$, $\mathbf{M}_{ij}$ indicates whether $i$ may attend to $j$ ($1$) or not ($0$):
 
 $$\begin{equation}
 \tag{5}

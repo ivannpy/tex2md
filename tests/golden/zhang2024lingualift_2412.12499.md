@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: 4a439691831e2e7c25e5fc9a4890c0f65a811a3fa054dee5b968def668c3bae5
     path: "PCIC/Tesis/low-resource/LinguaLIFT- An Effective Two-stage Instruction Tuning Framework for Low-Resource Language Reasoning.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-17
+converted: 2026-11-22
 ---
 
 # LinguaLIFT: An Effective Two-stage Instruction Tuning Framework for Low-Resource Language Reasoning
@@ -56,7 +56,7 @@ Unlike prior approaches that depend on costly translated data or impractical par
 
 # 3 Methodology
 
-To harness cross-lingual transfer for low-resource languages reasoning, this study proposes leveraging the language alignment established by code-switched tuning (Section §3.1) to transfer reasoning capabilities from English to low-resource languages (Section §3.2), as illustrated in Figure 2. Formally, given an input sequence $x$ with $l_x$ tokens, a multilingual pre-trained encoder generates a language-agnostic representation $X\in \mathbb{R}^{l_x \times d_1}$, which is subsequently aligned to the input embedding space of the LLM via a multi-layer perceptron alignment layer, yielding $\hat{X}\in \mathbb{R}^{l_x \times d_2}$. To leverage the built-in capabilities of the LLM for instruction following, the instruction context $q$ (with $l_q$ tokens) is mapped into $Q\in \mathbb{R}^{l_q \times d_2}$ via the LLM’s embedding layer. The combined input sequence is constructed by concatenating the start token \<bos\>, $Q$, alignment boundary tokens \<enc_start\> and \<enc_end\>, and $\hat{X}$, forming: 
+To harness cross-lingual transfer for low-resource languages reasoning, this study proposes leveraging the language alignment established by code-switched tuning (Section §3.1) to transfer reasoning capabilities from English to low-resource languages (Section §3.2), as illustrated in Figure 2. Formally, given an input sequence $x$ with $l_x$ tokens, a multilingual pre-trained encoder generates a language-agnostic representation $X\in \mathbb{R}^{l_x \times d_1}$, which is subsequently aligned to the input embedding space of the LLM via a multi-layer perceptron alignment layer, yielding $\hat{X}\in \mathbb{R}^{l_x \times d_2}$. To leverage the built-in capabilities of the LLM for instruction following, the instruction context $q$ (with $l_q$ tokens) is mapped into $Q\in \mathbb{R}^{l_q \times d_2}$ via the LLM’s embedding layer. The combined input sequence is constructed by concatenating the start token \<bos\>, $Q$, alignment boundary tokens \<enc_start\> and \<enc_end\>, and $\hat{X}$, forming:
 
 $$\begin{equation}
     (Q, \hat{X}) = [\text{<bos>}; Q; \text{<enc\_start>}; \hat{X}; \text{<enc\_end>}].
@@ -75,7 +75,7 @@ An unsupervised word translation method MUSE (Lample et al., 2018) is adopted t
 
 #### Code-switched translation instruction tuning.
 
-The constructed multilingual alignment lexicons are used to generate code-switched inputs for instruction tuning. Formally, our training objective is to predict the English translation response tokens $y$ given the instruction context $q$ and code-switched input tokens $x_{l}$ in language $l$. The input embeddings for this task, represented as $(Q, \hat{X_l})$ from Equation (1), serve as the LLMs’ input. The optimization objective is defined as follows: 
+The constructed multilingual alignment lexicons are used to generate code-switched inputs for instruction tuning. Formally, our training objective is to predict the English translation response tokens $y$ given the instruction context $q$ and code-switched input tokens $x_{l}$ in language $l$. The input embeddings for this task, represented as $(Q, \hat{X_l})$ from Equation (1), serve as the LLMs’ input. The optimization objective is defined as follows:
 
 $$\begin{equation}
     -\underset{\theta}{\arg \min } \sum_{l \in L} \sum_{i=1}^{T} \log p_{\theta,\psi ,\phi} (y_{i} \mid (Q,\hat{X}_{l}), y_{<i}),
@@ -86,7 +86,7 @@ where $T$ is the target sequence length, $y_{<i}$ represents the preceding token
 
 ## 3.2 Task Transfer Stage
 
-Following the language alignment established in the *Language Align Stage*, the LLM is fine-tuned using high-quality English reasoning instruction data while keeping the language alignment layer frozen. This strategy preserves the acquired multilingual alignment and cross-lingual transfer capabilities, unlocking the potential of LLM to transfer strong reasoning capabilities learned from English to low-resource languages. The training minimizes the negative log-likelihood of the response $y$, given the combined instruction context and query input $(Q, \hat{X}_{en})$: 
+Following the language alignment established in the *Language Align Stage*, the LLM is fine-tuned using high-quality English reasoning instruction data while keeping the language alignment layer frozen. This strategy preserves the acquired multilingual alignment and cross-lingual transfer capabilities, unlocking the potential of LLM to transfer strong reasoning capabilities learned from English to low-resource languages. The training minimizes the negative log-likelihood of the response $y$, given the combined instruction context and query input $(Q, \hat{X}_{en})$:
 
 $$\begin{equation}
     -\underset{\phi}{\arg \min }  \sum_{i=1}^{T} \log p_{\tilde{\theta},\psi ,\phi}\left(y_{i} \mid (Q,\hat{X}_{en}), y_{<i}\right),

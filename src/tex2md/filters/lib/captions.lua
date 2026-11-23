@@ -46,9 +46,14 @@ function M.aux_number(kind, caption_text, label_num)
       if not used[i] and test(list[i]) then return i end
     end
   end
-  -- longest agreeing prefix first: short probes confuse captions that begin alike ("Unconditional ...")
+  -- the float's own \label names its number: when that entry's caption agrees, it wins (two captions that begin
+  -- alike for 40 characters, listed by the .aux in placement order, would otherwise swap numbers)
   local pick
-  for _, n in ipairs({ 40, 24, 12 }) do
+  if label_num and probe ~= "" then
+    pick = find(function(f) return f.num == label_num and f.text:sub(1, #probe) == probe end)
+  end
+  -- longest agreeing prefix first: short probes confuse captions that begin alike ("Unconditional ...")
+  for _, n in ipairs(pick and {} or { 40, 24, 12 }) do
     local p = key:sub(1, n)
     if p ~= "" and #p >= math.min(n, #key) then
       pick = find(function(f) return f.text:sub(1, #p) == p end)

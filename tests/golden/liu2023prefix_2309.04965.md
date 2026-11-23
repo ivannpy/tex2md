@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: 4e3bba15176440baff6796d899054b43c1660bc04e072efe22d7544a90fc036f
     path: "PCIC/Tesis/Image Captioning/Prefix-diffusion- A Lightweight Diffusion Model for Diverse Image Captioning.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-17
+converted: 2026-11-22
 ---
 
 # Prefix-diffusion: A Lightweight Diffusion Model for Diverse Image Captioning
@@ -64,7 +64,7 @@ As illustrated in Figure 2, we propose Prefix-diffusion for injecting image feat
 
 **Forward process.** Following Diffusion-LM (Li et al., 2022), we adopt an embedding function $EMB(W)$ to map a discrete word into a continuous space. Define a caption $W$ with $k$ words. Through the embedding function, we have $EMB(W) = \left [ EMB(\omega_{1}), ... , EMB(\omega_{k})\right ]  \in \mathbb{R} ^{k\times d_1}$, where $d_1$ is the dimension of the vector. In our experiments, we find that the value of $d_1$ works well at 48. Reducing the dimension will decrease the performance, while increasing the dimension will enlarges the computational burden.
 
-For the forward process, diffusion models (Ho et al., 2020; Nichol and Dhariwal, 2021; Song et al., 2020) add noise progressively to training a sample according to a variance schedule $\beta _{1} ,...,\beta _{T}$. The forward process has no learnable parameters and we get $x_{t}$ by the following equation: 
+For the forward process, diffusion models (Ho et al., 2020; Nichol and Dhariwal, 2021; Song et al., 2020) add noise progressively to training a sample according to a variance schedule $\beta _{1} ,...,\beta _{T}$. The forward process has no learnable parameters and we get $x_{t}$ by the following equation:
 
 $$\begin{equation}
         x_{t}=\sqrt{1-\beta_{t}} x_{t-1} + \sqrt{\beta _{t} } \epsilon 
@@ -73,7 +73,7 @@ $$\begin{equation}
 
 where $\epsilon \sim N\left ( 0,1 \right )$ and $\beta _{t}:0.01\longrightarrow 0.03$ are hyperparameters representing the variance schedule across diffusion steps. We have tried different noise methods, with the truncation linear noise schedule method being the best. We validate this observation in section 4.3.3.
 
-**Reverse process.** The reverse process generates new samples from $x_{T}\sim N\left ( 0,I \right )$. The data is sampled using the following reverse diffusion process: 
+**Reverse process.** The reverse process generates new samples from $x_{T}\sim N\left ( 0,I \right )$. The data is sampled using the following reverse diffusion process:
 
 $$\begin{multline}
         p_{\theta}\left(x_{t-1} \mid x_t, I_{img}\right)= \\
@@ -84,7 +84,7 @@ $$\begin{multline}
 
 where $I_{img}$ denotes the visual information from CLIP.
 
-In order to learn the reverse process, neural networks are trained to predict $\mu _{\theta }$ and $\sigma \left ( t \right )^{2}$ is a fixed variance. 
+In order to learn the reverse process, neural networks are trained to predict $\mu _{\theta }$ and $\sigma \left ( t \right )^{2}$ is a fixed variance.
 
 $$\begin{equation}
         \mu_\theta \left(x_t, I_{img}\right)=\frac{\sqrt{\alpha_t}\left(1-\bar{\alpha}_{t-1}\right)}{1-\bar{\alpha}_t} x_t+\frac{\sqrt{\bar{\alpha}_{t-1}} \beta_t}{1-\bar{\alpha}_t} x_0
@@ -96,14 +96,14 @@ $$\begin{equation}
     \tag{4}
 \end{equation}$$
 
-In order to get $\mu _{\theta }$, we compute $x_0$ with the following equation: 
+In order to get $\mu _{\theta }$, we compute $x_0$ with the following equation:
 
 $$\begin{equation}
         x_{0} =\frac{1}{\sqrt{\bar{\alpha _{t}} } } \left ( x_{t}-\sqrt{1-\bar{\alpha _{t}}}\tilde{z}    \right ) 
     \tag{5}
 \end{equation}$$
 
-where $\tilde{z}$ can be obtained by deep neural networks (e.g. transformer). 
+where $\tilde{z}$ can be obtained by deep neural networks (e.g. transformer).
 
 $$\begin{equation}
         \tilde{z} =\Phi (x_{t},I_{img},t) .
@@ -112,7 +112,7 @@ $$\begin{equation}
 
 Here $\Phi$ denotes the neural network which is depicted in the dashed box in the Figure 2. Since the transformer architecture has been shown to outperform many other architectures on a wide range of text generation tasks, we explored two different transformer architectures as the neural network: BERT and the standard transformer. Different from other continuous diffusion approaches, we inject image features into the transformer architectures. This process changes the original mean in the caption space, as illustrated in Figure 3.
 
-In the following, we will explain in detail how to inject the image information into the model. Firstly we use CLIP to encode image and receive its image features $I_{img}^{'}$. Then we train a mapping network $F$ on $I_{img}^{'}$ and obtain the visual prefix $I_{img}^{m}$ of length $l$: 
+In the following, we will explain in detail how to inject the image information into the model. Firstly we use CLIP to encode image and receive its image features $I_{img}^{'}$. Then we train a mapping network $F$ on $I_{img}^{'}$ and obtain the visual prefix $I_{img}^{m}$ of length $l$:
 
 $$\begin{equation}
         \left\{
@@ -149,7 +149,7 @@ $$\begin{equation}
 
 We specifically formulate $I_{img}^{m} \in {\mathbb{R}^{l \times d_2}}$ as $\left \{ v_1^{'},v_2^{'},...,v_l^{'} \right \}$ for the convenience of subsequent expression. To save the computation cost, we employ a simple Multi-Layer Perceptron (MLP) as the mapping network. Through an upsampling network, a sequence embedding $x_t$ has the same dimension as $I_{img}^{m}$, denoted as $\left \{ c_1^{'},c_2^{'},...,c_k^{'} \right \}  \in {\mathbb{R}^{k \times d_2}}$. $k$ is the length of the caption and $d_2$ is the dimension of the embedding.
 
-Before concatenating the visual prefix embedding and the caption embedding, we add positional embedding $P_{os}$ and type embedding $T_{yp}$ to it: 
+Before concatenating the visual prefix embedding and the caption embedding, we add positional embedding $P_{os}$ and type embedding $T_{yp}$ to it:
 
 $$\begin{equation}
         \begin{split}
@@ -169,7 +169,7 @@ $$\begin{equation}
     \tag{9}
 \end{equation}$$
 
-The positional embedding indicates the model where the feature is located, which is essential information. Similarly, the type embedding tells the model where the image features lie. Then the visual prefix and the caption embedding are concatenated into a sequence $\{ v_1,...,v_l, t_1,...,t_k \}$, and processed by a standard transformer or BERT network: 
+The positional embedding indicates the model where the feature is located, which is essential information. Similarly, the type embedding tells the model where the image features lie. Then the visual prefix and the caption embedding are concatenated into a sequence $\{ v_1,...,v_l, t_1,...,t_k \}$, and processed by a standard transformer or BERT network:
 
 $$\begin{equation}
         \begin{split}
@@ -181,7 +181,7 @@ $$\begin{equation}
 
 We split $y_i$ and use $\{y_{l+1},...,y_{l+k} \}$ as the input of the downsampling, yielding the output $x_{t-1} \in {\mathbb{R}^{k \times d_1}}$ of the diffusion model.
 
-**Decoding process.** In the decoding process, we strengthen the similarity of images and captions with CLIP scores. The benefit of CLIP in the current work is that it can provide a cosine similarity score between numerous texts and an image. Utilizing the CLIP embedding of an image, we calculate the cosine similarity between the image and the $n$ candidate captions. We then choose the most relevant captions. The similarity is computed as follows: 
+**Decoding process.** In the decoding process, we strengthen the similarity of images and captions with CLIP scores. The benefit of CLIP in the current work is that it can provide a cosine similarity score between numerous texts and an image. Utilizing the CLIP embedding of an image, we calculate the cosine similarity between the image and the $n$ candidate captions. We then choose the most relevant captions. The similarity is computed as follows:
 
 $$\begin{equation}
         similarity\left(I_{img}, W_{txt}^{n} \right)=\frac{I_{img} \cdot W_{txt}^{n}}{\left|I_{img }\right| \cdot\left|W_{txt}^{n}\right|}
