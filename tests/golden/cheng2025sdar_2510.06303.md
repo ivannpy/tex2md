@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: 28983dbec601de9236fc81944d1489f95bf9a390c596b38d984e10e9f0b2a8c8
     path: "PCIC/Tesis/ar-diff/SDAR- A Synergistic Diffusion-AutoRegression Paradigm for Scalable Sequence Generation.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-18
+converted: 2026-11-22
 ---
 
 # SDAR: A Synergistic Diffusion-AutoRegression Paradigm for Scalable Sequence Generation
@@ -56,7 +56,7 @@ We begin by establishing our notation and reviewing the foundational paradigms i
 
 ## 2.1 Autoregressive Models
 
-Autoregressive (AR) models model the probability of a sequence $x$ by decomposing the joint distribution into a product of conditional probabilities: 
+Autoregressive (AR) models model the probability of a sequence $x$ by decomposing the joint distribution into a product of conditional probabilities:
 
 $$\begin{equation}
 \tag{1}
@@ -67,7 +67,7 @@ where $x^{<\ell}$ is the sequence of preceding tokens. The models are trained wi
 
 ## 2.2 Discrete Masked Denoising Diffusion Models
 
-Discrete masked diffusion models are non-autoregressive generative models that learn to reverse a corruption process (Austin et al., 2021a). This forward process is typically applied independently to each token. The conditional distribution $q(x_t^\ell|x_0^\ell)$ is a categorical distribution, parameterized by the linear interpolation of the original token’s one-hot vector $\mathbf{x}_0^\ell$ and the one-hot vector $\mathbf{m}$ for the special \[MASK\] token. The interpolation coefficient $\alpha_t$ is governed by a predefined noise schedule, such as a linear one $\alpha_t = 1-t$ (Nie et al., 2025; Ye et al., 2025): 
+Discrete masked diffusion models are non-autoregressive generative models that learn to reverse a corruption process (Austin et al., 2021a). This forward process is typically applied independently to each token. The conditional distribution $q(x_t^\ell|x_0^\ell)$ is a categorical distribution, parameterized by the linear interpolation of the original token’s one-hot vector $\mathbf{x}_0^\ell$ and the one-hot vector $\mathbf{m}$ for the special \[MASK\] token. The interpolation coefficient $\alpha_t$ is governed by a predefined noise schedule, such as a linear one $\alpha_t = 1-t$ (Nie et al., 2025; Ye et al., 2025):
 
 $$\begin{equation}
 \tag{2}
@@ -85,14 +85,14 @@ where the indicator function $\mathbf{1}[{x}_t^\ell = \text{[MASK]}]$ ensures th
 
 ## 2.3 Blockwise Diffusion Language Models
 
-To enable variable-length generation and the KV cache mechanism for diffusion models, several works have proposed blockwise diffusion frameworks (also known as semi-autoregressive diffusion frameworks) (Fathi et al., 2025; Arriola et al., 2025; Han et al., 2022). This hybrid approach partitions a sequence $x$ into $B$ contiguous, non-overlapping blocks, $\{x^1, \dots, x^B\}$, with each block containing $L'$ tokens. The modeling is autoregressive at the block level while being non-autoregressive within each block: 
+To enable variable-length generation and the KV cache mechanism for diffusion models, several works have proposed blockwise diffusion frameworks (also known as semi-autoregressive diffusion frameworks) (Fathi et al., 2025; Arriola et al., 2025; Han et al., 2022). This hybrid approach partitions a sequence $x$ into $B$ contiguous, non-overlapping blocks, $\{x^1, \dots, x^B\}$, with each block containing $L'$ tokens. The modeling is autoregressive at the block level while being non-autoregressive within each block:
 
 $$\begin{equation}
 \tag{4}
 \log p_{\theta}(x) = \sum_{b=1}^{B} \log p_{\theta}(x^{b} | x^{<b})
 \end{equation}$$
 
-Each conditional distribution $p_{\theta}(x^{b} | x^{<b})$ is modeled by a self-contained diffusion process. When applying the *Discrete Masked Denoising Diffusion* strategy (Section 2.2), the training objective becomes the minimization of the expected conditional NELBO over blocks: 
+Each conditional distribution $p_{\theta}(x^{b} | x^{<b})$ is modeled by a self-contained diffusion process. When applying the *Discrete Masked Denoising Diffusion* strategy (Section 2.2), the training objective becomes the minimization of the expected conditional NELBO over blocks:
 
 $$\begin{equation}
 \tag{5}
@@ -111,14 +111,14 @@ Starting from a sufficiently capable AR base model $\theta_{\text{AR}}$ via conv
 
 **Figura 1.** The training paradigm of converting AR to SDAR. First the traditional NTP training is adopted to obtain the AR base model. We then continue training the AR model by modifying the attention mask and replacing the training objective from NLL to NELBO, converting it into a block-wise diffusion model (SDAR), without logits shift or attention mask annealing.
 
-We first perturb the sequence by randomly masking tokens following the MDLM procedure. The entire sequence is perturbed during the pretraining stage, whereas during SFT, the prompt remains clean and the response is perturbed. We partition a sequence $x$ into $K$ non-overlapping blocks of size $B$, such that $x = (b_1, b_2, \dots, b_K)$, where each block $b_k = (x_{(k-1)B+1}, \dots, x_{kB})$. The modeling objective now becomes a hybrid of inter-block autoregression and intra-block parallel diffusion, as defined in the block-wise diffusion preliminary. The probability of a sequence is factorized as: 
+We first perturb the sequence by randomly masking tokens following the MDLM procedure. The entire sequence is perturbed during the pretraining stage, whereas during SFT, the prompt remains clean and the response is perturbed. We partition a sequence $x$ into $K$ non-overlapping blocks of size $B$, such that $x = (b_1, b_2, \dots, b_K)$, where each block $b_k = (x_{(k-1)B+1}, \dots, x_{kB})$. The modeling objective now becomes a hybrid of inter-block autoregression and intra-block parallel diffusion, as defined in the block-wise diffusion preliminary. The probability of a sequence is factorized as:
 
 $$\begin{equation}
 P(x | \theta) = \prod_{k=1}^{K} P(b_k | b_{<k}; \theta).
 \tag{6}
 \end{equation}$$
 
-Each conditional term $P(b_k | b_{<k}; \theta)$ is modeled using a discrete diffusion process. Specifically, during this training stage, the model (initialized with $\theta_{\text{AR}}$) learns to denoise a corrupted block $b_k^t$ at diffusion step $t$, conditioned on the preceding clean blocks $b_{<k}$. The clean blocks adopt block-wise causal attention, while corrupted blocks attend to themselves and all preceding blocks. As illustrated in Figure 1, this can be achieved by concatenating the perturbed and clean sequences into a single input for the forward pass, with the attention mask modified accordingly (Arriola et al., 2025). The objective is to optimize the conditional block-wise ELBO instead of log-likelihood, as introduced in the preliminaries: 
+Each conditional term $P(b_k | b_{<k}; \theta)$ is modeled using a discrete diffusion process. Specifically, during this training stage, the model (initialized with $\theta_{\text{AR}}$) learns to denoise a corrupted block $b_k^t$ at diffusion step $t$, conditioned on the preceding clean blocks $b_{<k}$. The clean blocks adopt block-wise causal attention, while corrupted blocks attend to themselves and all preceding blocks. As illustrated in Figure 1, this can be achieved by concatenating the perturbed and clean sequences into a single input for the forward pass, with the attention mask modified accordingly (Arriola et al., 2025). The objective is to optimize the conditional block-wise ELBO instead of log-likelihood, as introduced in the preliminaries:
 
 $$\begin{equation}
 \mathcal{L}_{\text{blockwise}}(\theta) = \mathbb{E}_{t, q(b_k^t|b_k^0)} \left[ \log P(b_k^0 | b_k^t, b_{<k}; \theta) \right].
@@ -135,7 +135,7 @@ The inference process of SDAR is hierarchical: it generates text autoregressivel
 
 Given a prompt, sequence generation proceeds by sequentially producing blocks $b_1, b_2, \dots, b_K$. The generation of each block $b_k$ is conditioned on the entire preceding context, which consists of the initial prompt followed by any previously generated blocks ($b_1, \dots, b_{k-1}$).
 
-To generate a single block $b_k$, we initiate a parallel decoding process starting from a sequence of $B$ ‘\[MASK\]‘ tokens, which we denote as the fully-noised state $b_k^T$. The model then iteratively refines this block over $T$ denoising steps. At each step $t$ (from $T$ down to 1), the model takes the current state of the block $b_k^t$ and the preceding context to predict the logits for the less noisy block $b_k^{t-1}$: 
+To generate a single block $b_k$, we initiate a parallel decoding process starting from a sequence of $B$ ‘\[MASK\]‘ tokens, which we denote as the fully-noised state $b_k^T$. The model then iteratively refines this block over $T$ denoising steps. At each step $t$ (from $T$ down to 1), the model takes the current state of the block $b_k^t$ and the preceding context to predict the logits for the less noisy block $b_k^{t-1}$:
 
 $$\begin{equation}
 \text{logits}(b_k^{t-1}) \sim P(\cdot | b_k^t, b_{k-1},\text{prompt}; \theta).
@@ -355,9 +355,13 @@ We assess the models along two axes:
 
 - **Performance:** Model performance is quantified using the comprehensive benchmark suite detailed in Section 5.1.1.
 
-- **Efficiency:** We measure computational efficiency via the **Effective Tokens Per Forward Pass (TPF)**, defined as: $$\begin{equation*}
+- **Efficiency:** We measure computational efficiency via the **Effective Tokens Per Forward Pass (TPF)**, defined as:
+
+  $$\begin{equation*}
           \text{TPF} = \frac{\text{Total Generated Tokens}}{\text{Total Forward Passes}}
-  \end{equation*}$$ This hardware-agnostic metric directly quantifies the algorithmic speedup of parallel decoding by measuring the average token throughput per inference step. The relative speedup is then benchmarked against a standard autoregressive (AR) model, for which TPF is axiomatically 1.
+  \end{equation*}$$
+
+  This hardware-agnostic metric directly quantifies the algorithmic speedup of parallel decoding by measuring the average token throughput per inference step. The relative speedup is then benchmarked against a standard autoregressive (AR) model, for which TPF is axiomatically 1.
 
 ### 5.2.2 Performance Landscape Across Model Scale and Block Size
 
@@ -403,7 +407,7 @@ Our experimental setup employed the LMDeploy inference engine on a single NVIDIA
 
 #### Analysis Framework
 
-To formalize our analysis, we define: $t_f$ (time per forward pass), $\alpha$ (batch size), $\beta$ (block size), and $\gamma$ (average forward passes per block). For standard autoregressive decoding: 
+To formalize our analysis, we define: $t_f$ (time per forward pass), $\alpha$ (batch size), $\beta$ (block size), and $\gamma$ (average forward passes per block). For standard autoregressive decoding:
 
 $$\begin{align}
     \text{TGS}_{\text{AR}} &= \frac{\alpha}{t_f} \tag{9}\\
@@ -411,7 +415,7 @@ $$\begin{align}
 \tag{10}
 \end{align}$$
 
-With our inference engine requiring an additional forward pass for KV cache computation, static SDAR decoding throughput becomes: 
+With our inference engine requiring an additional forward pass for KV cache computation, static SDAR decoding throughput becomes:
 
 $$\begin{align}
     \text{TGS}_{\text{static}} &= \frac{\alpha\beta}{(\beta+1)t_f} \tag{11}\\
@@ -419,7 +423,7 @@ $$\begin{align}
 \tag{12}
 \end{align}$$
 
-For dynamic decoding with confidence-based forward passes: 
+For dynamic decoding with confidence-based forward passes:
 
 $$\begin{align}
 \tag{13}
@@ -1173,7 +1177,7 @@ Therefore, confident that our approach is correct.
 
 Thus, the answer is 16.
 
-Final Answer 
+Final Answer
 
 $$\boxed{16}$$
 
@@ -1237,15 +1241,15 @@ $$\frac{9!}{C! V! S!}$$
 
 Let’s compute this for each triple:
 
-1\. $(C, V, S) = (6, 2, 1)$: 
+1\. $(C, V, S) = (6, 2, 1)$:
 
 $$\frac{9!}{6! \cdot 2! \cdot 1!} = \frac{362880}{720 \cdot 2} = \frac{362880}{1440} = 252$$
 
-2\. $(C, V, S) = (5, 3, 1)$: 
+2\. $(C, V, S) = (5, 3, 1)$:
 
 $$\frac{9!}{5! \cdot 3! \cdot 1!} = \frac{362880}{120 \cdot 6} = \frac{362880}{720} = 504$$
 
-3\. $(C, V, S) = (4, 3, 2)$: 
+3\. $(C, V, S) = (4, 3, 2)$:
 
 $$\frac{9!}{4! \cdot 3! \cdot 2!} = \frac{362880}{24 \cdot 6 \cdot 2} = \frac{362880}{288} = 1260$$
 

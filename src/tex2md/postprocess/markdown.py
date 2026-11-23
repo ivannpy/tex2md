@@ -328,7 +328,8 @@ def tidy_math(body):
     that glues lines together in LaTeX) are dropped; an inline formula written over several lines becomes one
     line (a line break inside it splits a table row, and a continuation that starts with "-" or "+" reads as a
     list); two inline formulas written back to back (``$1$$\uparrow$``, which reads as the start of a display
-    block) are merged into one; and inside a table row "|" becomes ``\vert`` (it would end the cell)."""
+    block) are merged into one; blanks just inside an inline formula (``$ x $``) go; and inside a table row "|"
+    becomes ``\vert`` (it would end the cell)."""
     spans = list(math_spans(body))
     out, pos, prev = [], 0, None
     for start, end, display in spans:
@@ -341,9 +342,18 @@ def tidy_math(body):
         if not display:
             if "\n" in text:
                 text = re.sub(r"[ \t]*\n[ \t]*", " ", text)
+            # "$ x $": most readers (pandoc, KaTeX plug-ins) do not take it for math
+            inner = text[1:-1]
+            if not inner.strip() and body[start + 1:end - 1].strip():
+                text = ""        # a formula that was only a comment ("$% ...$"): "$$" would open a display block
+            elif inner.strip() and inner != inner.strip() and not inner.rstrip().endswith("\\"):   # (not "\ ")
+                text = "$" + inner.strip() + "$"
+            if text.endswith("\\$$"):
+                text = text[:-3] + "\\textdollar$"   # "$^\$$" (a dollar as a footnote mark) reads as "$$"
             if "|" in text and body.startswith("|", body.rfind("\n", 0, start) + 1):
                 text = re.sub(r"\\\|", r"\\Vert ", text)
                 text = re.sub(r"\|", r"\\vert ", text)
+                text = "$" + text[1:-1].strip() + "$"      # (a "|" at the end left "\vert $")
         if prev and not display and prev[1] == start and not prev[2]:
             # glue to the previous inline span: drop the closing and the opening dollar
             out[-1] = out[-1][:-1] + " " + text[1:]

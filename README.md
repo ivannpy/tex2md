@@ -19,13 +19,17 @@ Requisitos:
 Descargar e instalar el comando `tex2md`:
 
 ```sh
-git clone https://github.com/ivannpy/tex2md.git
-cd tex2md
+git clone https://github.com/ivannpy/tex2md.git ~/Developer/tex2md
+cd ~/Developer/tex2md
 pip install .             # mejor dentro de un entorno virtual
 tex2md doctor             # comprueba las herramientas externas y los directorios de datos
 ```
 
 `doctor` indica qué falta y cómo instalarlo (en macOS: `brew install pandoc uv` y MacTeX).
+
+Clona el repositorio en una carpeta local, no en iCloud ni en otra carpeta sincronizada: los entornos de uv (`.venv`, `marker/.venv`) guardan rutas absolutas, y la sincronización puede quitar archivos del disco o duplicarlos.
+
+**WSL.** La copia de macOS ya no está en iCloud, así que desde WSL no se ve. Hay que clonar el repositorio también en el sistema de archivos de WSL (por ejemplo en `~/Developer/tex2md`, no bajo `/mnt/c/`) y ejecutar ahí `tex2md doctor`. Cada copia tiene sus propios entornos y su propio caché (`~/.cache/tex2md`), y los cambios pasan de una a otra con git (`git push` / `git pull`).
 
 Alternativas:
 
@@ -152,6 +156,7 @@ id de arXiv
 | `unresolved-latex-reference` | error | `\ref` a una etiqueta que no está en el `.aux` (el mismo problema, visto en el LaTeX) |
 | `dropped-environment` | error | pandoc no pudo leer un entorno y se sustituyó por una nota: su contenido no está en el Markdown |
 | `missing-sections` | error | secciones numeradas del `.aux` (tabla de contenidos) sin un encabezado con ese número en el Markdown: se perdió parte del cuerpo o los encabezados perdieron su número |
+| `compile-failed` | warning | LaTeX no produjo el PDF (se muestra el primer error del registro): faltan los números del `.aux` y `missing-sections` no puede comprobar si se perdió parte del cuerpo; comparar con el PDF. Un paquete que no está instalado se quita y se vuelve a compilar (`dropped_packages` en el informe) |
 | `ambiguous-main-file` | warning | varios archivos del e-print son documentos completos y no hay `00README` que diga cuál es el principal: se eligió uno por heurística (comprobar que no sea una respuesta a revisores o un borrador) |
 | `dropped-definition` | warning | se quitó una definición que pandoc no podía leer, o una macro que se expandía a sí misma |
 | `unbalanced-braces` | warning | llaves sin pareja en el LaTeX: se cerró el grupo al final del párrafo o se descartó la sobrante |

@@ -163,6 +163,8 @@ def plain_bib(s):
     s = re.sub(r"(?<!\\)%.*", "", s)
     # keep inline math intact ($\Psi$ would otherwise become $$, which opens display math)
     maths = []
+    # \(\alpha\) is inline math too (natbib .bbl: "Pixart-{\(\alpha\)}"); it lost its content the same way
+    s = re.sub(r"(?<!\\)\\\((.+?)\\\)", lambda m: "$" + m.group(1).strip() + "$", s)
 
     def keep(m):
         maths.append(m.group(0))

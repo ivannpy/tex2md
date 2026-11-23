@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: bf21a535f9d17d14caa0af5c425eb4bb46f4f4b75dc94878ecde81eb4ba02def
     path: "PCIC/Tesis/core/Simple and Effective Masked Diffusion Language Models.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-17
+converted: 2026-11-22
 ---
 
 # Simple and Effective Masked Diffusion Language Models
@@ -42,14 +42,14 @@ We describe (1) a simple masked diffusion language modeling (MDLM) framework wit
 
 ## 2.1 Diffusion Models
 
-Diffusion models are trained to iteratively undo a forward corruption process $q$ that takes clean data ${\mathbf x}$ drawn from the data distribution $q({\mathbf x})$ and defines latent variables ${\mathbf z}_t$ for $t \in [0, 1]$ that represent progressively noisy versions of ${\mathbf x}$ (Ho et al., 2020; Sohl-Dickstein et al., 2015; Song et al., 2020; Wang et al., 2023; Sahoo et al., 2023a; Gokaslan et al., 2024). The standard forward process for continuous ${\mathbf x}$ is 
+Diffusion models are trained to iteratively undo a forward corruption process $q$ that takes clean data ${\mathbf x}$ drawn from the data distribution $q({\mathbf x})$ and defines latent variables ${\mathbf z}_t$ for $t \in [0, 1]$ that represent progressively noisy versions of ${\mathbf x}$ (Ho et al., 2020; Sohl-Dickstein et al., 2015; Song et al., 2020; Wang et al., 2023; Sahoo et al., 2023a; Gokaslan et al., 2024). The standard forward process for continuous ${\mathbf x}$ is
 
 $$\begin{equation}
 \tag{1}
     {\mathbf z}_t = \sqrt{\alpha_t}  {\mathbf x}+ \sqrt{1 - \alpha_t}  \boldsymbol\epsilon
 \end{equation}$$
 
-where $\boldsymbol\epsilon \sim \mathcal{N}(\mathbf{0}, \mathbf{I})$ and $(\alpha_t)_{t \in [0,1]}$ is a noise schedule, monotonically decreasing in $t$. The parameterized reverse diffusion model $p_\theta$ over ${\mathbf x}$ and ${\mathbf z}_t$ is trained to maximize a variational lower bound on log-likelihood (ELBO). Given a number of discretization steps $T,$ defining $s(i) = (i -1)/T$ and $t(i) = i /T$, and using $D_{\mathrm{KL}}[\cdot]$ to denote the Kullback–Leibler divergence, the Negative ELBO (NELBO) equals (Sohl-Dickstein et al., 2015): 
+where $\boldsymbol\epsilon \sim \mathcal{N}(\mathbf{0}, \mathbf{I})$ and $(\alpha_t)_{t \in [0,1]}$ is a noise schedule, monotonically decreasing in $t$. The parameterized reverse diffusion model $p_\theta$ over ${\mathbf x}$ and ${\mathbf z}_t$ is trained to maximize a variational lower bound on log-likelihood (ELBO). Given a number of discretization steps $T,$ defining $s(i) = (i -1)/T$ and $t(i) = i /T$, and using $D_{\mathrm{KL}}[\cdot]$ to denote the Kullback–Leibler divergence, the Negative ELBO (NELBO) equals (Sohl-Dickstein et al., 2015):
 
 $$\begin{align}
 \tag{2}
@@ -65,7 +65,7 @@ For brevity, we drop $i$ from $t(i)$ and $s(i)$ below; in general, $s$ will deno
 
 ## 2.2 Discrete Diffusion Models
 
-Applications of diffusion modeling to discrete data can be broken into two broad categories. First are works that embed discrete structures in continuous space and then perform the Gaussian diffusion defined above on these continuous representations (Chen et al., 2022; Dieleman et al., 2022; Gulrajani & Hashimoto, 2024; Han et al., 2022; Li et al., 2022; Lovelace et al., 2024; Strudel et al., 2022). More related to our method are works that define a diffusion process directly on discrete structures. D3PM (Austin et al., 2021) introduces a framework with a Markov forward process $q({\mathbf z}_t | {\mathbf z}_{t-1}) = \text{Cat}( {\mathbf z}_t ; Q_t {\mathbf z}_{t-1})$ defined by the multiplication of matrices $Q_t$ over $T$ discrete time steps. This process induces marginals 
+Applications of diffusion modeling to discrete data can be broken into two broad categories. First are works that embed discrete structures in continuous space and then perform the Gaussian diffusion defined above on these continuous representations (Chen et al., 2022; Dieleman et al., 2022; Gulrajani & Hashimoto, 2024; Han et al., 2022; Li et al., 2022; Lovelace et al., 2024; Strudel et al., 2022). More related to our method are works that define a diffusion process directly on discrete structures. D3PM (Austin et al., 2021) introduces a framework with a Markov forward process $q({\mathbf z}_t | {\mathbf z}_{t-1}) = \text{Cat}( {\mathbf z}_t ; Q_t {\mathbf z}_{t-1})$ defined by the multiplication of matrices $Q_t$ over $T$ discrete time steps. This process induces marginals
 
 $$\begin{equation}
  \tag{3}
@@ -84,14 +84,14 @@ We denote scalar discrete random variables with $K$ categories as ‘one-hot’ 
 
 ## 3.1 Interpolating Discrete Diffusion
 
-We restrict our attention to forward processes $q$ that interpolate between clean data ${\mathbf x}\in \mathcal{V}$ and a target distribution $\text{Cat}(.; \boldsymbol{\mathit{\pi}}{})$, forming a direct extension of Gaussian diffusion in (1). Let $q$ define a sequence of increasingly noisy latent variables ${\mathbf z}_t \in \mathcal{V}$, where the time step $t$ runs from $t=0$ (least noisy) to $t=1$ (most noisy). The marginal of ${\mathbf z}_t$ conditioned on ${\mathbf x}$ at time $t$ is 
+We restrict our attention to forward processes $q$ that interpolate between clean data ${\mathbf x}\in \mathcal{V}$ and a target distribution $\text{Cat}(.; \boldsymbol{\mathit{\pi}}{})$, forming a direct extension of Gaussian diffusion in (1). Let $q$ define a sequence of increasingly noisy latent variables ${\mathbf z}_t \in \mathcal{V}$, where the time step $t$ runs from $t=0$ (least noisy) to $t=1$ (most noisy). The marginal of ${\mathbf z}_t$ conditioned on ${\mathbf x}$ at time $t$ is
 
 $$\begin{align}
 \tag{4}
     q({\mathbf z}_t | {\mathbf x}) = \text{Cat}({\mathbf z}_t; \alpha_{t}{\mathbf x}+ (1 - \alpha_{t}) \boldsymbol{\mathit{\pi}}{}),
 \end{align}$$
 
-where $\alpha_t \in [0, 1]$ is a strictly decreasing function in $t$, with $\alpha_{0} \approx 1$ and $\alpha_{1} \approx 0$; see Suppl. E.1 for details. This implies transition probabilities $q({\mathbf z}_t | {\mathbf z}_s) = \text{Cat}({\mathbf z}_t ; \alpha_{t|s}{\mathbf z}_s + (1 - \alpha_{t|s}) \boldsymbol{\mathit{\pi}}{})$, where $\alpha_{t|s}= \alpha_{t}/\alpha_{s}$. This indicates that during each diffusion step from $s \to t$, a fraction $(1 - \alpha_{t|s})$ of the probability mass is transferred to the prior distribution $\boldsymbol{\mathit{\pi}}{}$. The reverse posterior is given as (see Suppl. 16 for details): 
+where $\alpha_t \in [0, 1]$ is a strictly decreasing function in $t$, with $\alpha_{0} \approx 1$ and $\alpha_{1} \approx 0$; see Suppl. E.1 for details. This implies transition probabilities $q({\mathbf z}_t | {\mathbf z}_s) = \text{Cat}({\mathbf z}_t ; \alpha_{t|s}{\mathbf z}_s + (1 - \alpha_{t|s}) \boldsymbol{\mathit{\pi}}{})$, where $\alpha_{t|s}= \alpha_{t}/\alpha_{s}$. This indicates that during each diffusion step from $s \to t$, a fraction $(1 - \alpha_{t|s})$ of the probability mass is transferred to the prior distribution $\boldsymbol{\mathit{\pi}}{}$. The reverse posterior is given as (see Suppl. 16 for details):
 
 $$\begin{align}
 \tag{5}
@@ -111,7 +111,7 @@ Next, we focus on masking processes and derive a simple Rao-Blackwellized object
 
 In masked (i.e., absorbing state) diffusion, we set $\boldsymbol{\mathit{\pi}}= {\mathbf m}$. At each noising step, $t$, the input ${\mathbf x}$ transitions to a ‘masked’ state ${\mathbf m}$ with some probability. If an input transitions to ${\mathbf m}$ at any time $t'$, it will remain in this state for all $t > t': q({\mathbf z}_t \mid {\mathbf z}_{t'} = {\mathbf m}) = \text{Cat}({\mathbf z}_t; {\mathbf m}).$ At time $T$, all inputs are masked with probability 1.
 
-The marginal of the forward process (4) is given by $q({\mathbf z}_t| {\mathbf x}) = \text{Cat}({\mathbf z}_t; \alpha_{t}{\mathbf x}+ (1 - \alpha_{t}) {\mathbf m}).$ Using properties of the masking process, the posterior $q({\mathbf z}_s | {\mathbf z}_t, {\mathbf x})$ simplifies (5); see Suppl. A.2: 
+The marginal of the forward process (4) is given by $q({\mathbf z}_t| {\mathbf x}) = \text{Cat}({\mathbf z}_t; \alpha_{t}{\mathbf x}+ (1 - \alpha_{t}) {\mathbf m}).$ Using properties of the masking process, the posterior $q({\mathbf z}_s | {\mathbf z}_t, {\mathbf x})$ simplifies (5); see Suppl. A.2:
 
 $$\begin{align}
 \tag{6}
@@ -131,7 +131,7 @@ The optimal form for ${p_\theta}({\mathbf z}_s | {\mathbf z}_t)$ matches the tru
 
 ### 3.2.3 SUBS Parameterization
 
-The specific parameterization for ${p_\theta}({\mathbf z}_s | {\mathbf z}_t)$ that we use is 
+The specific parameterization for ${p_\theta}({\mathbf z}_s | {\mathbf z}_t)$ that we use is
 
 $$\begin{align}
 \tag{7}
@@ -158,7 +158,7 @@ In Suppl. B.1, we show that “Zero Masking Probabilities” property simplifie
 
 ## 3.3 Rao-Blackwellized Likelihood Bounds
 
-Recall from (2) that the diffusion traning objective has the form ${\mathcal{L}_{\text{recons}}}+ {\mathcal{L}_{\text{diffusion}}}+ {\mathcal{L}_{\text{prior}}}$. For the simplified reverse process in (7), the discrete-time diffusion loss for finite $T$ simplifies to (Suppl. B.1.3): 
+Recall from (2) that the diffusion traning objective has the form ${\mathcal{L}_{\text{recons}}}+ {\mathcal{L}_{\text{diffusion}}}+ {\mathcal{L}_{\text{prior}}}$. For the simplified reverse process in (7), the discrete-time diffusion loss for finite $T$ simplifies to (Suppl. B.1.3):
 
 $$\begin{align}
  \tag{8}
@@ -166,7 +166,7 @@ $$\begin{align}
     \left[\frac{\alpha_{t(i)}- \alpha_{s(i)}}{1 - \alpha_{t(i)}} \log \langle \mathbf {x}_\theta({\mathbf z}_{t(i)}), {\mathbf x}\rangle\right]
 \end{align}$$
 
-Note that this objective is simpler and more well-behaved than the expression one would obtain for $\text{D}_{\text{KL}}(q({\mathbf z}_{s} | {\mathbf z}_{t}, {\mathbf x}) \| {p_\theta}({\mathbf z}_{s} | {\mathbf z}_{t}))$ under the parameterization induced by using ${p_\theta}({\mathbf z}_s | {\mathbf z}_t) = q({\mathbf z}_s | {\mathbf z}_t, {\mathbf x}=\mathbf {x}_\theta({\mathbf z}_t, t))$ from (5), which is similar to what is used by D3PM (Austin et al., 2021) (see Suppl. A.2.4): 
+Note that this objective is simpler and more well-behaved than the expression one would obtain for $\text{D}_{\text{KL}}(q({\mathbf z}_{s} | {\mathbf z}_{t}, {\mathbf x}) \| {p_\theta}({\mathbf z}_{s} | {\mathbf z}_{t}))$ under the parameterization induced by using ${p_\theta}({\mathbf z}_s | {\mathbf z}_t) = q({\mathbf z}_s | {\mathbf z}_t, {\mathbf x}=\mathbf {x}_\theta({\mathbf z}_t, t))$ from (5), which is similar to what is used by D3PM (Austin et al., 2021) (see Suppl. A.2.4):
 
 $$\begin{align}
 \tag{9}
@@ -178,7 +178,7 @@ We refer to the process of obtaining (8) in lieu of (9) as a form of Rao-Blackwe
 
 ## 3.4 Continuous-Time Likelihood Bounds
 
-Previous works have shown empirically and mathematically that increasing the number of steps $T$ yields a tighter approximation to the ELBO (Kingma et al., 2021). Following a similar argument, we form an continuous extension of (8) by taking $T \to \infty$ (see Suppl. B.2), which yields the following NELBO, ${\mathcal{L}^{\infty}_{\text{NELBO}}}$: 
+Previous works have shown empirically and mathematically that increasing the number of steps $T$ yields a tighter approximation to the ELBO (Kingma et al., 2021). Following a similar argument, we form an continuous extension of (8) by taking $T \to \infty$ (see Suppl. B.2), which yields the following NELBO, ${\mathcal{L}^{\infty}_{\text{NELBO}}}$:
 
 $$\begin{align}
 \tag{10}
@@ -192,7 +192,7 @@ The function $\alpha_{t}$ is invertible due to the monotonicity assumption in Se
 
 ## 3.5 Masked Diffusion Language Models
 
-Next, we apply masked diffusion to language modeling over sequences ${\mathbf x}^{1:L}$ of $L$ tokens, with ${\mathbf x}^{\ell}$ denoting the $\ell$-th token. We make the assumption that the forward noising process is applied independently across a sequence and that, conditioned on a sequence of latents ${\mathbf z}_t^{1:L},$ the denoising process factorizes independently across tokens, i.e., $p_\theta({\mathbf z}_s^{1:L} \mid {\mathbf z}_t^{1:L}) = \prod_{\ell=1}^Lp_\theta({\mathbf z}_s^{\ell} \mid {\mathbf z}_t^{1:L}).$ Thus, we use a single model to compute $\mathbf {x}_\theta^\ell({\mathbf z}_t^{1:L}, t)$ for each $\ell$ from a masked sequence ${\mathbf z}_t$, optimizing: 
+Next, we apply masked diffusion to language modeling over sequences ${\mathbf x}^{1:L}$ of $L$ tokens, with ${\mathbf x}^{\ell}$ denoting the $\ell$-th token. We make the assumption that the forward noising process is applied independently across a sequence and that, conditioned on a sequence of latents ${\mathbf z}_t^{1:L},$ the denoising process factorizes independently across tokens, i.e., $p_\theta({\mathbf z}_s^{1:L} \mid {\mathbf z}_t^{1:L}) = \prod_{\ell=1}^Lp_\theta({\mathbf z}_s^{\ell} \mid {\mathbf z}_t^{1:L}).$ Thus, we use a single model to compute $\mathbf {x}_\theta^\ell({\mathbf z}_t^{1:L}, t)$ for each $\ell$ from a masked sequence ${\mathbf z}_t$, optimizing:
 
 $$\begin{align}
 \tag{11}
@@ -354,7 +354,7 @@ In Table 8, we can see the effect of our streamlined masked diffusion implement
 
 **Comparison to D3PM**  Masked diffusion is a strict subset of D3PM (Austin et al., 2021); setting $Q_{t|s} = \alpha_{t|s}\mathbf{I}+ (1-\alpha_{t|s}) {\boldsymbol{1}}{{\mathbf m}^\top}$ in their framework yields our forward diffusion. We improve over D3PM in three ways: (1) we adopt the SUBS parameterization; (2) this allows us to derive a simplified objective that analytically simplifies certain expectations to zero; (3) we adopt well-engineered training recipes that improve performance. Both (1) and (2) are possible because we focus on masking instead of developing a general discrete diffusion framework. Surprisingly, (3) has the largest contribution to performance.
 
-**Comparison to CTMC**  Most implementations of diffusion work best in continuous time. However, extending D3PM in this way requires computing the limit of the product of an infinite number of matrices $Q_T \cdot Q_{T-1} \cdots Q_t$ as $T \to \infty$, which requires advanced CTMC theory (Campbell et al., 2022). Our work describes simple continuous-time formulations for the most common noise processes (e.g., masking and uniform $\boldsymbol{\mathit{\pi}}$), thus helping make an important part of the literature more accessible. In Suppl. C, we show that our results are compatible with CTMC, using the rate forward matrix $R_t = \frac{\alpha'_{t}}{\alpha_{t}} (\mathbf{I}- {\boldsymbol{1}}{\mathbf m}^\top)$ and the reverse rate $\tilde{R}_{t}({\mathbf y}', {\mathbf y})$ for the transition ${\mathbf y}\to {\mathbf y}'$, where ${\mathbf y}, {\mathbf y}' \in \mathcal{V}$: 
+**Comparison to CTMC**  Most implementations of diffusion work best in continuous time. However, extending D3PM in this way requires computing the limit of the product of an infinite number of matrices $Q_T \cdot Q_{T-1} \cdots Q_t$ as $T \to \infty$, which requires advanced CTMC theory (Campbell et al., 2022). Our work describes simple continuous-time formulations for the most common noise processes (e.g., masking and uniform $\boldsymbol{\mathit{\pi}}$), thus helping make an important part of the literature more accessible. In Suppl. C, we show that our results are compatible with CTMC, using the rate forward matrix $R_t = \frac{\alpha'_{t}}{\alpha_{t}} (\mathbf{I}- {\boldsymbol{1}}{\mathbf m}^\top)$ and the reverse rate $\tilde{R}_{t}({\mathbf y}', {\mathbf y})$ for the transition ${\mathbf y}\to {\mathbf y}'$, where ${\mathbf y}, {\mathbf y}' \in \mathcal{V}$:
 
 $$\begin{align}
     \tilde{R}_{t}({\mathbf y}', {\mathbf y}) = - \frac{\alpha'_{t}}{1 - \alpha_{t}} [{\mathbf y}']^\top [\mathbf {x}_\theta({\mathbf y}, t) - {\mathbf m}] \langle {\mathbf y}, {\mathbf m}\rangle
@@ -385,7 +385,7 @@ This section is organized as follows: First, we derive the expressions for the t
 
 ## A.1 Generic case
 
-Given the state transition matrix $Q_{t}$, prior , and the latent variables ${\mathbf z}_s$ and ${\mathbf z}_t$, where $s < t$, let 
+Given the state transition matrix $Q_{t}$, prior , and the latent variables ${\mathbf z}_s$ and ${\mathbf z}_t$, where $s < t$, let
 
 $$\begin{align}
 \tag{13}
@@ -394,7 +394,7 @@ $$\begin{align}
 
 ### A.1.1 $q({\mathbf z}_t | {\mathbf z}_s)$
 
-Thus, the marginals in (3) correspond to the following forward process: 
+Thus, the marginals in (3) correspond to the following forward process:
 
 $$\begin{align}
 \tag{14}
@@ -409,7 +409,7 @@ The above equation indicates that during each diffusion step from $s \to t$, a f
 
 ### A.1.2 $q({\mathbf z}_s | {\mathbf z}_t, {\mathbf x})$
 
-Austin et al. (2021) show that the posterior corresponding to (14) is given as follows: 
+Austin et al. (2021) show that the posterior corresponding to (14) is given as follows:
 
 $$\begin{align}
     q({\mathbf z}_s | {\mathbf z}_t, {\mathbf x}) = \text{Cat}\left(
@@ -417,7 +417,7 @@ $$\begin{align}
             {\mathbf z}_t^\top Q_{t}^\top {\mathbf x}} \right), \tag{15}
 \end{align}$$
 
-which we simplify to the following: 
+which we simplify to the following:
 
 $$\begin{align}
 \tag{16}
@@ -435,7 +435,7 @@ $$\begin{align}
 
 ### A.1.3 ${p_\theta}({\mathbf z}_s | {\mathbf z}_t)$
 
-Austin et al. (2021) approximate the reverse process in the following manner: 
+Austin et al. (2021) approximate the reverse process in the following manner:
 
 $$\begin{align}
 \tag{17}
@@ -457,7 +457,7 @@ Since, ${\mathbf z}_t \in \{{\mathbf x}, {\mathbf m}\}$, takes only 2 values we 
 
 #### Case 1.
 
-Consider the case **${\mathbf z}_t = {\mathbf x}$** i.e. ${\mathbf z}_t$ is unmasked. From (16), we have the following: 
+Consider the case **${\mathbf z}_t = {\mathbf x}$** i.e. ${\mathbf z}_t$ is unmasked. From (16), we have the following:
 
 $$\begin{align}
     & q({\mathbf z}_s | {\mathbf z}_t={\mathbf x}, {\mathbf x}) \nonumber \\
@@ -473,7 +473,7 @@ $$\begin{align}
 \tag{18}
 \end{align}$$
 
-Thus, we have the following: 
+Thus, we have the following:
 
 $$\begin{align}
     q({\mathbf z}_s | {\mathbf z}_t={\mathbf x}, {\mathbf x}) = \text{Cat}({\mathbf z}_s; {\mathbf x}).
@@ -482,7 +482,7 @@ $$\begin{align}
 
 #### Case 2.
 
-Consider the case **${\mathbf z}_t = {\mathbf m}$**. By substituting ${\mathbf z}_t = {\mathbf m}$ and $\boldsymbol{\mathit{\pi}}= {\mathbf m}$ in (16), $q({\mathbf z}_s | {\mathbf z}_t, {\mathbf x})$ simplifies to the following: 
+Consider the case **${\mathbf z}_t = {\mathbf m}$**. By substituting ${\mathbf z}_t = {\mathbf m}$ and $\boldsymbol{\mathit{\pi}}= {\mathbf m}$ in (16), $q({\mathbf z}_s | {\mathbf z}_t, {\mathbf x})$ simplifies to the following:
 
 $$\begin{align}
 \tag{20}
@@ -493,7 +493,7 @@ $$\begin{align}
         (1 - \alpha_{s}){\mathbf m}+ (\alpha_{s}- \alpha_{t}){\mathbf x}}{1 - \alpha_{t}}\right)
 \end{align}$$
 
-Note that the above categorical distribution is non-zero for ${\mathbf z}_s \in \{{\mathbf x}, {\mathbf m}\}$ and zero for every other value. The non-zero values are specified as follows: 
+Note that the above categorical distribution is non-zero for ${\mathbf z}_s \in \{{\mathbf x}, {\mathbf m}\}$ and zero for every other value. The non-zero values are specified as follows:
 
 $$\begin{align}
     q({\mathbf z}_s = {\mathbf x}| {\mathbf z}_t = {\mathbf m}, {\mathbf x}) = \frac{
@@ -501,7 +501,7 @@ $$\begin{align}
     q({\mathbf z}_s = {\mathbf m}| {\mathbf z}_t = {\mathbf m}, {\mathbf x}) = \frac{1 - \alpha_{s}}{1 - \alpha_{t}} \tag{22}
 \end{align}$$
 
-Combining Cases 1 and 2, we get: 
+Combining Cases 1 and 2, we get:
 
 $$\begin{align}
 \tag{23}
@@ -519,7 +519,7 @@ For the absorbing state diffusion process with $\boldsymbol{\mathit{\pi}}= {\mat
 
 #### Case 1.
 
-Consider the case when ${\mathbf z}_t \neq {\mathbf m}$. (17) simplifies to the following: 
+Consider the case when ${\mathbf z}_t \neq {\mathbf m}$. (17) simplifies to the following:
 
 $$\begin{align}
 \tag{24}
@@ -547,7 +547,7 @@ $$\begin{align}
 
 #### Case 2.
 
-Consider the case when ${\mathbf z}_t = {\mathbf m}$. (17) simplifies to the following: 
+Consider the case when ${\mathbf z}_t = {\mathbf m}$. (17) simplifies to the following:
 
 $$\begin{align}
 \tag{25}
@@ -568,7 +568,7 @@ $$\begin{align}
         \frac{\alpha_{t}{\mathbf m}\odot \mathbf {x}_\theta({\mathbf z}_t, t)+ (\alpha_{s}- \alpha_{t})\mathbf {x}_\theta({\mathbf z}_t, t)+ (1 - \alpha_{s}) {\mathbf m}}{\alpha_{t}\langle \mathbf {x}_\theta({\mathbf z}_t, t), {\mathbf m}\rangle+ (1 - \alpha_{t})} \right)
 \end{align}$$
 
-Note that the above categorical distribution, we can obtain the values for ${p_\theta}({\mathbf z}_s = {\mathbf x}| {\mathbf z}_t = {\mathbf m})$ and ${p_\theta}({\mathbf z}_s = {\mathbf m}| {\mathbf z}_t = {\mathbf m})$ which are as follows: 
+Note that the above categorical distribution, we can obtain the values for ${p_\theta}({\mathbf z}_s = {\mathbf x}| {\mathbf z}_t = {\mathbf m})$ and ${p_\theta}({\mathbf z}_s = {\mathbf m}| {\mathbf z}_t = {\mathbf m})$ which are as follows:
 
 $$\begin{align}
     & {p_\theta}({\mathbf z}_s = {\mathbf x}| {\mathbf z}_t = {\mathbf m}) = \frac{
@@ -579,7 +579,7 @@ $$\begin{align}
 
 As a sanity check, we can verify that (26) reduces to (21), and (27) reduces to (22) if our denoising network can reconstruct ${\mathbf x}$ perfectly, i.e., $\mathbf {x}_\theta({\mathbf z}_t, t)= {\mathbf x}$.
 
-Combining (24) and (25), we get the following expression for the reverse process parameterization: 
+Combining (24) and (25), we get the following expression for the reverse process parameterization:
 
 $$\begin{align}
 \tag{28}
@@ -597,7 +597,7 @@ For a given $T$, Let ${\mathcal{L}_{T}}= \mathbb{E}_{t \in \{\frac{1}{T}, \frac{
 
 #### Case 1:
 
-consider the case ${\mathbf z}_t = {\mathbf x}$. Let’s simplify $\text{D}_{\text{KL}}(q({\mathbf z}_s | {\mathbf z}_t={\mathbf x}, {\mathbf x}) \| {p_\theta}({\mathbf z}_s | {\mathbf z}_t={\mathbf x}))$. 
+consider the case ${\mathbf z}_t = {\mathbf x}$. Let’s simplify $\text{D}_{\text{KL}}(q({\mathbf z}_s | {\mathbf z}_t={\mathbf x}, {\mathbf x}) \| {p_\theta}({\mathbf z}_s | {\mathbf z}_t={\mathbf x}))$.
 
 $$\begin{align}
 \tag{29}
@@ -608,7 +608,7 @@ $$\begin{align}
 
 #### Case 2:
 
-Consider the case ${\mathbf z}_t = {\mathbf m}$. Let’s simplify $\text{D}_{\text{KL}}(q({\mathbf z}_s | {\mathbf z}_t={\mathbf m}, {\mathbf x}) \| {p_\theta}({\mathbf z}_s | {\mathbf z}_t={\mathbf m}))$. 
+Consider the case ${\mathbf z}_t = {\mathbf m}$. Let’s simplify $\text{D}_{\text{KL}}(q({\mathbf z}_s | {\mathbf z}_t={\mathbf m}, {\mathbf x}) \| {p_\theta}({\mathbf z}_s | {\mathbf z}_t={\mathbf m}))$.
 
 $$\begin{align}
 \tag{30}
@@ -637,7 +637,7 @@ $$\begin{align}
 \tag{31}
 \end{align}$$
 
-Thus, we derive the diffusion loss, ${\mathcal{L}_{T}}$, in the following manner: 
+Thus, we derive the diffusion loss, ${\mathcal{L}_{T}}$, in the following manner:
 
 $$\begin{align}
 \tag{32}
@@ -652,7 +652,7 @@ Note that ${\mathcal{L}_{T}}$ is 0 if ${\mathbf z}_t$ is an unmasked token i.e. 
 
 ### A.2.4 NELBO
 
-Austin et al. (2021); Sohl-Dickstein et al. (2015) model $\alpha_i$ as $(\alpha_{i})_{i \in \{1, \dots, T\}} = 1 - \frac{i}{T}$ given latents ${\mathbf z}_{1,\dots,T}$. However, in this paper, we denote the latents as ${\mathbf z}_{t(0), \dots, t(T)}$; and hence, the $\alpha_{t(i)}$ are given as follows: 
+Austin et al. (2021); Sohl-Dickstein et al. (2015) model $\alpha_i$ as $(\alpha_{i})_{i \in \{1, \dots, T\}} = 1 - \frac{i}{T}$ given latents ${\mathbf z}_{1,\dots,T}$. However, in this paper, we denote the latents as ${\mathbf z}_{t(0), \dots, t(T)}$; and hence, the $\alpha_{t(i)}$ are given as follows:
 
 $$\begin{align}
 \tag{33}
@@ -662,7 +662,7 @@ $$\begin{align}
     & \implies (\alpha_{{t(i)}})_{i \in \{0, \dots, T\}} = 1 - \frac{i + 1}{T + 1} & \text{\footnotesize Switching the notations from } \alpha_i \text{ to } \alpha_{t(i)} \text{.}
 \end{align}$$
 
-Consequently, from Equation 33, we derive that 
+Consequently, from Equation 33, we derive that
 
 $$\begin{align}
     & \alpha_{t(0)} = \frac{T}{T+1}, \tag{34}\\
@@ -670,7 +670,7 @@ $$\begin{align}
 \tag{35}
 \end{align}$$
 
-Thus we have the following: 
+Thus we have the following:
 
 $$\begin{align}
     & {\mathbf z}_{t(0)} \sim \text{Cat}(.; \alpha_{t=0}{\mathbf x}+ (1 - \alpha_{t=0}){\mathbf m}) = \text{Cat}\left(.; \frac{T}{T+1}{\mathbf x}+ \frac{1}{T+1}{\mathbf m}\right),\tag{36} \\
@@ -678,7 +678,7 @@ $$\begin{align}
     & p_\theta({\mathbf z}_{t(T)}) = \text{Cat}(.; {\mathbf m})\tag{38}
 \end{align}$$
 
-The NELBO (2) simplifies to the following: 
+The NELBO (2) simplifies to the following:
 
 $$\begin{align}
 \tag{39}
@@ -704,7 +704,7 @@ We employ the RB techniques as described in Sec. 3.2.3 to simplify the NELBO 
 
 ### B.1.1 Zero Masking Probabilities
 
-Using “Zero Masking Probabilities” (RB2) from Sec. 3.2.3, we set $\langle \mathbf {x}_\theta({\mathbf z}_t, t), {\mathbf m}\rangle= 0$ in (32) to obtain the following simplified diffusion loss: 
+Using “Zero Masking Probabilities” (RB2) from Sec. 3.2.3, we set $\langle \mathbf {x}_\theta({\mathbf z}_t, t), {\mathbf m}\rangle= 0$ in (32) to obtain the following simplified diffusion loss:
 
 $$\begin{align}
 \tag{40}
@@ -715,7 +715,7 @@ $$\begin{align}
     \left[\frac{\alpha_{t}- \alpha_{s}}{1 - \alpha_{t}} \log {\langle \mathbf {x}_\theta({\mathbf z}_t, t), {\mathbf x}\rangle} \right] \langle {\mathbf z}_t, {\mathbf m}\rangle.
 \end{align}$$
 
-The corresponding Rao-Blackwellized NELBO is given as: 
+The corresponding Rao-Blackwellized NELBO is given as:
 
 $$\begin{align}
 \tag{41}
@@ -734,7 +734,7 @@ $$\begin{align}
 
 Notice that the term $\langle {\mathbf z}_t, {\mathbf m}\rangle$ in (40) is intended to reduce the diffusion loss to zero when ${\mathbf z}_t = {\mathbf x}$. Now, we will demonstrate that, by applying “Carry Over Unmasking” (RB1) from Sec. 3.2.3, $\langle {\mathbf z}_t, {\mathbf m}\rangle$ can be removed from (40).
 
-Recall that RB1 guarantees $\mathbf {x}_\theta({\mathbf z}_t, t)= {\mathbf x}$ when ${\mathbf z}_t = {\mathbf x}$. Thus, with the RB1 parameterization, the diffusion loss in (40) becomes zero for ${\mathbf z}_t = {\mathbf x}$, as $\log \langle \mathbf {x}_\theta({\mathbf z}_t, t), {\mathbf m}\rangle= 0$. Consequently, $\langle {\mathbf z}_t, {\mathbf m}\rangle$ can be safely omitted from (41), yielding the following diffusion loss: 
+Recall that RB1 guarantees $\mathbf {x}_\theta({\mathbf z}_t, t)= {\mathbf x}$ when ${\mathbf z}_t = {\mathbf x}$. Thus, with the RB1 parameterization, the diffusion loss in (40) becomes zero for ${\mathbf z}_t = {\mathbf x}$, as $\log \langle \mathbf {x}_\theta({\mathbf z}_t, t), {\mathbf m}\rangle= 0$. Consequently, $\langle {\mathbf z}_t, {\mathbf m}\rangle$ can be safely omitted from (41), yielding the following diffusion loss:
 
 $$\begin{align}
 \tag{42}
@@ -744,7 +744,7 @@ $$\begin{align}
 
 ### B.1.3 NELBO
 
-Thus, we have the following NELBO: 
+Thus, we have the following NELBO:
 
 $$\begin{align}
 \tag{43}
@@ -767,7 +767,7 @@ Note that due to RB1, $\log p_\theta({\mathbf x}| {\mathbf z}_{t(0)})$ in (43) 
 
 ### B.2.1 Diffusion Loss
 
-To derive the continuous-time diffusion loss, ${\mathcal{L}^{\infty}_{\text{diffusion}}}$, we consider the limiting case $\lim_{T \to \infty}{\mathcal{L}^{\text{RB2 + RB1}}_{T}}$ (42): 
+To derive the continuous-time diffusion loss, ${\mathcal{L}^{\infty}_{\text{diffusion}}}$, we consider the limiting case $\lim_{T \to \infty}{\mathcal{L}^{\text{RB2 + RB1}}_{T}}$ (42):
 
 $$\begin{align}
     {\mathcal{L}^{\infty}_{\text{diffusion}}}
@@ -781,7 +781,7 @@ $$\begin{align}
 
 ### B.2.2 Reconstruction Loss
 
-For the continous time case, from (36), we have 
+For the continous time case, from (36), we have
 
 $$\begin{align}
 \tag{45}
@@ -790,7 +790,7 @@ $$\begin{align}
     & \implies {\mathbf z}_{t(0)} = {\mathbf x}
 \end{align}$$
 
-Thus, the reconstruction loss reduces to 0 in the following manner: 
+Thus, the reconstruction loss reduces to 0 in the following manner:
 
 $$\begin{align}
 \tag{46}
@@ -803,7 +803,7 @@ $$\begin{align}
 
 ### B.2.3 NELBO
 
-Thus, we have the following NELBO: 
+Thus, we have the following NELBO:
 
 $$\begin{align}
 \tag{47}
@@ -830,7 +830,7 @@ In Algorithm 1, we present the training algorithm for MDLM.
 
     ${\mathbf z}^\ell_t \sim \text{Cat}({\mathbf z}^\ell_t; \alpha_{t}{\mathbf x}^\ell + (1 - \alpha_{t}){\mathbf m})$ $\forall$ $1 \leq \ell \leq L$ *// Mask Each token ${\mathbf x}^\ell$ independently to obtain the latent ${\mathbf z}^{1:L}_t$.*
 
-    Take gradient descent step on 
+    Take gradient descent step on
 
 $$\nabla_\theta \frac{\alpha'_{t}}{1 - \alpha_{t}} \sum_{\ell} \log \langle \mathbf {x}_\theta^\ell({\mathbf z}^{1:L}_t, t), {\mathbf x}^\ell \rangle$$
 
@@ -840,7 +840,7 @@ $$\nabla_\theta \frac{\alpha'_{t}}{1 - \alpha_{t}} \sum_{\ell} \log \langle \mat
 
 In the previous section, we defined the discrete diffusion process as a Discrete-Time Markov Chain (DTMC) with a finite set of $T$ states, ${\mathbf z}_{\{0, \frac{1}{T}, \dots, 1\}}$, and a state transition matrix $Q_{t}$. To derive the continuous-time ELBO, we simply take the limit as $T \to \infty$.
 
-In contrast, Campbell et al. (2022) and Lou et al. (2023) defined the discrete diffusion process as a Continuous-Time Markov Chain (CTMC), where the forward corruption process is specified by the rate change matrix $R_{t}\in \mathbb{R}^{|\mathcal{V}| \times |\mathcal{V}|}$, which can be thought of as the instantaneous rate at which one state transitions to another. With this formulation, the forward posterior $q({\mathbf z}_t|{\mathbf z}_s)$ and the true reverse posterior $q({\mathbf z}_s | {\mathbf z}_t, {\mathbf x})$ can be expressed in terms of the rate change matrix as follows: 
+In contrast, Campbell et al. (2022) and Lou et al. (2023) defined the discrete diffusion process as a Continuous-Time Markov Chain (CTMC), where the forward corruption process is specified by the rate change matrix $R_{t}\in \mathbb{R}^{|\mathcal{V}| \times |\mathcal{V}|}$, which can be thought of as the instantaneous rate at which one state transitions to another. With this formulation, the forward posterior $q({\mathbf z}_t|{\mathbf z}_s)$ and the true reverse posterior $q({\mathbf z}_s | {\mathbf z}_t, {\mathbf x})$ can be expressed in terms of the rate change matrix as follows:
 
 $$\begin{align}
     & q({\mathbf z}_t = {\mathbf y}' | {\mathbf z}_s = {\mathbf y}) = \delta_{{\mathbf y}', {\mathbf y}} + R_{t}({\mathbf y}', {\mathbf y})\frac{1}{T} + \mathcal{O}\left(\frac{1}{T^2}\right) \tag{48}\\
@@ -855,7 +855,7 @@ For the remainder of this section, we switch to the notation ${q_{t|s}}({\mathbf
 
 Here, we aim to express the rate change matrix $R_{t}$ in terms of the state transition matrix $Q_{t}$. To do this, we first represent the forward transition ${q_{t|s}}$ in terms of $Q_{t}$ and $R_{t}$ separately, allowing us to illustrate their relationship.
 
-Using (13), we can write ${q_{t|s}}$ as follows: 
+Using (13), we can write ${q_{t|s}}$ as follows:
 
 $$\begin{align}
 \tag{50}
@@ -870,7 +870,7 @@ Now let’s analyze all possible combinations for the tuple $({\mathbf y}', {\ma
 
 #### 1. Case $({\mathbf y}' = {\mathbf x}, {\mathbf y}= {\mathbf x})$:
 
-Using (50), we find that ${q_{t|s}}({\mathbf x}|{\mathbf x}) = \alpha_{t|s}$ for the DTMC. By (48), we have ${q_{t|s}}({\mathbf x}| {\mathbf x}) = 1 + R_{t}({\mathbf x}, {\mathbf x})\frac{1}{T}$ as $T \to \infty$, since the higher-order terms $\mathcal{O}\left(\frac{1}{T^2}\right)$ vanish in the limit. Thus, we get: 
+Using (50), we find that ${q_{t|s}}({\mathbf x}|{\mathbf x}) = \alpha_{t|s}$ for the DTMC. By (48), we have ${q_{t|s}}({\mathbf x}| {\mathbf x}) = 1 + R_{t}({\mathbf x}, {\mathbf x})\frac{1}{T}$ as $T \to \infty$, since the higher-order terms $\mathcal{O}\left(\frac{1}{T^2}\right)$ vanish in the limit. Thus, we get:
 
 $$\begin{align}
     & \lim_{T \to \infty}\left[1 + R_{t}({\mathbf x}, {\mathbf x})\frac{1}{T}\right] = \lim_{T \to \infty}\alpha_{t|s}\nonumber \\
@@ -880,7 +880,7 @@ $$\begin{align}
 
 #### 2. Case $({\mathbf y}' = {\mathbf m}, {\mathbf y}\in \mathcal{V}- \{{\mathbf m}\})$:
 
-Similarly, using (50) and (48), we have ${q_{t|s}}({\mathbf m}|{\mathbf y}\neq {\mathbf m}) = 1 - \alpha_{t|s}$ and ${q_{t|s}}({\mathbf x}| {\mathbf y}\neq {\mathbf m}) = R_{t}({\mathbf m}, {\mathbf y}\neq {\mathbf m})\frac{1}{T}$. Thus, 
+Similarly, using (50) and (48), we have ${q_{t|s}}({\mathbf m}|{\mathbf y}\neq {\mathbf m}) = 1 - \alpha_{t|s}$ and ${q_{t|s}}({\mathbf x}| {\mathbf y}\neq {\mathbf m}) = R_{t}({\mathbf m}, {\mathbf y}\neq {\mathbf m})\frac{1}{T}$. Thus,
 
 $$\begin{align}
 \tag{52}
@@ -890,7 +890,7 @@ $$\begin{align}
 
 #### 3. Case $({\mathbf y}' = {\mathbf m}, {\mathbf y}= {\mathbf m})$:
 
-Using (50) and(48), we find ${q_{t|s}}({\mathbf m}|{\mathbf m}) = 1$ and ${q_{t|s}}({\mathbf m}| {\mathbf m}) = 1 + R_{t}({\mathbf m}, {\mathbf m})\frac{1}{T} + \mathcal{O}\left(\frac{1}{T^2}\right)$. Since these two expressions must be equal for any $T$, it follows that 
+Using (50) and(48), we find ${q_{t|s}}({\mathbf m}|{\mathbf m}) = 1$ and ${q_{t|s}}({\mathbf m}| {\mathbf m}) = 1 + R_{t}({\mathbf m}, {\mathbf m})\frac{1}{T} + \mathcal{O}\left(\frac{1}{T^2}\right)$. Since these two expressions must be equal for any $T$, it follows that
 
 $$\begin{align}
     R_{t}({\mathbf m}, {\mathbf m}) =  0.
@@ -901,7 +901,7 @@ Note that when $R_{t}({\mathbf m}, {\mathbf m})$ is constant, the term $\mathcal
 
 #### 4. Case $({\mathbf y}' = {\mathbf x}, {\mathbf y}\in \mathcal{V}- \{{\mathbf x}\})$:
 
-In the context of absorbing state diffusion, these states are never observed. Thus, 
+In the context of absorbing state diffusion, these states are never observed. Thus,
 
 $$\begin{align}
 \tag{54}
@@ -910,28 +910,28 @@ $$\begin{align}
 
 #### 5. Case $({\mathbf y}' \in \mathcal{V}- \{{\mathbf m}, {\mathbf x}\}, {\mathbf y}\in \{{\mathbf m}, {\mathbf x}\})$:
 
-In the context of absorbing state diffusion, these states are never observed. Thus, 
+In the context of absorbing state diffusion, these states are never observed. Thus,
 
 $$\begin{align}
     R_{t}({\mathbf y}' \in \mathcal{V}- \{{\mathbf m}, {\mathbf x}\}, {\mathbf y}\in \{{\mathbf m}, {\mathbf x}\}) = 0
 \tag{55}
 \end{align}$$
 
-Finally, we can express the forward rate matrix as: 
+Finally, we can express the forward rate matrix as:
 
 $$\begin{align}
 \tag{56}
     \boxed{R_{t}= \frac{\alpha'_{t}}{\alpha_{t}}\left(\mathbf{I}- {\mathbf m}{\boldsymbol{1}}^\top\right)}
 \end{align}$$
 
-It can be seen that the columns of this matrix sum to zero, i.e., 
+It can be seen that the columns of this matrix sum to zero, i.e.,
 
 $$\begin{align}
     \sum_{{\mathbf y}' \in \mathcal{V}}R_{t}({\mathbf y}', {\mathbf y}) = 0 \implies R_{t}({\mathbf y}, {\mathbf y}) = \sum_{{\mathbf y}' \neq {\mathbf y}}R_{t}({\mathbf y}', {\mathbf y}),
 \tag{57}
 \end{align}$$
 
-which ensures that the probability mass is preserved in the forward diffusion process. Similarly, the reverse rate matrix $\tilde{R}_{t}$ can be written in terms of the forward rate matrix $R_{t}$ as follows (Lou et al., 2023): 
+which ensures that the probability mass is preserved in the forward diffusion process. Similarly, the reverse rate matrix $\tilde{R}_{t}$ can be written in terms of the forward rate matrix $R_{t}$ as follows (Lou et al., 2023):
 
 $$\begin{align}
 \tag{58}
@@ -944,7 +944,7 @@ $$\begin{align}
 
 ## C.2 NELBO
 
-Meng et al. (2022) introduced the term “concrete score” for the term $q_t({\mathbf y}'|{\mathbf x}) / q_t({\mathbf y}|{\mathbf x})$ that appears in $\tilde{R}_{t}$. Since this quantity is not directly accessible in the reverse diffusion process, we approximate it using a neural network, ${\mathbf s}_\theta: \mathcal{V}\to \mathcal{V}$, with parameters $\theta$. The approximate reverse posterior ${p_{s|t}}$ can then be expressed in terms of the approximate reverse rate matrix $\tilde{R}_{t}$ in the following manner: 
+Meng et al. (2022) introduced the term “concrete score” for the term $q_t({\mathbf y}'|{\mathbf x}) / q_t({\mathbf y}|{\mathbf x})$ that appears in $\tilde{R}_{t}$. Since this quantity is not directly accessible in the reverse diffusion process, we approximate it using a neural network, ${\mathbf s}_\theta: \mathcal{V}\to \mathcal{V}$, with parameters $\theta$. The approximate reverse posterior ${p_{s|t}}$ can then be expressed in terms of the approximate reverse rate matrix $\tilde{R}_{t}$ in the following manner:
 
 $$\begin{align}
     & {p_{s|t}}({\mathbf y}' | {\mathbf y}) = \delta_{y', y} + \tilde{R}^{\theta}_{t}({\mathbf y}', {\mathbf y}) \frac{1}{T} + \mathcal{O}\left(\frac{1}{T^2}\right)\tag{59}\\
@@ -955,7 +955,7 @@ $$\begin{align}
         \end{cases}\tag{60}
 \end{align}$$
 
-where ${\mathbf s}_\theta({\mathbf y})_{{\mathbf y}'}$ denotes the approximate concrete score $q_t({\mathbf y}'|{\mathbf x}) / q_t({\mathbf y}|{\mathbf x})$. Lou et al. (2023) propose the following NELBO to train such a model: 
+where ${\mathbf s}_\theta({\mathbf y})_{{\mathbf y}'}$ denotes the approximate concrete score $q_t({\mathbf y}'|{\mathbf x}) / q_t({\mathbf y}|{\mathbf x})$. Lou et al. (2023) propose the following NELBO to train such a model:
 
 $$\begin{align}
     \mathbb{E}_{t \in [0, 1], {\mathbf y}\sim q_t(. | {\mathbf x})} \left[
@@ -971,7 +971,7 @@ where $K(a) = a \log a - a$. They mention that this expression can be derived fr
 
 #### Proof.
 
-Let’s focus on the diffusion loss for this process. As mentioned in the previous section, the reconstruction and prior loss terms reduce to zero. The continuous-time diffusion loss is given by: 
+Let’s focus on the diffusion loss for this process. As mentioned in the previous section, the reconstruction and prior loss terms reduce to zero. The continuous-time diffusion loss is given by:
 
 $$\begin{align}
 \tag{62}
@@ -1018,7 +1018,7 @@ $$\begin{align}
     & = \sum_{{\mathbf y}' \neq {\mathbf y}}  \frac{q_t({\mathbf y}'|{\mathbf x})}{q_t({\mathbf y}| {\mathbf x})}R_{t}({\mathbf y}, {\mathbf y}') \left( \log \frac{q_t({\mathbf y}'|{\mathbf x})}{q_t({\mathbf y}| {\mathbf x})} - \log {\mathbf s}_\theta({\mathbf y})_{{\mathbf y}'} \right)
 \end{align}$$
 
-Finally, plugging (63) and (64) into (62) yields us the NELBO as proposed in Lou et al. (2023): 
+Finally, plugging (63) and (64) into (62) yields us the NELBO as proposed in Lou et al. (2023):
 
 $$\begin{align}
 \tag{65}
@@ -1038,14 +1038,14 @@ where $K(a) = a \log a - a$. This concludes the proof.
 
 ## C.3 Concrete Score for MDLM
 
-Given a latent variable ${\mathbf z}_t$ and the output of the denoising model, $\mathbf {x}_\theta({\mathbf z}_t, t)$ parameterized using SUBS, we aim to recover the concrete score ${\mathbf s}_\theta({\mathbf z}_t) \in (\mathbb{R}^+ + \{0\})^{|\mathcal{V}|}$. Note that ${\mathbf s}_\theta({\mathbf z}_t)_{\mathbf y}$ is the ratio $\frac{p_t({\mathbf y})}{p_t({\mathbf z}_t)}$ in the reverse process. Since $\mathbf {x}_\theta$ approximates ${\mathbf x}$, we use $p_t({\mathbf y}) = q_t({\mathbf y}| \mathbf {x}_\theta({\mathbf z}_t, t))$; therefore, 
+Given a latent variable ${\mathbf z}_t$ and the output of the denoising model, $\mathbf {x}_\theta({\mathbf z}_t, t)$ parameterized using SUBS, we aim to recover the concrete score ${\mathbf s}_\theta({\mathbf z}_t) \in (\mathbb{R}^+ + \{0\})^{|\mathcal{V}|}$. Note that ${\mathbf s}_\theta({\mathbf z}_t)_{\mathbf y}$ is the ratio $\frac{p_t({\mathbf y})}{p_t({\mathbf z}_t)}$ in the reverse process. Since $\mathbf {x}_\theta$ approximates ${\mathbf x}$, we use $p_t({\mathbf y}) = q_t({\mathbf y}| \mathbf {x}_\theta({\mathbf z}_t, t))$; therefore,
 
 $$\begin{align}
 \tag{66}
     {\mathbf s}_\theta({\mathbf z}_t)_{\mathbf y}= \frac{p_t({\mathbf y})}{p_t({\mathbf z}_t)} = \frac{q_t({\mathbf y}| \mathbf {x}_\theta({\mathbf z}_t, t))}{q_t({\mathbf z}_t | \mathbf {x}_\theta({\mathbf z}_t, t))}.
 \end{align}$$
 
-To obtain the score, we first compute $q_t({\mathbf y}| \mathbf {x}_\theta({\mathbf z}_t, t))$ for all possible ${\mathbf y}$ and ${\mathbf z}_t$. Using (4), we derive the following expressions under the SUBS parameterization: 
+To obtain the score, we first compute $q_t({\mathbf y}| \mathbf {x}_\theta({\mathbf z}_t, t))$ for all possible ${\mathbf y}$ and ${\mathbf z}_t$. Using (4), we derive the following expressions under the SUBS parameterization:
 
 $$\begin{align}
     q_t({\mathbf y}\neq {\mathbf m}| \mathbf {x}_\theta({\mathbf z}_t = {\mathbf m}, t)) & = \alpha_{t}\langle \mathbf {x}_\theta({\mathbf z}_t, t), {\mathbf y}\rangle \tag{67}\\
@@ -1054,7 +1054,7 @@ $$\begin{align}
     q_t({\mathbf y}= {\mathbf m}| \mathbf {x}_\theta({\mathbf z}_t \in \mathcal{V}, t))  & = 1 - \alpha_{t}\tag{70}
 \end{align}$$
 
-Plugging these into (66), we get: 
+Plugging these into (66), we get:
 
 $$\begin{align}
     & {\mathbf s}_\theta({\mathbf z}_t = {\mathbf m})_{{\mathbf y}\neq {\mathbf m}} = \frac{\alpha_{t}}{1 - \alpha_{t}} \langle \mathbf {x}_\theta({\mathbf z}_t, t), {\mathbf y}\rangle & \text{\footnotesize Using~(70) and~(67)}\tag{71}\\
@@ -1065,7 +1065,7 @@ $$\begin{align}
 \tag{75}
 \end{align}$$
 
-These can be consolidated into the following expression: 
+These can be consolidated into the following expression:
 
 $$\begin{align}
 \tag{76}
@@ -1074,7 +1074,7 @@ $$\begin{align}
 
 ## C.4 Reverse Rate Matrix for MDLM
 
-We can formulate the reverse rate matrix for MDLM using (76) and (56). Recall that the reverse rate matrix $\tilde{R}_{t}({\mathbf y}', {\mathbf y})$ is given by: 
+We can formulate the reverse rate matrix for MDLM using (76) and (56). Recall that the reverse rate matrix $\tilde{R}_{t}({\mathbf y}', {\mathbf y})$ is given by:
 
 $$\begin{align}
         \tilde{R}_{t}({\mathbf y}', {\mathbf y})
@@ -1088,7 +1088,7 @@ Let’s examine the cases where ${\mathbf y}= {\mathbf m}$ and ${\mathbf y}\neq 
 
 #### Case ${\mathbf y}= {\mathbf m}$:
 
-For ${\mathbf y}' \neq {\mathbf m}$, the reverse rate $\tilde{R}_{t}({\mathbf y}', {\mathbf y}= {\mathbf m})$ is given by: 
+For ${\mathbf y}' \neq {\mathbf m}$, the reverse rate $\tilde{R}_{t}({\mathbf y}', {\mathbf y}= {\mathbf m})$ is given by:
 
 $$\begin{align}
 \tag{77}
@@ -1099,7 +1099,7 @@ $$\begin{align}
     & = - \frac{\alpha'_{t}}{1-\alpha_{t}}\langle \mathbf {x}_\theta({\mathbf z}_t, t), {\mathbf y}' \rangle
 \end{align}$$
 
-For ${\mathbf y}' = {\mathbf m}$, the reverse rate $\tilde{R}_{t}({\mathbf y}', {\mathbf y}= {\mathbf m})$ is given by: 
+For ${\mathbf y}' = {\mathbf m}$, the reverse rate $\tilde{R}_{t}({\mathbf y}', {\mathbf y}= {\mathbf m})$ is given by:
 
 $$\begin{align}
 \tag{78}
@@ -1114,7 +1114,7 @@ $$\begin{align}
 
 #### Case ${\mathbf y}\neq {\mathbf m}$:
 
-For ${\mathbf y}' \neq {\mathbf y}$ we have: 
+For ${\mathbf y}' \neq {\mathbf y}$ we have:
 
 $$\begin{align}
 \tag{79}
@@ -1123,7 +1123,7 @@ $$\begin{align}
     & = 0
 \end{align}$$
 
-For ${\mathbf y}' = {\mathbf m}$, we have: 
+For ${\mathbf y}' = {\mathbf m}$, we have:
 
 $$\begin{align}
 \tag{80}
@@ -1132,7 +1132,7 @@ $$\begin{align}
     & = 0
 \end{align}$$
 
-Thus, for ${\mathbf y}' = {\mathbf y}$, we have: 
+Thus, for ${\mathbf y}' = {\mathbf y}$, we have:
 
 $$\begin{align}
 \tag{81}
@@ -1142,7 +1142,7 @@ $$\begin{align}
     & = 0
 \end{align}$$
 
-Summarizing (77), (78), (79), (80), (81), we have: 
+Summarizing (77), (78), (79), (80), (81), we have:
 
 $$\begin{align}
 \tag{82}
@@ -1161,7 +1161,7 @@ Now, we aim to show that substituting the expression for the rate matrix $R_{t}$
 
 #### Proof.
 
-Recall that for absorbing state diffusion, ${\mathbf y}$ takes only two possible values, i.e., ${\mathbf y}\in \{{\mathbf x}, {\mathbf m}\}$. Thus, we expand (65) as follows: 
+Recall that for absorbing state diffusion, ${\mathbf y}$ takes only two possible values, i.e., ${\mathbf y}\in \{{\mathbf x}, {\mathbf m}\}$. Thus, we expand (65) as follows:
 
 $$\begin{align}
 \tag{83}
@@ -1245,7 +1245,7 @@ $$\begin{align}
     & = \frac{\alpha_{t}}{1 - \alpha_{t}} \log \frac{\alpha_{t}}{1 - \alpha_{t}} - \frac{\alpha_{t}}{1 - \alpha_{t}}
 \end{align}$$
 
-Substituing (84), (85), and (86) in (83) we get, 
+Substituing (84), (85), and (86) in (83) we get,
 
 $$\begin{align}
 \tag{87}
@@ -1277,14 +1277,14 @@ We use a single monte-carlo estimate for $t$ to evaluate the likelihood. The low
 
 ## D.2 Avg. Number of Tokens seen
 
-Given `training_steps`, `batch_size`, `context_length`, the number of tokens seen by the AR model is given as: 
+Given `training_steps`, `batch_size`, `context_length`, the number of tokens seen by the AR model is given as:
 
 $$\begin{align}
     \texttt{training\_steps} \times \texttt{batch\_size} \times \texttt{context\_length}.
 \tag{88}
 \end{align}$$
 
-However, this expression doesn’t hold for a diffusion model, since at each training step, a fraction of the input tokens are masked before being fed to the model. Let $p_m$ be the probability of a token being masked at a timestep $t$. For the log-linear schedule in our experiments, $p_m=t$. Thus, the expected number of tokens seen by the diffusion model is: 
+However, this expression doesn’t hold for a diffusion model, since at each training step, a fraction of the input tokens are masked before being fed to the model. Let $p_m$ be the probability of a token being masked at a timestep $t$. For the log-linear schedule in our experiments, $p_m=t$. Thus, the expected number of tokens seen by the diffusion model is:
 
 $$\begin{align}
 \tag{89}
@@ -1366,28 +1366,28 @@ We use a subset of the Genomic Benchmark tasks with an emphasis on tasks from Hu
 
 As described in Sec. 3.4, the ELBO is invariant to the functional form of $\alpha_{t}$. To demonstrate this, we evaluate MDLM, initially trained using a log-linear schedule on OWT, by replacing the noise schedule with various other noise schedules as mentioned below. Following prior works (Austin et al., 2021; Lou et al., 2023; Sohl-Dickstein et al., 2015), we parameterize $\alpha_{t}= e^{-\sigma(t)}$, where $\sigma(t): [0, 1] \to \mathbb{R}^+$. Various functional forms of $\sigma(t)$ are listed below:
 
-**Log Linear (Austin et al., 2021; Lou et al., 2023; Sohl-Dickstein et al., 2015).** The log linear schedule is given as: 
+**Log Linear (Austin et al., 2021; Lou et al., 2023; Sohl-Dickstein et al., 2015).** The log linear schedule is given as:
 
 $$\begin{align}
 \tag{90}
     \sigma(t) = - \log \; (1- t)
 \end{align}$$
 
-**Cosine Squared schedule (Han et al., 2022).** The Cosine Squared schedule is given as: 
+**Cosine Squared schedule (Han et al., 2022).** The Cosine Squared schedule is given as:
 
 $$\begin{align}
 \tag{91}
     \sigma(t) = - \log \; \text{cos}^2\left(\frac{\pi}{2}(1 - t)\right)
 \end{align}$$
 
-**Cosine schedule.** The Cosine schedule is given as: 
+**Cosine schedule.** The Cosine schedule is given as:
 
 $$\begin{align}
 \tag{92}
     \sigma(t) = - \log \; \text{cos}\left(\frac{\pi}{2}(1 - t)\right)
 \end{align}$$
 
-**Linear.** The Linear schedule is given as: 
+**Linear.** The Linear schedule is given as:
 
 $$\begin{align}
 \tag{93}
@@ -1398,7 +1398,7 @@ where $\sigma_{\text{max}}$ is a very large number. In our experiments we set it
 
 ### E.1.1 ELBO Invariance
 
-The function $\alpha_{t}$ is invertible due to the monotonicity assumption in Sec. 3.1, and so we can perform the following change of variables in (10): ${\boldsymbol \gamma}\equiv \log(1 - \alpha_{t})$. Let $f:[0, 1] \to \mathbb{R}^{-}$ be a function such that ${\boldsymbol \gamma}= f(t)$. Note that $\alpha_{t}$ goes through a monotonic transformation to obtain ${\boldsymbol \gamma}$; hence, ${\boldsymbol \gamma}$ is also monotonic in $t$ since $\alpha_{t}$ is monotonic in $t$. This implies that the function $f$ is invertible. Let $t = f^{-1}({\boldsymbol \gamma})$. Then, we can we have the following diffusion loss: 
+The function $\alpha_{t}$ is invertible due to the monotonicity assumption in Sec. 3.1, and so we can perform the following change of variables in (10): ${\boldsymbol \gamma}\equiv \log(1 - \alpha_{t})$. Let $f:[0, 1] \to \mathbb{R}^{-}$ be a function such that ${\boldsymbol \gamma}= f(t)$. Note that $\alpha_{t}$ goes through a monotonic transformation to obtain ${\boldsymbol \gamma}$; hence, ${\boldsymbol \gamma}$ is also monotonic in $t$ since $\alpha_{t}$ is monotonic in $t$. This implies that the function $f$ is invertible. Let $t = f^{-1}({\boldsymbol \gamma})$. Then, we can we have the following diffusion loss:
 
 $$\begin{align}
     {\mathcal{L}^{\infty}_{\text{NELBO}}}

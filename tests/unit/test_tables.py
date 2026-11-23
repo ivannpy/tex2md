@@ -88,3 +88,28 @@ def test_rows_from_a_macro_ending_inside_it_do_not_widen_the_spec():
     src = (r"\begin{tabular}{lcc}A & B & C \\ x & y & z \\ \row{a}{1} & \row{b}{2}" "\n" r"\row{c}{3} & \row{d}{4}" "\n"
            r"Ours & 9 & 9 \\ \end{tabular}")
     assert normalize_tabulars(src).startswith(r"\begin{tabular}{lcc}")
+
+
+def test_tabu_becomes_tabular():
+    from tex2md.preprocess.tables import tabu_to_tabular
+    out = tabu_to_tabular(r"\begin{tabu} to \linewidth {@{}ll@{}}\tabucline{-} a & b \\ \end{tabu}")
+    assert out == r"\begin{tabular}{@{}ll@{}}\hline a & b \\ \end{tabular}"
+
+
+def test_cell_line_breaks():
+    from tex2md.preprocess.tables import cell_line_breaks
+    tex = "\\begin{tabular}{ll}\na & b \\\\\n\n\\vspace*{1mm}{\\bf T}\\\\\n\\multicolumn{2}{l}{{x \\\\ y $\\substack{a\\\\b}$}}\n\\end{tabular}"
+    out = cell_line_breaks(tex)
+    assert "\n\n" not in out and "vspace" not in out
+    assert "{{x   y $\\substack{a\\\\b}$}}" in out and "a & b \\\\" in out
+
+
+def test_multirow_with_bare_star_width():
+    from tex2md.preprocess.tables import unwrap_cell_macros
+    assert unwrap_cell_macros(r"\multirow{2}*{Channels} & x") == "Channels & x"
+
+
+def test_pbox_cells_are_one_line():
+    from tex2md.preprocess.tables import unwrap_cell_macros
+    assert unwrap_cell_macros(r"\newcommand{\eqq}[2]{\pbox[t][5ex]{\linewidth}{{#1}\\{#2}}}") == \
+        r"\newcommand{\eqq}[2]{{#1} {#2}}"

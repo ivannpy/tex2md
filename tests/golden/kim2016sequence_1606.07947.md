@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: 63418088313572876d38c6f2a4c58dd2d6f57693d072b638c915e6dfc3947754
     path: "PCIC/Tesis/Distilation/Sequence-Level Knowledge Distillation.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-17
+converted: 2026-11-22
 ---
 
 # Sequence-Level Knowledge Distillation
@@ -40,7 +40,7 @@ We run experiments to compress a large state-of-the-art $4\times1000$ LSTM model
 
 ## 2.1 Sequence-to-Sequence with Attention
 
-Let $\mathbf{s} = [s_1, \dots, s_I]$ and $\mathbf{t} = [t_1, \dots, t_J]$ be (random variable sequences representing) the source/target sentence, with $I$ and $J$ respectively being the source/target lengths. Machine translation involves finding the most probable target sentence given the source: 
+Let $\mathbf{s} = [s_1, \dots, s_I]$ and $\mathbf{t} = [t_1, \dots, t_J]$ be (random variable sequences representing) the source/target sentence, with $I$ and $J$ respectively being the source/target lengths. Machine translation involves finding the most probable target sentence given the source:
 
 $$\begin{equation*}
 \mathop{\mathrm{argmax}}_{\mathbf{t}\in \mathcal{T}} p(\mathbf{t}\,|\,\mathbf{s})
@@ -54,7 +54,7 @@ where $\mathcal{T}$ is the set of all possible sequences. NMT models parameteriz
 
 Knowledge distillation describes a class of methods for training a smaller *student* network to perform better by learning from a larger *teacher* network (in addition to learning from the training data set). We generally assume that the teacher has previously been trained, and that we are estimating parameters for the student. Knowledge distillation suggests training by matching the student’s predictions to the teacher’s predictions. For classification this usually means matching the probabilities either via $L_2$ on the $\log$ scale (Ba and Caruana, 2014) or by cross-entropy (Li et al., 2014; Hinton et al., 2015).
 
-Concretely, assume we are learning a multi-class classifier over a data set of examples of the form $(x, y)$ with possible classes $\mathcal{V}$. The usual training criteria is to minimize NLL for each example from the training data, 
+Concretely, assume we are learning a multi-class classifier over a data set of examples of the form $(x, y)$ with possible classes $\mathcal{V}$. The usual training criteria is to minimize NLL for each example from the training data,
 
 $$\begin{equation*}
 \mathcal{L}_{\text{NLL}}(\theta) =  -  \sum_{k=1}^{|\mathcal{V}|} \mathbb{1}\{y=k\} \log p(y=k \,|\,x;\theta)
@@ -62,7 +62,7 @@ $$\begin{equation*}
 
 where $\mathbb{1}\{\cdot\}$ is the indicator function and $p$ the distribution from our model (parameterized by $\theta$). This objective can be seen as minimizing the cross-entropy between the degenerate data distribution (which has all of its probability mass on one class) and the model distribution $p(y \,|\,x;\theta)$.
 
-In knowledge distillation, we assume access to a learned teacher distribution $q(y\,|\,x; \theta_T)$, possibly trained over the same data set. Instead of minimizing cross-entropy with the observed data, we instead minimize the cross-entropy with the teacher’s probability distribution, 
+In knowledge distillation, we assume access to a learned teacher distribution $q(y\,|\,x; \theta_T)$, possibly trained over the same data set. Instead of minimizing cross-entropy with the observed data, we instead minimize the cross-entropy with the teacher’s probability distribution,
 
 $$\begin{align*}
 \mathcal{L}_{\text{KD}}(\theta;\theta_T) =& - \sum_{k=1}^{|\mathcal{V}|}  q(y = k \,|\,x;\theta_T) \times \\
@@ -71,7 +71,7 @@ $$\begin{align*}
 
 where $\theta_T$ parameterizes the teacher distribution and remains fixed. Note the cross-entropy setup is identical, but the target distribution is no longer a sparse distribution.[^4] Training on $q(y \,|\,x;\theta_T)$ is attractive since it gives more information about other classes for a given data point (e.g. similarity between classes) and has less variance in gradients (Hinton et al., 2015).
 
-Since this new objective has no direct term for the training data, it is common practice to interpolate between the two losses, 
+Since this new objective has no direct term for the training data, it is common practice to interpolate between the two losses,
 
 $$\begin{equation*}
 \mathcal{L}(\theta;\theta_T) = (1-\alpha) \mathcal{L}_{\text{NLL}}(\theta) + \alpha \mathcal{L}_{\text{KD}}(\theta;\theta_T)
@@ -85,7 +85,7 @@ The large sizes of neural machine translation systems make them an ideal candida
 
 ## 3.1 Word-Level Knowledge Distillation
 
-NMT systems are trained directly to minimize word NLL, $\mathcal{L}_{\text{WORD-NLL}}$, at each position. Therefore if we have a teacher model, standard knowledge distillation for multi-class cross-entropy can be applied. We define this distillation for a sentence as, 
+NMT systems are trained directly to minimize word NLL, $\mathcal{L}_{\text{WORD-NLL}}$, at each position. Therefore if we have a teacher model, standard knowledge distillation for multi-class cross-entropy can be applied. We define this distillation for a sentence as,
 
 $$\begin{eqnarray*}
 \mathcal{L}_{\text{WORD-KD}} = -\sum_{j=1}^{J} \sum_{k=1}^{|\mathcal{V}|} &q(t_{j}=k \,|\,\mathbf{s}, \mathbf{t}_{<j}) \times \\
@@ -98,13 +98,13 @@ where $\mathcal{V}$ is the target vocabulary set. The student can further be tra
 
 Word-level knowledge distillation allows transfer of these local word distributions. Ideally however, we would like the student model to mimic the teacher’s actions at the *sequence-level*. The sequence distribution is particularly important for NMT, because wrong predictions can propagate forward at test-time.
 
-First, consider the sequence-level distribution specified by the model over all possible sequences $\mathbf{t}\in \mathcal{T}$, 
+First, consider the sequence-level distribution specified by the model over all possible sequences $\mathbf{t}\in \mathcal{T}$,
 
 $$\begin{equation*}
 p(\mathbf{t}\,|\,\mathbf{s}) = \prod_{j=1}^J p(t_j \,|\,\mathbf{s}, \mathbf{t}_{<j})
 \end{equation*}$$
 
-for any length $J$. The sequence-level negative log-likelihood for NMT then involves matching the one-hot distribution over all complete sequences, 
+for any length $J$. The sequence-level negative log-likelihood for NMT then involves matching the one-hot distribution over all complete sequences,
 
 $$\begin{eqnarray*}
 &&\mathcal{L}_{\text{SEQ-NLL}} = -\sum_{\mathbf{t}\in \mathcal{T}} \mathbb{1}\{\mathbf{t}=\mathbf{y}\} \log p(\mathbf{t}\,|\,\mathbf{s}) \\ 
@@ -115,7 +115,7 @@ $$\begin{eqnarray*}
 
 where $\mathbf{y}= [y_1, \dots, y_J]$ is the observed sequence. Of course, this just shows that from a negative log likelihood perspective, minimizing word-level NLL and sequence-level NLL are equivalent in this model.
 
-But now consider the case of sequence-level knowledge distillation. As before, we can simply replace the distribution from the data with a probability distribution derived from our teacher model. However, instead of using a single word prediction, we use $q(\mathbf{t}\,|\,\mathbf{s})$ to represent the teacher’s sequence distribution over the sample space of all possible sequences, 
+But now consider the case of sequence-level knowledge distillation. As before, we can simply replace the distribution from the data with a probability distribution derived from our teacher model. However, instead of using a single word prediction, we use $q(\mathbf{t}\,|\,\mathbf{s})$ to represent the teacher’s sequence distribution over the sample space of all possible sequences,
 
 $$\begin{equation*}
 \mathcal{L}_{\text{SEQ-KD}} = -\sum_{\mathbf{t}\in \mathcal{T}} q(\mathbf{t}\,|\,\mathbf{s}) \log p (\mathbf{t}\,|\,\mathbf{s})
@@ -123,13 +123,13 @@ $$\begin{equation*}
 
 Note that $\mathcal{L}_\text{SEQ-KD}$ is inherently different from $\mathcal{L}_\text{WORD-KD}$, as the sum is over an exponential number of terms. Despite its intractability, we posit that this sequence-level objective is worthwhile. It gives the teacher the chance to assign probabilities to complete sequences and therefore transfer a broader range of knowledge. We thus consider an approximation of this objective.
 
-Our simplest approximation is to replace the teacher distribution $q$ with its mode, 
+Our simplest approximation is to replace the teacher distribution $q$ with its mode,
 
 $$\begin{equation*}
 q(\mathbf{t}\,|\,\mathbf{s}) \sim \mathbb{1}\{\mathbf{t}= \mathop{\mathrm{argmax}}_{\mathbf{t}\in \mathcal{T}} q(\mathbf{t}\,|\,\mathbf{s})\}
 \end{equation*}$$
 
-Observing that finding the mode is itself intractable, we use beam search to find an approximation. The loss is then 
+Observing that finding the mode is itself intractable, we use beam search to find an approximation. The loss is then
 
 $$\begin{eqnarray*}
 \mathcal{L}_{\text{SEQ-KD}} &\approx&  - \sum_{\mathbf{t}\in \mathcal{T}} \mathbb{1}\{\mathbf{t}= \hat{\mathbf{y}} \} \log p (\mathbf{t}\,|\,\mathbf{s}) \\
@@ -144,7 +144,7 @@ To summarize, sequence-level knowledge distillation suggests to: (1) train a tea
 
 ## 3.3 Sequence-Level Interpolation
 
-Next we consider integrating the training data back into the process, such that we train the student model as a mixture of our sequence-level teacher-generated data ($\mathcal{L}_\text{SEQ-KD}$) with the original training data ($\mathcal{L}_\text{SEQ-NLL}$), 
+Next we consider integrating the training data back into the process, such that we train the student model as a mixture of our sequence-level teacher-generated data ($\mathcal{L}_\text{SEQ-KD}$) with the original training data ($\mathcal{L}_\text{SEQ-NLL}$),
 
 $$\begin{align*}
 \mathcal{L}&= (1-\alpha)\mathcal{L}_{\text{SEQ-NLL}} + \alpha \mathcal{L}_{\text{SEQ-KD}} \\
@@ -153,7 +153,7 @@ $$\begin{align*}
 
 where $\mathbf{y}$ is the gold target sequence.
 
-Since the second term is intractable, we could again apply the mode approximation from the previous section, 
+Since the second term is intractable, we could again apply the mode approximation from the previous section,
 
 $$\begin{equation*}
 \mathcal{L}= -(1-\alpha)\log p(\mathbf{y}\,|\,\mathbf{s})  - \alpha \log p (\hat{\mathbf{y}} \,|\,\mathbf{s})
@@ -161,13 +161,13 @@ $$\begin{equation*}
 
 and train on both observed ($\mathbf{y}$) and teacher-generated ($\hat{\mathbf{y}}$) data. However, this process is non-ideal for two reasons: (1) unlike for standard knowledge distribution, it doubles the size of the training data, and (2) it requires training on both the teacher-generated sequence and the true sequence, conditioned on the same source input. The latter concern is particularly problematic since we observe that $\mathbf{y}$ and $\hat{\mathbf{y}}$ are often quite different.
 
-As an alternative, we propose a single-sequence approximation that is more attractive in this setting. This approach is inspired by *local updating* (Liang et al., 2006), a method for discriminative training in statistical machine translation (although to our knowledge not for knowledge distillation). Local updating suggests selecting a training sequence which is close to $\mathbf{y}$ *and* has high probability under the teacher model, 
+As an alternative, we propose a single-sequence approximation that is more attractive in this setting. This approach is inspired by *local updating* (Liang et al., 2006), a method for discriminative training in statistical machine translation (although to our knowledge not for knowledge distillation). Local updating suggests selecting a training sequence which is close to $\mathbf{y}$ *and* has high probability under the teacher model,
 
 $$\begin{equation*}
 \tilde{\mathbf{y}} = \mathop{\mathrm{argmax}}_{\mathbf{t}\in \mathcal{T}} sim(\mathbf{t}, \mathbf{y}) q(\mathbf{t}\,|\,\mathbf{s})
 \end{equation*}$$
 
-where $sim$ is a function measuring closeness (e.g. Jaccard similarity or BLEU (Papineni et al., 2002)). Following local updating, we can approximate this sequence by running beam search and choosing 
+where $sim$ is a function measuring closeness (e.g. Jaccard similarity or BLEU (Papineni et al., 2002)). Following local updating, we can approximate this sequence by running beam search and choosing
 
 $$\begin{equation*}
 \tilde{\mathbf{y}} \approx \mathop{\mathrm{argmax}}_{\mathbf{t}\in \mathcal{T}_K} sim(\mathbf{t}, \mathbf{y})
@@ -175,7 +175,7 @@ $$\begin{equation*}
 
 where $\mathcal{T}_K$ is the $K$-best list from beam search. We take $sim$ to be smoothed sentence-level BLEU (Chen and Cherry, 2014).
 
-We justify training on $\tilde{\mathbf{y}}$ from a knowledge distillation perspective with the following generative process: suppose that there is a true target sequence (which we do not observe) that is first generated from the underlying data distribution $\mathcal{D}$. And further suppose that the target sequence that we observe ($\mathbf{y}$) is a noisy version of the unobserved true sequence: i.e. (i) $\mathbf{t}\sim \mathcal{D}$, (ii) $\mathbf{y}\sim \epsilon(\mathbf{t})$, where $\epsilon(\mathbf{t})$ is, for example, a noise function that independently replaces each element in $\mathbf{t}$ with a random element in $\mathcal{V}$ with some small probability.[^6] In such a case, ideally the student’s distribution should match the mixture distribution, 
+We justify training on $\tilde{\mathbf{y}}$ from a knowledge distillation perspective with the following generative process: suppose that there is a true target sequence (which we do not observe) that is first generated from the underlying data distribution $\mathcal{D}$. And further suppose that the target sequence that we observe ($\mathbf{y}$) is a noisy version of the unobserved true sequence: i.e. (i) $\mathbf{t}\sim \mathcal{D}$, (ii) $\mathbf{y}\sim \epsilon(\mathbf{t})$, where $\epsilon(\mathbf{t})$ is, for example, a noise function that independently replaces each element in $\mathbf{t}$ with a random element in $\mathcal{V}$ with some small probability.[^6] In such a case, ideally the student’s distribution should match the mixture distribution,
 
 $$\begin{equation*}
 \mathcal{D}_{\text{SEQ-Inter}} \sim (1-\alpha)\mathcal{D} + \alpha q(\mathbf{t}\,|\,\mathbf{s})

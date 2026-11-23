@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: ee876e9451b4fe1bfe9cc4ecc80fdb089d55e8b027c62878c7c33754b9848127
     path: "PCIC/Tesis/Planning/Generative Recursive Reasoning.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-17
+converted: 2026-11-22
 ---
 
 # Generative Recursive Reasoning
@@ -48,7 +48,7 @@ In this section, we introduce Generative Recursive reAsoning Models (GRAM), an i
 
 **Figura 2.** **GRAM Architecture.** A single stochastic latent transition in the hierarchical instantiation $z=(h,l)$. After $K$ low-level refinements via $f_{\mathrm{L}}$, the high-level update $f_{\mathrm{H}}$ produces a deterministic proposal $u_t$, to which stochastic guidance $\epsilon_t$ is added: $h_t = u_t + \epsilon_t$.
 
-**Overview.** GRAM models the conditional distribution $p_\theta(y \mid x)$ by marginalizing over stochastic latent reasoning trajectories. Given an input $x$, GRAM first computes an embedding 
+**Overview.** GRAM models the conditional distribution $p_\theta(y \mid x)$ by marginalizing over stochastic latent reasoning trajectories. Given an input $x$, GRAM first computes an embedding
 
 $$\begin{align}
     e_x = f_{\mathrm{enc}}(x;\theta),
@@ -57,7 +57,7 @@ $$\begin{align}
 
 which is reused throughout the entire recursive computation. Starting from a fixed initial latent state $z_0$, the model evolves the latent state through learned stochastic transitions. The recursive computation is organized into two nested levels: inner and outer loops.
 
-At the inner level, a *latent transition* samples a new latent state conditioned on the previous latent state and the input embedding, 
+At the inner level, a *latent transition* samples a new latent state conditioned on the previous latent state and the input embedding,
 
 $$\begin{align}
     z_{t} \sim p_{\theta}(z_t \mid z_{t-1}, e_x), \qquad t = 1, \dots, T. \tag{2}
@@ -65,7 +65,7 @@ $$\begin{align}
 
 At the end of the $T$ transitions, the decoder produces a prediction, $\hat{y} = \mathop{\mathrm{arg\,max}}f_{\mathrm{dec}}(z_T;\theta)$. We refer to the sequence of $T$ transitions from the initial state $z_0$ to the final state $z_T$ as a *supervision step*. A supervision step is the unit at which the decoder is invoked, and the training objective is applied, with gradients computed as described in Section 2.2.
 
-At the outer level, $N_{\mathrm{sup}}$ supervision steps are applied recursively, with the final state of one supervision step serving as the initial state of the next, thereby forming the full recursive computation: 
+At the outer level, $N_{\mathrm{sup}}$ supervision steps are applied recursively, with the final state of one supervision step serving as the initial state of the next, thereby forming the full recursive computation:
 
 $$\begin{align}
     z_0^{(1)}
@@ -80,7 +80,7 @@ $$\begin{align}
 
 where $z_t^{(n)}$ denotes the latent state at the $t$-th transition of the $n$-th supervision step, $z_0^{(1)}$ is the fixed initial state, and the terminal state of one supervision step serves as the initial state of the next ($\smash{z_0^{(n+1)} := z_T^{(n)}}$). This abstract formulation can be instantiated with various recurrent Transformer backbones, including flat designs such as Universal Transformers and Looped Transformers (Dehghani et al., 2018; Yang et al., 2023), as well as hierarchical designs such as HRM and TRM (Wang et al., 2025; Jolicoeur-Martineau, 2025).
 
-**Stochastic Latent Transitions.** Unlike prior recursive reasoning models (RRMs) that update the latent state deterministically and follow a single fixed trajectory (Wang et al., 2025; Jolicoeur-Martineau, 2025), GRAM defines $p_\theta(z_t \mid z_{t-1}, e_x)$ as a stochastic transition, so that repeated computation induces a distribution over latent reasoning trajectories. Concretely, GRAM realizes this transition as a learned stochastic residual perturbation around a deterministic update. At each transition, the model first computes a deterministic update $u_t$ from $z_{t-1}$ and $e_x$, then samples a conditional perturbation from a state-dependent Gaussian, and adds it to $u_t$: 
+**Stochastic Latent Transitions.** Unlike prior recursive reasoning models (RRMs) that update the latent state deterministically and follow a single fixed trajectory (Wang et al., 2025; Jolicoeur-Martineau, 2025), GRAM defines $p_\theta(z_t \mid z_{t-1}, e_x)$ as a stochastic transition, so that repeated computation induces a distribution over latent reasoning trajectories. Concretely, GRAM realizes this transition as a learned stochastic residual perturbation around a deterministic update. At each transition, the model first computes a deterministic update $u_t$ from $z_{t-1}$ and $e_x$, then samples a conditional perturbation from a state-dependent Gaussian, and adds it to $u_t$:
 
 $$\begin{align}
     \epsilon_t &\sim p_\theta(\epsilon_t \mid u_t) := \mathcal{N}\!\left(\mu_\theta(u_t),\, \sigma_\theta^2(u_t) I\right), \tag{4} \\
@@ -92,7 +92,7 @@ We refer to $\epsilon_t$ as the **learnable stochastic guidance**. The mean $\mu
 
 **Hierarchical Instantiation.** We instantiate the latent state with two interacting components, $z = (h, l)$. The high-level component $h$ is updated once per latent transition and carries abstract reasoning state, while the low-level component $l$ is updated $K$ times within a single transition and carries fine-grained intermediate computation. This decomposition separates the two roles across time scales, with $h$ accumulating slowly across transitions and $l$ refined rapidly within each one.
 
-With this hierarchical multi-scale structure, a single transition $z_{t-1} \to z_t$ is computed as follows. The low-level component is first refined for $K$ updates, with the high-level component held fixed: 
+With this hierarchical multi-scale structure, a single transition $z_{t-1} \to z_t$ is computed as follows. The low-level component is first refined for $K$ updates, with the high-level component held fixed:
 
 $$\begin{align}
     l_{t,k} = f_{\mathrm{L}}(h_{t-1},\, l_{t,k-1},\, e_x;\, \theta),
@@ -100,7 +100,7 @@ $$\begin{align}
     \tag{6}
 \end{align}$$
 
-where $l_{t,0} := l_{t-1}$ and we write $l_t := l_{t,K}$ for the refined low-level component. The high-level component is then updated as a stochastic transition conditioned on the refined $l_t$, 
+where $l_{t,0} := l_{t-1}$ and we write $l_t := l_{t,K}$ for the refined low-level component. The high-level component is then updated as a stochastic transition conditioned on the refined $l_t$,
 
 $$\begin{align}
     u_t       &= f_{\mathrm{H}}(h_{t-1},\, l_t;\, \theta),                                                          \tag{7} \\
@@ -116,7 +116,7 @@ and we set $z_t = (h_t, l_t)$. Note that stochasticity is introduced only at the
 
 GRAM is trained to model the conditional distribution $p_\theta(y \mid x)$, where each training example consists of an input $x$ and its corresponding target $y$. As a probabilistic model, GRAM adopts a latent-variable formulation and is optimized by maximizing an evidence lower bound (ELBO) with respect to the generative parameters $\theta$ and variational parameters $\phi$.
 
-**Latent Variable Modeling.** We model GRAM as a latent-variable probabilistic model $p_{\theta}$, where the full latent trajectory $\tau = (z_0 \rightarrow \cdots \rightarrow z_{T_{\mathrm{Total}}})$ consists of a sequence of latent variables, with $T_{\mathrm{Total}} = T \times N_{\mathrm{sup}}$. The conditional likelihood is defined as 
+**Latent Variable Modeling.** We model GRAM as a latent-variable probabilistic model $p_{\theta}$, where the full latent trajectory $\tau = (z_0 \rightarrow \cdots \rightarrow z_{T_{\mathrm{Total}}})$ consists of a sequence of latent variables, with $T_{\mathrm{Total}} = T \times N_{\mathrm{sup}}$. The conditional likelihood is defined as
 
 $$\begin{equation}
     p_{\theta}(y \mid x) = \int p_{\theta}(y \mid \tau, x)\, p_{\theta}(\tau \mid x)\, d\tau\,,
@@ -125,7 +125,7 @@ $$\begin{equation}
 
 where $x$ denotes the input problem and $y$ denotes the corresponding ground-truth output.
 
-Direct maximum likelihood estimation of $\log p_{\theta}(y \mid x)$ is intractable due to the marginalization over latent trajectories. We therefore introduce a variational posterior $q_{\phi}(\tau \mid x,y)$ and optimize the evidence lower bound (ELBO), jointly training $\theta$ and $\phi$ via variational inference: 
+Direct maximum likelihood estimation of $\log p_{\theta}(y \mid x)$ is intractable due to the marginalization over latent trajectories. We therefore introduce a variational posterior $q_{\phi}(\tau \mid x,y)$ and optimize the evidence lower bound (ELBO), jointly training $\theta$ and $\phi$ via variational inference:
 
 $$\begin{align}
 \log p_{\theta}(y \mid x)
@@ -142,7 +142,7 @@ p_{\theta}(\tau \mid x)
 
 During training, latent trajectories are sampled from the variational posterior $q_{\phi}(\cdot \mid x,y)$, which has access to both the input problem $x$ and the target output $y$. At inference time, where $y$ is unavailable, trajectories are instead generated from the learned prior $p_{\theta}(\cdot \mid x)$.
 
-Both the prior and the posterior are modeled as conditional Markov processes over latent states: 
+Both the prior and the posterior are modeled as conditional Markov processes over latent states:
 
 $$\begin{equation}
     p_{\theta}(\tau \mid x)
@@ -157,7 +157,7 @@ $$\begin{equation}
 
 Here, $z_0$ is a fixed initial state shared by the prior and posterior. Both transitions are implemented by adding reparameterized Gaussian noise $\epsilon_t$ after a deterministic update $u_t$. The prior and the posterior differ only in the noise head applied on top of $u_t$, and the two heads have identical architecture but separate weights. The prior head parameterizes $p_\theta(\epsilon_t \mid u_t)$ as in Eq. (8); the posterior head parameterizes $q_\phi(\epsilon_t \mid u_t, y) = \mathcal{N}\big(\mu_\phi(u_t, y),\, \sigma^2_\phi(u_t, y) I\big)$. Implementation details of both heads are given in Appendix B.1.
 
-Since the two processes share the same Markov structure and all stochasticity is introduced through $\epsilon_{1:T_{\mathrm{Total}}}$, their trajectory distributions can be equivalently represented in noise space. Moreover, since GRAM decodes the output only from the terminal latent state, the likelihood term satisfies $p_{\theta}(y \mid \tau,x)=p_{\theta}(y \mid z_{T_{\mathrm{Total}}},x)$. Therefore, the full trajectory-level ELBO can be written as 
+Since the two processes share the same Markov structure and all stochasticity is introduced through $\epsilon_{1:T_{\mathrm{Total}}}$, their trajectory distributions can be equivalently represented in noise space. Moreover, since GRAM decodes the output only from the terminal latent state, the likelihood term satisfies $p_{\theta}(y \mid \tau,x)=p_{\theta}(y \mid z_{T_{\mathrm{Total}}},x)$. Therefore, the full trajectory-level ELBO can be written as
 
 $$\begin{align}
 \mathcal{L}_{\mathrm{ELBO}}
@@ -183,7 +183,7 @@ Here, $u_t = f_{\mathrm{H}}(h_{t-1}, l_t)$ denotes the deterministic high-level 
 
 **Practical Implementation.** In practice, following previous recursive reasoning models (Wang et al., 2025; Jolicoeur-Martineau, 2025), we train GRAM with deep supervision over $N_{\mathrm{sup}}$ consecutive supervision steps, each consisting of $T$ recursive latent transitions. This provides dense learning signals along the full latent trajectory, rather than supervising only the final state after $T_{\mathrm{Total}}=T\times N_{\mathrm{sup}}$ transitions. The terminal state of each step is reused as the initial state of the next step.
 
-Following standard practice for recurrent models with long computation chains, we apply truncated gradient propagation (Williams and Peng, 1990; Tallec and Ollivier, 2017), as used in recent recursive reasoning models (Wang et al., 2025; Jolicoeur-Martineau, 2025; Geiping et al., 2025). In our implementation, gradients are propagated only through the final transition of each supervision step, $\smash{z_{T-1}^{(n)}\to z_T^{(n)}}$. This gives the following surrogate objective for each supervision step: 
+Following standard practice for recurrent models with long computation chains, we apply truncated gradient propagation (Williams and Peng, 1990; Tallec and Ollivier, 2017), as used in recent recursive reasoning models (Wang et al., 2025; Jolicoeur-Martineau, 2025; Geiping et al., 2025). In our implementation, gradients are propagated only through the final transition of each supervision step, $\smash{z_{T-1}^{(n)}\to z_T^{(n)}}$. This gives the following surrogate objective for each supervision step:
 
 $$\begin{align}
 {\mathcal{L}}_{\mathrm{GRAM}}^{(n)}(x,y ; \theta,\phi) =
@@ -462,7 +462,7 @@ GRAM optionally adopts adaptive computation time (ACT) (Wang et al., 2025; Joli
 
 - $\smash{\hat{q}^{\mathrm{continue}}_n = \max\!\left(q^{\mathrm{halt}}_{n+1},\, q^{\mathrm{continue}}_{n+1}\right)}$, the bootstrapped value of running one more supervision step.
 
-The halt head is trained by regression to these targets: 
+The halt head is trained by regression to these targets:
 
 $$\begin{align}
     \mathcal{L}_{\mathrm{ACT}}
@@ -484,7 +484,7 @@ This auxiliary loss is added to the main training objective.
 
 Parallel sampling produces $N$ candidate outputs, and any rule that scores candidates can be used to select among them. We use majority voting throughout this paper. However, we also discuss a learned selector supported by our implementation, the Latent Process Reward Model (LPRM).
 
-The LPRM is a value head $v_\psi(z_t)$ trained to predict the expected accuracy of the final output, conditioned on the current latent state $z_t$. It is trained jointly with the main objective via a regression loss 
+The LPRM is a value head $v_\psi(z_t)$ trained to predict the expected accuracy of the final output, conditioned on the current latent state $z_t$. It is trained jointly with the main objective via a regression loss
 
 $$\begin{align}
 \mathcal{L}_{\mathrm{LPRM}} = \sum_{t=1}^{T} \left(v_\psi(z_t) - r\right)^2,

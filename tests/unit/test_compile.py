@@ -19,3 +19,24 @@ def test_untrusted_source_cannot_run_commands(tmp_path):
     subprocess.run(latexmk_command("s"), cwd=tmp_path, capture_output=True, timeout=300)
     log = (tmp_path / "s.log").read_text(errors="ignore")
     assert "disabled" in log and "executed safely" not in log
+
+
+def test_drop_package_from_a_list():
+    from tex2md.convert import drop_package
+    assert drop_package(r"\usepackage[x]{a,tocstyle,b}", "tocstyle") == r"\usepackage[x]{a,b}"
+    assert drop_package(r"\usepackage{tocstyle}", "tocstyle") == r"% tex2md: \usepackage{tocstyle}"
+    assert drop_package(r"\usepackage{tocstyles}", "tocstyle") == r"\usepackage{tocstyles}"
+
+
+def test_inputs_from_root(tmp_path):
+    from tex2md.convert import inputs_from_root
+    (tmp_path / "latex").mkdir()
+    (tmp_path / "sections").mkdir()
+    (tmp_path / "sections" / "intro.tex").write_text("x")
+    (tmp_path / "acl.sty").write_text("")
+    main = tmp_path / "latex" / "main.tex"
+    main.write_text("\\usepackage{acl}\\input{sections/intro}")
+    assert inputs_from_root(str(main), str(tmp_path))
+    main.write_text("\\input{local}")
+    (tmp_path / "latex" / "local.tex").write_text("")
+    assert not inputs_from_root(str(main), str(tmp_path))

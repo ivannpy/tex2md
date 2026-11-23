@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: 27c7ae7ccf3059d7cf7183fbc805fb8adcec089a1d50de138b63dcc88a67a04c
     path: "PCIC/Tesis/Distilation/DistilBERT, a distilled version of BERT- smaller, faster, cheaper and lighter.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-17
+converted: 2026-11-22
 ---
 
 # DistilBERT, a distilled version of BERT: smaller, faster, cheaper and lighter

@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: 3694727177d530e85c6424b9dec81632aefb05139e1288e8e8c23e1599a47acf
     path: "PCIC/Tesis/Text generation/Nemotron-Labs-Diffusion- A Tri-Mode Language Model Unifying Autoregressive, Diffusion, and Self-Speculation Decoding.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-17
+converted: 2026-11-22
 ---
 
 # Nemotron-Labs-Diffusion: A Tri-Mode Language Model Unifying Autoregressive, Diffusion, and Self-Speculation Decoding
@@ -62,7 +62,7 @@ We hope the above insights can shed light on the proper adoption of diffusion ob
 
 **Motivation.** We hypothesize that AR and diffusion objectives are complementary rather than competing. AR pretraining induces an implicit ability to plan ahead \[7\], which the diffusion objective further unlocks by forcing the model to reason about future tokens; in turn, the AR objective anchors diffusion training to the left-to-right structure of language and prevents wasted capacity on arbitrary token permutations. Therefore, we train Nemotron-Labs-Diffusion on a weighted combination of an AR next-token loss and a block-wise diffusion denoising loss.
 
-**AR objective.** For a token sequence $x$, the AR objective maximizes the likelihood under the left-to-right factorization: 
+**AR objective.** For a token sequence $x$, the AR objective maximizes the likelihood under the left-to-right factorization:
 
 $$\begin{equation}
 \mathcal{L}_{\text{AR}}(\theta)
@@ -75,7 +75,7 @@ $$\begin{equation}
 \tag{1}
 \end{equation}$$
 
-**Diffusion objective.** As shown in Fig. 3, we adopt the block-wise diffusion formulation \[9, 10\], which partitions the sequence into $B$ contiguous blocks $\{x^b\}_{b=1}^{B}$ and trains the model to denoise one block at a time conditioned on its clean prefix. At noise level $t \sim \mathcal{U}[0,1]$, only the tokens in the current block are corrupted via a forward noising process $q$, i.e., $\tilde{x}_t^b \sim q(\cdot \mid x^b)$, while the prefix $x^{<b}$ remains clean: 
+**Diffusion objective.** As shown in Fig. 3, we adopt the block-wise diffusion formulation \[9, 10\], which partitions the sequence into $B$ contiguous blocks $\{x^b\}_{b=1}^{B}$ and trains the model to denoise one block at a time conditioned on its clean prefix. At noise level $t \sim \mathcal{U}[0,1]$, only the tokens in the current block are corrupted via a forward noising process $q$, i.e., $\tilde{x}_t^b \sim q(\cdot \mid x^b)$, while the prefix $x^{<b}$ remains clean:
 
 $$\begin{equation}
 \mathcal{L}_{\text{diff}}(\theta)
@@ -94,7 +94,7 @@ This block-wise design is bidirectional within each block to enable parallel int
 
 **Figura 3.** Visualizing the attention pattern of Nemotron-Labs-Diffusion, where ■ denotes attention among noisy tokens, ■ denotes attention from noisy tokens to clean-context tokens, and ■ denotes attention within the clean context.
 
-**Joint objective.** We optimize a weighted combination of the two losses: 
+**Joint objective.** We optimize a weighted combination of the two losses:
 
 $$\begin{equation}
 \mathcal{L}(\theta)
@@ -119,7 +119,7 @@ where the AR loss has coefficient $1$ and $\alpha$ controls the strength of diff
 
 **Two-stage training.** To strengthen left-to-right priors and improve learning efficiency, we adopt a two-stage training strategy that first trains with the AR objective, which anchors the representation to the language’s inherent left-to-right inductive bias, and then switches to the joint objective. In terms of Eq. 3, Stage 1 sets $\alpha = 0$, reducing the optimization to the pure AR objective in Eq. 1. In Stage 2, we turn on diffusion supervision by setting $\alpha$ to align the magnitudes of the two losses, as mentioned above, so that diffusion gradients complement rather than overwrite the AR priors.
 
-**Global loss averaging.** Since the diffusion objective involves randomly sampling masked tokens, different training examples may have different numbers of tokens contributing to the diffusion loss. As a result, the strategy for averaging token-wise losses matters, analogous to how the choice of aggregation in on-policy RL objectives (e.g., GRPO \[11\] vs. DAPO \[12\]) can affect training stability. We consider two loss averaging strategies. Let a batch contain $N$ sequences, each of length $L$, and let $\ell_{n,i}$ denote the token-level loss for token $i$ in sequence $n$ based on Eq. 3. One choice is to first average token losses within each sequence and then average them over sequences: 
+**Global loss averaging.** Since the diffusion objective involves randomly sampling masked tokens, different training examples may have different numbers of tokens contributing to the diffusion loss. As a result, the strategy for averaging token-wise losses matters, analogous to how the choice of aggregation in on-policy RL objectives (e.g., GRPO \[11\] vs. DAPO \[12\]) can affect training stability. We consider two loss averaging strategies. Let a batch contain $N$ sequences, each of length $L$, and let $\ell_{n,i}$ denote the token-level loss for token $i$ in sequence $n$ based on Eq. 3. One choice is to first average token losses within each sequence and then average them over sequences:
 
 $$\begin{equation}
 \mathcal{L}_{\text{seq-avg}}
@@ -131,7 +131,7 @@ $$\begin{equation}
 \tag{4}
 \end{equation}$$
 
-Another choice is to treat all tokens across the batch equally and globally average over the $NL$ token losses: 
+Another choice is to treat all tokens across the batch equally and globally average over the $NL$ token losses:
 
 $$\begin{equation}
 \mathcal{L}_{\text{global}}
@@ -229,7 +229,7 @@ Tri-mode LMs fully preserve standard left-to-right generation: at step $i$, they
 
 **Enhance linear self-speculation w/ LoRA.** We further enhance linear self-speculation by tuning a LoRA adapter \[18\] on top of the diffusion draft pathway to better align its drafts with the AR verifier, thereby extending the accepted prefix length per step. We apply LoRA only to the $o_{\text{proj}}$ layer of the attention module (rank $128$, $\alpha{=}512$, $\sim 36$M trainable parameters/$\sim 0.4\%$ of the backbone), leaving the AR pathway unchanged. The training loss combines an LK-hybrid distribution-matching term \[19\] with a token-level cross-entropy term, both applied to the accepted prefix plus the first rejected position of each draft block, as shown in Fig. 11 in Appendix B.
 
-<u>Drafter–verifier setup.</u> For each position $j \in \{1, \ldots, k\}$ in the draft block, the LoRA-augmented drafter produces logits $z^d_j \in \mathbb{R}^{|\mathcal{V}|}$ over the vocabulary $\mathcal{V}$, while the frozen AR verifier produces target logits $z^t_j$ on the same context. We define the temperature-scaled distributions 
+<u>Drafter–verifier setup.</u> For each position $j \in \{1, \ldots, k\}$ in the draft block, the LoRA-augmented drafter produces logits $z^d_j \in \mathbb{R}^{|\mathcal{V}|}$ over the vocabulary $\mathcal{V}$, while the frozen AR verifier produces target logits $z^t_j$ on the same context. We define the temperature-scaled distributions
 
 $$q_j \;=\; \mathrm{softmax}(z^d_j / \tau), \qquad p_j \;=\; \mathrm{softmax}(z^t_j / \tau),$$
 
@@ -237,7 +237,7 @@ with $\tau{=}3.0$. The target $p_j$ is treated as fixed (stop-gradient), so only
 
 <u>Active position mask: “accepted + 1”.</u> As shown in Fig. 11, both loss terms are computed only on the *accepted prefix plus the first rejected position*. Letting $j^{*}$ denote the position of the first mismatch (the smallest $j$ with $\hat{x}_{n+j} \neq x^{\mathrm{AR}}_{n+j}$), the active set is $\mathcal{A} = \{1, \ldots, j^{*}\}$ when there is a rejection in the block, and $\mathcal{A} = \{1, \ldots, k\}$ otherwise; all other positions are masked out and contribute neither to the loss numerator nor to its denominator. This mask is essential because, at inference, the verifier’s KV cache is rebuilt at the rejection point: logits at positions $j > j^{*}$ are conditioned on a continuation the deployed loop never observes, so training on them would bias the drafter toward a counterfactual distribution.
 
-<u>LK-hybrid distribution-matching loss.</u> The distribution-matching term adapts the LK-hybrid loss of \[19\] to a truncated top-$K$ support. We retain the union of the top-$K$ token indices, $\mathcal{U}_j = \mathcal{S}^t_j \cup \mathcal{S}^d_j$, where $\mathcal{S}^t_j$ (resp. $\mathcal{S}^d_j$) is the set of $K$ indices with the largest probability under $p_j$ (resp. $q_j$). Setting $K{=}200$ gives $|\mathcal{U}_j| \le 2K = 400$. We zero both distributions outside $\mathcal{U}_j$ and renormalize to obtain $\tilde p_j$ and $\tilde q_j$. Truncation to the union avoids the $\mathrm{KL}(\tilde p_j \,\|\, \tilde q_j) = \infty$ catastrophe of full-vocabulary KL. The per-position hybrid loss is 
+<u>LK-hybrid distribution-matching loss.</u> The distribution-matching term adapts the LK-hybrid loss of \[19\] to a truncated top-$K$ support. We retain the union of the top-$K$ token indices, $\mathcal{U}_j = \mathcal{S}^t_j \cup \mathcal{S}^d_j$, where $\mathcal{S}^t_j$ (resp. $\mathcal{S}^d_j$) is the set of $K$ indices with the largest probability under $p_j$ (resp. $q_j$). Setting $K{=}200$ gives $|\mathcal{U}_j| \le 2K = 400$. We zero both distributions outside $\mathcal{U}_j$ and renormalize to obtain $\tilde p_j$ and $\tilde q_j$. Truncation to the union avoids the $\mathrm{KL}(\tilde p_j \,\|\, \tilde q_j) = \infty$ catastrophe of full-vocabulary KL. The per-position hybrid loss is
 
 $$\begin{equation}
 \mathcal{L}^{\mathrm{LK}}_j \;=\; \lambda_j \cdot \mathrm{KL}(\tilde p_j \,\|\, \tilde q_j) \;+\; (1-\lambda_j) \cdot \tfrac{1}{2} \sum_{v \in \mathcal{U}_j} \bigl|\tilde p_j(v) - \tilde q_j(v)\bigr|,
@@ -248,7 +248,7 @@ where the right-hand total-variation (TV) term equals $1 - \alpha_j$, with $\alp
 
 **Figura 6.** An example of using the recursive dynamic compaction method to identify the SOL path.
 
-<u>Cross-entropy term.</u> The LK-hybrid term matches the full top-$K$ output distribution. We additionally apply a token-level cross-entropy at each active position against the verifier’s argmax target $y_j = \arg\max_v z^t_j(v)$ on the same union support: 
+<u>Cross-entropy term.</u> The LK-hybrid term matches the full top-$K$ output distribution. We additionally apply a token-level cross-entropy at each active position against the verifier’s argmax target $y_j = \arg\max_v z^t_j(v)$ on the same union support:
 
 $$\begin{equation}
 \ell_j \;=\;
@@ -261,7 +261,7 @@ $$\begin{equation}
 
 where $q^{(\mathcal{U}_j)}_j$ is the drafter softmax restricted to $\mathcal{U}_j$ with $\tau{=}1.0$. The cross-entropy provides a strong teacher-forcing signal toward the verifier’s modal token, complementing the soft distribution-matching of LK. When the truncation excludes $y_j$ (rare, $<2\%$ at $K{=}200$), $\ell_j$ is set to zero; that position is also dropped from the CE denominator below (Eq. 8), so occasional truncation misses cannot blow up the loss.
 
-<u>Total loss and training-time drafter sampling.</u> The two terms are aggregated as masked means over the active positions of each draft block: 
+<u>Total loss and training-time drafter sampling.</u> The two terms are aggregated as masked means over the active positions of each draft block:
 
 $$\begin{equation}
 \mathcal{L}_{\mathrm{LK}} \;=\; \frac{1}{|\mathcal{A}|} \sum_{j \in \mathcal{A}} \mathcal{L}^{\mathrm{LK}}_j,
@@ -270,7 +270,7 @@ $$\begin{equation}
 \tag{8}
 \end{equation}$$
 
-These per-block means are further averaged across the inner training batch. The total loss is 
+These per-block means are further averaged across the inner training batch. The total loss is
 
 $$\begin{equation}
 \mathcal{L} \;=\; \lambda_{\mathrm{KL}} \cdot \mathcal{L}_{\mathrm{LK}} \;+\; \lambda_{\mathrm{CE}} \cdot \mathcal{L}_{\mathrm{CE}},
@@ -374,7 +374,7 @@ Because the LM architectures are identical between the two sources, the merge is
 
 **Continued SFT.** Starting from the merged initialization, we finetune the full model (LM backbone, vision encoder, and projector) with the same joint AR-diffusion objective used for the text-only instruct model, on multimodal instruction-following data \[25\].
 
-**Asymmetric dual stream.** A straightforward extension doubles all tokens in the noisy half, including vision tokens. However, vision tokens are never masked; only text response tokens are subject to forward corruption. Carrying vision tokens in the noisy half, therefore, adds FLOPs without contributing to the diffusion loss. For high-resolution images, this overhead is substantial. We address this with an *asymmetric dual-stream* layout that strips all vision token positions from the noisy half: 
+**Asymmetric dual stream.** A straightforward extension doubles all tokens in the noisy half, including vision tokens. However, vision tokens are never masked; only text response tokens are subject to forward corruption. Carrying vision tokens in the noisy half, therefore, adds FLOPs without contributing to the diffusion loss. For high-resolution images, this overhead is substantial. We address this with an *asymmetric dual-stream* layout that strips all vision token positions from the noisy half:
 
 $$\begin{equation}
     \bigl[\;\tilde{x}_t^{(\text{text},\; L_{\text{text}})}\;\mid\; 
@@ -564,7 +564,7 @@ We provide a visualization of the enhanced linear self-speculation w/ LoRA in Fi
 
 # C Quadratic SS Details
 
-We provide more details about quadratic self-speculation, which is visualized in Fig. 12. Specifically, let $[x_1,\ldots,x_n]$ denote the currently verified prefix, and let $k$ be the speculative width. At generation step $t{+}1$, we reuse the $k$ speculative tokens from the previous step, denoted $\{x^{t}_{n+j}\}_{j=2}^{k+1}$, and interleave $k$ fresh mask tokens after each speculative token, yielding the quadratic input: 
+We provide more details about quadratic self-speculation, which is visualized in Fig. 12. Specifically, let $[x_1,\ldots,x_n]$ denote the currently verified prefix, and let $k$ be the speculative width. At generation step $t{+}1$, we reuse the $k$ speculative tokens from the previous step, denoted $\{x^{t}_{n+j}\}_{j=2}^{k+1}$, and interleave $k$ fresh mask tokens after each speculative token, yielding the quadratic input:
 
 $$\begin{equation}
 \begin{aligned}
@@ -583,7 +583,7 @@ where $x_{n+1}$ is the next token generated autoregressively at step $t{+}1$ (an
 
 <u>Parallel draft and verification.</u> Feeding $X^{t+1}_m$ via a structured attention mask into our model produces two types of outputs in a single forward pass. First, the model generates next-token predictions for the speculative tokens in a causal manner, yielding $\{x^{t+1}_{n+j}\}_{j=2}^{k+1}$. These tokens are used to verify the previous speculative draft through sequential comparison \[7\]: we accept the longest prefix that satisfies a verification criterion (e.g., $x^{t+1}_{n+j}=x^{t}_{n+j}$, as detailed later), commit the accepted tokens to the verified prefix, and stop verification at the first mismatch. Second, in the same forward pass, the model predicts the tokens corresponding to the newly inserted masks $\{m_r\}_{r=1}^{k}$ in parallel; we treat these predictions as the draft tokens that will serve as $\{x^{t+1}_{n+j}\}_{j=2}^{k+1}$ in the next iteration. The interleaved quadratic layout ensures that, even if verification fails early at some position, newly inserted mask positions remain that still yield fresh speculative tokens for the next step, so each iteration consistently produces $k$ tokens to verify \[7\].
 
-<u>Verification with the AR-diffusion ensemble.</u> For verification, the simplest choice is to use the AR predictions on the speculative tokens. In addition, our tri-mode model provides a complementary verification signal from the diffusion pathway: for each speculative token $x^{t}_{n+j}$ in Eq. 11, we can use the diffusion prediction at the first newly inserted mask position $m_1$ immediately following it as an alternative verifier for the same token. Concretely, the AR verifier uses the causal logits $p_{\theta}^{\text{AR}}(\cdot \mid x_{<n+j})$ at position $n{+}j$, while the diffusion verifier uses the denoising logits $p_{\theta}^{\text{diff}}(\cdot \mid X^{t+1}_m, t)$ produced for the corresponding $m_1$ position. Generally, we can form an AR-diffusion ensemble verifier by combining the two distributions: 
+<u>Verification with the AR-diffusion ensemble.</u> For verification, the simplest choice is to use the AR predictions on the speculative tokens. In addition, our tri-mode model provides a complementary verification signal from the diffusion pathway: for each speculative token $x^{t}_{n+j}$ in Eq. 11, we can use the diffusion prediction at the first newly inserted mask position $m_1$ immediately following it as an alternative verifier for the same token. Concretely, the AR verifier uses the causal logits $p_{\theta}^{\text{AR}}(\cdot \mid x_{<n+j})$ at position $n{+}j$, while the diffusion verifier uses the denoising logits $p_{\theta}^{\text{diff}}(\cdot \mid X^{t+1}_m, t)$ produced for the corresponding $m_1$ position. Generally, we can form an AR-diffusion ensemble verifier by combining the two distributions:
 
 $$p^{\text{ens}}_{\theta}(\cdot) = \lambda\, p^{\text{AR}}_{\theta}(\cdot) + (1-\lambda)\, p^{\text{diff}}_{\theta}(\cdot),$$
 

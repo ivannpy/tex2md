@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: ebd221af1ebf608d82f69aadc62f09e89cc8c1379faa00c8d0251a7063383539
     path: "PCIC/Tesis/core/Generative Modeling by Estimating Gradients of the Data Distribution.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-17
+converted: 2026-11-22
 ---
 
 # Generative Modeling by Estimating Gradients of the Data Distribution
@@ -40,7 +40,7 @@ Suppose our dataset consists of i.i.d.samples $\{\mathbf{x}_i \in \mathbb{R}^D \
 
 ## 2.1 Score matching for score estimation
 
-Score matching \[24\] is originally designed for learning non-normalized statistical models based on i.i.d.samples from an unknown data distribution. Following \[53\], we repurpose it for score estimation. Using score matching, we can directly train a score network $\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x})$ to estimate $\nabla_\mathbf{x}\log p_\text{data}(\mathbf{x})$ without training a model to estimate $p_\text{data}(\mathbf{x})$ first. Different from the typical usage of score matching, we opt not to use the gradient of an energy-based model as the score network to avoid extra computation due to higher-order gradients. The objective minimizes $\frac{1}{2} \mathbb{E}_{p_\text{data}}[\left\lVert\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}) - \nabla_\mathbf{x}\log p_\text{data}(\mathbf{x})\right\rVert_2^2]$, which can be shown equivalent to the following up to a constant 
+Score matching \[24\] is originally designed for learning non-normalized statistical models based on i.i.d.samples from an unknown data distribution. Following \[53\], we repurpose it for score estimation. Using score matching, we can directly train a score network $\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x})$ to estimate $\nabla_\mathbf{x}\log p_\text{data}(\mathbf{x})$ without training a model to estimate $p_\text{data}(\mathbf{x})$ first. Different from the typical usage of score matching, we opt not to use the gradient of an energy-based model as the score network to avoid extra computation due to higher-order gradients. The objective minimizes $\frac{1}{2} \mathbb{E}_{p_\text{data}}[\left\lVert\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}) - \nabla_\mathbf{x}\log p_\text{data}(\mathbf{x})\right\rVert_2^2]$, which can be shown equivalent to the following up to a constant
 
 $$\begin{align}
   \mathbb{E}_{p_\text{data}(\mathbf{x})}\bigg[\operatorname{tr}(\nabla_{\mathbf{x}} \mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x})) + \frac{1}{2}\left\lVert \mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x})\right\rVert_2^2\bigg],\tag{1}
@@ -50,7 +50,7 @@ where $\nabla_\mathbf{x}\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x})$ denotes th
 
 #### Denoising score matching
 
-Denoising score matching \[61\] is a variant of score matching that completely circumvents $\operatorname{tr}(\nabla_\mathbf{x}\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}))$. It first perturbs the data point $\mathbf{x}$ with a pre-specified noise distribution $q_\sigma(\tilde{\mathbf{x}} \mid \mathbf{x})$ and then employs score matching to estimate the score of the perturbed data distribution $q_\sigma(\tilde{\mathbf{x}}) \triangleq \int q_\sigma(\tilde{\mathbf{x}}\mid \mathbf{x}) p_\text{data}(\mathbf{x})\mathrm{d}\mathbf{x}$. The objective was proved equivalent to the following: 
+Denoising score matching \[61\] is a variant of score matching that completely circumvents $\operatorname{tr}(\nabla_\mathbf{x}\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}))$. It first perturbs the data point $\mathbf{x}$ with a pre-specified noise distribution $q_\sigma(\tilde{\mathbf{x}} \mid \mathbf{x})$ and then employs score matching to estimate the score of the perturbed data distribution $q_\sigma(\tilde{\mathbf{x}}) \triangleq \int q_\sigma(\tilde{\mathbf{x}}\mid \mathbf{x}) p_\text{data}(\mathbf{x})\mathrm{d}\mathbf{x}$. The objective was proved equivalent to the following:
 
 $$\begin{align}
     \frac{1}{2}\mathbb{E}_{q_\sigma(\tilde{\mathbf{x}}\mid \mathbf{x})p_\text{data}(\mathbf{x})}[\| \mathbf{s}_{\boldsymbol{\theta}}(\tilde{\mathbf{x}}) - \nabla_{\tilde{\mathbf{x}}} \log q_\sigma(\tilde{\mathbf{x}}\mid \mathbf{x}) \|_2^2]. \tag{2}
@@ -60,7 +60,7 @@ As shown in \[61\], the optimal score network (denoted as $\mathbf{s}_{{\boldsym
 
 #### Sliced score matching
 
-Sliced score matching \[53\] uses random projections to approximate $\operatorname{tr}(\nabla_{\mathbf{x}} \mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}))$ in score matching. The objective is 
+Sliced score matching \[53\] uses random projections to approximate $\operatorname{tr}(\nabla_{\mathbf{x}} \mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}))$ in score matching. The objective is
 
 $$\begin{align}
     \mathbb{E}_{p_\mathbf{v}} \mathbb{E}_{p_\text{data}}\bigg[\mathbf{v}^\intercal \nabla_\mathbf{x}\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}) \mathbf{v}+ 
@@ -71,7 +71,7 @@ where $p_\mathbf{v}$ is a simple distribution of random vectors, *e.g*., the mul
 
 ## 2.2 Sampling with Langevin dynamics
 
-Langevin dynamics can produce samples from a probability density $p(\mathbf{x})$ using only the score function $\nabla_\mathbf{x}\log p(\mathbf{x})$. Given a fixed step size $\epsilon > 0$, and an initial value $\tilde{\mathbf{x}}_0 \sim \pi(\mathbf{x})$ with $\pi$ being a prior distribution, the Langevin method recursively computes the following 
+Langevin dynamics can produce samples from a probability density $p(\mathbf{x})$ using only the score function $\nabla_\mathbf{x}\log p(\mathbf{x})$. Given a fixed step size $\epsilon > 0$, and an initial value $\tilde{\mathbf{x}}_0 \sim \pi(\mathbf{x})$ with $\pi$ being a prior distribution, the Langevin method recursively computes the following
 
 $$\begin{align}
     \tilde{\mathbf{x}}_{t} = \tilde{\mathbf{x}}_{t-1} + \frac{\epsilon}{2}\nabla_\mathbf{x}\log p(\tilde{\mathbf{x}}_{t-1}) +  \sqrt{\epsilon}~ \mathbf{z}_t, \tag{4}
@@ -129,13 +129,13 @@ Similar to likelihood-based generative models and GANs, the design of model arch
 
 ## 4.2 Learning NCSNs via score matching
 
-Both sliced and denoising score matching can train NCSNs. We adopt denoising score matching as it is slightly faster and naturally fits the task of estimating scores of noise-perturbed data distributions. However, we emphasize that empirically sliced score matching can train NCSNs as well as denoising score matching. We choose the noise distribution to be $q_\sigma(\tilde{\mathbf{x}} \mid \mathbf{x}) = \mathcal{N}(\tilde{\mathbf{x}} \mid \mathbf{x}, \sigma^2 I)$; therefore $\nabla_{\tilde{\mathbf{x}}} \log q_\sigma(\tilde{\mathbf{x}} \mid \mathbf{x}) = -{(\tilde{\mathbf{x}} - \mathbf{x})}/{\sigma^2}$. For a given $\sigma$, the denoising score matching objective (Eq. (2)) is 
+Both sliced and denoising score matching can train NCSNs. We adopt denoising score matching as it is slightly faster and naturally fits the task of estimating scores of noise-perturbed data distributions. However, we emphasize that empirically sliced score matching can train NCSNs as well as denoising score matching. We choose the noise distribution to be $q_\sigma(\tilde{\mathbf{x}} \mid \mathbf{x}) = \mathcal{N}(\tilde{\mathbf{x}} \mid \mathbf{x}, \sigma^2 I)$; therefore $\nabla_{\tilde{\mathbf{x}}} \log q_\sigma(\tilde{\mathbf{x}} \mid \mathbf{x}) = -{(\tilde{\mathbf{x}} - \mathbf{x})}/{\sigma^2}$. For a given $\sigma$, the denoising score matching objective (Eq. (2)) is
 
 $$\begin{align}
  \ell({\boldsymbol{\theta}}; \sigma) \triangleq \frac{1}{2}\mathbb{E}_{p_\text{data}(\mathbf{x})} \mathbb{E}_{\tilde{\mathbf{x}}\sim \mathcal{N}(\mathbf{x},\sigma^2 I)} \bigg[\left\lVert \mathbf{s}_{\boldsymbol{\theta}}(\tilde{\mathbf{x}}, \sigma) + \frac{\tilde{\mathbf{x}} - \mathbf{x}}{\sigma^2}\right\rVert_2^2\bigg]. \tag{5}
 \end{align}$$
 
-Then, we combine Eq. (5) for all $\sigma \in \{\sigma_i\}_{i=1}^L$ to get one unified objective 
+Then, we combine Eq. (5) for all $\sigma \in \{\sigma_i\}_{i=1}^L$ to get one unified objective
 
 $$\begin{align}
     \mathcal{L}({\boldsymbol{\theta}}; \{\sigma_i\}_{i=1}^L) \triangleq \frac{1}{L}\sum_{i=1}^L \lambda(\sigma_i)\ell({\boldsymbol{\theta}}; \sigma_i), \tag{6}
@@ -253,7 +253,7 @@ The architecture of our NCSNs used in the experiments has three important compon
 
 ## A.1 Instance normalization
 
-We use conditional instance normalization \[13\] so that $\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma)$ takes account of $\sigma$ when predicting the scores. In conditional instance normalization, a different set of scales and biases is used for different $\sigma \in \{\sigma_i\}_{i=1}^L$. More specifically, suppose $\mathbf{x}$ is an input with $C$ feature maps. Let $\mu_k$ and $s_k$ denote the mean and standard deviation of the $k$-th feature map of $\mathbf{x}$, taken along the spatial axes. Conditional instance normalization is achieved by 
+We use conditional instance normalization \[13\] so that $\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma)$ takes account of $\sigma$ when predicting the scores. In conditional instance normalization, a different set of scales and biases is used for different $\sigma \in \{\sigma_i\}_{i=1}^L$. More specifically, suppose $\mathbf{x}$ is an input with $C$ feature maps. Let $\mu_k$ and $s_k$ denote the mean and standard deviation of the $k$-th feature map of $\mathbf{x}$, taken along the spatial axes. Conditional instance normalization is achieved by
 
 $$\begin{align*}
     \mathbf{z}_k = \gamma[i, k] \frac{\mathbf{x}_k - \mu_k}{s_k} + \beta[i, k],
@@ -261,7 +261,7 @@ $$\begin{align*}
 
 where $\gamma \in \mathbb{R}^{L \times C}$ and $\beta \in \mathbb{R}^{L \times C}$ are learnable parameters, $k$ denotes the index of feature maps, and $i$ denotes the index of $\sigma$ in $\{\sigma_i\}_{i=1}^L$.
 
-However, one downside of instance normalization is that it completely removes the information of $\mu_k$ for different feature maps. This can lead to shifted colors in the generated images. To fix this issue, we propose a simple modification to conditional instance normalization. First, we compute the mean and standard deviation of $\mu_k$’s and denote them as $m$ and $v$ respectively. Then, we add another learnable parameter $\alpha \in \mathbb{R}^{L \times C}$. The modified conditional instance normalization is defined as 
+However, one downside of instance normalization is that it completely removes the information of $\mu_k$ for different feature maps. This can lead to shifted colors in the generated images. To fix this issue, we propose a simple modification to conditional instance normalization. First, we compute the mean and standard deviation of $\mu_k$’s and denote them as $m$ and $v$ respectively. Then, we add another learnable parameter $\alpha \in \mathbb{R}^{L \times C}$. The modified conditional instance normalization is defined as
 
 $$\begin{align*}
     \mathbf{z}_k = \gamma[i, k] \frac{\mathbf{x}_k - \mu_k}{s_k} + \beta[i, k] + \alpha[i,k] \frac{\mu_k - m}{v}.

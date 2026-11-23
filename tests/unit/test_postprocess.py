@@ -44,13 +44,13 @@ def test_tidy_math_puts_an_inline_formula_on_one_line():
 
 def test_a_comment_at_the_end_of_a_formula_does_not_eat_the_closing_dollar():
     # pandoc writes "...}%$" when a macro body ends in a comment; stripping "%..." used to remove the "$" too
-    assert tidy_math("is $%\n a = b%$ for $x$.") == "is $ a = b$ for $x$."
+    assert tidy_math("is $%\n a = b%$ for $x$.") == "is $a = b$ for $x$."
     assert tidy_math("$$ a = b%$$ and $c$") == "$$ a = b$$ and $c$"
 
 
 def test_a_bar_inside_math_in_a_table_row_does_not_end_the_cell():
     row = r"| $p(x|y)$ and $\|z\|$ | other |"
-    assert tidy_math(row) == r"| $p(x\vert y)$ and $\Vert z\Vert $ | other |"
+    assert tidy_math(row) == r"| $p(x\vert y)$ and $\Vert z\Vert$ | other |"
     assert tidy_math(r"text $p(x|y)$ outside a table") == r"text $p(x|y)$ outside a table"
 
 
@@ -113,3 +113,19 @@ def test_code_inside_a_block_quote_is_protected():
     protected, stash = protect_code(body)
     assert stash == [">     will be $5. half\n>\n>      of hour $20"]
     assert restore_code(protected, stash) == body
+
+
+def test_tidy_math_trims_blanks_inside_inline_math():
+    from tex2md.postprocess.markdown import tidy_math
+    assert tidy_math(r"a $ x $ b $y$ c $ \begin{array}{c} 1 \end{array} $") == r"a $x$ b $y$ c $\begin{array}{c} 1 \end{array}$"
+    assert tidy_math(r"keep $x\ $ and $$ a $$") == r"keep $x\ $ and $$ a $$"
+
+
+def test_tidy_math_drops_a_formula_that_is_only_a_comment():
+    from tex2md.postprocess.markdown import tidy_math
+    assert tidy_math(r"| $% \frac{1}{z}$ | 2 |") == "|  | 2 |"
+
+
+def test_tidy_math_dollar_sign_at_the_end_of_a_formula():
+    from tex2md.postprocess.markdown import tidy_math
+    assert tidy_math(r"x. $^\$$ Reported in") == r"x. $^\textdollar$ Reported in"

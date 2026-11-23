@@ -181,6 +181,15 @@ def strip_layout_wrappers(text):
     return text
 
 
+def tabu_to_tabular(text):
+    r"""The ``tabu`` package: ``\begin{tabu} to \linewidth {spec}`` (or ``spread``), ``longtabu``,
+    ``\tabucline{-}`` and ``\rowfont{...}``. Pandoc does not know it and prints the whole table as raw LaTeX."""
+    text = re.sub(r"\\begin\{(?:long)?tabu\}\s*(?:(?:to|spread)\s*[^{]*?)?\s*(?=\{)", r"\\begin{tabular}", text)
+    text = re.sub(r"\\end\{(?:long)?tabu\}", r"\\end{tabular}", text)
+    text = re.sub(r"\\tabucline\s*(?:\[[^\]]*\])?\s*\{[^{}]*\}", r"\\hline", text)
+    return re.sub(r"\\rowfont\s*(?:\[[^\]]*\])?\s*\{[^{}]*\}", "", text)
+
+
 def plain_tabular_envs(text):
     """tabularx/tabulary/tabular* take a width before the column spec; NiceTabular does not."""
     text = re.sub(r"\\begin\{(tabularx|tabulary|tabular\*)\}\s*\{(?:[^{}]|\{[^{}]*\})*\}", r"\\begin{tabular}", text)
@@ -222,8 +231,55 @@ def unwrap_cell_macros(text):
         text = unwrap(text, cmd, n)
     for cmd in ("makecell", "shortstack", "thead"):
         text = unwrap(text, cmd, 0, oneline)
+    # \pbox[t][5ex]{\linewidth}{a\\b}: a cell of stacked lines (pbox package), often inside a cell macro
+    text = re.sub(r"\\pbox(?![a-zA-Z@])\s*(?:\[[^\]]*\]\s*)*", r"\\pbox", text)
+    text = unwrap(text, "pbox", 1, oneline)
+    # \multirow{2}*{Channels}: the width written as a bare "*" (LaTeX reads one token), not as {*}
+    text = re.sub(r"(\\multirow\s*(?:\[[^\]]*\]\s*)?\{[^{}]*\})\s*\*", r"\1{*}", text)
     text = unwrap(text, "multirow", 2, oneline)
     return text
+
+
+def cell_line_breaks(text):
+    r"""Inside a tabular, a ``\\`` within a brace group (``\multicolumn{6}{l}{{note 1 \\ note 2}}``) and a blank
+    line: LaTeX prints a line break inside the cell, but pandoc cannot read the table and prints it raw. The
+    ``\\`` becomes a space (not in math: ``\substack{a\\b}``) and the blank line goes. ``\vspace`` goes too:
+    pandoc drops the cell it starts."""
+    out, pos = [], 0
+    head = re.compile(r"\\begin\{tabular\}")
+    while True:
+        m = head.search(text, pos)
+        if not m:
+            out.append(text[pos:])
+            return "".join(out)
+        end = text.find("\\end{tabular}", m.end())
+        if end < 0 or "\\begin{tabular}" in text[m.end():end]:
+            out.append(text[pos:m.end()])
+            pos = m.end()
+            continue
+        body = re.sub(r"\n[ \t]*(?:%[^\n]*)?\n(?:[ \t]*\n)*", "\n", text[m.end():end])
+        # pandoc drops a cell that starts with \vspace (and what follows it in that cell)
+        body = re.sub(r"\\vspace\*?\s*\{[^{}]*\}", "", body)
+        cells, depth, math, i = [], 0, False, 0
+        while i < len(body):
+            c = body[i]
+            if c == "\\":
+                if body.startswith("\\\\", i) and depth > 0 and not math:
+                    cells.append(" ")
+                else:
+                    cells.append(body[i:i + 2])
+                i += 2
+                continue
+            if c == "{":
+                depth += 1
+            elif c == "}":
+                depth -= 1
+            elif c == "$":
+                math = not math
+            cells.append(c)
+            i += 1
+        out.append(text[pos:m.end()] + "".join(cells) + "\\end{tabular}")
+        pos = end + len("\\end{tabular}")
 
 
 def simplify_longtable_specs(text):

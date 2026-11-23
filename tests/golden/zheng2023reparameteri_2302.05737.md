@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: b35e166b9d9b557a1f7cb2d58cc3d93be065b054b6f46e64e5bc169951cd5918
     path: "PCIC/Tesis/core/A Reparameterized Discrete Diffusion Model for Text Generation.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-17
+converted: 2026-11-22
 ---
 
 # A Reparameterized Discrete Diffusion Model for Text Generation
@@ -46,7 +46,7 @@ We provide extensive results and analyses across several benchmarks to demonstra
 
 # 2 Background
 
-Let $\mathbf{x}_0 \sim p_{\text{data}}(\mathbf{x}_0)$ denote a discrete random variable with $K$ possible outcomes. To ease notation, we represent discrete variables as one-hot vectors in $\{0,1\}^K$, which is 0 everywhere except that the entry corresponding to the current state is 1. Discrete diffusion probabilistic models (Sohl-Dickstein et al., 2015; Hoogeboom et al., 2021; Austin et al., 2021) are usually defined as a class of latent variable models characterized by a forward and backward process. The *forward* process gradually transforms input data to some noise distribution $q_{\text{noise}}$ through $T$ intermediate latent variables $\mathbf{x}_1, \dots, \mathbf{x}_T \in \{0,1\}^K$, with the forward transition $q(\mathbf{x}_t | \mathbf{x}_{t-1}) = \beta_t\mathbf{x}_{t-1} + (1 - \beta_t)q_\text{noise}$. In this case, the distribution $q(\mathbf{x}_t|\mathbf{x}_0)$ is available in closed form, 
+Let $\mathbf{x}_0 \sim p_{\text{data}}(\mathbf{x}_0)$ denote a discrete random variable with $K$ possible outcomes. To ease notation, we represent discrete variables as one-hot vectors in $\{0,1\}^K$, which is 0 everywhere except that the entry corresponding to the current state is 1. Discrete diffusion probabilistic models (Sohl-Dickstein et al., 2015; Hoogeboom et al., 2021; Austin et al., 2021) are usually defined as a class of latent variable models characterized by a forward and backward process. The *forward* process gradually transforms input data to some noise distribution $q_{\text{noise}}$ through $T$ intermediate latent variables $\mathbf{x}_1, \dots, \mathbf{x}_T \in \{0,1\}^K$, with the forward transition $q(\mathbf{x}_t | \mathbf{x}_{t-1}) = \beta_t\mathbf{x}_{t-1} + (1 - \beta_t)q_\text{noise}$. In this case, the distribution $q(\mathbf{x}_t|\mathbf{x}_0)$ is available in closed form,
 
 $$\begin{equation}
     q(\mathbf{x}_t | \mathbf{x}_0) = \alpha_t\mathbf{x}_{t-1} + (1 - \alpha_t)q_\text{noise},\tag{1}
@@ -54,7 +54,7 @@ $$\begin{equation}
 
 where $\alpha_t \coloneqq \prod_{i=1}^t \beta_i$ is specified to decrease from 1 to 0 w.r.t. $t$. $q_{\text{noise}}$ characterizes different diffusion processes; for example, **multinomial diffusion** (Hoogeboom et al., 2021) adopts a uniform noise distribution over the vocabulary $\{1,2,\dots,K\}$; alternatively, **absorbing diffusion** specifies $q_{\text{noise}}$ to be a point mass with all of the probability on an absorbing state (Austin et al., 2021).
 
-The *backward* process $q(\mathbf{x}_{t-1} | \mathbf{x}_t)$ is the key ingredient for diffusion-based generative modeling, based on which we can start with unstructured noise $x_T \sim q_\text{noise}$ and perform ancestral sampling $x_{t-1} \sim q(\mathbf{x}_{t-1} | \mathbf{x}_t)$ to obtain new draws from $p_{\text{data}}(\mathbf{x}_0)$. Unfortunately, the backward transition $q(\mathbf{x}_{t-1} | \mathbf{x}_t)$ is mostly intractable due to the marginalization over the entire data distribution. Therefore, we resort to approximating it with a parameterized distribution $p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})$ at each step $t$. This results in a generative model $p_{\mathbf{\theta}}(\mathbf{x}_0, \mathbf{x}_1, \dots, \mathbf{x}_T) = p_{\mathbf{\theta}}(\mathbf{x}_T) \prod_{t = 1}^T p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})$, which can be trained by maximizing the evidence lower bound (ELBO) of $\log p_{\mathbf{\theta}}(\mathbf{x}_0)$, 
+The *backward* process $q(\mathbf{x}_{t-1} | \mathbf{x}_t)$ is the key ingredient for diffusion-based generative modeling, based on which we can start with unstructured noise $x_T \sim q_\text{noise}$ and perform ancestral sampling $x_{t-1} \sim q(\mathbf{x}_{t-1} | \mathbf{x}_t)$ to obtain new draws from $p_{\text{data}}(\mathbf{x}_0)$. Unfortunately, the backward transition $q(\mathbf{x}_{t-1} | \mathbf{x}_t)$ is mostly intractable due to the marginalization over the entire data distribution. Therefore, we resort to approximating it with a parameterized distribution $p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})$ at each step $t$. This results in a generative model $p_{\mathbf{\theta}}(\mathbf{x}_0, \mathbf{x}_1, \dots, \mathbf{x}_T) = p_{\mathbf{\theta}}(\mathbf{x}_T) \prod_{t = 1}^T p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t})$, which can be trained by maximizing the evidence lower bound (ELBO) of $\log p_{\mathbf{\theta}}(\mathbf{x}_0)$,
 
 $$\begin{align*}
     \log p_{\mathbf{\theta}}(\mathbf{x}_0) \geq \mathcal{L}_1(\mathbf{\theta}) - \sum_{t=2}^T \mathcal{L}_t(\mathbf{\theta}) + \text{const.},
@@ -70,7 +70,7 @@ This section presents an in-depth study of discrete diffusion probabilistic mode
 
 We first elaborate on how the conditional backward transition of existing discrete diffusion models can be written in a more compact formulation (see Appendix C for the proof).
 
-**Proposition 1**. *Let the forward transition of discrete diffusion be $q(\mathbf{x}_t | \mathbf{x}_{t-1}) = \beta_t\mathbf{x}_{t-1} + (1 - \beta_t)q_\text{noise}$. Then the conditional backward transition $q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \mathbf{x}_0)$ can be equivalently written as 
+**Proposition 1**. *Let the forward transition of discrete diffusion be $q(\mathbf{x}_t | \mathbf{x}_{t-1}) = \beta_t\mathbf{x}_{t-1} + (1 - \beta_t)q_\text{noise}$. Then the conditional backward transition $q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \mathbf{x}_0)$ can be equivalently written as*
 
 $$\begin{align*}
     q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \mathbf{x}_0) = \begin{cases}
@@ -79,13 +79,13 @@ $$\begin{align*}
     \end{cases} \tag{2}
 \end{align*}$$
 
-Here $q_\text{noise}(\mathbf{x}_t) = \beta_t \mathbf{x}_t + (1 - \beta_t) q_\text{noise}$ denotes a noise distribution that interpolates between $\mathbf{x}_t$ and $q_\text{noise}$, $\lambda^{(1)}_{t-1} \coloneqq 1 - \frac{(1-\beta_t)(1-\alpha_{t-1})q_\text{noise}(\mathbf{u}=\mathbf{x}_t)}{\alpha_{t} + (1 - \alpha_{t})q_\text{noise}(\mathbf{u}=\mathbf{x}_t)}$, and $\lambda^{(2)}_{t-1} \coloneqq \frac{\alpha_{t-1}-\alpha_t}{1 - \alpha_{t}}$, where $q_\text{noise}(\mathbf{u}=\mathbf{x}_t)$ is the probability of the noise equal to $\mathbf{x}_t$.*
+*Here $q_\text{noise}(\mathbf{x}_t) = \beta_t \mathbf{x}_t + (1 - \beta_t) q_\text{noise}$ denotes a noise distribution that interpolates between $\mathbf{x}_t$ and $q_\text{noise}$, $\lambda^{(1)}_{t-1} \coloneqq 1 - \frac{(1-\beta_t)(1-\alpha_{t-1})q_\text{noise}(\mathbf{u}=\mathbf{x}_t)}{\alpha_{t} + (1 - \alpha_{t})q_\text{noise}(\mathbf{u}=\mathbf{x}_t)}$, and $\lambda^{(2)}_{t-1} \coloneqq \frac{\alpha_{t-1}-\alpha_t}{1 - \alpha_{t}}$, where $q_\text{noise}(\mathbf{u}=\mathbf{x}_t)$ is the probability of the noise equal to $\mathbf{x}_t$.*
 
 Intuitively, Eq. (2) reveals that the main mechanism of the backward process is to shuttle discrete tokens between fully noisy states and the ground truth state $\mathbf{x}_0$, conditioned on the equality of $\mathbf{x}_t$ and $\mathbf{x}_0$. If $\mathbf{x}_t = \mathbf{x}_0$, the current token state is possibly noise-free, and the model either remains noise-free by copying the state $\mathbf{x}_{t-1} \!\gets\! \mathbf{x}_t$, or resets the state to the noise. If $\mathbf{x}_t \neq \mathbf{x}_0$, the current state is considered noisy, and the model opts to denoise $\mathbf{x}_t$ to $\mathbf{x}_0$ or remains noisy otherwise. The probability of moving noisy tokens to ground truth states or turning denoised tokens back to noise is governed by $\lambda^{(2)}_{t-1}$ and $1-\lambda^{(1)}_{t-1}$, respectively.
 
 ## 3.2 Reparameterized Sampling
 
-Next, we demonstrate that sampling from the backward transition can be conducted via an augmented path, leading to our full reparameterization. We make use of the simple fact that the mixture distribution in Eq. (2) can be sampled in two steps: first, randomly select a component according to their weight, and then sample from the corresponding component distribution. Concisely, we have 
+Next, we demonstrate that sampling from the backward transition can be conducted via an augmented path, leading to our full reparameterization. We make use of the simple fact that the mixture distribution in Eq. (2) can be sampled in two steps: first, randomly select a component according to their weight, and then sample from the corresponding component distribution. Concisely, we have
 
 $$\begin{align*}
 b_t &= \mathbf{1}_{\mathbf{x}_t = \mathbf{x}_0}\\
@@ -102,7 +102,7 @@ In this section, we introduce our proposed diffusion models that reflect the rep
 
 ## 4.1 Joint Diffusion Modeling
 
-The routing mechanism in Section 3.2 works in a latent manner; that is, it is only active during the sampling process but marginalized when advancing the distribution of $\mathbf{x}_{t-1}$. To fully utilize the potential of the developed reparameterization, we propose to elevate the latent routing mechanism to the formulation explicitly and model the *joint* $q(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_t, \mathbf{x}_0) = q(\mathbf{v}_{t-1}) q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_{t}, \mathbf{x}_0)$, where 
+The routing mechanism in Section 3.2 works in a latent manner; that is, it is only active during the sampling process but marginalized when advancing the distribution of $\mathbf{x}_{t-1}$. To fully utilize the potential of the developed reparameterization, we propose to elevate the latent routing mechanism to the formulation explicitly and model the *joint* $q(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_t, \mathbf{x}_0) = q(\mathbf{v}_{t-1}) q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_{t}, \mathbf{x}_0)$, where
 
 $$\begin{align*}
 q(\mathbf{v}_{t-1}) &= \operatorname{Bernoulli}\left(\mathbf{\lambda}_{t-1}\right) \\
@@ -116,7 +116,7 @@ Note that $b_t = \mathbf{1}_{\mathbf{x}_t = \mathbf{x}_0}$. This can be consider
 
 ## 4.2 Training
 
-Similar to previous diffusion models (Section 2), we define a joint generative process $p_{\mathbf{\theta}}(\mathbf{x}_{t-1}, \mathbf{v}_{t-1} | \mathbf{x}_t)$ and optimize the ELBO via the following factorization, 
+Similar to previous diffusion models (Section 2), we define a joint generative process $p_{\mathbf{\theta}}(\mathbf{x}_{t-1}, \mathbf{v}_{t-1} | \mathbf{x}_t)$ and optimize the ELBO via the following factorization,
 
 $$\begin{align*}
     \log p(\mathbf{x}_0) \geq 
@@ -124,7 +124,7 @@ $$\begin{align*}
  \coloneqq \mathcal{L}_1(\mathbf{\theta}) - \sum_{t=2}^T \mathcal{L}_t(\mathbf{\theta}) + \text{const.}.
 \end{align*}$$
 
-Following standard practices in diffusion models (Hoogeboom et al., 2021; Austin et al., 2021), we randomly sample a time step $t$ and optimize $\mathbf{\theta}$ with respect to $\mathcal{L}_t(\mathbf{\theta})$. In our case, $\mathcal{L}_1(\mathbf{\theta}) = \mathbb{E}_{q(\mathbf{x}_{1}|\mathbf{x}_0)}\left[\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)\right]$; for $t > 1$, $\mathcal{L}_t$ decomposes into a sum of two expected KL divergences over $\mathbf{v}_{t-1}$ and $\mathbf{x}_{t-1}$ respectively (see Appendix D for the full derivation), 
+Following standard practices in diffusion models (Hoogeboom et al., 2021; Austin et al., 2021), we randomly sample a time step $t$ and optimize $\mathbf{\theta}$ with respect to $\mathcal{L}_t(\mathbf{\theta})$. In our case, $\mathcal{L}_1(\mathbf{\theta}) = \mathbb{E}_{q(\mathbf{x}_{1}|\mathbf{x}_0)}\left[\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)\right]$; for $t > 1$, $\mathcal{L}_t$ decomposes into a sum of two expected KL divergences over $\mathbf{v}_{t-1}$ and $\mathbf{x}_{t-1}$ respectively (see Appendix D for the full derivation),
 
 $$\begin{align*}
     \mathcal{L}_t(\mathbf{\theta}) = \mathbb{E}\left[\operatorname{KL}(q(\mathbf{v}_{t-1})\;\|\;p_{\mathbf{\theta}}(\mathbf{v}_{t-1}))\right] + \mathbb{E}\left[\operatorname{KL}(q(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_t, \mathbf{x}_0)\;\|\;p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{v}_{t-1}, \mathbf{x}_t))\right], \tag{5}
@@ -164,7 +164,7 @@ The decomposition in Eq. (5) suggests parameterizing each conditional of $p_{\m
 
 #### Simplified Training Objectives.
 
-The discussion so far focuses on the diffusion process over a single token. We now slightly abuse the term and denote the sequence of tokens at step $t$ as $\mathbf{x}_{t,1:N} \coloneqq \{\mathbf{x}_{t,n}\}_{n=1}^N$, where the joint distribution factorizes over each token, $\mathbf{x}_{t,n}$ is the $n$-th token with $N$ being the sequence length.[^1] We show that the training objective $\mathcal{L}_t(\mathbf{\theta})$ for sequence $\mathbf{x}_{t,1:N}$ at the $t$-th step can be reduced to a surprisingly simple expression (see Appendix E for the proof and its connection to previous works) as follows, 
+The discussion so far focuses on the diffusion process over a single token. We now slightly abuse the term and denote the sequence of tokens at step $t$ as $\mathbf{x}_{t,1:N} \coloneqq \{\mathbf{x}_{t,n}\}_{n=1}^N$, where the joint distribution factorizes over each token, $\mathbf{x}_{t,n}$ is the $n$-th token with $N$ being the sequence length.[^1] We show that the training objective $\mathcal{L}_t(\mathbf{\theta})$ for sequence $\mathbf{x}_{t,1:N}$ at the $t$-th step can be reduced to a surprisingly simple expression (see Appendix E for the proof and its connection to previous works) as follows,
 
 $$\begin{align*}
     \mathcal{L}_t(\mathbf{\theta}) =
@@ -182,7 +182,7 @@ Decoding text from discrete diffusion processes usually starts with a sequence c
 
 #### Recursive Computation for $b_t$.
 
-The key challenge in decoding is to compute $b_{t,n} = \mathbf{1}_{\mathbf{x}_{t,n} = \mathbf{x}_{0,n}}$ in Eq. (4), which is intractable since we lack access to the ground truth $\mathbf{x}_{0,n}$ as in training. We circumvent this issue by leveraging a recursive computation based on the functionality of $\mathbf{v}_{t-1,n}$. Starting with $b_{T,n} = 0$, we compute $b_{t-1,n}$ as 
+The key challenge in decoding is to compute $b_{t,n} = \mathbf{1}_{\mathbf{x}_{t,n} = \mathbf{x}_{0,n}}$ in Eq. (4), which is intractable since we lack access to the ground truth $\mathbf{x}_{0,n}$ as in training. We circumvent this issue by leveraging a recursive computation based on the functionality of $\mathbf{v}_{t-1,n}$. Starting with $b_{T,n} = 0$, we compute $b_{t-1,n}$ as
 
 $$\begin{align*}
     b_{t-1,n} = \left(b_{t,n} \land v_{t-1,n}^{(1)}\right)\lor v_{t-1,n}^{(2)}.\tag{7}
@@ -236,7 +236,7 @@ Intuitively, $b_{t,1:N}$ represents a frontier set that stores the denoised toke
 
 #### Generating $\mathbf{v}_{t-1}$.
 
-As shown in Eq. (4), a naïve approach of generating $\mathbf{v}_{t-1}$ is by drawing $\mathbf{v}_{t-1,n} \sim \operatorname{Bernoulli}\left(\mathbf{\lambda}_{t-1}\right)$ for each token $n$. However, this assigns equal routing probability $\mathbf{\lambda}_{t-1}$ to all tokens, which may be sub-optimal for routing different tokens to distinct states. This observation motivates us to employ a more discriminative routing mechanism, where only tokens with high confidence from neural networks are denoised (Ghazvininejad et al., 2019; Savinov et al., 2022; Chang et al., 2022). At each step, assume $\mathbf{v}_{t-1,n}^{(1)}$ and $\mathbf{v}_{t-1,n}^{(2)}$ are set to $1$ and $0$ by default, respectively. We feed the noisy sequence $\mathbf{x}_{t,1:N}$ into the neural network and collect the output $f(\mathbf{x}_{t,n};\mathbf{\theta})$ for each token $n$. After that, We obtain token scores $s_{t,n}$ by taking the maximum value of $f(\mathbf{x}_{t,n};\mathbf{\theta}) \in (0,1)^K$, which reflects the model confidence. $\mathbf{v}_{t-1,n}$ is then set to 1 only when $s_{t,n}$ is among the $k$ largest scores. Formally, 
+As shown in Eq. (4), a naïve approach of generating $\mathbf{v}_{t-1}$ is by drawing $\mathbf{v}_{t-1,n} \sim \operatorname{Bernoulli}\left(\mathbf{\lambda}_{t-1}\right)$ for each token $n$. However, this assigns equal routing probability $\mathbf{\lambda}_{t-1}$ to all tokens, which may be sub-optimal for routing different tokens to distinct states. This observation motivates us to employ a more discriminative routing mechanism, where only tokens with high confidence from neural networks are denoised (Ghazvininejad et al., 2019; Savinov et al., 2022; Chang et al., 2022). At each step, assume $\mathbf{v}_{t-1,n}^{(1)}$ and $\mathbf{v}_{t-1,n}^{(2)}$ are set to $1$ and $0$ by default, respectively. We feed the noisy sequence $\mathbf{x}_{t,1:N}$ into the neural network and collect the output $f(\mathbf{x}_{t,n};\mathbf{\theta})$ for each token $n$. After that, We obtain token scores $s_{t,n}$ by taking the maximum value of $f(\mathbf{x}_{t,n};\mathbf{\theta}) \in (0,1)^K$, which reflects the model confidence. $\mathbf{v}_{t-1,n}$ is then set to 1 only when $s_{t,n}$ is among the $k$ largest scores. Formally,
 
 $$\begin{align*}
     s_{t,n} \coloneqq \max\limits_{1\leq j \leq K} f_j(\mathbf{x}_{t,n};\mathbf{\theta}), \quad \mathcal{P}_{t-1} = \mathop{\mathrm{arg\,topk}}\limits_{1\leq n \leq N} \{s_{t,n}\}_{n=1}^N, \quad \mathbf{v}_{t-1,n}^{(i)} = \mathbf{1}_{n \in \mathcal{P}_{t-1}},\tag{8}
@@ -420,7 +420,7 @@ Discrete diffusion has been applied to a variety of tasks, including graph gener
 
 ## B.1 The derivation of ELBO
 
-Discrete diffusion models are typically trained by maximizing a lower bound of its marginal log-likelihood, defined below, 
+Discrete diffusion models are typically trained by maximizing a lower bound of its marginal log-likelihood, defined below,
 
 $$\begin{align*}
     &\log p_{\mathbf{\theta}}(\mathbf{x}_0) \\
@@ -460,7 +460,7 @@ This section provides separate derivations for the original backward transition 
 
 The absorbing diffusion (Austin et al., 2021) defines a Markov chain where a token goes into an absorbing mask state denoted by $[M]$ with some probability at each time step and stays the same thereafter. The forward transition probability is defined as $q(\mathbf{x}_t | \mathbf{x}_{t-1}) = \beta_t\mathbf{x}_{t-1} + (1 - \beta_t)q_\text{noise}$, where $q_\text{noise} = [M]$ is the point mass with all of the probability on an absorbing state (the mask state \[M\] is denoted as a one-hot vector).
 
-Regarding the conditional backward transition probability $q(\mathbf{x}_{t-1}|\mathbf{x}_{t}, \mathbf{x}_0)$, $\mathbf{x}_t$ can only stay in either state $\mathbf{x}_0$ or state $[M]$. If $\mathbf{x}_t = \mathbf{x}_0$, then $\mathbf{x}_{t-1}$ must also be in state $\mathbf{x}_0$ since it is not absorbed yet; while if $\mathbf{x}_t = \mathbf{e}_{[M]}$, we have 
+Regarding the conditional backward transition probability $q(\mathbf{x}_{t-1}|\mathbf{x}_{t}, \mathbf{x}_0)$, $\mathbf{x}_t$ can only stay in either state $\mathbf{x}_0$ or state $[M]$. If $\mathbf{x}_t = \mathbf{x}_0$, then $\mathbf{x}_{t-1}$ must also be in state $\mathbf{x}_0$ since it is not absorbed yet; while if $\mathbf{x}_t = \mathbf{e}_{[M]}$, we have
 
 $$\begin{align*}
     q(\mathbf{x}_{t-1}= [M] | \mathbf{x}_{t} = [M], \mathbf{x}_0) &= \frac{q(\mathbf{x}_{t} = [M] | \mathbf{x}_{t-1} = [M])q(\mathbf{x}_{t-1} = [M]|\mathbf{x}_0)}{q(\mathbf{x}_{t} = [M] | \mathbf{x}_0)} \\
@@ -473,7 +473,9 @@ The actual generative process is defined as $p_{\mathbf{\theta}}(\mathbf{x}_{t-1
 
 - if $\mathbf{x}_{t} = k \neq [M]$, then due to the joint $q(\mathbf{x}_{t-1}, \mathbf{x}_{t} | \widetilde{\mathbf{x}}_0)$ there is only one entry that is non-zero within the sum $q(\mathbf{x}_{t-1}=k, \mathbf{x}_{t}=k | \widetilde{\mathbf{x}}_0=k) p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0=k|\mathbf{x}_t)$. As a result, the reverse distribution becomes a point mass over position $k$;
 
-- if $\mathbf{x}_{t} = [M]$, we have $$\begin{align*}
+- if $\mathbf{x}_{t} = [M]$, we have
+
+  $$\begin{align*}
       p_{\mathbf{\theta}}(\mathbf{x}_{t-1}= [M] | \mathbf{x}_{t} = [M]) &\propto \sum_{\widetilde{\mathbf{x}}_0} q(\mathbf{x}_{t} = [M] | \mathbf{x}_{t-1} = [M])q(\mathbf{x}_{t-1} = [M]|\widetilde{\mathbf{x}}_0) p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0|\mathbf{x}_t) \\
       &= \sum_{\widetilde{\mathbf{x}}_0} (1 - \alpha_{t-1}) p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0|\mathbf{x}_t) \\
       &= (1 - \alpha_{t-1}) \sum_{\widetilde{\mathbf{x}}_0} p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0|\mathbf{x}_t) \\
@@ -481,12 +483,16 @@ The actual generative process is defined as $p_{\mathbf{\theta}}(\mathbf{x}_{t-1
       p_{\mathbf{\theta}}(\mathbf{x}_{t-1}= k | \mathbf{x}_{t} = [M]) &\propto \sum_{\widetilde{\mathbf{x}}_0} q(\mathbf{x}_{t} = [M] | \mathbf{x}_{t-1} = k)q(\mathbf{x}_{t-1} = k|\widetilde{\mathbf{x}}_0) p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0|\mathbf{x}_t) \\
       &= q(\mathbf{x}_{t} = [M] | \mathbf{x}_{t-1} = k)q(\mathbf{x}_{t-1} = k|\widetilde{\mathbf{x}}_0 = k) p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0 = k|\mathbf{x}_t) \\
       &= (\alpha_{t-1}-\alpha_t)  p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0 = k|\mathbf{x}_t).
-  \end{align*}$$ They can be easily normalized as well, $$\begin{align*}
+  \end{align*}$$
+
+  They can be easily normalized as well,
+
+  $$\begin{align*}
           p_{\mathbf{\theta}}(\mathbf{x}_{t-1}= [M] | \mathbf{x}_{t} = [M]) &= \frac{1 - \alpha_{t-1}}{1 - \alpha_{t}} \\
           p_{\mathbf{\theta}}(\mathbf{x}_{t-1}= k | \mathbf{x}_{t} = [M]) &= \frac{(\alpha_{t-1}-\alpha_t) p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0 = k|\mathbf{x}_t)}{1 - \alpha_{t}}.
   \end{align*}$$
 
-This can be written in a more compact way, where $p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0 = k|\mathbf{x}_t) \coloneqq f_{k}(\mathbf{x}_t;\mathbf{\theta})$ and $q_\text{noise} = \text{[M]}$ is a point mass with all the probability put over the absorbing state \[M\]. 
+This can be written in a more compact way, where $p_{\mathbf{\theta}}(\widetilde{\mathbf{x}}_0 = k|\mathbf{x}_t) \coloneqq f_{k}(\mathbf{x}_t;\mathbf{\theta})$ and $q_\text{noise} = \text{[M]}$ is a point mass with all the probability put over the absorbing state \[M\].
 
 $$\begin{align*}
     p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t}) = \begin{cases}
@@ -495,7 +501,7 @@ $$\begin{align*}
     \end{cases} \tag{10}
 \end{align*}$$
 
-We can also generalize this result for $0 < s < t \leq T$. For the forward transition, we have $q(\mathbf{x}_t | \mathbf{x}_s = \mathbf{x}_0) = \prod_{i=s+1}^t \beta_i \mathbf{x}_0 + \left(1 - \prod_{i=s+1}^t \beta_i\right) q_\text{noise} = \frac{\alpha_t}{\alpha_s}\mathbf{x}_0 + \frac{\alpha_s - \alpha_t}{\alpha_s}q_\text{noise}$. Thus the backward transition can be derived as well according to Bayes’ rule, 
+We can also generalize this result for $0 < s < t \leq T$. For the forward transition, we have $q(\mathbf{x}_t | \mathbf{x}_s = \mathbf{x}_0) = \prod_{i=s+1}^t \beta_i \mathbf{x}_0 + \left(1 - \prod_{i=s+1}^t \beta_i\right) q_\text{noise} = \frac{\alpha_t}{\alpha_s}\mathbf{x}_0 + \frac{\alpha_s - \alpha_t}{\alpha_s}q_\text{noise}$. Thus the backward transition can be derived as well according to Bayes’ rule,
 
 $$\begin{align*}
     q(\mathbf{x}_{s} | \mathbf{x}_{t}, \mathbf{x}_0) = \begin{cases}
@@ -513,7 +519,7 @@ $$\begin{align*}
 
 #### Multinomial Diffusion.
 
-In multinomial diffusion (Hoogeboom et al., 2021), the forward transition probability is defined as $q(\mathbf{x}_t | \mathbf{x}_{t-1}) = \beta_t\mathbf{x}_{t-1} + (1 - \beta_t)q_\text{noise}$, where $q_{\text{noise}} = \mathbf{1}/K$ is a uniform distribution over $\{1,2,\dots,K\}$ with $\mathbf{1}$ is a $K$-dimensional vector with all ones. The backward transition probability conditional on the original data $\mathbf{x}_0$ can be derived according to Bayes’ rule and in closed form: 
+In multinomial diffusion (Hoogeboom et al., 2021), the forward transition probability is defined as $q(\mathbf{x}_t | \mathbf{x}_{t-1}) = \beta_t\mathbf{x}_{t-1} + (1 - \beta_t)q_\text{noise}$, where $q_{\text{noise}} = \mathbf{1}/K$ is a uniform distribution over $\{1,2,\dots,K\}$ with $\mathbf{1}$ is a $K$-dimensional vector with all ones. The backward transition probability conditional on the original data $\mathbf{x}_0$ can be derived according to Bayes’ rule and in closed form:
 
 $$\begin{align*}
     &q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \mathbf{x}_0) \\
@@ -522,7 +528,7 @@ $$\begin{align*}
     &= \frac{\alpha_t \mathbf{x}_t \odot \mathbf{x}_0 + \frac{1}{K}\beta_t(1-\alpha_{t-1})\mathbf{x}_t + \frac{1}{K}(1-\beta_t)\alpha_{t-1}\mathbf{x}_0 + \frac{1}{K^2}(1-\beta_t)(1-\alpha_{t-1})\mathbf{1}}{\alpha_{t} \mathbf{x}_t^\top\mathbf{x}_{0} + \frac{1}{K}(1 - \alpha_{t})}. \tag{13}
 \end{align*}$$
 
-Multinomial diffusion (Hoogeboom et al., 2021) learns a parameterized distribution $p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{x}_t)$ to approximate $q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \mathbf{x}_0)$ at each time step, which is defined as $p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{x}_t) = q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \tilde{\mathbf{x}}_0)$ with $\tilde{\mathbf{x}}_0 = f(\mathbf{x}_t;\mathbf{\theta})$ being the output by a Transformer model. 
+Multinomial diffusion (Hoogeboom et al., 2021) learns a parameterized distribution $p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{x}_t)$ to approximate $q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \mathbf{x}_0)$ at each time step, which is defined as $p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{x}_t) = q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \tilde{\mathbf{x}}_0)$ with $\tilde{\mathbf{x}}_0 = f(\mathbf{x}_t;\mathbf{\theta})$ being the output by a Transformer model.
 
 $$\begin{align*}
     &p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t}) \\
@@ -534,13 +540,13 @@ $$\begin{align*}
 
 In this section, we provide the derivation for Eq. (2) based on Bayes’ rule.
 
-*Proof.* We denote $\mathbf{P}_t \in \mathbb{R}^{K \times K}$ as the probability transition matrix for the $t$-th step, where $[\mathbf{P}_t]_{ij} = p(\mathbf{x}_t = j|\mathbf{x}_{x-1} = i)$ and thus the probability distribution in the forward process can be described as $q(\mathbf{x}_t | \mathbf{x}_{t-1}) = \operatorname{Categorical}\left(\mathbf{x}_t;\mathbf{P}_t^\top \mathbf{x}_{t-1}\right)$. It is then easy to see that 
+*Proof.* We denote $\mathbf{P}_t \in \mathbb{R}^{K \times K}$ as the probability transition matrix for the $t$-th step, where $[\mathbf{P}_t]_{ij} = p(\mathbf{x}_t = j|\mathbf{x}_{x-1} = i)$ and thus the probability distribution in the forward process can be described as $q(\mathbf{x}_t | \mathbf{x}_{t-1}) = \operatorname{Categorical}\left(\mathbf{x}_t;\mathbf{P}_t^\top \mathbf{x}_{t-1}\right)$. It is then easy to see that
 
 $$\begin{align*}
     q(\mathbf{x}_t | \mathbf{x}_0) &= \sum_{\mathbf{x}_{t-1},\mathbf{x}_{t-2}, \dots, \mathbf{x}_1} q(\mathbf{x}_t, \mathbf{x}_{t-1},\mathbf{x}_{t-2}, \dots, \mathbf{x}_1|\mathbf{x}_0) = \operatorname{Categorical}\left(\mathbf{x}_t;\overline{\mathbf{P}}_t^\top \mathbf{x}_0\right)
 \end{align*}$$
 
-with $\overline{\mathbf{P}}_t = \mathbf{P}_1\mathbf{P}_2\dots\mathbf{P}_t$. Returning to our case where the forward transition takes the form $q(\mathbf{x}_t | \mathbf{x}_{t-1}) = \beta_t\mathbf{x}_{t-1} + (1 - \beta_t)q_\text{noise}$. The transition matrix can be represented by $\mathbf{P}_t = \beta_t \mathbf{I}+ (1 - \beta_t)\mathbf{1}q_\text{noise}^\top$, and thus $\overline{\mathbf{P}}_t = \mathbf{P}_1\mathbf{P}_2\dots\mathbf{P}_t = \alpha_t \mathbf{I}+ (1 - \alpha_t) \mathbf{1}q_\text{noise}^\top$. Equipped with these results, we can proceed with the derivation as follows, 
+with $\overline{\mathbf{P}}_t = \mathbf{P}_1\mathbf{P}_2\dots\mathbf{P}_t$. Returning to our case where the forward transition takes the form $q(\mathbf{x}_t | \mathbf{x}_{t-1}) = \beta_t\mathbf{x}_{t-1} + (1 - \beta_t)q_\text{noise}$. The transition matrix can be represented by $\mathbf{P}_t = \beta_t \mathbf{I}+ (1 - \beta_t)\mathbf{1}q_\text{noise}^\top$, and thus $\overline{\mathbf{P}}_t = \mathbf{P}_1\mathbf{P}_2\dots\mathbf{P}_t = \alpha_t \mathbf{I}+ (1 - \alpha_t) \mathbf{1}q_\text{noise}^\top$. Equipped with these results, we can proceed with the derivation as follows,
 
 $$\begin{align*}
     &q(\mathbf{x}_{t-1}|\mathbf{x}_t,\mathbf{x}_0) \\
@@ -552,7 +558,7 @@ $$\begin{align*}
 
 Here we denote $\odot$ as element-wise product and $\sigma_{\mathbf{x}_t} \coloneqq q_\text{noise}(\mathbf{u}=\mathbf{x}_t)$ to represent the probability of noise drawn from $q_\text{noise}$ being equal to $\mathbf{x}_t$. The need to differentiate between $\mathbf{x}_t$ and $\mathbf{x}_0$ emerges when we calculate $\mathbf{x}_t \odot \mathbf{x}_0$, which would be an all-zero vector $\mathbf{0}$ except that it would be one if $\mathbf{x}_t = \mathbf{x}_0$. Thus the computation of backward transition probabilities breaks down into two cases:
 
-If $\mathbf{x}_t = \mathbf{x}_0$, we have $\mathbf{x}_t \odot \mathbf{x}_0 = \mathbf{x}_t$, $\mathbf{x}_t\top \mathbf{x}_0 = 1$ and thus 
+If $\mathbf{x}_t = \mathbf{x}_0$, we have $\mathbf{x}_t \odot \mathbf{x}_0 = \mathbf{x}_t$, $\mathbf{x}_t\top \mathbf{x}_0 = 1$ and thus
 
 $$\begin{align*}
         &q(\mathbf{x}_{t-1}|\mathbf{x}_t,\mathbf{x}_0) \\
@@ -560,7 +566,7 @@ $$\begin{align*}
         &=  \frac{\beta_t \alpha_{t-1} + \beta_t (1 - \alpha_{t-1})\sigma_{\mathbf{x}_t} + (1 - \beta_t) \alpha_{t-1}\sigma_{\mathbf{x}_t}}{\alpha_t + (1-\alpha_t)\sigma_{\mathbf{x}_t}}\mathbf{x}_t + \frac{(1 - \beta_t) (1 - \alpha_{t-1})\sigma_{\mathbf{x}_t}}{\alpha_t + (1-\alpha_t)\sigma_{\mathbf{x}_t}}q_\text{noise}.
 \end{align*}$$
 
-If $\mathbf{x}_t \neq \mathbf{x}_0$, we have $\mathbf{x}_t \odot \mathbf{x}_0 = \mathbf{0}$, $\mathbf{x}_t\top \mathbf{x}_0 = 0$ and thus 
+If $\mathbf{x}_t \neq \mathbf{x}_0$, we have $\mathbf{x}_t \odot \mathbf{x}_0 = \mathbf{0}$, $\mathbf{x}_t\top \mathbf{x}_0 = 0$ and thus
 
 $$\begin{align*}
         q(\mathbf{x}_{t-1}|\mathbf{x}_t,\mathbf{x}_0) &= \frac{\beta_t (1 - \alpha_{t-1})\sigma_{\mathbf{x}_t}\mathbf{x}_t + (1 - \beta_t) \alpha_{t-1}\sigma_{\mathbf{x}_t}\mathbf{x}_0  + (1 - \beta_t) (1 - \alpha_{t-1})\sigma_{\mathbf{x}_t}q_\text{noise}}{(1-\alpha_t)\sigma_{\mathbf{x}_t}}\\
@@ -570,7 +576,7 @@ $$\begin{align*}
         &= \frac{\alpha_{t-1} - \alpha_{t}}{1-\alpha_t}\mathbf{x}_0 + \left(1 - \frac{\alpha_{t-1} - \alpha_{t}}{1-\alpha_t}\right)\left[\beta_t \mathbf{x}_t + (1 - \beta_t)q_\text{noise}\right].
 \end{align*}$$
 
-Putting them together, we arrive at the resulting formulation, 
+Putting them together, we arrive at the resulting formulation,
 
 $$\begin{align*}
     q(\mathbf{x}_{t-1} | \mathbf{x}_{t}, \mathbf{x}_0) = \begin{cases}
@@ -583,7 +589,7 @@ Here $\lambda^{(1)}_{t-1} \coloneqq 1 - \frac{(1-\beta_t)(1-\alpha_{t-1})q_\text
 
 #### Generalization.
 
-Similar to vanilla diffusion models, we can also derive backward transition processes with a gap $\Delta_t$; that is, we consider $q(\mathbf{x}_{s} | \mathbf{x}_{t}, \mathbf{x}_0)$ with $s = t - \Delta_t$. It can be easily seen that 
+Similar to vanilla diffusion models, we can also derive backward transition processes with a gap $\Delta_t$; that is, we consider $q(\mathbf{x}_{s} | \mathbf{x}_{t}, \mathbf{x}_0)$ with $s = t - \Delta_t$. It can be easily seen that
 
 $$\begin{align*}
     q(\mathbf{x}_{s} | \mathbf{x}_{t}, \mathbf{x}_0) = \begin{cases}
@@ -596,7 +602,7 @@ with $\lambda^{(1)}_{s} \coloneqq 1 - \frac{(1-\frac{\alpha_t}{\alpha_s})(1-\alp
 
 # D Derivations for the ELBO of RDMs
 
-The following provides the derivation for the loss objective of RDMs. Specifically, 
+The following provides the derivation for the loss objective of RDMs. Specifically,
 
 $$\begin{align*}
     &\log p(\mathbf{x}_0) \\
@@ -612,7 +618,7 @@ $$\begin{align*}
     &\coloneqq \mathcal{L}_1(\mathbf{\theta}) - \sum_{t=2}^T \mathcal{L}_t(\mathbf{\theta}) + \text{const.}
 \end{align*}$$
 
-Here we denote $\mathcal{L}_1(\mathbf{\theta}) \coloneqq \mathbb{E}_{q(\mathbf{x}_{1}|\mathbf{x}_0)}\left[\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)\right]$, and for $t > 1$, $\mathcal{L}_t(\mathbf{\theta}) \coloneqq \mathbb{E}_{q(\mathbf{x}_{t}|\mathbf{x}_0)}\left[\operatorname{KL}(q(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t},\mathbf{x}_0)\;\|\;p_{\mathbf{\theta}}(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t}))\right]$. We can push the decomposition of $\mathcal{L}_t(\mathbf{\theta})$ for time step $t>1$ further, 
+Here we denote $\mathcal{L}_1(\mathbf{\theta}) \coloneqq \mathbb{E}_{q(\mathbf{x}_{1}|\mathbf{x}_0)}\left[\log p_{\mathbf{\theta}}(\mathbf{x}_0|\mathbf{x}_1)\right]$, and for $t > 1$, $\mathcal{L}_t(\mathbf{\theta}) \coloneqq \mathbb{E}_{q(\mathbf{x}_{t}|\mathbf{x}_0)}\left[\operatorname{KL}(q(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t},\mathbf{x}_0)\;\|\;p_{\mathbf{\theta}}(\mathbf{x}_{t-1}, \mathbf{v}_{t-1}|\mathbf{x}_{t}))\right]$. We can push the decomposition of $\mathcal{L}_t(\mathbf{\theta})$ for time step $t>1$ further,
 
 $$\begin{align*}
     &\mathcal{L}_t(\mathbf{\theta}) \\
@@ -634,7 +640,7 @@ $$\begin{align*}
 
 # E Derivation for Eq. (6) and Discussions
 
-*Proof.* We first consider the loss objective at each step for *each token* at $n$-th position, which can be expanded as follows, 
+*Proof.* We first consider the loss objective at each step for *each token* at $n$-th position, which can be expanded as follows,
 
 $$\begin{align*}
     \mathcal{L}_t^n(\mathbf{\theta})
@@ -645,7 +651,7 @@ $$\begin{align*}
 .
 \end{align*}$$
 
-Typically we draw a Monte Carlo sample $\mathbf{x}_{t,n}\sim q(\mathbf{x}_{t,n}|\mathbf{x}_{0,n})$ to estimate the outermost expectation above. For the inner term, recall that $b_{t,n} = \mathbf{1}_{\mathbf{x}_{t,n}=\mathbf{x}_{0,n}}$ and $q(\mathbf{x}_{t-1,n} | \mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n})$ takes the form as 
+Typically we draw a Monte Carlo sample $\mathbf{x}_{t,n}\sim q(\mathbf{x}_{t,n}|\mathbf{x}_{0,n})$ to estimate the outermost expectation above. For the inner term, recall that $b_{t,n} = \mathbf{1}_{\mathbf{x}_{t,n}=\mathbf{x}_{0,n}}$ and $q(\mathbf{x}_{t-1,n} | \mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n})$ takes the form as
 
 $$\begin{align*}
         q(\mathbf{x}_{t-1,n} | \mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n}) = \begin{cases}
@@ -654,7 +660,7 @@ $$\begin{align*}
     \end{cases}
 \end{align*}$$
 
-Since we use the teacher-forcing approach that employs the same oracle $b_{t,n}$ for $p_{\mathbf{\theta}}(\mathbf{x}_{t-1,n}|\mathbf{v}_{t-1,n}, \mathbf{x}_{t,n})$ as well, it can also be written in a similar manner, 
+Since we use the teacher-forcing approach that employs the same oracle $b_{t,n}$ for $p_{\mathbf{\theta}}(\mathbf{x}_{t-1,n}|\mathbf{v}_{t-1,n}, \mathbf{x}_{t,n})$ as well, it can also be written in a similar manner,
 
 $$\begin{align*}
         p_{\mathbf{\theta}}(\mathbf{x}_{t-1,n}|\mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}) = \begin{cases}
@@ -671,21 +677,21 @@ In this case, $q(\mathbf{x}_{t-1,n} | \mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}, \mat
 
 #### If $b_{t,n} = 0$.
 
-In this scenario, we have $q(\mathbf{x}_{t-1,n} | b_{t-1}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n}) = v^{(2)}_{t-1,n}\mathbf{x}_{0,n} + \left(1 - v^{(2)}_{t-1,n}\right)q_\text{noise}(\mathbf{x}_{t,n})$ and $v^{(2)}_{t-1,n}f(\mathbf{x}_{t,n};\mathbf{\theta}) + \left(1 - v^{(2)}_{t-1,n}\right)q_\text{noise}(\mathbf{x}_{t,n})$. We then enumerate all the possible outcomes for $v^{(2)}_{t-1,n}$. If $v^{(2)}_{t-1,n} = 1$, $q(\mathbf{v}_{t-1,n}) = \lambda_{t-1}^{(2)}$ and 
+In this scenario, we have $q(\mathbf{x}_{t-1,n} | b_{t-1}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n}) = v^{(2)}_{t-1,n}\mathbf{x}_{0,n} + \left(1 - v^{(2)}_{t-1,n}\right)q_\text{noise}(\mathbf{x}_{t,n})$ and $v^{(2)}_{t-1,n}f(\mathbf{x}_{t,n};\mathbf{\theta}) + \left(1 - v^{(2)}_{t-1,n}\right)q_\text{noise}(\mathbf{x}_{t,n})$. We then enumerate all the possible outcomes for $v^{(2)}_{t-1,n}$. If $v^{(2)}_{t-1,n} = 1$, $q(\mathbf{v}_{t-1,n}) = \lambda_{t-1}^{(2)}$ and
 
 $$\begin{align*}
         \operatorname{KL}(q(\mathbf{x}_{t-1,n} | \mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n})\;\|\;p_{\mathbf{\theta}}(\mathbf{x}_{t-1,n}|\mathbf{v}_{t-1,n}, \mathbf{x}_{t,n})) &= \operatorname{KL}(\mathbf{x}_{0,n}\;\|\;f(\mathbf{x}_{t,n};\mathbf{\theta})) \\
         &= -\mathbf{x}_{0,n}^\top\log f\left(\mathbf{x}_{t,n};\mathbf{\theta}\right).
 \end{align*}$$
 
-If $v^{(2)}_{t-1,n} = 0$, then $q(\mathbf{v}_{t-1,n}) = 1 - \lambda_{t-1}^{(2)}$ and 
+If $v^{(2)}_{t-1,n} = 0$, then $q(\mathbf{v}_{t-1,n}) = 1 - \lambda_{t-1}^{(2)}$ and
 
 $$\begin{align*}
         \operatorname{KL}(q(\mathbf{x}_{t-1,n} | \mathbf{v}_{t-1,n}, \mathbf{x}_{t,n}, \mathbf{x}_{0,n})\;\|\;p_{\mathbf{\theta}}(\mathbf{x}_{t-1,n}|\mathbf{v}_{t-1,n}, \mathbf{x}_{t,n})) &= \operatorname{KL}(q_\text{noise}(\mathbf{x}_{t,n})\;\|\;q_\text{noise}(\mathbf{x}_{t,n})) \\
         &= 0.
 \end{align*}$$
 
-Putting them together, we have 
+Putting them together, we have
 
 $$\begin{align*}
         &
@@ -695,7 +701,7 @@ $$\begin{align*}
         &= -\lambda_{t-1}^{(2)}\mathbf{x}_{0,n}^\top\log f\left(\mathbf{x}_{t,n};\mathbf{\theta}\right).
 \end{align*}$$
 
-Since each token is modeled conditionally independently, we can add all computed losses for each token, arriving at the final expression for the whole sequence, 
+Since each token is modeled conditionally independently, we can add all computed losses for each token, arriving at the final expression for the whole sequence,
 
 $$\begin{align*}
         \mathcal{L}_t(\mathbf{\theta}) = \sum_{n=1}^N \mathcal{L}_t^n(\mathbf{\theta}) = 
@@ -823,7 +829,7 @@ To perform conditional generation, we delegate the full task of conditioning to 
 
 Training discrete diffusion models usually involves a heavy amount of randomness. For instance, at each training iteration, one has to sample a time step and corrupt a random subset of sequence tokens for denoising. To control the introduced variance, we adopt a simple yet effective conditioning strategy that uses multiple samples to perform training. The key idea is conceptually simple: we start with sampling two *i.i.d.* time steps $s, t \sim \operatorname{Uniform}(T)$ (without the loss of generality, we assume $s < t$). After that, we draw $\mathbf{x}_t \sim q(\mathbf{x}_t | \mathbf{x}_0)$ as usual, but condition the sample at step $s$ by drawing from $q(\mathbf{x}_{s} | \mathbf{x}_0) = \mathbb{E}_{q(\mathbf{x}_t|\mathbf{x}_0)}\left[q(\mathbf{x}_s|\mathbf{x}_t,\mathbf{x}_0)\right] \approx q(\mathbf{x}_s|\mathbf{x}_t,\mathbf{x}_0)$. The losses (Eq. (6)) at step $s$ and $t$ are then estimated individually and averaged to obtain the final training objective. In case $s = t$, we simply drop the conditioning and sample $\mathbf{x}_s \sim (\mathbf{x}_s | \mathbf{x}_0)$ instead.
 
-This method utilizes multiple samples to estimate the loss objective while remaining unbiased. To see this, note that 
+This method utilizes multiple samples to estimate the loss objective while remaining unbiased. To see this, note that
 
 $$\begin{align*}
     &-\left(\mathcal{L}_s + \mathcal{L}_t\right) \\
@@ -1140,7 +1146,7 @@ This section provides a more comprehensive qualitative analysis of different dif
 
 As presented in Tables 12, 13 and 14, multinomial diffusion finishes the generation of most sentences in the first iteration and remains unchanged afterward, despite multiple iteration steps being allocated.
 
-This unexpected behavior is due to the formulation of its original backward process, which is of the form as Eq. (14) (copied here for convenience), 
+This unexpected behavior is due to the formulation of its original backward process, which is of the form as Eq. (14) (copied here for convenience),
 
 $$\begin{align*}
     &p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t}) \\
@@ -1148,7 +1154,7 @@ $$\begin{align*}
     \frac{\alpha_t \mathbf{x}_t \odot f(\mathbf{x}_t;\mathbf{\theta}) + \frac{1}{K}\beta_t(1-\alpha_{t-1})\mathbf{x}_t + \frac{1}{K}(1-\beta_t)\alpha_{t-1}f(\mathbf{x}_t;\mathbf{\theta}) + \frac{1}{K^2}(1-\beta_t)(1-\alpha_{t-1})\mathbf{1}}{\alpha_{t} \mathbf{x}_t^\top f(\mathbf{x}_t;\mathbf{\theta}) + \frac{1}{K}(1 - \alpha_{t})}.
 \end{align*}$$
 
-Note that $f(\cdot;\mathbf{\theta})$ is a softmax probability vector output from a Transformer model. At the initial iteration, $\alpha_t$ is very close to zero, and the Transformer prediction $f(\cdot;\mathbf{\theta})$ has the chance to come into play and denoise to a certain degree. But when the process moves onward, $\alpha_t$ becomes larger, which will soon make the first term dominate significantly over the others since all the other terms are scaled down by $1/K$. Since the vocabulary size $K$ is usually large in text generation tasks (usually larger than 10K), this would make all the other terms very close to zero. In this case, the backward transition distribution degenerates to 
+Note that $f(\cdot;\mathbf{\theta})$ is a softmax probability vector output from a Transformer model. At the initial iteration, $\alpha_t$ is very close to zero, and the Transformer prediction $f(\cdot;\mathbf{\theta})$ has the chance to come into play and denoise to a certain degree. But when the process moves onward, $\alpha_t$ becomes larger, which will soon make the first term dominate significantly over the others since all the other terms are scaled down by $1/K$. Since the vocabulary size $K$ is usually large in text generation tasks (usually larger than 10K), this would make all the other terms very close to zero. In this case, the backward transition distribution degenerates to
 
 $$\begin{align*}
     p_{\mathbf{\theta}}(\mathbf{x}_{t-1}|\mathbf{x}_t) \approx \frac{\alpha_t \mathbf{x}_t \odot f(\mathbf{x}_t;\mathbf{\theta})}{\alpha_{t} \mathbf{x}_t^\top f(\mathbf{x}_t;\mathbf{\theta})} = \mathbf{x}_t.
@@ -1164,7 +1170,7 @@ In contrast to discrete diffusion models that can perform generation in 10 steps
 
 #### Vanilla Absorbing Diffusion Cannot Fix Previous Errors.
 
-While vanilla absorbing diffusion performs decoding more steadily, it also suffers from some issues. As shown in Tables 12, 13 and 14, since all tokens are predicted independently conditional on the source input, there is some chance for the model to decode multiple identical tokens simultaneously. However, in vanilla absorbing diffusion, such decoding errors cannot be fixed. To see this, note that its backward transition formulation can be written as Eq. (10), which is copied here for convenience, 
+While vanilla absorbing diffusion performs decoding more steadily, it also suffers from some issues. As shown in Tables 12, 13 and 14, since all tokens are predicted independently conditional on the source input, there is some chance for the model to decode multiple identical tokens simultaneously. However, in vanilla absorbing diffusion, such decoding errors cannot be fixed. To see this, note that its backward transition formulation can be written as Eq. (10), which is copied here for convenience,
 
 $$\begin{align*}
     p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{x}_{t}) = \begin{cases}
@@ -1175,7 +1181,7 @@ $$\begin{align*}
 
 Under this backward formulation, once a token is decoded, it will stay in the state thereafter and does not have the chance to be re-predicted again. As a result, vanilla absorbing diffusion processes cannot fix previously made errors.
 
-This issue can be alleviated by RDMs, which employ a more generic formulation as follows, 
+This issue can be alleviated by RDMs, which employ a more generic formulation as follows,
 
 $$\begin{align*}
     p_{\mathbf{\theta}}(\mathbf{x}_{t-1} | \mathbf{v}_{t-1}, \mathbf{x}_{t}) = \begin{cases}

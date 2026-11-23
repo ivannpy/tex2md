@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: e0db5cf8a374027a9731b8f76eaa161d2c98ed144bd9c65e9d2b9b52dfc4457b
     path: "PCIC/Tesis/Data generation/DiffLM Controllable Synthetic Data Generation via Diffusion Language Models.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-17
+converted: 2026-11-22
 ---
 
 # DiffLM: Controllable Synthetic Data Generation via Diffusion Language Models
@@ -58,7 +58,7 @@ We begin by defining $\mathcal{D}$ as a known small set of real-world distributi
 
 ## 3.2 VAE-based Representation Learning
 
-**Feature Encoding:** In standard VAEs, an encoder is typically employed to map input data into a latent space. Given structured text data $s_i$, we utilize a learnable Transformer-based pre-trained language model (Vaswani et al., 2017; Devlin et al., 2019; Raffel et al., 2020) to obtain the representation vector $x_i \in \mathbb{R}^{d \times 2}$, which can be split into the mean and variance. Using the re-parameterization trick (Kingma and Welling, 2014), we then obtain the latent feature $z \in \mathbb{R}^{d}$: 
+**Feature Encoding:** In standard VAEs, an encoder is typically employed to map input data into a latent space. Given structured text data $s_i$, we utilize a learnable Transformer-based pre-trained language model (Vaswani et al., 2017; Devlin et al., 2019; Raffel et al., 2020) to obtain the representation vector $x_i \in \mathbb{R}^{d \times 2}$, which can be split into the mean and variance. Using the re-parameterization trick (Kingma and Welling, 2014), we then obtain the latent feature $z \in \mathbb{R}^{d}$:
 
 $$\begin{equation}
 z = \mu + \sigma \odot \epsilon,
@@ -69,7 +69,7 @@ where $\mu$ and $\sigma$ are the mean and standard deviation output by the encod
 
 **LLM Decoding:** After generating the latent feature $z$, we employ a frozen-parameter LLM to reconstruct the input text $s$ in a causal language modeling manner. The rationale for freezing the LLM parameters is to avoid retraining and to preserve its general knowledge and reasoning capabilities. Consequently, aligning the two different modalities, whereas the latent space and the LLM input space, presents a significant challenge. To address this, we propose a novel latent feature injector using soft prompting and design a corresponding injector network; specific details are provided in Section 3.4.
 
-**VAE Model Training Objective:** The VAE model is typically trained using the Evidence Lower Bound (ELBO) loss function. Following previous work (Burgess et al., 2018), we adopt the $\beta$-VAE training strategy (Higgins et al., 2017), which introduces a weighting parameter $\beta$ to control the contribution of the KL divergence loss in the total loss function. Specifically, when $\beta = 0$, the model reduces to a standard autoencoder. For $\beta > 0$, the KL constraint encourages learning a smoother latent space: 
+**VAE Model Training Objective:** The VAE model is typically trained using the Evidence Lower Bound (ELBO) loss function. Following previous work (Burgess et al., 2018), we adopt the $\beta$-VAE training strategy (Higgins et al., 2017), which introduces a weighting parameter $\beta$ to control the contribution of the KL divergence loss in the total loss function. Specifically, when $\beta = 0$, the model reduces to a standard autoencoder. For $\beta > 0$, the KL constraint encourages learning a smoother latent space:
 
 $$\begin{align}
 \text{ELBO}_{\beta} &= L_{rec} - \beta L_{kl}, \tag{2}\\
@@ -82,7 +82,7 @@ where $p_\theta(x|z)$ is the language modeling reconstruction likelihood, $q_\ph
 
 ## 3.3 Latent Space Denoising
 
-Although VAE can learns latent space representations of data, directly sampling from the prior distribution $p(z)$ often exhibit low quality generated samples. In our preliminary experiments, we observed that directly utilizing the latent features learned by the VAE frequently produces text that is unrelated to the target data distribution. This issue arises due to the discrepancy between the encoder’s learned posterior distribution $q_\phi(z|x)$ and the prior $p(z)$. To address this problem, we introduce a diffusion model in the latent space to more accurately model the true distribution of the latent features. Inspired by Zhang et al. (2024), we extract the latent vectors $z \in \mathcal{Z}$ from the trained VAE for each data point $x \in \mathcal{D}_{\text{train}}$. Starting from the initial latent vector $z_0$, we progressively add noise over time following a linear schedule to get $z_t$. During the reverse diffusion process, we employ a standard continuous denoising network to recover $z_0$ (Song et al., 2021). For the training objective, we optimize the diffusion model through denoising score matching (Karras et al., 2022): 
+Although VAE can learns latent space representations of data, directly sampling from the prior distribution $p(z)$ often exhibit low quality generated samples. In our preliminary experiments, we observed that directly utilizing the latent features learned by the VAE frequently produces text that is unrelated to the target data distribution. This issue arises due to the discrepancy between the encoder’s learned posterior distribution $q_\phi(z|x)$ and the prior $p(z)$. To address this problem, we introduce a diffusion model in the latent space to more accurately model the true distribution of the latent features. Inspired by Zhang et al. (2024), we extract the latent vectors $z \in \mathcal{Z}$ from the trained VAE for each data point $x \in \mathcal{D}_{\text{train}}$. Starting from the initial latent vector $z_0$, we progressively add noise over time following a linear schedule to get $z_t$. During the reverse diffusion process, we employ a standard continuous denoising network to recover $z_0$ (Song et al., 2021). For the training objective, we optimize the diffusion model through denoising score matching (Karras et al., 2022):
 
 $$\begin{equation}
 z_t = z_{0} + \sigma(t)\epsilon, \epsilon \in \mathcal{N}(0, I), \tag{5}
@@ -94,7 +94,7 @@ dz_t = &-\dot{\sigma}(t)\sigma(t)\nabla_{z_t} \log{p(z_t)} dt \\ &+ \sqrt{2\dot{
 \end{aligned}
 \end{equation}$$
 
-In forward process Eq.5, $z_t$ is the latent variable at time $t$, and $\sigma(t)$ is a time-dependent noise scale function. As for backward process Eq.6, $\dot{\sigma}(t)$ stands for the time derivative of $\sigma(t)$, and $\nabla_{z_t} \log{p(z_t)}$ is the gradient of the log probability density with respect to $z_t$, also known as the score function, and $d\omega_t$ is an increment of the Wiener process (standard Brownian motion). As for diffusion model training loss Eq.7, $\epsilon_\theta(z_t, t)$ is the neural network that predicts the noise $\epsilon$ given $z_t$ and $t$. 
+In forward process Eq.5, $z_t$ is the latent variable at time $t$, and $\sigma(t)$ is a time-dependent noise scale function. As for backward process Eq.6, $\dot{\sigma}(t)$ stands for the time derivative of $\sigma(t)$, and $\nabla_{z_t} \log{p(z_t)}$ is the gradient of the log probability density with respect to $z_t$, also known as the score function, and $d\omega_t$ is an increment of the Wiener process (standard Brownian motion). As for diffusion model training loss Eq.7, $\epsilon_\theta(z_t, t)$ is the neural network that predicts the noise $\epsilon$ given $z_t$ and $t$.
 
 $$\begin{equation}
 \mathcal{L}_{\text{diff}} = \mathbb{E}_{t \mathrel{\mathpalette\make@small@sym{\sim}}p(t),~z_0\mathrel{\mathpalette\make@small@sym{\sim}}
@@ -229,20 +229,20 @@ It should be noted that the variable used here is independent with main text.
 
 #### Forward Process (Diffusion).
 
-The forward diffusion process in latent space progressively adds Gaussian noise to the latent representation over $T$ timesteps. Starting from the initial latent code $\mathbf{z}_0 = E(\mathbf{x}_0)$, obtained by encoding the data $\mathbf{x}_0$, the forward process is defined as: 
+The forward diffusion process in latent space progressively adds Gaussian noise to the latent representation over $T$ timesteps. Starting from the initial latent code $\mathbf{z}_0 = E(\mathbf{x}_0)$, obtained by encoding the data $\mathbf{x}_0$, the forward process is defined as:
 
 $$\begin{equation}
 q(\mathbf{z}_t \mid \mathbf{z}_{t-1}) = \mathcal{N}(\mathbf{z}_t; \sqrt{1 - \beta_t} \, \mathbf{z}_{t-1}, \beta_t \mathbf{I}),
 \tag{8}
 \end{equation}$$
 
-where $\beta_t \in (0, 1)$ is a predefined variance schedule that controls the amount of noise added at each step $t$, and $\mathcal{N}$ denotes a Gaussian distribution. By recursively applying this process, we can express $\mathbf{z}_t$ directly in terms of $\mathbf{z}_0$: 
+where $\beta_t \in (0, 1)$ is a predefined variance schedule that controls the amount of noise added at each step $t$, and $\mathcal{N}$ denotes a Gaussian distribution. By recursively applying this process, we can express $\mathbf{z}_t$ directly in terms of $\mathbf{z}_0$:
 
 $$\begin{equation}
 q(\mathbf{z}_t \mid \mathbf{z}_0) = \mathcal{N}(\mathbf{z}_t; \sqrt{\bar{\alpha}_t} \, \mathbf{z}_0, (1 - \bar{\alpha}_t) \mathbf{I}), \tag{9}
 \end{equation}$$
 
-where $\alpha_t = 1 - \beta_t$ and $\bar{\alpha}_t = \prod_{s=1}^t \alpha_s$. This formulation allows efficient sampling of $\mathbf{z}_t$ at any arbitrary timestep $t$ without iterating through all previous steps. In this paper, we adopt the Variance Exploding defined perturbation kernels, whereas setting $s_t=\sqrt{1-\beta_t}$ and $\sigma_t=\sqrt{\frac{\beta_t}{1-\beta_t}}$. Also, we set $s_t=1$ to directly add noise to the data rather than weighted mixing, convert Eq.9 to: 
+where $\alpha_t = 1 - \beta_t$ and $\bar{\alpha}_t = \prod_{s=1}^t \alpha_s$. This formulation allows efficient sampling of $\mathbf{z}_t$ at any arbitrary timestep $t$ without iterating through all previous steps. In this paper, we adopt the Variance Exploding defined perturbation kernels, whereas setting $s_t=\sqrt{1-\beta_t}$ and $\sigma_t=\sqrt{\frac{\beta_t}{1-\beta_t}}$. Also, we set $s_t=1$ to directly add noise to the data rather than weighted mixing, convert Eq.9 to:
 
 $$\begin{equation}
 q(\mathbf{z}_t \mid \mathbf{z}_0) = \mathcal{N}(\mathbf{z}_t; \mathbf{0}, \sigma_t^2 \mathbf{I})
@@ -251,14 +251,14 @@ q(\mathbf{z}_t \mid \mathbf{z}_0) = \mathcal{N}(\mathbf{z}_t; \mathbf{0}, \sigma
 
 #### Reverse Process (Denoising).
 
-The reverse diffusion process aims to recover $\mathbf{z}_0$ from a noisy latent variable $\mathbf{z}_t \sim \mathcal{N}(0, \mathbf{I})$. It is parameterized by a neural network $\boldsymbol{\epsilon}_\theta$, which predicts the noise component at each timestep: 
+The reverse diffusion process aims to recover $\mathbf{z}_0$ from a noisy latent variable $\mathbf{z}_t \sim \mathcal{N}(0, \mathbf{I})$. It is parameterized by a neural network $\boldsymbol{\epsilon}_\theta$, which predicts the noise component at each timestep:
 
 $$\begin{equation}
 p_\theta(\mathbf{z}_{t-1} \mid \mathbf{z}_t) = \mathcal{N}(\mathbf{z}_{t-1}; \mu_\theta(\mathbf{z}_t, t), \Sigma_\theta(\mathbf{z}_t, t)).
 \tag{11}
 \end{equation}$$
 
-Typically, the model predicts the mean $\mu_\theta$ while the covariance $\Sigma_\theta$ is fixed or simplified. By leveraging the properties of the forward process, the mean can be parameterized to predict the original noise $\boldsymbol{\epsilon}$ added during the forward diffusion: 
+Typically, the model predicts the mean $\mu_\theta$ while the covariance $\Sigma_\theta$ is fixed or simplified. By leveraging the properties of the forward process, the mean can be parameterized to predict the original noise $\boldsymbol{\epsilon}$ added during the forward diffusion:
 
 $$\begin{equation}
 \mu_\theta(\mathbf{z}_t, t) = \frac{1}{\sqrt{\alpha_t}} \left( \mathbf{z}_t - \frac{\beta_t}{\sqrt{1 - \bar{\alpha}_t}} \boldsymbol{\epsilon}_\theta(\mathbf{z}_t, t) \right).
@@ -269,14 +269,14 @@ This formulation enables the model to denoise $\mathbf{z}_t$ step by step, ultim
 
 #### Learning Objective.
 
-The training objective for LDMs focuses on minimizing the difference between the true noise $\boldsymbol{\epsilon}$ added during the forward process and the noise predicted by the model $\boldsymbol{\epsilon}_\theta$. The simplified loss function is: 
+The training objective for LDMs focuses on minimizing the difference between the true noise $\boldsymbol{\epsilon}$ added during the forward process and the noise predicted by the model $\boldsymbol{\epsilon}_\theta$. The simplified loss function is:
 
 $$\begin{equation}
 \mathcal{L}_{\text{latent}} = \mathbb{E}_{\mathbf{x}_0, \boldsymbol{\epsilon}, t} \left[ \left\| \boldsymbol{\epsilon} - \boldsymbol{\epsilon}_\theta(\mathbf{z}_t, t) \right\|^2 \right],
 \tag{13}
 \end{equation}$$
 
-where $\mathbf{z}_t$ is sampled as: 
+where $\mathbf{z}_t$ is sampled as:
 
 $$\begin{equation}
 \mathbf{z}_t = \sqrt{\bar{\alpha}_t} \, \mathbf{z}_0 + \sqrt{1 - \bar{\alpha}_t} \, \boldsymbol{\epsilon}, \quad \boldsymbol{\epsilon} \sim \mathcal{N}(0, \mathbf{I}).
@@ -357,7 +357,7 @@ We reproduced the tabular results using the code released by the original paper,
 
 ## C.1 Training Data Plagiarism
 
-Data copying is a significant challenge for overfitted generative models in practical applications. To verify that the data generated by DiffLM is not merely copied from the training data, we compute the Distance to Closest Record (DCR) metric. Specifically, for each row in the tabular data, we represent the categorical columns using one-hot vectors and perform min-max normalization on the numerical columns. We then define DCR as the minimum L1-distance between a synthetic data point and each training sample point: 
+Data copying is a significant challenge for overfitted generative models in practical applications. To verify that the data generated by DiffLM is not merely copied from the training data, we compute the Distance to Closest Record (DCR) metric. Specifically, for each row in the tabular data, we represent the categorical columns using one-hot vectors and perform min-max normalization on the numerical columns. We then define DCR as the minimum L1-distance between a synthetic data point and each training sample point:
 
 $$\begin{equation}
 \text{DCR}(x_{\text{syn}}) = \min_{x_{\text{real}} \in \mathcal{D}_{\text{train}}} L_1(x_{\text{syn}}, x_{\text{real}}).

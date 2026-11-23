@@ -138,8 +138,8 @@ def drop_fragile_macro_defs(text):
 
 def drop_primitive_spacing(text):
     """Primitive spacing with length registers (\\vskip\\bigskipamount) confuses pandoc, and so does \\strut (an
-    invisible rule): in ``\\textbf{\\strut z}`` pandoc stops with an error, inside a caption it drops the table; and a
-    control space before a "$"."""
+    invisible rule): in ``\\textbf{\\strut z}`` pandoc stops with an error, inside a caption it drops the table; a
+    control space before a "$"; and ``\\hfill`` glued to the word before it."""
     verbatim = protected_spans(text, math=False)          # (a listing keeps its code as written)
     text = re.sub(r"\\strut(?![a-zA-Z@])\s*", lambda m: m.group(0) if span_at(verbatim, m.start()) else "", text)
     # a control space right before a "$" (``$x=\ $Forward``): pandoc trims the math and leaves "\" before the "$"
@@ -151,6 +151,9 @@ def drop_primitive_spacing(text):
     text = re.sub(r"(?<![\\$])\$\\ \$(?!\$)", lambda m: m.group(0) if span_at(verbatim, m.start()) else "", text)
     verbatim = protected_spans(text, math=False)
     text = re.sub(r"(?<!\\)\\ (?=\$)", control_space, text)
+    # \hfill between two words ("Time steps\hfill$t_i$"): pandoc drops it and glues them; a space stays
+    verbatim = protected_spans(text, math=False)
+    text = re.sub(r"(?<=\S)\\hfill(?![a-zA-Z@])", lambda m: m.group(0) if span_at(verbatim, m.start()) else " \\hfill", text)
     return re.sub(r"\\[vh]skip\s*-?\s*(?:\\[a-zA-Z@]+|[0-9.]+\s*[a-z]{2})(?:\s*(?:plus|minus)\s*-?[0-9.]*\s*(?:\\[a-zA-Z@]+|[a-z]{2}))*", "", text)
 
 
@@ -397,6 +400,121 @@ def expand_conditional_macros(text):
             continue
         chosen = groups[need - 2] if _xstring_value(m.group(1), groups) else groups[need - 1]
         text = text[:m.start()] + chosen + text[i:]
+        pos = m.start()
+
+
+_NEWCOMMANDX = re.compile(r"\\(?:re)?newcommandx\*?\s*(?:\{\s*\\(?P<n1>[a-zA-Z]+)\s*\}|\\(?P<n2>[a-zA-Z]+))\s*"
+                          r"\[\s*(?P<n>\d)\s*\]\s*(?:\[(?P<opt>[^\]]*)\])?\s*(?=\{)")
+
+
+def _read_arg(text, i):
+    """One mandatory argument at ``i`` (blanks skipped): a {group} or a single token. Returns (arg, end) or None."""
+    i = skip_ws(text, i)
+    if i >= len(text):
+        return None
+    if text[i] == "{":
+        e = balanced_end(text, i)
+        return (text[i + 1:e - 1], e) if e > 0 else None
+    if text[i] == "\\":
+        m = re.compile(r"\\(?:[a-zA-Z@]+|.)").match(text, i)
+        return (m.group(0), m.end()) if m else None
+    return (text[i], i + 1) if text[i] not in "}]$&" else None
+
+
+def expand_newcommandx(text):
+    r"""xargs' ``\newcommandx\fw[4][4=]{...}``: optional arguments anywhere, which pandoc does not know (every use
+    was left as an unknown command: 866 in ``gourevitch2026udm``). Only the first optional: a plain
+    ``\newcommand`` with a default. Trailing optional ones (``[5][4=, 5=0]``): each use is expanded here (mandatory
+    arguments as groups or single tokens, then ``[...]`` or the default), the definition goes."""
+    defs = {}
+    out, pos = [], 0
+    for m in _NEWCOMMANDX.finditer(text):
+        if m.start() < pos:
+            continue
+        e = balanced_end(text, m.end())
+        if e < 0:
+            continue
+        name, n = m.group("n1") or m.group("n2"), int(m.group("n"))
+        body = text[m.end() + 1:e - 1]
+        opts = {}
+        for part in (m.group("opt") or "").split(","):
+            k, eq, v = part.partition("=")
+            if eq and k.strip().isdigit():
+                opts[int(k.strip())] = v.strip()
+        out.append(text[pos:m.start()])
+        if not opts:
+            out.append(f"\\newcommand{{\\{name}}}[{n}]{{{body}}}")
+        elif list(opts) == [1]:
+            out.append(f"\\newcommand{{\\{name}}}[{n}][{opts[1]}]{{{body}}}")
+        elif sorted(opts) == list(range(n - len(opts) + 1, n + 1)):
+            defs[name] = (n, opts, body)          # expanded below; the definition goes
+        else:
+            out.append(text[m.start():e])         # optional arguments in the middle: left as it is
+        pos = e
+    out.append(text[pos:])
+    text = "".join(out)
+    if not defs:
+        return text
+    use = re.compile(r"\\(" + "|".join(sorted(defs, key=len, reverse=True)) + r")(?![a-zA-Z@])")
+    for _ in range(6):                            # bodies may use the other macros
+        out, pos, changed = [], 0, False
+        for m in use.finditer(text):
+            if m.start() < pos:
+                continue
+            n, opts, body = defs[m.group(1)]
+            args, i, ok = [], m.end(), True
+            for _k in range(n - len(opts)):
+                a = _read_arg(text, i)
+                if a is None:
+                    ok = False
+                    break
+                args.append(a[0])
+                i = a[1]
+            if not ok:
+                continue
+            for k in sorted(opts):
+                j = skip_ws(text, i) if text.startswith("[", skip_ws(text, i)) else i
+                if text.startswith("[", j):
+                    b = bracket_end(text, j)
+                    if b > 0:
+                        args.append(text[j + 1:b - 1])
+                        i = b
+                        continue
+                args.append(opts[k])
+            expansion = re.sub(r"#(\d)", lambda g, a=args: a[int(g.group(1)) - 1] if int(g.group(1)) <= len(a) else "", body)
+            out.append(text[pos:m.start()] + "{" + expansion + "}")
+            pos, changed = i, True
+        out.append(text[pos:])
+        text = "".join(out)
+        if not changed:
+            break
+    return text
+
+
+def expand_float_macros(text):
+    r"""``\newcommand{\tabSpecifics}{\begin{table}...\end{table}}`` and later ``\tabSpecifics``: a whole float kept in
+    a macro without arguments. Pandoc expands it, but only after the float rules have run on the text (they never
+    see that table), and a table it cannot read is printed as raw LaTeX. The body goes in place of each use."""
+    pos = 0
+    while True:
+        m = _NEWCOMMAND.search(text, pos)
+        if not m:
+            return text
+        e = balanced_end(text, m.end())
+        if e < 0 or m.group("n"):
+            pos = m.end()
+            continue
+        body = text[m.end() + 1:e - 1]
+        if not re.search(r"\\begin\{(?:table|figure)\*?\}", body):
+            pos = e
+            continue
+        use = re.compile(r"\\" + m.group("name") + r"(?![a-zA-Z@])[ \t]*")
+        rest = text[e:]
+        if not use.search(rest):
+            pos = e
+            continue
+        expansion = "\n" + body + "\n\n"
+        text = text[:m.start()] + use.sub(lambda _m, x=expansion: x, rest)
         pos = m.start()
 
 

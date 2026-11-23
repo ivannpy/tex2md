@@ -18,6 +18,7 @@ from tex2md.build.latex import declared_toplevel, find_main, main_candidates
 from tex2md.config import CACHE, FILTER, UNWRAP_FILTER
 from tex2md.diagnostics import (
     Diagnostic,
+    compile_diagnostics,
     counts,
     from_pandoc_stderr,
     main_file_diagnostics,
@@ -99,7 +100,34 @@ def fetch(aid, ver, report) -> Workspace | None:
     ws.bdir = os.path.join(ws.build, os.path.dirname(rel_main))
     ws.base = os.path.splitext(os.path.basename(rel_main))[0]
     report["main"] = rel_main
+    if os.path.dirname(rel_main) and inputs_from_root(os.path.join(ws.build, rel_main), ws.build):
+        # arXiv compiles from the root of the tree: copy the main file there and compile it from there
+        root_main = os.path.join(ws.build, os.path.basename(rel_main))
+        if not os.path.exists(root_main):
+            shutil.copyfile(os.path.join(ws.build, rel_main), root_main)
+        if read(root_main) == read(os.path.join(ws.build, rel_main)):
+            ws.bdir = ws.build
+            report["compiled_from"] = "root of the source tree"
     return ws
+
+
+_INPUT_NAMES = re.compile(r"\\(?:input|include|subfile|usepackage|RequirePackage)\s*(?:\[[^\]]*\])?\s*\{([^{}]+)\}")
+
+
+def inputs_from_root(main: str, root: str) -> bool:
+    r"""A main file in a subfolder (``latex/acl_latex.tex``) whose ``\input{sections/...}`` and local packages are
+    found from the root of the tree and not from its own folder."""
+    text = re.sub(r"(?<!\\)%[^\n]*", "", read(main))
+    here = there = 0
+    for names in _INPUT_NAMES.findall(text):
+        for name in (n.strip() for n in names.split(",")):
+            for ext in ("", ".tex", ".sty"):
+                if os.path.isfile(os.path.join(os.path.dirname(main), name + ext)):
+                    here += 1
+                    break
+            else:
+                there += any(os.path.isfile(os.path.join(root, name + ext)) for ext in ("", ".tex", ".sty"))
+    return there > here
 
 
 EQUATION_MARK = ".tex2md-equation-labels"
@@ -138,12 +166,77 @@ def latexmk_command(base: str) -> list[str]:
             "-pdflatex=pdflatex -no-shell-escape -interaction=nonstopmode %O %S", base + ".tex"]
 
 
+_MISSING_STY = re.compile(r"! LaTeX Error: File `([A-Za-z0-9_.-]+)\.sty' not found\.")
+
+
+def read_log(ws: Workspace) -> str:
+    log = os.path.join(ws.bdir, ws.base + ".log")
+    return read(log) if os.path.exists(log) else ""
+
+
+def drop_package(text: str, name: str) -> str:
+    r"""``\usepackage[opts]{a,NAME,b}`` without NAME (the whole line if it was the only package)."""
+    def fix(m):
+        names = [n.strip() for n in m.group(2).split(",")]
+        if name not in names:
+            return m.group(0)
+        rest = [n for n in names if n != name]
+        return (m.group(1) + "{" + ",".join(rest) + "}") if rest else "% tex2md: " + m.group(0).replace("\n", " ")
+    return re.sub(r"(\\(?:usepackage|RequirePackage)\s*(?:\[[^\]]*\])?\s*)\{([^{}]*)\}", fix, text)
+
+
+def drop_missing_packages(ws: Workspace) -> list[str]:
+    """Packages the compile log says are not installed (``tocstyle`` left TeX Live in 2021): take them out of the
+    build copy so the next compile gets to the end. Returns the names it dropped."""
+    log = read_log(ws)
+    if not log:
+        return []
+    # a package whose .sty is somewhere in the tree is not missing: LaTeX is looking in the wrong folder
+    present = {fn[:-4] for _, _, fns in os.walk(ws.build) for fn in fns if fn.endswith(".sty")}
+    missing = sorted(set(_MISSING_STY.findall(log)) - present)
+    dropped = []
+    for dp, _, fns in os.walk(ws.build):
+        for fn in fns:
+            if not fn.endswith((".tex", ".sty", ".cls")):
+                continue
+            path = os.path.join(dp, fn)
+            with open(path, encoding="utf-8", errors="surrogateescape") as fh:
+                text = fh.read()
+            new = text
+            for name in missing:
+                new = drop_package(new, name)
+            if new != text:
+                with open(path, "w", encoding="utf-8", errors="surrogateescape") as fh:
+                    fh.write(new)
+                dropped += [n for n in missing if drop_package(text, n) != text]
+    return sorted(set(dropped))
+
+
 def compile_latex(ws: Workspace, report):
-    """Compile once for the .aux/.bbl (errors tolerated: a partial .aux still helps)."""
+    """Compile once for the .aux/.bbl (errors tolerated: a partial .aux still helps). A package that is not
+    installed stops LaTeX on the first page: it is dropped and the compile repeated."""
+    pdf = os.path.join(ws.bdir, ws.base + ".pdf")
     if not os.path.exists(os.path.join(ws.bdir, ws.base + ".aux")):
         rc, _, _ = run(latexmk_command(ws.base), ws.bdir, 600)
         report["compile_rc"] = rc
-    report["compiled_pdf"] = os.path.exists(os.path.join(ws.bdir, ws.base + ".pdf"))
+    if not os.path.exists(pdf):
+        # (also for a cached build compiled before this existed: it only reruns when the log names a missing package)
+        rc, dropped = None, []
+        for _ in range(5):
+            if os.path.exists(pdf):
+                break
+            new = drop_missing_packages(ws)
+            if not new:
+                break
+            dropped += new
+            for fn in os.listdir(ws.bdir):
+                if fn.startswith(ws.base + ".") and fn.endswith((".aux", ".fdb_latexmk", ".fls")):
+                    os.remove(os.path.join(ws.bdir, fn))
+            rc, _, _ = run(latexmk_command(ws.base), ws.bdir, 600)
+        if dropped:
+            report["compile_rc"] = rc
+            report["dropped_packages"] = dropped
+    report["compiled_pdf"] = os.path.exists(pdf)
 
 
 def locate_bbl(ws: Workspace):
@@ -302,6 +395,7 @@ def convert(arg, out, mn, title=None):
     diags = (scan_markdown(body) + from_pandoc_stderr(err) + latex_reference_diagnostics(stats)
              + dropped_diagnostics(dropped) + scan_lost_text(tex, body) + brace_diagnostics(repairs)
              + scan_missing_sections(sections, body)
+             + compile_diagnostics(bool(report.get("compiled_pdf")), read_log(ws))
              + main_file_diagnostics(os.path.relpath(ws.main, ws.src), list(ws.candidates)))
     report["diagnostics"] = [d.to_dict() for d in diags]
     report["diagnostic_counts"] = counts(diags)

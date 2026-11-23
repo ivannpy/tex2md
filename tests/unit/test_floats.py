@@ -390,3 +390,22 @@ def test_every_caption_of_a_panel_becomes_a_sub_caption():
     out = flatten_subfloats(src)
     assert re.findall(r"\\textit\{\((\w)\) (\w+)\}", out) == [("a", "First"), ("b", "Second"), ("c", "Third")]
     assert out.count(r"\caption{") == 1
+
+
+def test_row_of_tables_then_row_of_captions_are_paired():
+    from tex2md.preprocess.floats import pair_content_with_captions
+    tex = (r"\begin{table*}\centering"
+           r"\begin{minipage}{0.4\textwidth}\begin{tabular}{l}A\end{tabular}\end{minipage}\hfill"
+           r"\begin{minipage}{0.4\textwidth}\begin{tabular}{l}B\end{tabular}\end{minipage}\\"
+           r"\begin{minipage}{0.4\textwidth}\caption{CA}\end{minipage}\hfill"
+           r"\begin{minipage}{0.4\textwidth}\caption{CB}\end{minipage}\end{table*}")
+    out = pair_content_with_captions(tex)
+    assert out.index("A\\end{tabular}") < out.index("\\caption{CA}") < out.index("B\\end{tabular}") < out.index("\\caption{CB}")
+
+
+def test_teaser_drawn_by_a_redefined_maketitle():
+    from tex2md.preprocess.floats import teaser_in_maketitle
+    tex = (r"\renewcommand{\@maketitle}{\old@maketitle \includegraphics{t.pdf}\captionof{figure}{Teaser \label{fig:t}}}"
+           "\\begin{document}\\maketitle\nText")
+    out = teaser_in_maketitle(tex)
+    assert "\\maketitle\n\\begin{figure}\n\\caption{Teaser \\label{fig:t}}\n\\end{figure}\n\nText" in out

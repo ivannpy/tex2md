@@ -8,7 +8,7 @@ marginnote:
   - bookmd5: efcafbb46d6e52f2aa55397d00a7d7caac4b4172c87f5753a39370b929104e16
     path: "PCIC/Tesis/Text generation/Simple guidance mechanisms for discrete diffusion models.pdf"
 source: "arXiv LaTeX, tex2md 0.1"
-converted: 2026-11-17
+converted: 2026-11-22
 ---
 
 # Simple Guidance Mechanisms for Discrete Diffusion Models
@@ -52,14 +52,14 @@ Diffusion models are a class of generative models defined by a denoising network
 
 In discrete denoising diffusion probabilistic models (D3PM; Austin et al. (2021)), the noising process is defined in terms of a transition matrix $Q_{t|s}$ whose $(i,j)^{\text{th}}$ entry is the probability of transitioning to the $i$-th state at time $t$ given the $j$-th state at time $s$. This induces a Markov corruption process where we have $q({\mathbf z}_t \mid {\mathbf z}_s) = \mathrm{Cat}({\mathbf z}_t; Q_{t|s}{\mathbf z}_s)$.
 
-Sahoo et al. (2024a) build off this framework to introduce specialized algorithms that are both simpler and more effective than the general D3PM framework. They focus on a specific class of forward processes from D3PM that can be defined as interpolations between clean data and a noisy prior $\boldsymbol{\pi}$, and we adopt their notation below: 
+Sahoo et al. (2024a) build off this framework to introduce specialized algorithms that are both simpler and more effective than the general D3PM framework. They focus on a specific class of forward processes from D3PM that can be defined as interpolations between clean data and a noisy prior $\boldsymbol{\pi}$, and we adopt their notation below:
 
 $$\begin{align}
 \tag{1}
     q({\mathbf z}_t | {\mathbf x}) = \mathrm{Cat}({\mathbf z}_t; \alpha_{t}{\mathbf x}+ (1 - \alpha_{t}) \boldsymbol{\pi}{}),
 \end{align}$$
 
-where $\alpha_{t}= \alpha(t)$ is a noise schedule monotonically decreasing in $t.$ Defining $\alpha_{t|s}= \alpha_{t}/ \alpha_{s},$ this class of processes admit the following posteriors 
+where $\alpha_{t}= \alpha(t)$ is a noise schedule monotonically decreasing in $t.$ Defining $\alpha_{t|s}= \alpha_{t}/ \alpha_{s},$ this class of processes admit the following posteriors
 
 $$\begin{equation}
 \tag{2}
@@ -74,14 +74,14 @@ Of note, for absorbing-state diffusion, where $\boldsymbol{\pi}= [\text{mask}]~,
 
 For continuous data, diffusion models have demonstrated state-of-the-art controllable generation by means of classifier-based (Sohl-Dickstein et al., 2015; Dhariwal & Nichol, 2021a) and classifier-free guidance (Nichol et al., 2021; Ho & Salimans, 2022; Saharia et al., 2022). These approaches rely on different ways of expressing the score of a distribution conditioned on $y$.
 
-**Classifier-based**  Classifier-based generation employs a diffusion model to iteratively sample from a tempered distribution $p^{\gamma}({\mathbf z}_s \mid y, {\mathbf z}_t) \propto p(y \mid {\mathbf z}_s)^{\gamma}p_\theta({\mathbf z}_s \mid{\mathbf z}_t),$ where $\gamma$ represents an inverse temperature parameter, $p_\theta({\mathbf z}_s \mid{\mathbf z}_t)$ is a pre-trained diffusion model, and $p(y \mid {\mathbf z}_s)$ is a classifier: 
+**Classifier-based**  Classifier-based generation employs a diffusion model to iteratively sample from a tempered distribution $p^{\gamma}({\mathbf z}_s \mid y, {\mathbf z}_t) \propto p(y \mid {\mathbf z}_s)^{\gamma}p_\theta({\mathbf z}_s \mid{\mathbf z}_t),$ where $\gamma$ represents an inverse temperature parameter, $p_\theta({\mathbf z}_s \mid{\mathbf z}_t)$ is a pre-trained diffusion model, and $p(y \mid {\mathbf z}_s)$ is a classifier:
 
 $$\begin{align}
 \tag{3}
     \nabla_{{\mathbf z}_s} \log p^\gamma({\mathbf z}_s \mid y, {\mathbf z}_t) = \gamma\nabla_{{\mathbf z}_s}\log p(y \mid {\mathbf z}_s) + \nabla_{{\mathbf z}_s}\log p_\theta({\mathbf z}_s \mid {\mathbf z}_t).
 \end{align}$$
 
-**Classifier-free**  We can also observe that appyling Bayes’ rule to $p(y \mid {\mathbf x})$ and differentiating with respect to the input yields $\nabla_{\mathbf x}\log p(y \mid x) = \nabla_{\mathbf x}\log p(x \mid y) - \nabla_{\mathbf x}\log p(x).$ Applying this to $p(y \mid {\mathbf z}_s)$ and plugging into (3) gives us the formulation for classifier-free guidance: 
+**Classifier-free**  We can also observe that appyling Bayes’ rule to $p(y \mid {\mathbf x})$ and differentiating with respect to the input yields $\nabla_{\mathbf x}\log p(y \mid x) = \nabla_{\mathbf x}\log p(x \mid y) - \nabla_{\mathbf x}\log p(x).$ Applying this to $p(y \mid {\mathbf z}_s)$ and plugging into (3) gives us the formulation for classifier-free guidance:
 
 $$\begin{align}
     \nabla_{{\mathbf z}_s} \log p^{\gamma}({\mathbf z}_s \mid y, {\mathbf z}_t) &= \gamma\cdot[\nabla_{{\mathbf z}_s}\log p_\theta({\mathbf z}_s \mid y, {\mathbf z}_t) - \nabla_{{\mathbf z}_s} \log p_\theta({\mathbf z}_s \mid {\mathbf z}_t)] + \nabla_{{\mathbf z}_s} \log p_\theta({\mathbf z}_s \mid {\mathbf z}_t) \nonumber \\
@@ -92,7 +92,7 @@ with $p_\theta({\mathbf z}_s \mid y, {\mathbf z}_t)$ conditionally and $p_\theta
 
 # 3 Guidance Algorithms for Discrete Diffusion
 
-Applying guidance to discrete diffusion is challenging because guidance terms are not differentiable with respect to the discrete representations ${\mathbf z}_t$ (Gruver et al., 2024). Here, we introduce two guidance algorithms for discrete diffusion that circumvent the issue of non-differentiability. As in Section 2.2, we formalize the guidance term as a probability $p(y | {\mathbf z}) \in \Delta^K$, where $y \in \{1, \ldots, K\}$ is one of $K$ possible classes, and we begin with the distribution that controls the strength of the guidance term via the $\gamma$ temperature parameter (with $c$ denoting the logarithm of the normalization constant): 
+Applying guidance to discrete diffusion is challenging because guidance terms are not differentiable with respect to the discrete representations ${\mathbf z}_t$ (Gruver et al., 2024). Here, we introduce two guidance algorithms for discrete diffusion that circumvent the issue of non-differentiability. As in Section 2.2, we formalize the guidance term as a probability $p(y | {\mathbf z}) \in \Delta^K$, where $y \in \{1, \ldots, K\}$ is one of $K$ possible classes, and we begin with the distribution that controls the strength of the guidance term via the $\gamma$ temperature parameter (with $c$ denoting the logarithm of the normalization constant):
 
 $$\begin{equation}
 \tag{5}
@@ -101,20 +101,20 @@ $$\begin{equation}
 
 ## 3.1 Classifier-free Guidance
 
-**Guidance for a Single Token**  To derive classifier-free guidance, we apply Bayes’ rule to the first term on the right-hand side of (5): 
+**Guidance for a Single Token**  To derive classifier-free guidance, we apply Bayes’ rule to the first term on the right-hand side of (5):
 
 $$\begin{equation*}
     \log p^\gamma({\mathbf z}_s \mid y, {\mathbf z}_t) = \gamma\log p({\mathbf z}_s \mid y, {\mathbf z}_t) - \gamma\log p({\mathbf z}_s \mid {\mathbf z}_t) + \gamma\log p(y\mid {\mathbf z}_t) + \log p({\mathbf z}_s \mid {\mathbf z}_t) + c.
 \end{equation*}$$
 
-Absorbing $\gamma\log p(y\mid {\mathbf z}_t)$ into the constant $c$ and grouping terms yields: 
+Absorbing $\gamma\log p(y\mid {\mathbf z}_t)$ into the constant $c$ and grouping terms yields:
 
 $$\begin{equation}
 \tag{6}
     \log p^\gamma({\mathbf z}_s \mid y, {\mathbf z}_t) = \gamma\log p({\mathbf z}_s \mid y, {\mathbf z}_t) + (1-\gamma)\log p({\mathbf z}_s \mid {\mathbf z}_t) + c.
 \end{equation}$$
 
-**Extension to Sequences**  In the derivation for (6), we can replace the single-token latent variables with sequences of multiple tokens: 
+**Extension to Sequences**  In the derivation for (6), we can replace the single-token latent variables with sequences of multiple tokens:
 
 $$\begin{align}
 \tag{7}
@@ -124,7 +124,7 @@ $$\begin{align}
 \end{split}
 \end{align}$$
 
-**Discrete Classifier-Free Guidance**  We can model the probabilities in (7) by training a conditional denoising diffusion network $p_\theta({\mathbf z}_s^{(1:L)} \mid y, {\mathbf z}_t^{(1:L)})$ and an unconditional one $p_\theta({\mathbf z}_s^{(1:L)} \mid {\mathbf z}_t^{(1:L)})$. In practice, we train these models in tandem by randomly ‘dropping out’ or ‘masking’ the conditioner during training to simulate the unconditional diffusion model. Each of these distributions is thus modeled to factorize independently along the sequence length dimension of ${\mathbf z}_s^{(1:L)}$ when conditioned on ${\mathbf z}_t^{(1:L)}$, allowing us to efficiently sample from the tempered guidance distribution as follows: 
+**Discrete Classifier-Free Guidance**  We can model the probabilities in (7) by training a conditional denoising diffusion network $p_\theta({\mathbf z}_s^{(1:L)} \mid y, {\mathbf z}_t^{(1:L)})$ and an unconditional one $p_\theta({\mathbf z}_s^{(1:L)} \mid {\mathbf z}_t^{(1:L)})$. In practice, we train these models in tandem by randomly ‘dropping out’ or ‘masking’ the conditioner during training to simulate the unconditional diffusion model. Each of these distributions is thus modeled to factorize independently along the sequence length dimension of ${\mathbf z}_s^{(1:L)}$ when conditioned on ${\mathbf z}_t^{(1:L)}$, allowing us to efficiently sample from the tempered guidance distribution as follows:
 
 $$\begin{align}
     p^\gamma_\theta({\mathbf z}_s^{(1:L)} \mid {\mathbf z}_t^{(1:L)}, y) = \prod_{\ell=1}^{L}\frac{1}{Z^{(\ell)}}p_\theta({\mathbf z}_s^{(\ell)} \mid y, {\mathbf z}_t^{(1:L)})^\gamma p_\theta({\mathbf z}_s^{(\ell)}\mid{\mathbf z}_t^{(1:L)})^{(1-\gamma)},
@@ -137,7 +137,7 @@ We refer to this method as **D-CFG** for **D**iscrete **C**lassifier-**F**ree **
 
 ## 3.2 Classifier-based Guidance
 
-**Guidance for a Single Token**  Exponentiating (5) lets us draw classifier-guided samples from the following tempered distribution: 
+**Guidance for a Single Token**  Exponentiating (5) lets us draw classifier-guided samples from the following tempered distribution:
 
 $$\begin{equation}
 \tag{9}
@@ -146,21 +146,21 @@ $$\begin{equation}
 
 which we can tractably normalize, as we only sum over the $N$ possible values of a single token ${\mathbf z}_s.$
 
-**Extension to Sequences**  Unfortunately, extending (9) to sequences is not trivial, since the classifier $p(y \mid {\mathbf z}_s^{(1:L)}, {\mathbf z}_t^{(1:L)})$ does not necessarily factorize independently across the sequence, which would potentially force us to compute a normalization constant with $N^{L}$ terms, accounting for every possible value of ${\mathbf z}_s^{(1:L)}.$ To alleviate this issue, we require the assumption that conditioned on ${\mathbf z}_t^{(1:L)}$, the tempered distribution $p^\gamma({\mathbf z}_s^{(1:L)} \mid {\mathbf z}_t^{1:L}, y)$ factorizes independently across tokens. Therefore, we can focus on the tempered distirbution of each token ${\mathbf z}_s^{(\ell)},$ for $\ell \in 1,\ldots, L$: 
+**Extension to Sequences**  Unfortunately, extending (9) to sequences is not trivial, since the classifier $p(y \mid {\mathbf z}_s^{(1:L)}, {\mathbf z}_t^{(1:L)})$ does not necessarily factorize independently across the sequence, which would potentially force us to compute a normalization constant with $N^{L}$ terms, accounting for every possible value of ${\mathbf z}_s^{(1:L)}.$ To alleviate this issue, we require the assumption that conditioned on ${\mathbf z}_t^{(1:L)}$, the tempered distribution $p^\gamma({\mathbf z}_s^{(1:L)} \mid {\mathbf z}_t^{1:L}, y)$ factorizes independently across tokens. Therefore, we can focus on the tempered distirbution of each token ${\mathbf z}_s^{(\ell)},$ for $\ell \in 1,\ldots, L$:
 
 $$\begin{equation}
 \tag{10}
     p^\gamma({\mathbf z}_s^{(\ell)} \mid {\mathbf z}_t^{(1:L)}, y) \propto p(y \mid {\mathbf z}_s^{(\ell)}, {\mathbf z}_t^{(1:L)})^\gamma p({\mathbf z}_s^{(\ell)} \mid {\mathbf z}_t^{(1:L)}).
 \end{equation}$$
 
-**Discrete Classifier-Based Guidance**  We first introduce the following additional notation: given ${\mathbf z}^{(1:L)}$, let $\tilde{\mathcal{Z}}_\ell({\mathbf z}^{(1:L)})$ be the set of sequences $\tilde{{\mathbf z}}^{(1:L)}$ for which $\tilde{{\mathbf z}}^{(\ell')} = {\mathbf z}^{(\ell')}$ for all $\ell' \neq \ell,$ i.e., the set of sequences that are either the same as or only differ in position $\ell$ relative to ${\mathbf z}^{(1:L)}.$ We can sample from $p^\gamma({\mathbf z}_s^{(\ell)} \mid {\mathbf z}_t^{(1:L)}, y)$ by training a classifier $p_\phi: \mathcal{V}^L \rightarrow \Delta^K$ on noised latents ${\mathbf z}_t^{(1:L)}$ for $t \in [0, 1]$ and use this to model the first term on the right-hand side of (10) by only evaluating $p_\phi$ on sequences for which ${\mathbf z}_s^{(1:L)}$ and ${\mathbf z}_t^{(1:L)}$ differ by at most the token at position $\ell$: 
+**Discrete Classifier-Based Guidance**  We first introduce the following additional notation: given ${\mathbf z}^{(1:L)}$, let $\tilde{\mathcal{Z}}_\ell({\mathbf z}^{(1:L)})$ be the set of sequences $\tilde{{\mathbf z}}^{(1:L)}$ for which $\tilde{{\mathbf z}}^{(\ell')} = {\mathbf z}^{(\ell')}$ for all $\ell' \neq \ell,$ i.e., the set of sequences that are either the same as or only differ in position $\ell$ relative to ${\mathbf z}^{(1:L)}.$ We can sample from $p^\gamma({\mathbf z}_s^{(\ell)} \mid {\mathbf z}_t^{(1:L)}, y)$ by training a classifier $p_\phi: \mathcal{V}^L \rightarrow \Delta^K$ on noised latents ${\mathbf z}_t^{(1:L)}$ for $t \in [0, 1]$ and use this to model the first term on the right-hand side of (10) by only evaluating $p_\phi$ on sequences for which ${\mathbf z}_s^{(1:L)}$ and ${\mathbf z}_t^{(1:L)}$ differ by at most the token at position $\ell$:
 
 $$\begin{align*}
     p(y \mid {\mathbf z}_s^{(\ell)}, {\mathbf z}_t^{(1:L)}) \approx p_\phi(y \mid \tilde{{\mathbf z}}^{(1:L)}), &&
     \text{for ~~}\tilde{{\mathbf z}}^{(1:L)} = \Big[{\mathbf z}_t^{(1:\ell-1)}, {\mathbf z}_s^{(\ell)}, {\mathbf z}_t^{(\ell+1:L)}\Big] \in \tilde{\mathcal{Z}}_\ell({\mathbf z}_t^{(1:L)}).
 \end{align*}$$
 
-We additionally train an unconditional denoising network $p_\theta({\mathbf z}_s^{(\ell)} \mid {\mathbf z}_t^{(1:L)})$ and then sample from the re-normalized distribution: 
+We additionally train an unconditional denoising network $p_\theta({\mathbf z}_s^{(\ell)} \mid {\mathbf z}_t^{(1:L)})$ and then sample from the re-normalized distribution:
 
 $$\begin{align}
 \tag{11}
@@ -171,7 +171,7 @@ Restricting the summation in the denominators of (11) to $\tilde{\mathcal{Z}}_\e
 
 We refer to our method as **D-CBG** for **D**iscrete **C**lassifier-**B**ased **G**uidance. Our method can be thought of as an adaptation of the successful FUDGE (Yang & Klein, 2021) approach, which guides AR generation, to discrete diffusion, similar to how NOS (Gruver et al., 2024) extended the AR guidance mechanism of PPLM (Dathathri et al., 2019) to diffusion models.
 
-**First Order Approximation**  While tractable, this formulation suffers from the drawback that at each denoising step we must perform ${\mathcal{O}}(L\cdot N)$ forward passes through the classifier model, which can quickly become impractical for larger vocabularies and longer sequences. Similarly to Grathwohl et al. (2021), Vignac et al. (2022), we can treat the classifier $p_\phi$ as a continuous function of the one-hot inputs $\tilde{{\mathbf z}}^{(1:L)} \in \mathbb{R}^{L \times N}$ and use the first order Taylor approximation of $\log p_\phi$ to efficiently compute $p_{\phi}(y \mid \tilde{{\mathbf z}}^{(1:L)})$ with only a single forward and backward pass through the classifier model: 
+**First Order Approximation**  While tractable, this formulation suffers from the drawback that at each denoising step we must perform ${\mathcal{O}}(L\cdot N)$ forward passes through the classifier model, which can quickly become impractical for larger vocabularies and longer sequences. Similarly to Grathwohl et al. (2021), Vignac et al. (2022), we can treat the classifier $p_\phi$ as a continuous function of the one-hot inputs $\tilde{{\mathbf z}}^{(1:L)} \in \mathbb{R}^{L \times N}$ and use the first order Taylor approximation of $\log p_\phi$ to efficiently compute $p_{\phi}(y \mid \tilde{{\mathbf z}}^{(1:L)})$ with only a single forward and backward pass through the classifier model:
 
 $$\begin{align}
 \tag{12}
@@ -186,7 +186,7 @@ While masked diffusion models have demonstrated better language modeling compare
 
 ## 4.1 Uniform Noise Diffusion
 
-**Discrete Time Likelihood Bound**  We start with the variational lower bound that is defined by a general diffusion process. For discrete-time diffusion, i.e., some finite steps $T$, we define $t(i) = (i+1)/T$ and $s(i) = i / T$ for $i$ in $0, \ldots, T.$ Denoting the Kullback-Leibler divergence as $D_{\mathrm{KL}}$, the denoising network $p_\theta$ is trained to minimize a variational upper bound (NELBO), which is given by: 
+**Discrete Time Likelihood Bound**  We start with the variational lower bound that is defined by a general diffusion process. For discrete-time diffusion, i.e., some finite steps $T$, we define $t(i) = (i+1)/T$ and $s(i) = i / T$ for $i$ in $0, \ldots, T.$ Denoting the Kullback-Leibler divergence as $D_{\mathrm{KL}}$, the denoising network $p_\theta$ is trained to minimize a variational upper bound (NELBO), which is given by:
 
 $$\begin{equation}
 \tag{13}
@@ -200,7 +200,7 @@ $$\begin{equation}
 
 When clear, we drop the explicit dependence of $t$ and $s$ on the discrete step $i$.
 
-**Uniform Noise Forward Process**  We focus on uniform noise diffusion using the interpolating discrete diffusion framework (Sahoo et al., 2024a; Zhao et al., 2024; Zheng et al., 2023). When letting $\boldsymbol{\pi}= \boldsymbol{u}$, the input ${\mathbf x}$ transitions to a random state with some probability at each time step. Crucially, after ${\mathbf x}$ changes once, it can do so again. When $\boldsymbol{\pi}= \boldsymbol{u}$, the posterior from (2) becomes 
+**Uniform Noise Forward Process**  We focus on uniform noise diffusion using the interpolating discrete diffusion framework (Sahoo et al., 2024a; Zhao et al., 2024; Zheng et al., 2023). When letting $\boldsymbol{\pi}= \boldsymbol{u}$, the input ${\mathbf x}$ transitions to a random state with some probability at each time step. Crucially, after ${\mathbf x}$ changes once, it can do so again. When $\boldsymbol{\pi}= \boldsymbol{u}$, the posterior from (2) becomes
 
 $$\begin{equation}
 \tag{14}    
@@ -216,7 +216,7 @@ $$\begin{equation}
         \right)
 \end{equation}$$
 
-**Denoising Process**  The optimal form for the reverse diffusion process $p_\theta$ matches (14): in fact setting $p_\theta$ to (14) reduces the KL terms in (13) to zero. However, setting $p_\theta$ to exactly (14) is not possible because it cannot be a function ${\mathbf x}$ (which $p_\theta$ is generating). Therefore, we introduce a predictive model ${\mathbf x}_\theta({\mathbf z}_t, t): \mathcal{V}\times [0, 1] \rightarrow \Delta^N$ of the ‘clean’ data given a noisy latent ${\mathbf z}_t$ at time $t$. We use ${\mathbf x}_\theta$ to parameterize the denoising process as $p_\theta({\mathbf z}_s \mid {\mathbf z}_t) = q({\mathbf z}_s \mid {\mathbf z}_t, {\mathbf x}= {\mathbf x}_\theta)$, yielding: 
+**Denoising Process**  The optimal form for the reverse diffusion process $p_\theta$ matches (14): in fact setting $p_\theta$ to (14) reduces the KL terms in (13) to zero. However, setting $p_\theta$ to exactly (14) is not possible because it cannot be a function ${\mathbf x}$ (which $p_\theta$ is generating). Therefore, we introduce a predictive model ${\mathbf x}_\theta({\mathbf z}_t, t): \mathcal{V}\times [0, 1] \rightarrow \Delta^N$ of the ‘clean’ data given a noisy latent ${\mathbf z}_t$ at time $t$. We use ${\mathbf x}_\theta$ to parameterize the denoising process as $p_\theta({\mathbf z}_s \mid {\mathbf z}_t) = q({\mathbf z}_s \mid {\mathbf z}_t, {\mathbf x}= {\mathbf x}_\theta)$, yielding:
 
 $$\begin{equation}
 \tag{15}
@@ -240,21 +240,21 @@ We now present our contribution to uniform noise discrete diffusion modeling. We
 
 **Prior Loss (${\mathcal{L}_\text{prior}}$)**  Given that we define our corruption process as an interpolation between clean data and a limiting distribution, for any noise schedules where $\alpha_{t(T)} = 0$, the distribution $q({\mathbf z}_{t(T)}) = \boldsymbol{\pi}$. Therefore, we can simply define $p_\theta({\mathbf z}_{t(T)}) = \boldsymbol{\pi}$, and the KL divergence in ${\mathcal{L}_\text{prior}}$ evaluates to zero.
 
-**Reconstruction Loss (${\mathcal{L}_{\text{recons}}}$)**  For ${\mathcal{L}_{\text{recons}}}$, if our noise schedule is such that $T \rightarrow \infty \implies \alpha_{t(0)} = 1$ (i.e., $t(0)=1/T$), then the marginal $q({\mathbf z}_{\frac{1}{T}} \mid {\mathbf x}) \rightarrow \mathrm{Cat}({\mathbf z}_{\frac{1}{T}}; {\mathbf x})$. That is, in the limit, the first latent vector is identically equal to the clean data. We can thus parameterize our denoising network such that at time $t(0)$ the function simply copies its inputs: ${\mathbf x}_\theta({\mathbf z}_{\frac{1}{T}}, 1/T) = {\mathbf z}_{\frac{1}{T}}.$ Additionally, we note that our choice of parameterization for $p_\theta$ implies that $p_\theta({\mathbf x}\mid {\mathbf z}_{{\frac{1}{T}}}) = {\mathbf x}_\theta({\mathbf z}_{{\frac{1}{T}}}, 1/T).$ Thus in the continuous time limit, we have: 
+**Reconstruction Loss (${\mathcal{L}_{\text{recons}}}$)**  For ${\mathcal{L}_{\text{recons}}}$, if our noise schedule is such that $T \rightarrow \infty \implies \alpha_{t(0)} = 1$ (i.e., $t(0)=1/T$), then the marginal $q({\mathbf z}_{\frac{1}{T}} \mid {\mathbf x}) \rightarrow \mathrm{Cat}({\mathbf z}_{\frac{1}{T}}; {\mathbf x})$. That is, in the limit, the first latent vector is identically equal to the clean data. We can thus parameterize our denoising network such that at time $t(0)$ the function simply copies its inputs: ${\mathbf x}_\theta({\mathbf z}_{\frac{1}{T}}, 1/T) = {\mathbf z}_{\frac{1}{T}}.$ Additionally, we note that our choice of parameterization for $p_\theta$ implies that $p_\theta({\mathbf x}\mid {\mathbf z}_{{\frac{1}{T}}}) = {\mathbf x}_\theta({\mathbf z}_{{\frac{1}{T}}}, 1/T).$ Thus in the continuous time limit, we have:
 
 $$\begin{equation*}
     \lim_{T\rightarrow\infty}\mathbb{E}_q[{\mathcal{L}_{\text{recons}}}] = \lim_{T\rightarrow\infty}\mathbb{E}_q[\log p_\theta({\mathbf x}\mid{\mathbf z}_{\frac{1}{T}})]
     = \lim_{T\rightarrow\infty}\mathbb{E}_q[\log(\langle{\mathbf x}, {\mathbf x}_\theta({\mathbf z}_{\frac{1}{T}}, 1/T)\rangle)] = 0.
 \end{equation*}$$
 
-**Diffusion Loss (${\mathcal{L}_\text{diffusion}}$)**  Turning finally to the diffusion loss term ${\mathcal{L}_\text{diffusion}}$, we first define the shorthand $D_{\mathrm{KL}}[q_t||p_\theta] = D_{\mathrm{KL}}[[q({\mathbf z}_{s} \mid {\mathbf z}_{t}, {\mathbf x}) || p_\theta({\mathbf z}_{s}\mid {\mathbf z}_{t})]]$ and then re-write this loss term as an expectation over $t$ uniformly sampled from $1/T, 2/T, \ldots, T$: 
+**Diffusion Loss (${\mathcal{L}_\text{diffusion}}$)**  Turning finally to the diffusion loss term ${\mathcal{L}_\text{diffusion}}$, we first define the shorthand $D_{\mathrm{KL}}[q_t||p_\theta] = D_{\mathrm{KL}}[[q({\mathbf z}_{s} \mid {\mathbf z}_{t}, {\mathbf x}) || p_\theta({\mathbf z}_{s}\mid {\mathbf z}_{t})]]$ and then re-write this loss term as an expectation over $t$ uniformly sampled from $1/T, 2/T, \ldots, T$:
 
 $$\begin{equation}
 \tag{16}
     {\mathcal{L}_\text{diffusion}}= \sum_{i=1}^TD_{\mathrm{KL}}[q_{i/T}|| p_\theta]= T\cdot\mathbb{E}_{t\sim\{1/T, 2/T, \ldots, T\}}D_{\mathrm{KL}}[q_{t}|| p_\theta].
 \end{equation}$$
 
-Plugging in our expressions for the true and predicted posteriors from (14) and (15) into (16), then taking $T\rightarrow \infty$, we get (see Appendix A for details): 
+Plugging in our expressions for the true and predicted posteriors from (14) and (15) into (16), then taking $T\rightarrow \infty$, we get (see Appendix A for details):
 
 $$\begin{equation}
 \tag{17}
@@ -270,7 +270,7 @@ $$\begin{equation}
 
 where ${\mathbf x}_j$ denotes the $j^{\text{th}}$ index of a vector ${\mathbf x}$, $\bar{\mathbf{x}}= N\alpha_{t}{\mathbf x}+ (1 - \alpha_{t}){\boldsymbol{1}}$, $\bar{\mathbf{x}}_\theta = N\alpha_{t}{\mathbf x}_\theta + (1 - \alpha_{t}){\boldsymbol{1}}$, and we define $i = \arg\max_{j\in[N]} ({\mathbf z}_t)_j$ to be the non-zero entry of ${\mathbf z}_t$.
 
-Combining our arguments regarding ${\mathcal{L}_\text{prior}}$ and ${\mathcal{L}_{\text{recons}}}$ with (17), yields our final tight bound: 
+Combining our arguments regarding ${\mathcal{L}_\text{prior}}$ and ${\mathcal{L}_{\text{recons}}}$ with (17), yields our final tight bound:
 
 $$\begin{equation}
 \tag{18}
@@ -279,7 +279,7 @@ $$\begin{equation}
     \Bigg]\Bigg]\mathrm{d}t.
 \end{equation}$$
 
-**Extension to Sequences**  Extending training with (18) from ${\mathbf x}\in \mathcal{V}$ to sequences ${\mathbf x}^{(1:L)}\in\mathcal{V}^L,$ we make the assumption that the denoising process factorizes independently across tokens when conditioned on a sequence of noisy latents ${\mathbf z}_t^{(1:L)}.$ In this case, we use a single model ${\mathbf x}^{(\ell)}_\theta({\mathbf z}_t^{(1:L)}, t)$ for predicting each token $\ell \in \{1, \ldots, L\}$ in a sequence, and we train with the sequence-level objective: 
+**Extension to Sequences**  Extending training with (18) from ${\mathbf x}\in \mathcal{V}$ to sequences ${\mathbf x}^{(1:L)}\in\mathcal{V}^L,$ we make the assumption that the denoising process factorizes independently across tokens when conditioned on a sequence of noisy latents ${\mathbf z}_t^{(1:L)}.$ In this case, we use a single model ${\mathbf x}^{(\ell)}_\theta({\mathbf z}_t^{(1:L)}, t)$ for predicting each token $\ell \in \{1, \ldots, L\}$ in a sequence, and we train with the sequence-level objective:
 
 $$\begin{equation}
     {\mathcal{L}^{\infty}}
@@ -299,9 +299,9 @@ We dub models trained with our refined objective **U**niform **D**iffusion **L**
 
 Our language modeling experiments show that (1) contrary to a widely-held belief, **uniform noise diffusion can attain state-of-the-art performance** on small vocabulary datasets (Table 1), and that (2) our **UDLM are state-of-the-art among uniform noise diffusion** (Tables 2 and 3).
 
-**Tabla 1.** UDLM performs best with smaller vocabs. Perplexity ($\downarrow$) on various datasets. Best values are **bolded.** $^{\text{*}}$ indicates values reported from early stopping on the validation set; otherwise validation performance at the end of training is used. $^\dagger$From (Sahoo et al., 2024a). $^\$$From Lou et al. (2023).
+**Tabla 1.** UDLM performs best with smaller vocabs. Perplexity ($\downarrow$) on various datasets. Best values are **bolded.** $^{\text{*}}$ indicates values reported from early stopping on the validation set; otherwise validation performance at the end of training is used. $^\dagger$From (Sahoo et al., 2024a). $^\textdollar$From Lou et al. (2023).
 
-|  | $\vert $Vocab.$\vert $ | AR | MDLM | UDLM |
+|  | $\vert$Vocab.$\vert$ | AR | MDLM | UDLM |
 |:---|:--:|:--:|:--:|:--:|
 | Species10 | 12 | **2.88** | 3.17$_{\leq}$ | 3.15$_{\leq}$ |
 | QM9$^{\text{*}}$ | 40 | 2.19 | 2.12$_{\leq}$ | **2.02$_{\leq}$** |
@@ -341,7 +341,7 @@ Secondly, despite the persisting gap between absorbing and uniform noise discret
 |  | SEDD Uniform$^\dagger$ (Lou et al., 2023) | 1.47$_\leq$ |
 |  | UDLM (*Ours*) | <u>1.44</u>$_\leq$ |
 
-**Tabla 3.** UDLM outperforms other uniform discrete diffusion on LM1B. Best value is **bolded** & best discrete uniform diffusion value is <u>underlined</u>. $^\dagger$From (Sahoo et al., 2024a). $^\text{*}$From (Lou et al., 2023). $^\$$From (Austin et al., 2021).
+**Tabla 3.** UDLM outperforms other uniform discrete diffusion on LM1B. Best value is **bolded** & best discrete uniform diffusion value is <u>underlined</u>. $^\dagger$From (Sahoo et al., 2024a). $^\text{*}$From (Lou et al., 2023). $^\textdollar$From (Austin et al., 2021).
 
 |  | Method | PPL ($\downarrow$) |
 |:---|:---|:--:|
@@ -452,14 +452,14 @@ We thank Nate Gruver for useful discussions regarding NOS. This work was support
 
 Here, we derive a continuous time formulation ($T \rightarrow \infty$) for the diffusion loss term ${\mathcal{L}_\text{diffusion}}$ when using the uniform distribution as the limiting distribution of the diffusion process.
 
-For uniform noise diffusion, we define a limiting distribution $\boldsymbol{u}= \mathbf{1}/N,$ where ${\boldsymbol{1}}$ represents the column vector of all ones, and $N$ the size of the vocabulary. We adopt the assumption from MDLM (Sahoo et al., 2024a) that our diffusion process interpolates between clean data and noise: 
+For uniform noise diffusion, we define a limiting distribution $\boldsymbol{u}= \mathbf{1}/N,$ where ${\boldsymbol{1}}$ represents the column vector of all ones, and $N$ the size of the vocabulary. We adopt the assumption from MDLM (Sahoo et al., 2024a) that our diffusion process interpolates between clean data and noise:
 
 $$\begin{equation}
     q({\mathbf z}_t \mid {\mathbf x}) = \mathrm{Cat}({\mathbf z}_t; \alpha_{t}{\mathbf x}+ (1 - \alpha_{t})\boldsymbol{\pi})
 \tag{20}
 \end{equation}$$
 
-and the marginals are given as 
+and the marginals are given as
 
 $$\begin{equation}
 \tag{21}
@@ -468,7 +468,7 @@ $$\begin{equation}
 
 where $\alpha_{t|s}= \alpha_{t}/ \alpha_{s}.$
 
-Following Austin et al. (2021), we can derive the posterior: 
+Following Austin et al. (2021), we can derive the posterior:
 
 $$\begin{equation}
     q({\mathbf z}_s \mid {\mathbf z}_t, {\mathbf x}) =
@@ -482,7 +482,7 @@ $$\begin{equation}
 \tag{22}
 \end{equation}$$
 
-Using $\boldsymbol{\pi}= \boldsymbol{u}$ as defined above, we get the following: 
+Using $\boldsymbol{\pi}= \boldsymbol{u}$ as defined above, we get the following:
 
 $$\begin{align}
     q({\mathbf z}_s \mid {\mathbf z}_t, {\mathbf x})
@@ -507,7 +507,7 @@ $$\begin{align}
 \tag{24}
 \end{align}$$
 
-For the denoising distribution, we replace ${\mathbf x}$ by ${\mathbf x}_\theta$: 
+For the denoising distribution, we replace ${\mathbf x}$ by ${\mathbf x}_\theta$:
 
 $$\begin{equation}
     p_\theta({\mathbf z}_s \mid {\mathbf z}_t) = \mathrm{Cat}\left(
@@ -522,7 +522,7 @@ $$\begin{equation}
 \tag{25}
 \end{equation}$$
 
-Let us now look at the diffusion loss term in the NELBO: 
+Let us now look at the diffusion loss term in the NELBO:
 
 $$\begin{align}
     &T\cdot D_{\mathrm{KL}}(q({\mathbf z}_s \mid {\mathbf z}_t, {\mathbf x}) || p_\theta({\mathbf z}_s \mid {\mathbf z}_t))
@@ -530,7 +530,7 @@ $$\begin{align}
 \tag{26}
 \end{align}$$
 
-Letting $i = \arg\max_{j\in[N]} ({\mathbf z}_t)_j$ be the non-zero entry of ${\mathbf z}_t$, we can break up this KL into two terms: 
+Letting $i = \arg\max_{j\in[N]} ({\mathbf z}_t)_j$ be the non-zero entry of ${\mathbf z}_t$, we can break up this KL into two terms:
 
 $$\begin{align}
     T\cdot D_{\mathrm{KL}}(q({\mathbf z}_s \mid {\mathbf z}_t, {\mathbf x}) || p_\theta({\mathbf z}_s \mid {\mathbf z}_t))
@@ -541,21 +541,21 @@ $$\begin{align}
 
 We now examine each of these terms taking $T \rightarrow \infty,$ or equivalently, using $s = t - \frac{1}{T} \implies T = \frac{1}{t - s},$ taking $s \rightarrow t.$
 
-**Term 1:** 
+**Term 1:**
 
 $$\begin{align}
     \lim_{s \rightarrow t}\frac{1}{t-s}\cdot\frac{N\alpha_{t}{\mathbf x}_i + \alpha_{t|s}- \alpha_{t}+ (\alpha_{s}- \alpha_{t}){\mathbf x}_i + \frac{(\alpha_{s}- \alpha_{t})(1- \alpha_{s})}{\alpha_{s}N}}{N\alpha_{t}{\mathbf x}_i  + 1 - \alpha_{t}} \nonumber \\
     \cdot \log\Bigg[\frac{\frac{N\alpha_{t}{\mathbf x}_i + \alpha_{t|s}- \alpha_{t}+ (\alpha_{s}- \alpha_{t}){\mathbf x}_i + \frac{(\alpha_{s}- \alpha_{t})(1 - \alpha_{s})}{\alpha_{s}N}}{N\alpha_{t}{\mathbf x}_i  + 1 - \alpha_{t}}}{\frac{N\alpha_{t}({\mathbf x}_\theta)_i + \alpha_{t|s}- \alpha_{t}+ (\alpha_{s}- \alpha_{t})({\mathbf x}_\theta)_i + \frac{(\alpha_{s}- \alpha_{t})(1 - \alpha_{s})}{\alpha_{s}N}}{N\alpha_{t}({\mathbf x}_\theta)_i  + 1 - \alpha_{t}}}\Bigg] \tag{28}
 \end{align}$$
 
-As $s \rightarrow t$, the coefficient on the $\log$ term will approach $1.$ Additionally both the numerator and the denominator inside the $\log$ term will approach $1,$ thus the entire $\log$ term will approach $0.$ Combining this with the fact that ${t-s}$ will approach $0$, gives us the indeterminate form of $0/0,$ hence we apply L’Hôpital’s’s rule to (28). Writing $q$ and $p_\theta$ as functions of $s,$ when we differentiate the $\log$ term we get: 
+As $s \rightarrow t$, the coefficient on the $\log$ term will approach $1.$ Additionally both the numerator and the denominator inside the $\log$ term will approach $1,$ thus the entire $\log$ term will approach $0.$ Combining this with the fact that ${t-s}$ will approach $0$, gives us the indeterminate form of $0/0,$ hence we apply L’Hôpital’s’s rule to (28). Writing $q$ and $p_\theta$ as functions of $s,$ when we differentiate the $\log$ term we get:
 
 $$\begin{align}
     \frac{d}{ds}\log\Big[\frac{q(s)}{p_\theta(s)}\Big] &= \frac{d}{ds}\log q(s) - \frac{d}{ds}\log p_\theta(s) \nonumber \\
     &= \frac{\frac{d}{ds} q(s)}{q(s)} - \frac{\frac{d}{ds} p_\theta(s)}{p_\theta(s)} \tag{29}
 \end{align}$$
 
-Let’s look at each derivative term in (29): 
+Let’s look at each derivative term in (29):
 
 $$\begin{align}
     \lim_{s\rightarrow t} \frac{d}{ds} q(s) &= 
@@ -566,32 +566,32 @@ $$\begin{align}
     \tag{30}
 \end{align}$$
 
-Similarly, 
+Similarly,
 
 $$\begin{align}
     \lim_{s\rightarrow t} \frac{d}{ds} p_\theta(s) &= \frac{\alpha_{t}'}{N\alpha_{t}}\Big[1 - \frac{N}{N\alpha_{t}({\mathbf x}_\theta)_i + 1 - \alpha_{t}}\Big]\tag{31}
 \end{align}$$
 
-Note that when taking $s \rightarrow t$, both $q(s)$ and $p_\theta(s)$ evaluate to $1$. Additionally, differentiating $\frac{1}{t-s}$ with respect to $s$ evaluates to $-1$. When combining these facts and plugging (30) and (31) into (29), (28) becomes 
+Note that when taking $s \rightarrow t$, both $q(s)$ and $p_\theta(s)$ evaluate to $1$. Additionally, differentiating $\frac{1}{t-s}$ with respect to $s$ evaluates to $-1$. When combining these facts and plugging (30) and (31) into (29), (28) becomes
 
 $$\begin{align}
     \lim_{s\rightarrow t}\text{Term 1} &= \frac{-\alpha_{t}'}{N\alpha_{t}}\Big[1 - \frac{N}{N\alpha_{t}{\mathbf x}_i + 1 - \alpha_{t}}\Big] + \frac{\alpha_{t}'}{N\alpha_{t}}\Big[1 - \frac{N}{N\alpha_{t}({\mathbf x}_\theta)_i + 1 - \alpha_{t}}\Big] \nonumber \\
     &=\boxed{\frac{\alpha_{t}'}{N\alpha_{t}}\Bigg[\frac{N}{N\alpha_{t}{\mathbf x}_i + 1 - \alpha_{t}} - \frac{N}{N\alpha_{t}({\mathbf x}_\theta)_i + 1 - \alpha_{t}}\Bigg]} \tag{32}
 \end{align}$$
 
-**Term 2:** 
+**Term 2:**
 
 $$\begin{align}
     \lim_{s \rightarrow t}\frac{1}{t-s}\cdot \sum_{\substack{j \in [N]\\ \text{s.t. }({\mathbf z}_t)_j = 0}} \frac{(\alpha_{s}- \alpha_{t}){\mathbf x}_j + \frac{(\alpha_{s}- \alpha_{t})(1-\alpha_{s})}{N\alpha_{s}}}{N\alpha_{t}{\mathbf x}_i + 1 - \alpha_{t}}\log\Bigg[\frac{\frac{(\alpha_{s}- \alpha_{t}){\mathbf x}_j + \frac{(\alpha_{s}-\alpha_{t})(1-\alpha_{s})}{N\alpha_{s}}}{N\alpha_{t}{\mathbf x}_i + 1 -\alpha_{t}}}{\frac{(\alpha_{s}-\alpha_{t})({\mathbf x}_\theta)_j +\frac{(\alpha_{s}- \alpha_{t})(1-\alpha_{t})}{N\alpha_{s}}}{N\alpha_{t}({\mathbf x}_\theta)_i + 1 - \alpha_{t}}}\Bigg] \tag{33}
 \end{align}$$
 
-For each term in the summation, $\frac{1}{t-s}$ times the coefficient on the $\log$ term will have an indeterminate form of $0/0$ as $s \rightarrow t.$ We therefore apply L’Hôpital’s rule to this coefficient: 
+For each term in the summation, $\frac{1}{t-s}$ times the coefficient on the $\log$ term will have an indeterminate form of $0/0$ as $s \rightarrow t.$ We therefore apply L’Hôpital’s rule to this coefficient:
 
 $$\begin{align}
     \lim_{s\rightarrow t}\frac{1}{t-s}\cdot \frac{(\alpha_{s}- \alpha_{t}){\mathbf x}_j + \frac{(\alpha_{s}- \alpha_{t})(1-\alpha_{s})}{N\alpha_{s}}}{N\alpha_{t}{\mathbf x}_i + 1 - \alpha_{t}} = \frac{-\alpha_{t}'}{N\alpha_{t}}\Bigg[\frac{N\alpha_{t}{\mathbf x}_j + 1 -\alpha_{t}}{N\alpha_{t}{\mathbf x}_i + 1 -\alpha_{t}}\Bigg]\tag{34}
 \end{align}$$
 
-Now, for the $\log$ term, we exchange the limit with the continuous $\log$ function and have that both the numerator and the denominator go to zero as $s \rightarrow t.$ We therefore apply L’Hôpital’s rule here as well: 
+Now, for the $\log$ term, we exchange the limit with the continuous $\log$ function and have that both the numerator and the denominator go to zero as $s \rightarrow t.$ We therefore apply L’Hôpital’s rule here as well:
 
 $$\begin{align}
     \log\lim_{s\rightarrow t}&\Bigg[\frac{\frac{(\alpha_{s}- \alpha_{t}){\mathbf x}_j + \frac{(\alpha_{s}-\alpha_{t})(1-\alpha_{s})}{N\alpha_{s}}}{N\alpha_{t}{\mathbf x}_i + 1 -\alpha_{t}}}{\frac{(\alpha_{s}-\alpha_{t})({\mathbf x}_\theta)_j +\frac{(\alpha_{s}- \alpha_{t})(1-\alpha_{t})}{N\alpha_{s}}}{N\alpha_{t}({\mathbf x}_\theta)_i + 1 - \alpha_{t}}}\Bigg] =
@@ -602,13 +602,13 @@ $$\begin{align}
     &= \log\Bigg[\Bigg(\frac{N\alpha_{t}({\mathbf x}_\theta)_i + 1 - \alpha_{t}}{N\alpha_{t}({\mathbf x}_\theta)j + 1 - \alpha_{t}}\Bigg)\Bigg(\frac{N\alpha_{t}{\mathbf x}_j + 1 - \alpha_{t}}{N\alpha_{t}{\mathbf x}_i + 1 - \alpha_{t}}\Bigg)\Bigg]\tag{35}
 \end{align}$$
 
-Multiplying (34) by (35), we get: 
+Multiplying (34) by (35), we get:
 
 $$\begin{align}
     \lim_{s\rightarrow t}\text{Term 2} = \boxed{\frac{-\alpha_{t}'}{N\alpha_{t}}\sum_{\substack{j \in [N]\\ \text{s.t. }({\mathbf z}_t)_j = 0}} \Bigg(\frac{N\alpha_{t}{\mathbf x}_j + 1 -\alpha_{t}}{N\alpha_{t}{\mathbf x}_i + 1 -\alpha_{t}}\Bigg)\log\Bigg[\Bigg(\frac{N\alpha_{t}({\mathbf x}_\theta)_i + 1 - \alpha_{t}}{N\alpha_{t}({\mathbf x}_\theta)j + 1 - \alpha_{t}}\Bigg)\Bigg(\frac{N\alpha_{t}{\mathbf x}_j + 1 - \alpha_{t}}{N\alpha_{t}{\mathbf x}_i + 1 - \alpha_{t}}\Bigg)\Bigg]} \tag{36}
 \end{align}$$
 
-**Combining Terms 1 and 2:** Using (32) and (36), the final KL term in the continuous time limit is: 
+**Combining Terms 1 and 2:** Using (32) and (36), the final KL term in the continuous time limit is:
 
 $$\begin{equation}
 \begin{split}
@@ -627,14 +627,14 @@ Below we demonstrate how our proposed guidance mechanisms from Section 3 admit 
 
 #### Background on CTMC
 
-In the CTMC formulation, the key quantity of interest is the **rate matrix** $R_t \in \mathbb{R}^{N\times N}$. In analogy to the discrete time transition matrices $Q_t$, which define the transition probabilities between states, these rate matrices define the instantaneous rate of change between states in continuous time. More formally, letting $\delta({\mathbf x}, {\mathbf y})$ be the Kronecker delta function that equals 1 if ${\mathbf x}={\mathbf y}$ and 0 otherwise, and using ${\mathbf z}$ and ${\mathbf z}'$ to denote observed values of the latents, we can define the forward noising process using $R_t$ as follows: 
+In the CTMC formulation, the key quantity of interest is the **rate matrix** $R_t \in \mathbb{R}^{N\times N}$. In analogy to the discrete time transition matrices $Q_t$, which define the transition probabilities between states, these rate matrices define the instantaneous rate of change between states in continuous time. More formally, letting $\delta({\mathbf x}, {\mathbf y})$ be the Kronecker delta function that equals 1 if ${\mathbf x}={\mathbf y}$ and 0 otherwise, and using ${\mathbf z}$ and ${\mathbf z}'$ to denote observed values of the latents, we can define the forward noising process using $R_t$ as follows:
 
 $$\begin{align}
 \tag{37}
     q({\mathbf z}_t={\mathbf z}' \mid {\mathbf z}_s = {\mathbf z}) = \delta_{{\mathbf z}, {\mathbf z}'} + R_t({\mathbf z}, {\mathbf z}')\frac{1}{T} + o\Big(\frac{1}{T}\Big)
 \end{align}$$
 
-where $o(1/T)$ indicates terms that vanish more quickly than $1/T.$ Note that when clear from the context, we use the shorthand $\delta_{{\mathbf z}, {\mathbf z}'} := \delta({\mathbf z}, {\mathbf z}').$ Recall that we defined $s = t - \frac{1}{T}.$ In continuous time, as $T \rightarrow \infty$, $o(1/T)$ terms are ignored, and we have 
+where $o(1/T)$ indicates terms that vanish more quickly than $1/T.$ Note that when clear from the context, we use the shorthand $\delta_{{\mathbf z}, {\mathbf z}'} := \delta({\mathbf z}, {\mathbf z}').$ Recall that we defined $s = t - \frac{1}{T}.$ In continuous time, as $T \rightarrow \infty$, $o(1/T)$ terms are ignored, and we have
 
 $$\begin{align}
 \tag{38}
@@ -643,14 +643,14 @@ $$\begin{align}
 
 hence our treatment of $R_t$ as the ‘instantaneous’ rate of state transitions.
 
-Importantly, processes defined as in (37) have known time reversals given by (Kelly, 2011; Sun et al., 2022): 
+Importantly, processes defined as in (37) have known time reversals given by (Kelly, 2011; Sun et al., 2022):
 
 $$\begin{align}
 \tag{39}
     q({\mathbf z}_s = {\mathbf z}\mid {\mathbf z}_t = {\mathbf z}') = \delta_{{\mathbf z}', {\mathbf z}} + \check{R}_t({\mathbf z}', {\mathbf z})\frac{1}{T} + o\Big(\frac{1}{T}\Big),
 \end{align}$$
 
-where $\check{R}_t$ represents the reverse rate matrix which is related to the forward matrix as follows: 
+where $\check{R}_t$ represents the reverse rate matrix which is related to the forward matrix as follows:
 
 $$\begin{align}
 \tag{40}
@@ -660,7 +660,7 @@ $$\begin{align}
 
 with $\check{R}_t({\mathbf z}, {\mathbf z}) = -\sum_{{\mathbf z}' \neq {\mathbf z}} \check{R}_t({\mathbf z}', {\mathbf z})$, which ensures that the rows of $\check{R}_t$ sum to zero (i.e., mass cannot be created or destroyed). Note that in (40), we are scaling the forward rate matrix by a ratio of the unconditional marginals: $q({\mathbf z}_t = {\mathbf z}')/q({\mathbf z}_t={\mathbf z}).$
 
-We remark that in the derivations for guidance in Nisonoff et al. (2024), they slightly change the form of (39) to: 
+We remark that in the derivations for guidance in Nisonoff et al. (2024), they slightly change the form of (39) to:
 
 $$\begin{equation}
 \tag{41}
@@ -669,7 +669,7 @@ $$\begin{equation}
 
 #### Sampling with Learned Reverse Rate Matrices
 
-Assuming we have a learned model $R_{t,\theta}({\mathbf z}', {\mathbf z})$ that approximates the true reverse rates (see Campbell et al. (2022) or Campbell et al. (2024) for details), we can generate from this model by drawing samples from the limiting distribution ${\mathbf z}_1 \sim \boldsymbol{\pi}$ and using a forward Euler discretization to sample a chain of latents that end in samples ${\mathbf x}\sim q({\mathbf x})$ (Campbell et al., 2024): 
+Assuming we have a learned model $R_{t,\theta}({\mathbf z}', {\mathbf z})$ that approximates the true reverse rates (see Campbell et al. (2022) or Campbell et al. (2024) for details), we can generate from this model by drawing samples from the limiting distribution ${\mathbf z}_1 \sim \boldsymbol{\pi}$ and using a forward Euler discretization to sample a chain of latents that end in samples ${\mathbf x}\sim q({\mathbf x})$ (Campbell et al., 2024):
 
 $$\begin{equation}
 \tag{42}
@@ -680,7 +680,7 @@ where $1/T$ represents the discretization step size and, as above, $s = t - 1/T.
 
 ## B.1 CTMC Formulation of D-CFG
 
-In Nisonoff et al. (2024), guidance is achieved by scaling the parametrized reverse rate matrix $R_{t,\theta}$. Predictor-free guidance (the analogous method to D-CFG) is presented as: 
+In Nisonoff et al. (2024), guidance is achieved by scaling the parametrized reverse rate matrix $R_{t,\theta}$. Predictor-free guidance (the analogous method to D-CFG) is presented as:
 
 $$\begin{align}
 \tag{43}
@@ -689,13 +689,13 @@ $$\begin{align}
 
 where $R_{t, \theta}(\cdot \mid y)$ is the learned reverse rate when conditioned on $y$.
 
-We now present the continuous-time extension of D-CFG and show that it is proportional to using the predictor-free guided reverse rate from (43) in conjunction with the forward Euler sampling from (42). Starting from the formulation of D-CFG from our work (where we make more explicit which variables are free / set) 
+We now present the continuous-time extension of D-CFG and show that it is proportional to using the predictor-free guided reverse rate from (43) in conjunction with the forward Euler sampling from (42). Starting from the formulation of D-CFG from our work (where we make more explicit which variables are free / set)
 
 $$\begin{equation*}
     p^\gamma({\mathbf z}_s \mid {\mathbf z}_t={\mathbf z}', y) \propto p_\theta({\mathbf z}_s \mid {\mathbf z}_t={\mathbf z}', y)^\gamma\cdot p_\theta({\mathbf z}_s \mid {\mathbf z}_t={\mathbf z}')^{(1-\gamma)},
 \end{equation*}$$
 
-when using the forward Euler sampling scheme, we can plug in the formulation from (41) (with the true reverse rate replaced with the approximate one) into the right-hand side of this equation to get 
+when using the forward Euler sampling scheme, we can plug in the formulation from (41) (with the true reverse rate replaced with the approximate one) into the right-hand side of this equation to get
 
 $$\begin{align*}
     p^\gamma&({\mathbf z}_s \mid {\mathbf z}_t={\mathbf z}', y) \propto \\
@@ -714,14 +714,14 @@ where the first equality comes from the fact that all cross terms involving $\de
 
 While for classifier-free guidance, we did not need to distinguish between latent variables with a single token and those representing sequences of tokens (as argued in Section 3.1), below we make this distinction explicit by including superscripts $(\ell)$ and $(1:L)$ on variables ${\mathbf z}_s, {\mathbf z}_t.$ However, for notational simplicity we omit theses subscripts on variables that denote realized values, such as ${\mathbf z}'$.
 
-In Nisonoff et al. (2024), predictor guided rates (the analog to our D-CBG) are attained by scaling $R_{t,\theta}$ as follows: 
+In Nisonoff et al. (2024), predictor guided rates (the analog to our D-CBG) are attained by scaling $R_{t,\theta}$ as follows:
 
 $$\begin{equation}
 \tag{44}
     R_{t,\theta}^\gamma({\mathbf z}_t^{(1:L)}={\mathbf z}', {\mathbf z}_s^{(1:L)} \mid y) = \Bigg(\frac{p_\phi(y \mid {\mathbf z}_s^{(1:L)}, {\mathbf z}_t^{(1:L)} = {\mathbf z}')}{p_\phi(y \mid {\mathbf z}_s^{(1:L)} = {\mathbf z}', {\mathbf z}_t^{(1:L)} = {\mathbf z}')}\Bigg)^\gamma R_{t, \theta}({\mathbf z}_t^{(1:L)}={\mathbf z}', {\mathbf z}_s^{(1:L)}),
 \end{equation}$$
 
-where $p_\phi$ is an external classifier. Given the factorization assumptions of the forward and reverse processes, the reverse rate matrix in the CTMC formulation is only non-zero at entries where its arguments differ in (at most) one dimension (Campbell et al., 2022; Campbell et al., 2024; Nisonoff et al., 2024). Thus, the classifier only needs to be evaluated on candidates for which latents differ in at most one token, which coincides with the argument / classifier we introduce in Section 3.2. The formulation in (44) can be further simplified to (see Nisonoff et al. (2024) for details): 
+where $p_\phi$ is an external classifier. Given the factorization assumptions of the forward and reverse processes, the reverse rate matrix in the CTMC formulation is only non-zero at entries where its arguments differ in (at most) one dimension (Campbell et al., 2022; Campbell et al., 2024; Nisonoff et al., 2024). Thus, the classifier only needs to be evaluated on candidates for which latents differ in at most one token, which coincides with the argument / classifier we introduce in Section 3.2. The formulation in (44) can be further simplified to (see Nisonoff et al. (2024) for details):
 
 $$\begin{equation}
 \tag{45}
@@ -732,13 +732,13 @@ where for each $\ell$, using the notation introduced in Section 3.2, we only ev
 
 As in Appendix B.1, we present the continuous-time extension of D-CBG and show that it is proportional to sampling using the reverse rate matrix in (45) (with Euler discretization for sampling).
 
-Let $R_{t, \theta}^{(\ell)}$ represent the rate matrix corresponding to transitions where all dimensions are kept the same except for potentially the one corresponding to the $\ell^{\text{th}}$ token. We follow a similar derivation to that used in Appendix B.1 and start with our formulation for D-CBG: 
+Let $R_{t, \theta}^{(\ell)}$ represent the rate matrix corresponding to transitions where all dimensions are kept the same except for potentially the one corresponding to the $\ell^{\text{th}}$ token. We follow a similar derivation to that used in Appendix B.1 and start with our formulation for D-CBG:
 
 $$\begin{equation*}
     p^\gamma({\mathbf z}_s^{(\ell)} \mid {\mathbf z}_t^{(1:L)}, y) \propto p_\phi(y \mid \tilde{{\mathbf z}}^{(1:L)})^\gamma p_\theta({\mathbf z}_s^{(\ell)} \mid {\mathbf z}_t^{(1:L)}),
 \end{equation*}$$
 
-where recall that $\tilde{{\mathbf z}}^{(1:L)} = \Big[{\mathbf z}_t^{(1:\ell-1)}, {\mathbf z}_s^{(\ell)}, {\mathbf z}_t^{(\ell+1:L)}\Big]$. We then plug in the formulation for the approximate reverse rate to get: 
+where recall that $\tilde{{\mathbf z}}^{(1:L)} = \Big[{\mathbf z}_t^{(1:\ell-1)}, {\mathbf z}_s^{(\ell)}, {\mathbf z}_t^{(\ell+1:L)}\Big]$. We then plug in the formulation for the approximate reverse rate to get:
 
 $$\begin{align*}
     &p^\gamma({\mathbf z}_s^{(\ell)} \mid {\mathbf z}_t^{(1:L)}={\mathbf z}', y) \propto \\
@@ -756,28 +756,28 @@ Similar to Sahoo et al. (2024a), our work tackles the problem of discrete diffus
 
 #### Forward Rate Matrices for Uniform Noise
 
-Recall from the analysis in Appendix A that we can use L’Hospital’s rule to evaluate $\lim_{T\rightarrow\infty}T\cdot(1-\alpha_{t|s}) = -\alpha_{t}'/\alpha_{t}.$ Now, using (21) from above, for ${\mathbf z}' \neq {\mathbf z}$ we have 
+Recall from the analysis in Appendix A that we can use L’Hospital’s rule to evaluate $\lim_{T\rightarrow\infty}T\cdot(1-\alpha_{t|s}) = -\alpha_{t}'/\alpha_{t}.$ Now, using (21) from above, for ${\mathbf z}' \neq {\mathbf z}$ we have
 
 $$\begin{align}
     q({\mathbf z}_t = {\mathbf z}' \mid {\mathbf z}_s = {\mathbf z}) = \frac{1 - \alpha_{t|s}}{N}.
 \tag{46}
 \end{align}$$
 
-Combining this with (38), we have that: 
+Combining this with (38), we have that:
 
 $$\begin{align}
 \tag{47}
     R_t({\mathbf z}, {\mathbf z}') = \lim_{T\rightarrow\infty}T\cdot\frac{1 - \alpha_{t|s}}{N} = -\frac{\alpha_{t}'}{N\alpha_{t}}.
 \end{align}$$
 
-Now for ${\mathbf z}' = {\mathbf z}$, again from (21), we have 
+Now for ${\mathbf z}' = {\mathbf z}$, again from (21), we have
 
 $$\begin{align}
     q({\mathbf z}_t={\mathbf z}\mid{\mathbf z}_s={\mathbf z}) = \alpha_{t|s}+ \frac{1-\alpha_{t|s}}{N},
 \tag{48}
 \end{align}$$
 
-which combines with (38) to yield: 
+which combines with (38) to yield:
 
 $$\begin{align}
 \tag{49}
@@ -786,7 +786,7 @@ $$\begin{align}
 
 Alternatively, for (49), we could have relied on the property that $R_t({\mathbf z}, {\mathbf z}) = -\sum_{{\mathbf z}' \neq {\mathbf z}} R_t({\mathbf z}, {\mathbf z}')$.
 
-Writing (47) and (49) as a single expression, gives: 
+Writing (47) and (49) as a single expression, gives:
 
 $$\begin{align}
 \tag{50}
@@ -801,14 +801,14 @@ Below, we demonstrate that the variational lower bound from (18) used to train U
 
 To facilitate the discussion, we introduce a notational shorthand $q_t({\mathbf z}') = q({\mathbf z}_t = {\mathbf z}')$ and $q_t({\mathbf z}'\mid{\mathbf x}) = q({\mathbf z}_t = {\mathbf z}'\mid {\mathbf x}).$
 
-In SEDD, the quantity of interest is the ratio of probabilities in the reverse rate matrix equation given in (40), and they train a parametric model to learn this so-called concrete score (Meng et al., 2022): 
+In SEDD, the quantity of interest is the ratio of probabilities in the reverse rate matrix equation given in (40), and they train a parametric model to learn this so-called concrete score (Meng et al., 2022):
 
 $$\begin{equation}
 \tag{51}
     s_\theta({\mathbf z})_{{\mathbf z}'} \approx \frac{q_t({\mathbf z}')}{q_t({\mathbf z})}.
 \end{equation}$$
 
-Since the unconditional marginals in this ratio are intractable, SEDD proposes a tractable denoising score-based objective. Importantly, they show that the denoising score-based objective they use for training serves as variational bound and derive the following expression for Negative Evidence Lower Bound (NELBO): 
+Since the unconditional marginals in this ratio are intractable, SEDD proposes a tractable denoising score-based objective. Importantly, they show that the denoising score-based objective they use for training serves as variational bound and derive the following expression for Negative Evidence Lower Bound (NELBO):
 
 $$\begin{align}
 \tag{52}
@@ -825,7 +825,7 @@ where $K(a) = a (\log a - 1),$ for $a \in \mathbb{R}^+$.
 
 #### SEDD with Interpolating Uniform Noise
 
-From (1) we have $q_t({\mathbf z}|{\mathbf x}) = \alpha_{t}{\mathbf x}_i + (1 - \alpha_{t}) / N$ where $i$ is the non-zero index of the one-hot vector ${\mathbf z}$, i.e., ${\mathbf z}_i = 1$. Thus, the ‘true’ conditional score in (52) can be written as 
+From (1) we have $q_t({\mathbf z}|{\mathbf x}) = \alpha_{t}{\mathbf x}_i + (1 - \alpha_{t}) / N$ where $i$ is the non-zero index of the one-hot vector ${\mathbf z}$, i.e., ${\mathbf z}_i = 1$. Thus, the ‘true’ conditional score in (52) can be written as
 
 $$\begin{equation}
 \tag{53}
@@ -837,20 +837,20 @@ where we use $i$ and $j$ to denote the non-zero indices of the one-hot vectors $
 
 #### Using Mean Parameterization in SEDD NELBO
 
-In our work, we use the mean parameterization: we predict the ‘clean’ data given noisy observations using the model that we denote as ${\mathbf x}_\theta$. Note that (52) is minimized if 
+In our work, we use the mean parameterization: we predict the ‘clean’ data given noisy observations using the model that we denote as ${\mathbf x}_\theta$. Note that (52) is minimized if
 
 $$\begin{equation*}
     {\mathbf s}_\theta({\mathbf z})_{{\mathbf z}'} = \frac{q_t({\mathbf z}'|{\mathbf x})}{q_t({\mathbf z}|{\mathbf x})}.
 \end{equation*}$$
 
-Thus, we can replace ${\mathbf x}$ in (53) to extract a score model from our parameterization: 
+Thus, we can replace ${\mathbf x}$ in (53) to extract a score model from our parameterization:
 
 $$\begin{align}
 \tag{54}
     {\mathbf s}_\theta({\mathbf z})_{{\mathbf z}'} = \frac{\alpha_{t}(\mathbf {x}_\theta)_j + (1 - \alpha_{t}) / N}{ \alpha_{t}(\mathbf {x}_\theta)_i + (1 - \alpha_{t}) / N} = \frac{N\alpha_{t}(\mathbf {x}_\theta)_j + (1 - \alpha_{t})}{ N\alpha_{t}(\mathbf {x}_\theta)_i + (1 - \alpha_{t})}.
 \end{align}$$
 
-We now show two useful identities that come from this parameterization. First, 
+We now show two useful identities that come from this parameterization. First,
 
 $$\begin{align}
 \tag{55}
@@ -865,7 +865,7 @@ $$\begin{align}
     & = \frac{N}{ N\alpha_{t}(\mathbf {x}_\theta)_i + (1 - \alpha_{t})} - 1
 \end{align}$$
 
-The same logic can be applied to show that 
+The same logic can be applied to show that
 
 $$\begin{align}
 \tag{56}
@@ -876,7 +876,7 @@ $$\begin{align}
 
 #### Equivalence Between $\text{NELBO}_{\text{SEDD}}$ and $\text{NELBO}_{\text{UDLM}}$
 
-We can now use the identities from (55) and (56) to demonstrate that $\text{NELBO}_\text{SEDD}$ (52) is equivalent to $\text{NELBO}_\text{UDLM}$ (18). 
+We can now use the identities from (55) and (56) to demonstrate that $\text{NELBO}_\text{SEDD}$ (52) is equivalent to $\text{NELBO}_\text{UDLM}$ (18).
 
 $$\begin{align}
     & \text{NELBO}_\text{SEDD} \nonumber \\
@@ -1072,7 +1072,7 @@ Of note, for CIFAR10, our models are trained for 300K iterations as opposed to 1
 
 #### FUDGE Implementation
 
-FUDGE is a classifier-based autoregressive guidance method proposed by (Yang & Klein, 2021). FUDGE first trains a classifier on all possible prefixes. Instead of directly sampling from $p({\mathbf x}^{(\ell)}\mid {\mathbf x}^{(1:\ell-1)})$, FUDGE samples from the perturbed conditional distribution $p(y\mid{\mathbf x}^{(1:\ell)})p({\mathbf x}^{(\ell)}\mid{\mathbf x}^{(1:\ell-1)})$ where $y$ denotes the classifier label, ${\mathbf x}^{(1:\ell-1)}$ denotes the already decoded tokens and ${\mathbf x}^{(\ell)}$ stands for possible token to be generated. For efficiency, FUDGE truncates ${\mathbf x}^{(\ell)}$ to the $topk$ tokens with the largest unconditional log-likelihood. Although not in the original FUDGE formulation, following the classifier-based guidance in diffusion models ((Dhariwal & Nichol, 2021b)), we introduce the temperature variable $\gamma$ and sample from the perturbed distribution: 
+FUDGE is a classifier-based autoregressive guidance method proposed by (Yang & Klein, 2021). FUDGE first trains a classifier on all possible prefixes. Instead of directly sampling from $p({\mathbf x}^{(\ell)}\mid {\mathbf x}^{(1:\ell-1)})$, FUDGE samples from the perturbed conditional distribution $p(y\mid{\mathbf x}^{(1:\ell)})p({\mathbf x}^{(\ell)}\mid{\mathbf x}^{(1:\ell-1)})$ where $y$ denotes the classifier label, ${\mathbf x}^{(1:\ell-1)}$ denotes the already decoded tokens and ${\mathbf x}^{(\ell)}$ stands for possible token to be generated. For efficiency, FUDGE truncates ${\mathbf x}^{(\ell)}$ to the $topk$ tokens with the largest unconditional log-likelihood. Although not in the original FUDGE formulation, following the classifier-based guidance in diffusion models ((Dhariwal & Nichol, 2021b)), we introduce the temperature variable $\gamma$ and sample from the perturbed distribution:
 
 $$\begin{equation*}
     \frac{p({\mathbf x}^{(\ell)}\mid{\mathbf x}^{(1:\ell-1)})p^\gamma(y\mid{\mathbf x}^{(1:\ell)})}{\sum_{{\mathbf x}^{(\ell)}}p({\mathbf x}^{(\ell)}\mid{\mathbf x}^{(1:\ell-1)})p^\gamma(y\mid{\mathbf x}^{(1:\ell)})}
@@ -1082,7 +1082,7 @@ In our QM9 experiments, $topk$ is set as the vocabulary size, which is 40. When 
 
 #### PPLM Implementation
 
-Inspired by the approximate Metropolis-adjusted Langevin (MALA), Plug and Play language model (PPLM; (Dathathri et al., 2019)) introduces guidance by conducting gradient updates on the hidden representations of a language model. PPLM first rewrites the autoregressive language models’ decoding process using the KV-cache mechanism (Wolf et al., 2020): ${\mathbf x}_{t+1}, H_{t+1} = LM({\mathbf x}_t, H_t)$, where ${\mathbf x}_t$ denotes the token at time step $t$ and $H_t$ is defined as $[(K_t^{(1)}, V_t^{(1)}), ..., (K_t^{(l)}, V_t^{(l)}]$ in which $l$ is the number of layers. When decoding the token ${\mathbf x}_{t+1}$ at time step $t+1$, PPLM initializes the perturbation term $\Delta H_t$ as $0$, and then performs $n$ updates, following the gradient ascend formula: 
+Inspired by the approximate Metropolis-adjusted Langevin (MALA), Plug and Play language model (PPLM; (Dathathri et al., 2019)) introduces guidance by conducting gradient updates on the hidden representations of a language model. PPLM first rewrites the autoregressive language models’ decoding process using the KV-cache mechanism (Wolf et al., 2020): ${\mathbf x}_{t+1}, H_{t+1} = LM({\mathbf x}_t, H_t)$, where ${\mathbf x}_t$ denotes the token at time step $t$ and $H_t$ is defined as $[(K_t^{(1)}, V_t^{(1)}), ..., (K_t^{(l)}, V_t^{(l)}]$ in which $l$ is the number of layers. When decoding the token ${\mathbf x}_{t+1}$ at time step $t+1$, PPLM initializes the perturbation term $\Delta H_t$ as $0$, and then performs $n$ updates, following the gradient ascend formula:
 
 $$\begin{equation*}
 \Delta H_t \leftarrow \Delta H_t + \eta \frac{\nabla_{\Delta H_t}[\log(p(y\mid H_t + \Delta H_t)) - \gamma_{KL} D_{KL}(p({\mathbf x}_{t+1}\mid H_t + \Delta H_t)||p({\mathbf x}_{t+1}\mid H_t))]}{\|\nabla_{\Delta H_t}[log(p(y\mid H_t + \Delta H_t)) - \gamma_{KL} D_{KL}(p({\mathbf x}_{t+1}\mid H_t + \Delta H_t)||p({\mathbf x}_{t+1}\mid H_t))]\|}.

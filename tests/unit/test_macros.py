@@ -94,3 +94,24 @@ def test_control_space_before_a_dollar_becomes_a_space():
     # chen2024dforcing: "$x=\ $Forward$(a)$" came out as "$x=\$Forward$(a)$" (an odd "$")
     assert drop_primitive_spacing(r"$x=\ $Forward$(a)$ and vs.\ $y$") == r"$x= $Forward$(a)$ and vs.\ $y$"
     assert drop_primitive_spacing(r"\newcommand{\noexis}{$\ $} a & $\ $ \\") == r"\newcommand{\noexis}{} a &  \\"
+
+
+def test_float_kept_in_a_macro_is_expanded():
+    from tex2md.preprocess.macros import expand_float_macros
+    tex = "\\newcommand{\\tabX}{\n\\begin{table}\\caption{C}\\end{table}}\ntext \\tabX \\section{S}"
+    out = expand_float_macros(tex)
+    assert "\\newcommand" not in out and "\\tabX" not in out
+    assert "text \n\n\\begin{table}\\caption{C}\\end{table}\n\n\\section{S}" in out
+
+
+def test_hfill_between_words_keeps_a_space():
+    from tex2md.preprocess.macros import drop_primitive_spacing
+    assert drop_primitive_spacing(r"Time steps\hfill$t_i$") == r"Time steps \hfill$t_i$"
+
+
+def test_newcommandx_with_trailing_optional_arguments_is_expanded():
+    from tex2md.preprocess.macros import expand_newcommandx
+    tex = r"\newcommandx\fw[4][4=]{q^{#4}_{#1}(#3|#2)}\newcommandx{\cmt}[2][1=Note]{(#1) #2}" "\n$\\fw{t}{x_0}{x_t}[\\ell] + \\fw t ab$"
+    out = expand_newcommandx(tex)
+    assert r"\newcommand{\cmt}[2][Note]{(#1) #2}" in out and "newcommandx" not in out
+    assert r"${q^{\ell}_{t}(x_t|x_0)} + {q^{}_{t}(b|a)}$" in out
